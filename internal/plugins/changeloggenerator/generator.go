@@ -127,7 +127,11 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	if g.config.Contributors != nil && g.config.Contributors.Enabled {
 		contributors := GetContributorsFn(commits)
 		if len(contributors) > 0 {
-			sb.WriteString("### Contributors\n\n")
+			if g.config.Contributors.Icon != "" {
+				sb.WriteString(fmt.Sprintf("### %s Contributors\n\n", g.config.Contributors.Icon))
+			} else {
+				sb.WriteString("### Contributors\n\n")
+			}
 			for _, contrib := range contributors {
 				g.writeContributorEntry(&sb, contrib, remote)
 			}

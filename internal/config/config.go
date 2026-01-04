@@ -230,6 +230,9 @@ type ContributorsConfig struct {
 
 	// Format is a Go template for contributor formatting.
 	Format string `yaml:"format,omitempty"`
+
+	// Icon is the icon/emoji for the contributors section header (optional).
+	Icon string `yaml:"icon,omitempty"`
 }
 
 // ReleaseGateConfig holds configuration for the release gate plugin.

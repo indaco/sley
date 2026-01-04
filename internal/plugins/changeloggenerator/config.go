@@ -71,6 +71,7 @@ type GroupConfig struct {
 type ContributorsConfig struct {
 	Enabled bool
 	Format  string
+	Icon    string
 }
 
 // DefaultConfig returns the default changelog generator configuration.
@@ -186,6 +187,7 @@ func FromConfigStruct(cfg *config.ChangelogGeneratorConfig) *Config {
 		result.Contributors = &ContributorsConfig{
 			Enabled: cfg.Contributors.Enabled,
 			Format:  cfg.Contributors.Format,
+			Icon:    cfg.Contributors.Icon,
 		}
 	} else {
 		result.Contributors = &ContributorsConfig{

@@ -447,6 +447,38 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 	}
 }
 
+func TestGenerateVersionChangelog_WithContributorsIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+	cfg.Contributors = &ContributorsConfig{Enabled: true, Icon: "❤️"}
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	commits := []CommitInfo{
+		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice", AuthorEmail: "alice@users.noreply.github.com"},
+	}
+
+	content, err := g.GenerateVersionChangelog("v1.0.0", "v0.9.0", commits)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Check contributors section with icon
+	if !strings.Contains(content, "### ❤️ Contributors") {
+		t.Error("expected contributors section with icon")
+	}
+	if !strings.Contains(content, "Alice") {
+		t.Error("expected Alice in contributors")
+	}
+}
+
 func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)

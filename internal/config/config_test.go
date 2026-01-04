@@ -1416,3 +1416,77 @@ func TestChangelogGeneratorConfig_GetMode(t *testing.T) {
 		})
 	}
 }
+
+/* ------------------------------------------------------------------------- */
+/* CONTRIBUTORS CONFIG TESTS                                                 */
+/* ------------------------------------------------------------------------- */
+
+func TestContributorsConfig_Icon(t *testing.T) {
+	tests := []struct {
+		name      string
+		yamlInput string
+		wantIcon  string
+	}{
+		{
+			name: "contributors with icon",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    contributors:
+      enabled: true
+      icon: "❤️"
+`,
+			wantIcon: "❤️",
+		},
+		{
+			name: "contributors without icon",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    contributors:
+      enabled: true
+`,
+			wantIcon: "",
+		},
+		{
+			name: "contributors with custom format and icon",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    contributors:
+      enabled: true
+      format: "- {{.Name}}"
+      icon: "👥"
+`,
+			wantIcon: "👥",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
+			runInTempDir(t, tmpPath, func() {
+				cfg, err := LoadConfigFn()
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+
+				if cfg.Plugins == nil || cfg.Plugins.ChangelogGenerator == nil {
+					t.Fatal("expected changelog-generator plugin config")
+				}
+
+				if cfg.Plugins.ChangelogGenerator.Contributors == nil {
+					t.Fatal("expected contributors config")
+				}
+
+				if cfg.Plugins.ChangelogGenerator.Contributors.Icon != tt.wantIcon {
+					t.Errorf("expected icon %q, got %q",
+						tt.wantIcon, cfg.Plugins.ChangelogGenerator.Contributors.Icon)
+				}
+			})
+		})
+	}
+}
