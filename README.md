@@ -31,10 +31,24 @@
 
 A command-line tool for managing [SemVer 2.0.0](https://semver.org/) versions using a simple `.version` file. Works with any language or stack, integrates with CI/CD pipelines, and extends via built-in plugins for git tagging, changelog generation, and version validation.
 
-> _sley — named for the weaving tool that arranges threads in precise order._
+> _sley - named for the weaving tool that arranges threads in precise order._
+
+## Quick Start
+
+```bash
+# Initialize version file
+sley init
+
+# Show current version
+sley show
+
+# Bump patch version (1.2.3 -> 1.2.4)
+sley bump patch
+```
 
 ## Table of Contents
 
+- [Quick Start](#quick-start)
 - [Features](#features)
 - [Why .version?](#why-version)
 - [Installation](#installation)
@@ -78,7 +92,7 @@ Most projects - especially CLIs, scripts, and internal tools - need a clean way 
 - **Not a changelog tool** - use the `changelog-generator` plugin for that
 - **Not a build system** - it just manages the version string
 
-The `.version` file complements your existing tools. Pair it with `git tag` for releases, inject it into binaries at build time, or sync it across `package.json`, `Cargo.toml`, and other files using the `dependency-check` plugin.
+The `.version` file complements your existing tools. Pair it with `git tag` for releases, inject it into binaries at build time, or sync it across `package.json`, `Cargo.toml`, and other files using the [`dependency-check` plugin](#plugin-system).
 
 ## Installation
 
@@ -138,7 +152,7 @@ COMMANDS:
    help, h           Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --path string, -p string  Path to .version file (default: "internal/version/.version")
+   --path string, -p string  Path to .version file (default: ".version")
    --strict, --no-auto-init  Fail if .version file is missing (disable auto-initialization)
    --no-color                Disable colored output
    --help, -h                show help
