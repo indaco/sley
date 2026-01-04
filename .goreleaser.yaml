@@ -44,6 +44,19 @@ changelog:
       - '^docs:'
       - '^test:'
 
+brews:
+  - repository:
+      owner: indaco
+      name: homebrew-tap
+    directory: Formula
+    homepage: https://github.com/indaco/sley
+    description: A CLI tool for managing semantic versioning using a .version file
+    license: MIT
+    install: |
+      bin.install "sley"
+    test: |
+      system "#{bin}/sley", "--version"
+
 release:
   footer: >-
 

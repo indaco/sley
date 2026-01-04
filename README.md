@@ -96,13 +96,19 @@ The `.version` file complements your existing tools. Pair it with `git tag` for 
 
 ## Installation
 
-### Option 1: Install via `go install` (global)
+### Option 1: Homebrew (macOS/Linux)
+
+```bash
+brew install indaco/tap/sley
+```
+
+### Option 2: Install via `go install` (global)
 
 ```bash
 go install github.com/indaco/sley/cmd/sley@latest
 ```
 
-### Option 2: Install via `go install` (tool)
+### Option 3: Install via `go install` (tool)
 
 With Go 1.24 or greater installed, you can install `sley` locally in your project by running:
 
@@ -116,11 +122,11 @@ Once installed, use it with
 go tool sley
 ```
 
-### Option 3: Prebuilt binaries
+### Option 4: Prebuilt binaries
 
 Download the pre-compiled binaries from the [releases page](https://github.com/indaco/sley/releases) and place the binary in your system's PATH.
 
-### Option 4: Clone and build manually
+### Option 5: Clone and build manually
 
 ```bash
 git clone https://github.com/indaco/sley.git
