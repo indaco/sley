@@ -148,6 +148,11 @@ type ChangelogGeneratorConfig struct {
 	// "both" writes to both locations
 	Mode string `yaml:"mode,omitempty"`
 
+	// Format determines the changelog format: "grouped" or "keepachangelog".
+	// "grouped" (default): Custom group labels with commit type grouping
+	// "keepachangelog": Keep a Changelog specification format with standard sections
+	Format string `yaml:"format,omitempty"`
+
 	// ChangesDir is the directory for version-specific changelog files (versioned mode).
 	ChangesDir string `yaml:"changes-dir,omitempty"`
 
@@ -310,6 +315,14 @@ func (c *ChangelogGeneratorConfig) GetMode() string {
 		return "versioned"
 	}
 	return c.Mode
+}
+
+// GetFormat returns the format with default "grouped".
+func (c *ChangelogGeneratorConfig) GetFormat() string {
+	if c.Format == "" {
+		return "grouped"
+	}
+	return c.Format
 }
 
 type ExtensionConfig struct {

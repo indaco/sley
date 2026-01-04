@@ -5,18 +5,26 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 // Generator handles changelog content generation.
 type Generator struct {
-	config *Config
-	remote *RemoteInfo
+	config    *Config
+	remote    *RemoteInfo
+	formatter Formatter
 }
 
 // NewGenerator creates a new changelog generator.
-func NewGenerator(config *Config) *Generator {
-	return &Generator{config: config}
+func NewGenerator(config *Config) (*Generator, error) {
+	formatter, err := NewFormatter(config.Format, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Generator{
+		config:    config,
+		formatter: formatter,
+	}, nil
 }
 
 // resolveRemote resolves repository info from config or git remote.
@@ -110,45 +118,12 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	// Resolve remote for links
 	remote, _ := g.resolveRemote() // Ignore error, just won't have links
 
-	// Build changelog content
+	// Use formatter to generate the main changelog content
 	var sb strings.Builder
+	content := g.formatter.FormatChangelog(version, previousVersion, grouped, sortedKeys, remote)
+	sb.WriteString(content)
 
-	// Version header
-	date := time.Now().Format("2006-01-02")
-	sb.WriteString(fmt.Sprintf("## %s - %s\n\n", version, date))
-
-	// Compare link
-	if remote != nil && previousVersion != "" {
-		compareURL := g.buildCompareURL(remote, previousVersion, version)
-		if compareURL != "" {
-			sb.WriteString(fmt.Sprintf("[compare changes](%s)\n\n", compareURL))
-		}
-	}
-
-	// Grouped commits
-	for _, label := range sortedKeys {
-		commits := grouped[label]
-		if len(commits) == 0 {
-			continue
-		}
-
-		// Section header with optional icon
-		icon := commits[0].GroupIcon
-		if icon != "" {
-			sb.WriteString(fmt.Sprintf("### %s %s\n\n", icon, label))
-		} else {
-			sb.WriteString(fmt.Sprintf("### %s\n\n", label))
-		}
-
-		// Commit entries
-		for _, c := range commits {
-			entry := g.formatCommitEntry(c, remote)
-			sb.WriteString(entry)
-		}
-		sb.WriteString("\n")
-	}
-
-	// Contributors section
+	// Contributors section (applies to both formats)
 	if g.config.Contributors != nil && g.config.Contributors.Enabled {
 		contributors := GetContributorsFn(commits)
 		if len(contributors) > 0 {
@@ -166,28 +141,6 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	}
 }
 
-// buildCompareURL generates a compare URL for the provider.
-func (g *Generator) buildCompareURL(remote *RemoteInfo, prev, curr string) string {
-	switch remote.Provider {
-	case "github", "gitea", "codeberg":
-		return fmt.Sprintf("https://%s/%s/%s/compare/%s...%s",
-			remote.Host, remote.Owner, remote.Repo, prev, curr)
-	case "gitlab":
-		return fmt.Sprintf("https://%s/%s/%s/-/compare/%s...%s",
-			remote.Host, remote.Owner, remote.Repo, prev, curr)
-	case "bitbucket":
-		return fmt.Sprintf("https://%s/%s/%s/branches/compare/%s%%0D%s",
-			remote.Host, remote.Owner, remote.Repo, curr, prev)
-	case "sourcehut":
-		return fmt.Sprintf("https://git.%s/%s/%s/log/%s..%s",
-			remote.Host, remote.Owner, remote.Repo, prev, curr)
-	default:
-		// For custom providers, use GitHub-style URL as best effort
-		return fmt.Sprintf("https://%s/%s/%s/compare/%s...%s",
-			remote.Host, remote.Owner, remote.Repo, prev, curr)
-	}
-}
-
 // writeContributorEntry writes a contributor entry to the builder.
 func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contributor, remote *RemoteInfo) {
 	if remote != nil {
@@ -199,75 +152,6 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 			contrib.Name, contrib.Username, host, contrib.Username)
 	} else {
 		fmt.Fprintf(sb, "- %s\n", contrib.Name)
-	}
-}
-
-// formatCommitEntry formats a single commit entry.
-func (g *Generator) formatCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
-	var sb strings.Builder
-
-	sb.WriteString("- ")
-
-	// Add scope if present
-	if c.Scope != "" {
-		sb.WriteString(fmt.Sprintf("**%s:** ", c.Scope))
-	}
-
-	// Add description
-	sb.WriteString(c.Description)
-
-	// Add commit link (always) and PR link (if present)
-	if remote != nil {
-		commitURL := g.buildCommitURL(remote, c.ShortHash)
-		sb.WriteString(fmt.Sprintf(" ([%s](%s))", c.ShortHash, commitURL))
-
-		// Add PR link if present
-		if c.PRNumber != "" {
-			prURL := g.buildPRURL(remote, c.PRNumber)
-			sb.WriteString(fmt.Sprintf(" ([#%s](%s))", c.PRNumber, prURL))
-		}
-	}
-
-	sb.WriteString("\n")
-	return sb.String()
-}
-
-// buildCommitURL generates a commit URL for the provider.
-func (g *Generator) buildCommitURL(remote *RemoteInfo, hash string) string {
-	switch remote.Provider {
-	case "github", "gitea", "codeberg":
-		return fmt.Sprintf("https://%s/%s/%s/commit/%s",
-			remote.Host, remote.Owner, remote.Repo, hash)
-	case "gitlab":
-		return fmt.Sprintf("https://%s/%s/%s/-/commit/%s",
-			remote.Host, remote.Owner, remote.Repo, hash)
-	case "bitbucket":
-		return fmt.Sprintf("https://%s/%s/%s/commits/%s",
-			remote.Host, remote.Owner, remote.Repo, hash)
-	case "sourcehut":
-		return fmt.Sprintf("https://git.%s/%s/%s/commit/%s",
-			remote.Host, remote.Owner, remote.Repo, hash)
-	default:
-		return fmt.Sprintf("https://%s/%s/%s/commit/%s",
-			remote.Host, remote.Owner, remote.Repo, hash)
-	}
-}
-
-// buildPRURL generates a PR/MR URL for the provider.
-func (g *Generator) buildPRURL(remote *RemoteInfo, prNumber string) string {
-	switch remote.Provider {
-	case "github", "gitea", "codeberg":
-		return fmt.Sprintf("https://%s/%s/%s/pull/%s",
-			remote.Host, remote.Owner, remote.Repo, prNumber)
-	case "gitlab":
-		return fmt.Sprintf("https://%s/%s/%s/-/merge_requests/%s",
-			remote.Host, remote.Owner, remote.Repo, prNumber)
-	case "bitbucket":
-		return fmt.Sprintf("https://%s/%s/%s/pull-requests/%s",
-			remote.Host, remote.Owner, remote.Repo, prNumber)
-	default:
-		return fmt.Sprintf("https://%s/%s/%s/pull/%s",
-			remote.Host, remote.Owner, remote.Repo, prNumber)
 	}
 }
 

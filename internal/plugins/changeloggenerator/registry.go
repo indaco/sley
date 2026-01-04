@@ -34,7 +34,12 @@ func ResetChangelogGenerator() {
 }
 
 // Register registers the changelog generator plugin with the given configuration.
-func Register(cfg *config.ChangelogGeneratorConfig) {
+func Register(cfg *config.ChangelogGeneratorConfig) error {
 	internalCfg := FromConfigStruct(cfg)
-	RegisterChangelogGeneratorFn(NewChangelogGenerator(internalCfg))
+	generator, err := NewChangelogGenerator(internalCfg)
+	if err != nil {
+		return fmt.Errorf("failed to create changelog generator: %w", err)
+	}
+	RegisterChangelogGeneratorFn(generator)
+	return nil
 }

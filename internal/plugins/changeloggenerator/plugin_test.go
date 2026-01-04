@@ -9,8 +9,10 @@ import (
 
 func TestNewChangelogGenerator(t *testing.T) {
 	cfg := DefaultConfig()
-	plugin := NewChangelogGenerator(cfg)
-
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if plugin == nil {
 		t.Fatal("expected non-nil plugin")
 	}
@@ -23,8 +25,10 @@ func TestNewChangelogGenerator(t *testing.T) {
 }
 
 func TestNewChangelogGenerator_NilConfig(t *testing.T) {
-	plugin := NewChangelogGenerator(nil)
-
+	plugin, err := NewChangelogGenerator(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	if plugin == nil {
 		t.Fatal("expected non-nil plugin")
 	}
@@ -37,7 +41,10 @@ func TestNewChangelogGenerator_NilConfig(t *testing.T) {
 }
 
 func TestPluginName(t *testing.T) {
-	plugin := NewChangelogGenerator(DefaultConfig())
+	plugin, err := NewChangelogGenerator(DefaultConfig())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	name := plugin.Name()
 	if name != "changelog-generator" {
@@ -46,7 +53,10 @@ func TestPluginName(t *testing.T) {
 }
 
 func TestPluginDescription(t *testing.T) {
-	plugin := NewChangelogGenerator(DefaultConfig())
+	plugin, err := NewChangelogGenerator(DefaultConfig())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	desc := plugin.Description()
 	if desc == "" {
@@ -58,7 +68,10 @@ func TestPluginDescription(t *testing.T) {
 }
 
 func TestPluginVersion(t *testing.T) {
-	plugin := NewChangelogGenerator(DefaultConfig())
+	plugin, err := NewChangelogGenerator(DefaultConfig())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	version := plugin.Version()
 	if version == "" {
@@ -83,7 +96,10 @@ func TestPluginIsEnabled(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := DefaultConfig()
 			cfg.Enabled = tt.enabled
-			plugin := NewChangelogGenerator(cfg)
+			plugin, err := NewChangelogGenerator(cfg)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
 			if got := plugin.IsEnabled(); got != tt.expected {
 				t.Errorf("IsEnabled() = %v, want %v", got, tt.expected)
@@ -95,7 +111,10 @@ func TestPluginIsEnabled(t *testing.T) {
 func TestPluginGetConfig(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Mode = "unified"
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	got := plugin.GetConfig()
 	if got != cfg {
@@ -109,10 +128,13 @@ func TestPluginGetConfig(t *testing.T) {
 func TestGenerateForVersion_Disabled(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Enabled = false
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Should return nil without doing anything
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
 		t.Errorf("expected nil error for disabled plugin, got %v", err)
 	}
@@ -131,7 +153,10 @@ func TestGenerateForVersion_Enabled_VersionedMode(t *testing.T) {
 		Owner:    "testowner",
 		Repo:     "testrepo",
 	}
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Mock GetCommitsWithMetaFn to return test commits
 	originalFn := GetCommitsWithMetaFn
@@ -142,7 +167,7 @@ func TestGenerateForVersion_Enabled_VersionedMode(t *testing.T) {
 	}
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "minor")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "minor")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -181,7 +206,10 @@ func TestGenerateForVersion_Enabled_UnifiedMode(t *testing.T) {
 		Owner:    "testowner",
 		Repo:     "testrepo",
 	}
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Mock GetCommitsWithMetaFn
 	originalFn := GetCommitsWithMetaFn
@@ -192,7 +220,7 @@ func TestGenerateForVersion_Enabled_UnifiedMode(t *testing.T) {
 	}
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -228,7 +256,10 @@ func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
 		Owner:    "testowner",
 		Repo:     "testrepo",
 	}
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Mock GetCommitsWithMetaFn
 	originalFn := GetCommitsWithMetaFn
@@ -239,7 +270,7 @@ func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
 	}
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -258,7 +289,10 @@ func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
 func TestGenerateForVersion_NoCommits(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Enabled = true
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Mock GetCommitsWithMetaFn to return empty
 	originalFn := GetCommitsWithMetaFn
@@ -267,7 +301,7 @@ func TestGenerateForVersion_NoCommits(t *testing.T) {
 	}
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
 		t.Errorf("expected nil error for no commits, got %v", err)
 	}
@@ -286,7 +320,10 @@ func TestGenerateForVersion_UnknownMode(t *testing.T) {
 		Owner:    "testowner",
 		Repo:     "testrepo",
 	}
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Mock GetCommitsWithMetaFn
 	originalFn := GetCommitsWithMetaFn
@@ -297,7 +334,7 @@ func TestGenerateForVersion_UnknownMode(t *testing.T) {
 	}
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
-	err := plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err == nil {
 		t.Error("expected error for unknown mode")
 	}
@@ -317,10 +354,13 @@ func TestWriteChangelog_Versioned(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Mode = "versioned"
 	cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	content := "## v1.0.0\n\nTest content"
-	err := plugin.writeChangelog("v1.0.0", content)
+	err = plugin.writeChangelog("v1.0.0", content)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -337,10 +377,13 @@ func TestWriteChangelog_Unified(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Mode = "unified"
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	content := "## v1.0.0\n\nTest content"
-	err := plugin.writeChangelog("v1.0.0", content)
+	err = plugin.writeChangelog("v1.0.0", content)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -357,10 +400,13 @@ func TestWriteChangelog_Both(t *testing.T) {
 	cfg.Mode = "both"
 	cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	content := "## v1.0.0\n\nTest content"
-	err := plugin.writeChangelog("v1.0.0", content)
+	err = plugin.writeChangelog("v1.0.0", content)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

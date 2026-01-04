@@ -31,14 +31,20 @@ type ChangelogGeneratorPlugin struct {
 var _ ChangelogGenerator = (*ChangelogGeneratorPlugin)(nil)
 
 // NewChangelogGenerator creates a new changelog generator plugin.
-func NewChangelogGenerator(cfg *Config) *ChangelogGeneratorPlugin {
+func NewChangelogGenerator(cfg *Config) (*ChangelogGeneratorPlugin, error) {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
+
+	generator, err := NewGenerator(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create generator: %w", err)
+	}
+
 	return &ChangelogGeneratorPlugin{
 		config:    cfg,
-		generator: NewGenerator(cfg),
-	}
+		generator: generator,
+	}, nil
 }
 
 // Name returns the plugin name.

@@ -84,13 +84,13 @@ Post-bump actions (6-9) are non-blocking - failures are logged but don't fail th
 
 ## Plugin vs Extension Comparison
 
-| Feature           | Plugins                              | Extensions                        |
-| ----------------- | ------------------------------------ | --------------------------------- |
-| **Compilation**   | Built-in, compiled with CLI          | External scripts                  |
-| **Performance**   | Native Go, <1ms                      | Shell/Python/Node, ~50-100ms      |
+| Feature           | Plugins                              | Extensions                       |
+| ----------------- | ------------------------------------ | -------------------------------- |
+| **Compilation**   | Built-in, compiled with CLI          | External scripts                 |
+| **Performance**   | Native Go, <1ms                      | Shell/Python/Node, ~50-100ms     |
 | **Installation**  | None required                        | `verso extension install`        |
-| **Configuration** | `.verso.yaml` plugins section       | `.verso.yaml` extensions section |
-| **Use Case**      | Core version logic, validation, sync | Hook-based automation             |
+| **Configuration** | `.verso.yaml` plugins section        | `.verso.yaml` extensions section |
+| **Use Case**      | Core version logic, validation, sync | Hook-based automation            |
 
 ## Plugins + Extensions: Powerful Combinations
 
@@ -105,6 +105,7 @@ plugins:
   changelog-generator:
     enabled: true
     mode: "versioned"
+    format: "grouped" # or "keepachangelog" for Keep a Changelog spec
     repository:
       auto-detect: true
 ```
@@ -164,6 +165,7 @@ plugins:
   changelog-generator:
     enabled: true
     mode: "both"
+    format: "keepachangelog" # Keep a Changelog specification format
     repository:
       auto-detect: true
   tag-manager:

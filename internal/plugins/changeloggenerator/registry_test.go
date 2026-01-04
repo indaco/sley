@@ -13,7 +13,10 @@ func TestRegisterChangelogGenerator(t *testing.T) {
 
 	// Create a plugin
 	cfg := DefaultConfig()
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Register
 	registerChangelogGenerator(plugin)
@@ -35,8 +38,14 @@ func TestRegisterChangelogGenerator_Duplicate(t *testing.T) {
 
 	// Create two plugins
 	cfg := DefaultConfig()
-	plugin1 := NewChangelogGenerator(cfg)
-	plugin2 := NewChangelogGenerator(cfg)
+	plugin1, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error creating plugin1: %v", err)
+	}
+	plugin2, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error creating plugin2: %v", err)
+	}
 
 	// Register first
 	registerChangelogGenerator(plugin1)
@@ -72,7 +81,10 @@ func TestResetChangelogGenerator(t *testing.T) {
 
 	// Register
 	cfg := DefaultConfig()
-	plugin := NewChangelogGenerator(cfg)
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	registerChangelogGenerator(plugin)
 
 	// Verify registered
@@ -99,7 +111,10 @@ func TestRegister(t *testing.T) {
 		Mode:    "versioned",
 	}
 
-	Register(cfg)
+	err := Register(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	got := getChangelogGenerator()
 	if got == nil {
@@ -116,7 +131,10 @@ func TestRegister_NilConfig(t *testing.T) {
 	defer ResetChangelogGenerator()
 
 	// Should use default config when nil
-	Register(nil)
+	err := Register(nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	got := getChangelogGenerator()
 	if got == nil {

@@ -1,6 +1,9 @@
 package plugins
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/indaco/verso/internal/config"
 	"github.com/indaco/verso/internal/plugins/auditlog"
 	"github.com/indaco/verso/internal/plugins/changeloggenerator"
@@ -72,7 +75,9 @@ func registerChangelogParser(plugins *config.PluginConfig) {
 
 func registerChangelogGenerator(plugins *config.PluginConfig) {
 	if plugins.ChangelogGenerator != nil && plugins.ChangelogGenerator.Enabled {
-		changeloggenerator.Register(plugins.ChangelogGenerator)
+		if err := changeloggenerator.Register(plugins.ChangelogGenerator); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to register changelog generator: %v\n", err)
+		}
 	}
 }
 

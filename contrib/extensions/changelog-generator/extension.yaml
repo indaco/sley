@@ -1,8 +1,0 @@
-name: changelog-generator
-version: 1.0.0
-description: Automatically updates CHANGELOG.md on version bumps
-author: verso
-repository: https://github.com/indaco/verso/tree/main/contrib/extensions/changelog-generator
-entry: hook.sh
-hooks:
-  - post-bump

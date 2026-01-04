@@ -10,6 +10,11 @@ type Config struct {
 	// Mode determines output style: "versioned", "unified", or "both".
 	Mode string
 
+	// Format determines the changelog format: "grouped" or "keepachangelog".
+	// "grouped" (default): Current behavior with custom group labels
+	// "keepachangelog": Keep a Changelog specification format
+	Format string
+
 	// ChangesDir is the directory for version-specific changelog files.
 	ChangesDir string
 
@@ -73,6 +78,7 @@ func DefaultConfig() *Config {
 	return &Config{
 		Enabled:       false,
 		Mode:          "versioned",
+		Format:        "grouped",
 		ChangesDir:    ".changes",
 		ChangelogPath: "CHANGELOG.md",
 		Repository: &RepositoryConfig{
@@ -123,6 +129,7 @@ func FromConfigStruct(cfg *config.ChangelogGeneratorConfig) *Config {
 	result := &Config{
 		Enabled:                cfg.Enabled,
 		Mode:                   cfg.GetMode(),
+		Format:                 cfg.GetFormat(),
 		ChangesDir:             cfg.GetChangesDir(),
 		ChangelogPath:          cfg.GetChangelogPath(),
 		HeaderTemplate:         cfg.HeaderTemplate,

@@ -9,7 +9,10 @@ import (
 
 func TestNewGenerator(t *testing.T) {
 	cfg := DefaultConfig()
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	if g == nil {
 		t.Fatal("expected non-nil generator")
@@ -67,8 +70,6 @@ func TestGetProviderFromHost(t *testing.T) {
 }
 
 func TestBuildCompareURL(t *testing.T) {
-	g := NewGenerator(DefaultConfig())
-
 	tests := []struct {
 		name     string
 		remote   *RemoteInfo
@@ -129,7 +130,7 @@ func TestBuildCompareURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := g.buildCompareURL(tt.remote, tt.prev, tt.curr)
+			got := buildCompareURL(tt.remote, tt.prev, tt.curr)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildCompareURL() = %q, expected to contain %q", got, tt.contains)
 			}
@@ -138,7 +139,6 @@ func TestBuildCompareURL(t *testing.T) {
 }
 
 func TestBuildCommitURL(t *testing.T) {
-	g := NewGenerator(DefaultConfig())
 
 	tests := []struct {
 		name     string
@@ -192,7 +192,7 @@ func TestBuildCommitURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := g.buildCommitURL(tt.remote, tt.hash)
+			got := buildCommitURL(tt.remote, tt.hash)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildCommitURL() = %q, expected to contain %q", got, tt.contains)
 			}
@@ -201,7 +201,6 @@ func TestBuildCommitURL(t *testing.T) {
 }
 
 func TestBuildPRURL(t *testing.T) {
-	g := NewGenerator(DefaultConfig())
 
 	tests := []struct {
 		name     string
@@ -249,7 +248,7 @@ func TestBuildPRURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := g.buildPRURL(tt.remote, tt.prNumber)
+			got := buildPRURL(tt.remote, tt.prNumber)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildPRURL() = %q, expected to contain %q", got, tt.contains)
 			}
@@ -258,7 +257,6 @@ func TestBuildPRURL(t *testing.T) {
 }
 
 func TestFormatCommitEntry(t *testing.T) {
-	g := NewGenerator(DefaultConfig())
 	remote := &RemoteInfo{Provider: "github", Host: "github.com", Owner: "owner", Repo: "repo"}
 
 	tests := []struct {
@@ -317,7 +315,7 @@ func TestFormatCommitEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := g.formatCommitEntry(tt.commit, tt.remote)
+			got := formatCommitEntry(tt.commit, tt.remote)
 			for _, want := range tt.contains {
 				if !strings.Contains(got, want) {
 					t.Errorf("formatCommitEntry() = %q, expected to contain %q", got, want)
@@ -328,7 +326,10 @@ func TestFormatCommitEntry(t *testing.T) {
 }
 
 func TestWriteContributorEntry(t *testing.T) {
-	g := NewGenerator(DefaultConfig())
+	g, err := NewGenerator(DefaultConfig())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	remote := &RemoteInfo{Provider: "github", Host: "github.com", Owner: "owner", Repo: "repo"}
 
 	tests := []struct {
@@ -380,7 +381,10 @@ func TestGenerateVersionChangelog(t *testing.T) {
 		Repo:     "testrepo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	commits := []CommitInfo{
 		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice", AuthorEmail: "alice@example.com"},
@@ -420,7 +424,10 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 		Repo:     "testrepo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: true}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	commits := []CommitInfo{
 		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice", AuthorEmail: "alice@users.noreply.github.com"},
@@ -442,7 +449,10 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 
 func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
 	cfg := DefaultConfig()
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	content, err := g.GenerateVersionChangelog("v1.0.0", "v0.9.0", []CommitInfo{})
 	if err != nil {
@@ -459,10 +469,13 @@ func TestWriteVersionedFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	content := "## v1.0.0\n\nTest content"
-	err := g.WriteVersionedFile("v1.0.0", content)
+	err = g.WriteVersionedFile("v1.0.0", content)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -474,9 +487,9 @@ func TestWriteVersionedFile(t *testing.T) {
 	}
 
 	// Check content
-	data, err := os.ReadFile(expectedPath)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
+	data, readErr := os.ReadFile(expectedPath)
+	if readErr != nil {
+		t.Fatalf("failed to read file: %v", readErr)
 	}
 	if string(data) != content {
 		t.Errorf("file content = %q, want %q", string(data), content)
@@ -487,10 +500,13 @@ func TestWriteUnifiedChangelog_New(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	newContent := "## v1.0.0\n\nNew content"
-	err := g.WriteUnifiedChangelog(newContent)
+	err = g.WriteUnifiedChangelog(newContent)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -501,9 +517,9 @@ func TestWriteUnifiedChangelog_New(t *testing.T) {
 	}
 
 	// Check content includes header
-	data, err := os.ReadFile(cfg.ChangelogPath)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
+	data, readErr := os.ReadFile(cfg.ChangelogPath)
+	if readErr != nil {
+		t.Fatalf("failed to read file: %v", readErr)
 	}
 	content := string(data)
 	if !strings.Contains(content, "# Changelog") {
@@ -518,7 +534,10 @@ func TestWriteUnifiedChangelog_Existing(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Create existing changelog
 	existingContent := `# Changelog
@@ -533,15 +552,15 @@ Previous content
 
 	// Write new content
 	newContent := "## v1.0.0\n\nNew content\n\n"
-	err := g.WriteUnifiedChangelog(newContent)
+	err = g.WriteUnifiedChangelog(newContent)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	// Check content
-	data, err := os.ReadFile(cfg.ChangelogPath)
-	if err != nil {
-		t.Fatalf("failed to read file: %v", err)
+	data, readErr := os.ReadFile(cfg.ChangelogPath)
+	if readErr != nil {
+		t.Fatalf("failed to read file: %v", readErr)
 	}
 	content := string(data)
 
@@ -555,7 +574,10 @@ Previous content
 
 func TestGetDefaultHeader(t *testing.T) {
 	cfg := DefaultConfig()
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	header := g.getDefaultHeader()
 
@@ -577,7 +599,10 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.HeaderTemplate = templatePath
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	header := g.getDefaultHeader()
 
@@ -588,7 +613,10 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 
 func TestInsertAfterHeader(t *testing.T) {
 	cfg := DefaultConfig()
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	existing := `# Changelog
 
@@ -639,7 +667,10 @@ func TestResolveRemote_FromConfig(t *testing.T) {
 		Owner:    "mygroup",
 		Repo:     "myproject",
 	}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	remote, err := g.resolveRemote()
 	if err != nil {
@@ -664,7 +695,10 @@ func TestResolveRemote_FillDefaults(t *testing.T) {
 		Owner:    "owner",
 		Repo:     "repo",
 	}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	remote, err := g.resolveRemote()
 	if err != nil {
@@ -699,17 +733,20 @@ func TestMergeVersionedFiles(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	err := g.MergeVersionedFiles()
+	err = g.MergeVersionedFiles()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	// Check merged file
-	data, err := os.ReadFile(cfg.ChangelogPath)
-	if err != nil {
-		t.Fatalf("failed to read changelog: %v", err)
+	data, readErr := os.ReadFile(cfg.ChangelogPath)
+	if readErr != nil {
+		t.Fatalf("failed to read changelog: %v", readErr)
 	}
 	content := string(data)
 
@@ -730,10 +767,13 @@ func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Should not error with empty directory
-	err := g.MergeVersionedFiles()
+	err = g.MergeVersionedFiles()
 	if err != nil {
 		t.Errorf("unexpected error for empty dir: %v", err)
 	}
@@ -742,10 +782,13 @@ func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
 func TestMergeVersionedFiles_NonexistentDir(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/path"
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Should error with non-existent directory
-	err := g.MergeVersionedFiles()
+	err = g.MergeVersionedFiles()
 	if err == nil {
 		t.Error("expected error for non-existent dir")
 	}
@@ -770,7 +813,10 @@ func TestResolveRemote_AutoDetect(t *testing.T) {
 	cfg.Repository = &RepositoryConfig{
 		AutoDetect: true,
 	}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	remote, err := g.resolveRemote()
 	if err != nil {
@@ -785,9 +831,12 @@ func TestResolveRemote_AutoDetect(t *testing.T) {
 func TestResolveRemote_NoConfig(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Repository = nil
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	_, err := g.resolveRemote()
+	_, err = g.resolveRemote()
 	if err == nil {
 		t.Error("expected error when repository config is nil")
 	}
@@ -801,7 +850,10 @@ func TestResolveRemote_Cached(t *testing.T) {
 		Owner:    "owner",
 		Repo:     "repo",
 	}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// First call
 	remote1, err := g.resolveRemote()
@@ -823,9 +875,12 @@ func TestResolveRemote_Cached(t *testing.T) {
 func TestWriteVersionedFile_Error(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/readonly/path"
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	err := g.WriteVersionedFile("v1.0.0", "content")
+	err = g.WriteVersionedFile("v1.0.0", "content")
 	if err == nil {
 		t.Error("expected error for non-writable path")
 	}
@@ -834,9 +889,12 @@ func TestWriteVersionedFile_Error(t *testing.T) {
 func TestWriteUnifiedChangelog_Error(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = "/nonexistent/readonly/CHANGELOG.md"
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	err := g.WriteUnifiedChangelog("content")
+	err = g.WriteUnifiedChangelog("content")
 	if err == nil {
 		t.Error("expected error for non-writable path")
 	}
@@ -846,7 +904,10 @@ func TestGenerateVersionChangelog_NoRemote(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Repository = nil
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	commits := []CommitInfo{
 		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice", AuthorEmail: "alice@example.com"},
@@ -877,7 +938,10 @@ func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
 		Repo:     "repo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	commits := []CommitInfo{
 		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice", AuthorEmail: "alice@example.com"},
@@ -902,7 +966,10 @@ func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
 
 func TestInsertAfterHeader_NoVersionFound(t *testing.T) {
 	cfg := DefaultConfig()
-	g := NewGenerator(cfg)
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
 	// Existing content with no version headers
 	existing := `# Changelog
