@@ -150,6 +150,7 @@ COMMANDS:
    show              Display current version
    set               Set the version manually
    bump              Bump semantic version (patch, minor, major)
+   changelog         Manage changelog files
    pre               Set pre-release label (e.g., alpha, beta.1)
    doctor, validate  Validate the .version file
    init              Initialize a .version file (auto-detects Git tag or starts from 0.1.0)
