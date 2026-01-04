@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/indaco/sley/cmd/sley/bumpcmd"
+	"github.com/indaco/sley/cmd/sley/changelogcmd"
 	"github.com/indaco/sley/cmd/sley/doctorcmd"
 	"github.com/indaco/sley/cmd/sley/extensioncmd"
 	"github.com/indaco/sley/cmd/sley/initcmd"
@@ -53,6 +54,7 @@ func newCLI(cfg *config.Config) *cli.Command {
 			showcmd.Run(cfg),
 			setcmd.Run(cfg),
 			bumpcmd.Run(cfg),
+			changelogcmd.Run(cfg),
 			precmd.Run(),
 			doctorcmd.Run(),
 			initcmd.Run(),

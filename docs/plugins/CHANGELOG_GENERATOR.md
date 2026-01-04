@@ -278,6 +278,157 @@ This adds a section at the end of the changelog:
 - Bump version ([def456](https://github.com/owner/repo/commit/def456))
 ```
 
+## Merging Versioned Files
+
+If you've been using versioned mode and want to create a unified CHANGELOG.md, use the built-in merge command:
+
+```bash
+sley changelog merge
+```
+
+This command combines all versioned changelog files from the `.changes` directory into a single CHANGELOG.md file, sorted by version (newest first).
+
+### Options
+
+| Flag                | Default        | Description                          |
+| ------------------- | -------------- | ------------------------------------ |
+| `--changes-dir`     | `.changes`     | Directory containing versioned files |
+| `--output`          | `CHANGELOG.md` | Output path for unified changelog    |
+| `--header-template` | (built-in)     | Path to custom header template file  |
+
+### Examples
+
+Merge with default settings:
+
+```bash
+sley changelog merge
+```
+
+Merge with custom paths:
+
+```bash
+sley changelog merge --changes-dir .changes --output CHANGELOG.md
+```
+
+Merge with custom header:
+
+```bash
+sley changelog merge --header-template .changes/header.md
+```
+
+### Behavior
+
+1. Reads all `.changes/v*.md` files
+2. Sorts by version (newest first)
+3. Prepends default or custom header
+4. Writes to CHANGELOG.md
+
+The command respects configuration from `.sley.yaml` but flags take precedence:
+
+```yaml
+plugins:
+  changelog-generator:
+    enabled: true
+    changes-dir: ".changes"
+    changelog-path: "CHANGELOG.md"
+    header-template: ".changes/header.md"
+```
+
+## Alternative: Changie Integration
+
+For teams that prefer [changie](https://changie.dev/), sley's versioned output is fully compatible with changie's merge workflow. Changie is a popular changelog management tool that provides additional features like interactive entry creation and advanced templating.
+
+### Why Use Changie?
+
+- Interactive changelog entry creation
+- Advanced templating with custom formats
+- Project-specific changelog workflows
+- Built-in validation and linting
+- Team collaboration features
+
+### Setup
+
+Install changie:
+
+```bash
+# macOS
+brew install changie
+
+# Or use go install
+go install github.com/miniscruff/changie@latest
+```
+
+Initialize changie in your project:
+
+```bash
+changie init
+```
+
+### Configuration
+
+Configure changie to work with sley's versioned files. Edit `.changie.yaml`:
+
+```yaml
+changesDir: .changes
+outputPath: CHANGELOG.md
+headerPath: .changes/header.md
+
+# Configure to read sley's versioned files
+kinds:
+  - label: Enhancements
+  - label: Fixes
+  - label: Documentation
+  - label: Refactors
+  - label: Performance
+  - label: Tests
+  - label: Chores
+
+# Custom format matching sley's output
+versionFormat: '## {{.Version}} - {{.Time.Format "2006-01-02"}}'
+kindFormat: "### {{.Kind}}"
+changeFormat: "- {{.Body}}"
+```
+
+### Workflow
+
+1. Configure sley to use versioned mode:
+
+```yaml
+plugins:
+  changelog-generator:
+    enabled: true
+    mode: "versioned"
+    changes-dir: ".changes"
+```
+
+2. Bump version with sley (generates `.changes/vX.Y.Z.md`):
+
+```bash
+sley bump patch
+```
+
+3. Merge changelog with changie:
+
+```bash
+changie merge
+```
+
+This creates or updates CHANGELOG.md with all versioned entries.
+
+### When to Use Each Tool
+
+Use **sley's built-in merge**:
+
+- Quick one-command changelog management
+- Prefer minimal tooling
+
+Use **changie**:
+
+- Complex projects with custom changelog formats
+- Interactive changelog workflows
+- Advanced templating requirements
+- Team collaboration on changelog entries
+
 ## Output Modes
 
 ### Versioned Mode (Default)
