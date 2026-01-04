@@ -377,7 +377,11 @@ Note: This also skips pre-release hooks.
 
 See the `contrib/extensions/` directory for reference implementations:
 
-- **changelog-generator**: Automatically updates CHANGELOG.md on version bumps
+- **commit-validator**: Validates commit messages follow conventional commit format
+- **docker-tag-sync**: Syncs version to Docker image tags
+- **git-tagger**: Creates git tags on version bumps
+- **package-sync**: Syncs version across package manifest files
+- **version-policy**: Enforces custom versioning policies
 
 ## Troubleshooting
 

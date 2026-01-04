@@ -446,6 +446,7 @@ plugins:
   changelog-generator:
     enabled: true
     mode: "versioned"
+    format: "grouped" # or "keepachangelog" for Keep a Changelog spec
     repository:
       auto-detect: true
 ```
