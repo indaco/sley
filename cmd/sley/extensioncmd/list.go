@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/indaco/sley/api/v0/extensions"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/extensions"
 	"github.com/urfave/cli/v3"
 )
 
@@ -22,24 +22,15 @@ func listCmd() *cli.Command {
 
 // runExtenstionList lists installed extensions.
 func runExtenstionList() error {
-	// Load the configuration file
 	cfg, err := config.LoadConfigFn()
 	if err != nil {
-		// Print the error to stdout and return
 		fmt.Println("failed to load configuration:", err)
 		return nil
 	}
 
-	// If there are no plugins, notify the user
 	if len(cfg.Extensions) == 0 {
 		fmt.Println("No extensions registered.")
 		return nil
-	}
-
-	// Create a lookup map of metadata
-	metadataMap := map[string]extensions.Extension{}
-	for _, meta := range extensions.AllExtensions() {
-		metadataMap[meta.Name()] = meta
 	}
 
 	fmt.Println("List of Registered Extensions:")
@@ -47,16 +38,18 @@ func runExtenstionList() error {
 	fmt.Println("  NAME              VERSION     ENABLED   DESCRIPTION")
 	fmt.Println("  ----------------------------------------------------------")
 
-	for _, p := range cfg.Extensions {
-		meta, ok := metadataMap[p.Name]
+	for _, ext := range cfg.Extensions {
 		version := "?"
-		desc := "(no metadata)"
-		if ok {
-			version = meta.Version()
-			desc = meta.Description()
+		desc := "(no manifest)"
+
+		if ext.Path != "" {
+			if manifest, err := extensions.LoadExtensionManifestFn(ext.Path); err == nil {
+				version = manifest.Version
+				desc = manifest.Description
+			}
 		}
 
-		fmt.Printf("  %-17s %-10s %-9v %s\n", p.Name, version, p.Enabled, desc)
+		fmt.Printf("  %-17s %-10s %-9v %s\n", ext.Name, version, ext.Enabled, desc)
 	}
 
 	fmt.Println()

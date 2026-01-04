@@ -4,63 +4,6 @@ import (
 	"testing"
 )
 
-func TestMockPlugin(t *testing.T) {
-	mock := MockPlugin{
-		NameValue:        "test-plugin",
-		VersionValue:     "v1.0.0",
-		DescriptionValue: "A test plugin",
-	}
-
-	if got := mock.Name(); got != "test-plugin" {
-		t.Errorf("Name() = %q, want %q", got, "test-plugin")
-	}
-
-	if got := mock.Version(); got != "v1.0.0" {
-		t.Errorf("Version() = %q, want %q", got, "v1.0.0")
-	}
-
-	if got := mock.Description(); got != "A test plugin" {
-		t.Errorf("Description() = %q, want %q", got, "A test plugin")
-	}
-}
-
-func TestMockExtension(t *testing.T) {
-	mock := MockExtension{
-		NameValue:        "test-extension",
-		VersionValue:     "v2.0.0",
-		DescriptionValue: "A test extension",
-		HooksValue:       []string{"pre-bump", "post-bump"},
-		EntryValue:       "run.sh",
-	}
-
-	if got := mock.Name(); got != "test-extension" {
-		t.Errorf("Name() = %q, want %q", got, "test-extension")
-	}
-
-	if got := mock.Version(); got != "v2.0.0" {
-		t.Errorf("Version() = %q, want %q", got, "v2.0.0")
-	}
-
-	if got := mock.Description(); got != "A test extension" {
-		t.Errorf("Description() = %q, want %q", got, "A test extension")
-	}
-
-	hooks := mock.Hooks()
-	if len(hooks) != 2 {
-		t.Errorf("Hooks() length = %d, want 2", len(hooks))
-	}
-	if hooks[0] != "pre-bump" {
-		t.Errorf("Hooks()[0] = %q, want %q", hooks[0], "pre-bump")
-	}
-	if hooks[1] != "post-bump" {
-		t.Errorf("Hooks()[1] = %q, want %q", hooks[1], "post-bump")
-	}
-
-	if got := mock.Entry(); got != "run.sh" {
-		t.Errorf("Entry() = %q, want %q", got, "run.sh")
-	}
-}
-
 func TestMockCommitParser(t *testing.T) {
 	t.Run("successful parse", func(t *testing.T) {
 		mock := MockCommitParser{

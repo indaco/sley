@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/indaco/sley/api/v0/extensions"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/testutils"
 	"github.com/urfave/cli/v3"
@@ -237,7 +236,7 @@ extensions:
 		"true",
 		"mock-extension-2",
 		"false",
-		"(no metadata)",
+		"(no manifest)",
 	}
 
 	for _, expected := range expectedRows {
@@ -287,31 +286,40 @@ func TestExtensionListCmd_LoadConfigError(t *testing.T) {
 	}
 }
 
-func TestExtensionListCmd_WithRegisteredMetadata(t *testing.T) {
+func TestExtensionListCmd_WithManifest(t *testing.T) {
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".sley.yaml")
 
 	extensionName := "test-extension"
+	extensionDir := filepath.Join(tmpDir, extensionName)
 
-	// Write .sley.yaml with extension that matches registered metadata
+	// Create extension directory with manifest
+	if err := os.MkdirAll(extensionDir, 0755); err != nil {
+		t.Fatalf("failed to create extension directory: %v", err)
+	}
+
+	manifestContent := `name: test-extension
+version: 9.9.9
+description: Test extension with manifest
+author: Test Author
+repository: https://github.com/test/repo
+entry: hook.sh
+hooks:
+  - post-bump
+`
+	if err := os.WriteFile(filepath.Join(extensionDir, "extension.yaml"), []byte(manifestContent), 0644); err != nil {
+		t.Fatalf("failed to write extension manifest: %v", err)
+	}
+
+	// Write .sley.yaml with extension pointing to the directory
 	content := fmt.Sprintf(`extensions:
   - name: %s
-    path: /some/path
+    path: %s
     enabled: true
-`, extensionName)
+`, extensionName, extensionDir)
 	if err := os.WriteFile(configPath, []byte(content), 0644); err != nil {
 		t.Fatalf("failed to write config file: %v", err)
 	}
-
-	// Register mock metadata plugin
-	extensions.ResetExtension()
-	t.Cleanup(extensions.ResetExtension)
-
-	extensions.RegisterExtension(testutils.MockExtension{
-		NameValue:        extensionName,
-		VersionValue:     "9.9.9",
-		DescriptionValue: "Registered test extension",
-	})
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: configPath}
@@ -324,12 +332,12 @@ func TestExtensionListCmd_WithRegisteredMetadata(t *testing.T) {
 		t.Fatalf("Failed to capture stdout: %v", err)
 	}
 
-	// Ensure metadata was printed
+	// Ensure metadata from manifest was printed
 	expectedValues := []string{
 		extensionName,
 		"9.9.9",
 		"true",
-		"Registered test extension",
+		"Test extension with manifest",
 	}
 	for _, expected := range expectedValues {
 		if !strings.Contains(output, expected) {
