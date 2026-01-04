@@ -2,6 +2,10 @@ name: Release
 on:
   release:
     types: [created]
+
+env:
+  GO_VERSION: "1.25"
+
 jobs:
   create-release-notes:
     name: release-notes
@@ -39,7 +43,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
           check-latest: true
 
       - name: Run GoReleaser
@@ -49,4 +54,4 @@ jobs:
           version: latest
           args: release --clean
         env:
-          GITHUB_TOKEN: ${{ secrets.SLEY_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_TOKEN }}
