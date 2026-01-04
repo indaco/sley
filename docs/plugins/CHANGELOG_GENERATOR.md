@@ -8,24 +8,14 @@ Built-in, **disabled by default**
 
 ## Plugin vs Extension
 
-There are two changelog generation options in verso:
+The built-in plugin supports multiple changelog formats making the shell extension obsolete.
 
-| Feature         | Built-in Plugin               | Shell Extension                          |
-| --------------- | ----------------------------- | ---------------------------------------- |
-| Location        | `plugins.changelog-generator` | `contrib/extensions/changelog-generator` |
-| Commit parsing  | Full conventional commits     | None                                     |
-| Commit grouping | By type (feat, fix, etc.)     | N/A                                      |
-| Commit/PR links | Yes (multi-provider)          | No                                       |
-| Contributors    | Yes                           | No                                       |
-| Custom icons    | Yes                           | No                                       |
-| Customization   | Highly configurable           | Edit shell script                        |
-| Use case        | Production changelogs         | Simple logging / template                |
-
-**Recommendation**: Use the **built-in plugin** for real changelogs. Use the extension only as a simple template or for minimal "version bumped" logging.
+**Note**: The shell extension at `contrib/extensions/changelog-generator` has been deprecated in favor of the built-in plugin's "keepachangelog" format option.
 
 ## Features
 
 - Automatic changelog generation from conventional commits
+- Multiple changelog formats: grouped (default) or Keep a Changelog
 - Multiple output modes: versioned files, unified CHANGELOG.md, or both
 - Commit grouping by type (feat, fix, docs, etc.) with customizable labels
 - GitHub, GitLab, Codeberg, Bitbucket, and custom git hosting support
@@ -33,7 +23,7 @@ There are two changelog generation options in verso:
 - Commit and PR/MR links
 - Contributors section
 - Configurable exclude patterns for filtering commits
-- Optional icons/emojis per commit group
+- Optional icons/emojis per commit group (grouped format only)
 
 ## How It Works
 
@@ -52,6 +42,7 @@ plugins:
   changelog-generator:
     enabled: true
     mode: "versioned" # "versioned", "unified", or "both"
+    format: "grouped" # "grouped" or "keepachangelog"
     changes-dir: ".changes" # Directory for versioned files
     changelog-path: "CHANGELOG.md" # Path for unified changelog
     repository:
@@ -72,19 +63,20 @@ plugins:
 
 ### Configuration Options
 
-| Option                     | Type   | Default          | Description                                         |
-| -------------------------- | ------ | ---------------- | --------------------------------------------------- |
-| `enabled`                  | bool   | false            | Enable/disable the plugin                           |
-| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both            |
-| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files             |
-| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                      |
-| `header-template`          | string | (built-in)       | Path to custom header template                      |
-| `repository`               | object | auto-detect      | Git repository configuration for links              |
-| `groups`                   | array  | (defaults)       | Full custom commit grouping rules                   |
-| `group-icons`              | map    | (none)           | Add icons to default groups by label                |
-| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude               |
-| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes" |
-| `contributors`             | object | enabled          | Contributors section configuration                  |
+| Option                     | Type   | Default          | Description                                                          |
+| -------------------------- | ------ | ---------------- | -------------------------------------------------------------------- |
+| `enabled`                  | bool   | false            | Enable/disable the plugin                                            |
+| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                             |
+| `format`                   | string | `"grouped"`      | Changelog format: "grouped" or "keepachangelog"                      |
+| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                              |
+| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                       |
+| `header-template`          | string | (built-in)       | Path to custom header template                                       |
+| `repository`               | object | auto-detect      | Git repository configuration for links                               |
+| `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format) |
+| `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)     |
+| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                |
+| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                  |
+| `contributors`             | object | enabled          | Contributors section configuration                                   |
 
 ### Repository Configuration
 
@@ -109,9 +101,87 @@ When `auto-detect: true`, the plugin parses the git remote URL and automatically
 - SourceHut (sr.ht)
 - Custom/self-hosted instances
 
+### Format Configuration
+
+The plugin supports two changelog formats:
+
+#### Format: `grouped` (Default)
+
+The default format groups commits by their configured labels and supports custom icons:
+
+```yaml
+format: "grouped"
+```
+
+Example output:
+
+```markdown
+## v1.2.0 - 2026-01-04
+
+[compare changes](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
+
+### Enhancements
+
+- **cli:** Add changelog generator plugin ([abc123](https://github.com/owner/repo/commit/abc123))
+
+### Fixes
+
+- **parser:** Handle edge case ([ghi789](https://github.com/owner/repo/commit/ghi789))
+```
+
+**Features**:
+
+- Custom group labels via `groups` configuration
+- Optional icons via `group-icons` or `groups[].icon`
+- Compare links between versions
+- Commit and PR/MR links
+
+#### Format: `keepachangelog`
+
+Follows the [Keep a Changelog](https://keepachangelog.com) specification with standard sections:
+
+```yaml
+format: "keepachangelog"
+```
+
+Example output:
+
+```markdown
+## [1.2.0] - 2026-01-04
+
+### Added
+
+- **cli:** Add changelog generator plugin ([abc123](https://github.com/owner/repo/commit/abc123))
+
+### Fixed
+
+- **parser:** Handle edge case ([ghi789](https://github.com/owner/repo/commit/ghi789))
+```
+
+**Features**:
+
+- Standard sections: Added, Changed, Deprecated, Removed, Fixed, Security, Breaking Changes
+- Version header with brackets (no "v" prefix)
+- Commit and PR/MR links
+- No compare links (not part of the spec)
+- Custom group configuration is ignored
+
+**Commit type mapping**:
+
+| Conventional Commit Type               | Keep a Changelog Section |
+| -------------------------------------- | ------------------------ |
+| `feat`                                 | Added                    |
+| `fix`                                  | Fixed                    |
+| `refactor`, `perf`, `style`            | Changed                  |
+| `revert`                               | Removed                  |
+| `docs`, `test`, `chore`, `ci`, `build` | (skipped)                |
+| Any type with `!` or `BREAKING CHANGE` | Breaking Changes         |
+
 ### Groups Configuration
 
-There are two ways to configure commit groups:
+**Note**: Group configuration only applies when using the `grouped` format. The `keepachangelog` format uses fixed standard sections and ignores custom groups.
+
+There are two ways to configure commit groups (for `grouped` format):
 
 #### Option 1: Add Icons to Defaults (Recommended)
 
