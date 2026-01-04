@@ -55,9 +55,9 @@ reportcard:
     @echo "* Running goreportcard-cli..."
     goreportcard-cli -v
 
-# Run all tests and generate coverage report
+# Run all tests and print code coverage value
 test:
-    @echo "* Run all tests and generate coverage report."
+    @echo "* Run all tests and print code coverage value."
     {{ go }} test $({{ go }} list ./... | grep -Ev 'internal/testutils') -coverprofile=coverage.txt
     @echo "* Total Coverage"
     {{ go }} tool cover -func=coverage.txt | grep total | awk '{print $3}'
@@ -67,6 +67,11 @@ test-force:
     @echo "* Clean go tests cache and run all tests."
     {{ go }} clean -testcache
     just test
+
+# Run all tests and generate coverage report.
+test-coverage:
+    @echo "* Run all tests and generate coverage report."
+    go test -count=1 -timeout 30s $(go list ./... | grep -Ev 'internal/testutils') -covermode=atomic -coverprofile=coverage.txt
 
 # Run modernize, lint, and reportcard
 check: modernize lint reportcard
