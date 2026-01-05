@@ -601,6 +601,49 @@ plugins:
       enabled: true
 ```
 
+### Contributors Configuration
+
+The contributors section lists all unique contributors for a version. You can customize the output format using a Go template:
+
+```yaml
+contributors:
+  enabled: true
+  format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})" # default
+  icon: "" # optional icon before "Contributors" header
+```
+
+#### Format Template Variables
+
+| Variable        | Description                                      |
+| --------------- | ------------------------------------------------ |
+| `{{.Name}}`     | Full name from git (e.g., "Alice Smith")         |
+| `{{.Username}}` | Username extracted from email or derived         |
+| `{{.Email}}`    | Email address                                    |
+| `{{.Host}}`     | Git host for URL generation (e.g., "github.com") |
+
+#### Format Examples
+
+Username only (default):
+
+```yaml
+format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+# Output: - [@alice](https://github.com/alice)
+```
+
+Full name with username link:
+
+```yaml
+format: "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))"
+# Output: - Alice Smith ([@alice](https://github.com/alice))
+```
+
+Simple username without link:
+
+```yaml
+format: "- @{{.Username}}"
+# Output: - @alice
+```
+
 ## Integration with Other Plugins
 
 ### With Tag Manager
@@ -739,6 +782,13 @@ Ensure contributors section is enabled:
 contributors:
   enabled: true
 ```
+
+## Acknowledgments
+
+This plugin took inspiration from:
+
+- [changie](https://changie.dev/) - Automated changelog tool for preparing releases
+- [git-cliff](https://git-cliff.org/) - Highly customizable changelog generator
 
 ## See Also
 

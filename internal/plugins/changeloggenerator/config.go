@@ -89,7 +89,7 @@ func DefaultConfig() *Config {
 		ExcludePatterns: DefaultExcludePatterns(),
 		Contributors: &ContributorsConfig{
 			Enabled: true,
-			Format:  "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
+			Format:  "- [@{{.Username}}](https://{{.Host}}/{{.Username}})",
 		},
 	}
 }

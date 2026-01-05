@@ -1,10 +1,12 @@
 package changeloggenerator
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
 
 // Generator handles changelog content generation.
@@ -145,18 +147,61 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	}
 }
 
-// writeContributorEntry writes a contributor entry to the builder.
+// contributorTemplateData holds data for contributor template rendering.
+type contributorTemplateData struct {
+	Name     string
+	Username string
+	Email    string
+	Host     string
+}
+
+// writeContributorEntry writes a contributor entry to the builder using the configured format template.
 func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contributor, remote *RemoteInfo) {
+	// Determine the host for URL generation
+	host := ""
 	if remote != nil {
-		host := remote.Host
-		if contrib.Host != "" {
-			host = contrib.Host
-		}
-		fmt.Fprintf(sb, "- %s ([@%s](https://%s/%s))\n",
-			contrib.Name, contrib.Username, host, contrib.Username)
-	} else {
-		fmt.Fprintf(sb, "- %s\n", contrib.Name)
+		host = remote.Host
 	}
+	if contrib.Host != "" {
+		host = contrib.Host
+	}
+
+	// If no host available, fall back to simple format
+	if host == "" {
+		fmt.Fprintf(sb, "- @%s\n", contrib.Username)
+		return
+	}
+
+	// Get format template
+	format := g.config.Contributors.Format
+	if format == "" {
+		format = "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("contributor").Parse(format)
+	if err != nil {
+		// Fallback on template error
+		fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
+		return
+	}
+
+	data := contributorTemplateData{
+		Name:     contrib.Name,
+		Username: contrib.Username,
+		Email:    contrib.Email,
+		Host:     host,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		// Fallback on execution error
+		fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
+		return
+	}
+
+	sb.WriteString(buf.String())
+	sb.WriteString("\n")
 }
 
 // WriteVersionedFile writes the changelog to a version-specific file.

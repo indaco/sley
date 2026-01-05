@@ -342,19 +342,19 @@ func TestWriteContributorEntry(t *testing.T) {
 			name:     "With remote",
 			contrib:  Contributor{Name: "Alice", Username: "alice", Host: "github.com"},
 			remote:   remote,
-			contains: []string{"Alice", "@alice", "github.com/alice"},
+			contains: []string{"@alice", "github.com/alice"},
 		},
 		{
 			name:     "Without remote",
 			contrib:  Contributor{Name: "Bob", Username: "bob"},
 			remote:   nil,
-			contains: []string{"- Bob"},
+			contains: []string{"- @bob"},
 		},
 		{
 			name:     "Contributor with different host",
 			contrib:  Contributor{Name: "Charlie", Username: "charlie", Host: "gitlab.com"},
 			remote:   remote,
-			contains: []string{"Charlie", "@charlie", "gitlab.com/charlie"},
+			contains: []string{"@charlie", "gitlab.com/charlie"},
 		},
 	}
 
@@ -442,8 +442,9 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 	if !strings.Contains(content, "### Contributors") {
 		t.Error("expected contributors section")
 	}
-	if !strings.Contains(content, "Alice") {
-		t.Error("expected Alice in contributors")
+	// Username is extracted from noreply email: alice@users.noreply.github.com -> alice
+	if !strings.Contains(content, "@alice") {
+		t.Error("expected @alice in contributors")
 	}
 }
 
@@ -474,8 +475,51 @@ func TestGenerateVersionChangelog_WithContributorsIcon(t *testing.T) {
 	if !strings.Contains(content, "### ❤️ Contributors") {
 		t.Error("expected contributors section with icon")
 	}
-	if !strings.Contains(content, "Alice") {
-		t.Error("expected Alice in contributors")
+	// Username is extracted from noreply email: alice@users.noreply.github.com -> alice
+	if !strings.Contains(content, "@alice") {
+		t.Error("expected @alice in contributors")
+	}
+}
+
+func TestGenerateVersionChangelog_WithCustomContributorFormat(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+	// Custom format that includes both Name and Username
+	cfg.Contributors = &ContributorsConfig{
+		Enabled: true,
+		Format:  "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
+	}
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	commits := []CommitInfo{
+		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature", Author: "Alice Smith", AuthorEmail: "alice@users.noreply.github.com"},
+	}
+
+	content, err := g.GenerateVersionChangelog("v1.0.0", "v0.9.0", commits)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Check contributors section includes both Name and Username
+	if !strings.Contains(content, "### Contributors") {
+		t.Error("expected contributors section")
+	}
+	if !strings.Contains(content, "Alice Smith") {
+		t.Error("expected full name 'Alice Smith' in contributors with custom format")
+	}
+	if !strings.Contains(content, "@alice") {
+		t.Error("expected @alice in contributors")
+	}
+	if !strings.Contains(content, "github.com/alice") {
+		t.Error("expected github.com/alice link in contributors")
 	}
 }
 
@@ -494,6 +538,90 @@ func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
 	// Should still have version header
 	if !strings.Contains(content, "## v1.0.0") {
 		t.Error("expected version header even with no commits")
+	}
+}
+
+func TestWriteContributorEntry_CustomFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		format   string
+		contrib  Contributor
+		remote   *RemoteInfo
+		expected string
+	}{
+		{
+			name:     "Custom format with name and username",
+			format:   "- {{.Name}} (@{{.Username}})",
+			contrib:  Contributor{Name: "Alice Smith", Username: "alice", Host: "github.com"},
+			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
+			expected: "- Alice Smith (@alice)\n",
+		},
+		{
+			name:     "Custom format username only",
+			format:   "- @{{.Username}}",
+			contrib:  Contributor{Name: "Bob Jones", Username: "bob", Host: "github.com"},
+			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
+			expected: "- @bob\n",
+		},
+		{
+			name:     "Custom format with email",
+			format:   "- {{.Username}} <{{.Email}}>",
+			contrib:  Contributor{Name: "Charlie", Username: "charlie", Email: "charlie@example.com", Host: "github.com"},
+			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
+			expected: "- charlie <charlie@example.com>\n",
+		},
+		{
+			name:     "Default format when empty",
+			format:   "",
+			contrib:  Contributor{Name: "Dave", Username: "dave", Host: "github.com"},
+			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
+			expected: "- [@dave](https://github.com/dave)\n",
+		},
+		{
+			name:     "Fallback on invalid template",
+			format:   "- {{.Invalid",
+			contrib:  Contributor{Name: "Eve", Username: "eve", Host: "github.com"},
+			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
+			expected: "- [@eve](https://github.com/eve)\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := DefaultConfig()
+			cfg.Contributors.Format = tt.format
+			g, err := NewGenerator(cfg)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			var sb strings.Builder
+			g.writeContributorEntry(&sb, tt.contrib, tt.remote)
+			got := sb.String()
+
+			if got != tt.expected {
+				t.Errorf("writeContributorEntry() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestWriteContributorEntry_NoHost(t *testing.T) {
+	cfg := DefaultConfig()
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	contrib := Contributor{Name: "NoHost User", Username: "nohost", Host: ""}
+
+	var sb strings.Builder
+	g.writeContributorEntry(&sb, contrib, nil)
+	got := sb.String()
+
+	expected := "- @nohost\n"
+	if got != expected {
+		t.Errorf("writeContributorEntry() = %q, want %q", got, expected)
 	}
 }
 
