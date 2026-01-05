@@ -1651,14 +1651,14 @@ func TestRunPreBumpExtensionHooks(t *testing.T) {
 	cfg := &config.Config{}
 
 	t.Run("skip hooks returns nil", func(t *testing.T) {
-		err := runPreBumpExtensionHooks(ctx, cfg, "1.0.0", "0.9.0", "minor", true)
+		err := runPreBumpExtensionHooks(ctx, cfg, ".version", "1.0.0", "0.9.0", "minor", true)
 		if err != nil {
 			t.Errorf("expected nil error when skipping hooks, got %v", err)
 		}
 	})
 
 	t.Run("nil config with skip returns nil", func(t *testing.T) {
-		err := runPreBumpExtensionHooks(ctx, nil, "1.0.0", "0.9.0", "minor", true)
+		err := runPreBumpExtensionHooks(ctx, nil, ".version", "1.0.0", "0.9.0", "minor", true)
 		if err != nil {
 			t.Errorf("expected nil error when skipping hooks with nil config, got %v", err)
 		}
@@ -1682,4 +1682,71 @@ func TestRunPostBumpExtensionHooks(t *testing.T) {
 			t.Errorf("expected nil error when skipping hooks, got %v", err)
 		}
 	})
+}
+
+func TestModuleInfoFromPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		wantNil  bool
+		wantDir  string
+		wantName string
+	}{
+		{
+			name:    "current directory version file",
+			path:    ".version",
+			wantNil: true,
+		},
+		{
+			name:    "dot path version file",
+			path:    "./.version",
+			wantNil: true,
+		},
+		{
+			name:     "subdirectory version file",
+			path:     "packages/app/.version",
+			wantNil:  false,
+			wantDir:  "packages/app",
+			wantName: "app",
+		},
+		{
+			name:     "absolute path version file",
+			path:     "/project/packages/lib/.version",
+			wantNil:  false,
+			wantDir:  "/project/packages/lib",
+			wantName: "lib",
+		},
+		{
+			name:     "nested module path",
+			path:     "apps/frontend/web/.version",
+			wantNil:  false,
+			wantDir:  "apps/frontend/web",
+			wantName: "web",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := moduleInfoFromPath(tt.path)
+
+			if tt.wantNil {
+				if result != nil {
+					t.Errorf("expected nil, got %+v", result)
+				}
+				return
+			}
+
+			if result == nil {
+				t.Errorf("expected non-nil result, got nil")
+				return
+			}
+
+			if result.Dir != tt.wantDir {
+				t.Errorf("expected Dir=%q, got %q", tt.wantDir, result.Dir)
+			}
+			if result.Name != tt.wantName {
+				t.Errorf("expected Name=%q, got %q", tt.wantName, result.Name)
+			}
+		})
+	}
 }
