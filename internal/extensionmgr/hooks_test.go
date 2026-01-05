@@ -371,7 +371,7 @@ echo '{"success": true}'
 	}
 
 	ctx := context.Background()
-	err := RunPreBumpHooks(ctx, cfg, "1.2.3", "1.2.2", "patch")
+	err := RunPreBumpHooks(ctx, cfg, "1.2.3", "1.2.2", "patch", nil)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -419,7 +419,7 @@ echo '{"success": true}'
 	metadata := "build123"
 
 	ctx := context.Background()
-	err := RunPostBumpHooks(ctx, cfg, "1.3.0", "1.2.3", "minor", &prerelease, &metadata)
+	err := RunPostBumpHooks(ctx, cfg, "1.3.0", "1.2.3", "minor", &prerelease, &metadata, nil)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -698,7 +698,7 @@ func TestRunPreBumpHooks_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			err := RunPreBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType)
+			err := RunPreBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType, nil)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RunPreBumpHooks() error = %v, wantErr %v", err, tt.wantErr)
@@ -746,7 +746,7 @@ func TestRunPostBumpHooks_EdgeCases(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			err := RunPostBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType, tt.prerelease, tt.metadata)
+			err := RunPostBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType, tt.prerelease, tt.metadata, nil)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("RunPostBumpHooks() error = %v, wantErr %v", err, tt.wantErr)
@@ -818,4 +818,93 @@ func TestLoadExtensionsForHook_EdgeCases(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestModuleInfo tests the ModuleInfo struct and its usage
+func TestModuleInfo(t *testing.T) {
+	t.Run("nil module info is handled gracefully", func(t *testing.T) {
+		ctx := context.Background()
+		err := RunPreBumpHooks(ctx, nil, "1.0.0", "0.9.0", "minor", nil)
+		if err != nil {
+			t.Errorf("expected nil error with nil module info, got %v", err)
+		}
+	})
+
+	t.Run("module info with dir and name", func(t *testing.T) {
+		moduleInfo := &ModuleInfo{
+			Dir:  "/path/to/module",
+			Name: "my-module",
+		}
+
+		if moduleInfo.Dir != "/path/to/module" {
+			t.Errorf("expected Dir to be '/path/to/module', got %s", moduleInfo.Dir)
+		}
+		if moduleInfo.Name != "my-module" {
+			t.Errorf("expected Name to be 'my-module', got %s", moduleInfo.Name)
+		}
+	})
+}
+
+// TestRunHooksWithModuleInfo tests that module info is correctly passed to hooks
+func TestRunHooksWithModuleInfo(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create extension manifest
+	manifestPath := filepath.Join(tmpDir, "extension.yaml")
+	manifest := `name: test-ext
+version: 1.0.0
+description: Test extension
+author: test
+repository: https://github.com/test/test
+entry: hook.sh
+hooks:
+  - post-bump
+`
+	if err := os.WriteFile(manifestPath, []byte(manifest), 0644); err != nil {
+		t.Fatalf("failed to create manifest: %v", err)
+	}
+
+	// Create hook script that echoes input for verification
+	scriptPath := filepath.Join(tmpDir, "hook.sh")
+	script := `#!/bin/sh
+read input
+# Extract module_dir and module_name from input
+module_dir=$(echo "$input" | grep -o '"module_dir":"[^"]*"' | cut -d'"' -f4)
+module_name=$(echo "$input" | grep -o '"module_name":"[^"]*"' | cut -d'"' -f4)
+echo "{\"success\": true, \"message\": \"module_dir=$module_dir module_name=$module_name\"}"
+`
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create script: %v", err)
+	}
+
+	cfg := &config.Config{
+		Extensions: []config.ExtensionConfig{
+			{
+				Name:    "test-ext",
+				Path:    tmpDir,
+				Enabled: true,
+			},
+		},
+	}
+
+	t.Run("hook receives module info", func(t *testing.T) {
+		moduleInfo := &ModuleInfo{
+			Dir:  "/project/packages/app",
+			Name: "app",
+		}
+
+		ctx := context.Background()
+		err := RunPostBumpHooks(ctx, cfg, "1.0.0", "0.9.0", "minor", nil, nil, moduleInfo)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("hook works without module info", func(t *testing.T) {
+		ctx := context.Background()
+		err := RunPostBumpHooks(ctx, cfg, "1.0.0", "0.9.0", "minor", nil, nil, nil)
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
 }

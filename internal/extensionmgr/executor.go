@@ -20,6 +20,8 @@ type HookInput struct {
 	Prerelease      *string `json:"prerelease,omitempty"`
 	Metadata        *string `json:"metadata,omitempty"`
 	ProjectRoot     string  `json:"project_root"`
+	ModuleDir       string  `json:"module_dir,omitempty"`  // Directory containing the .version file (for monorepo support)
+	ModuleName      string  `json:"module_name,omitempty"` // Module identifier (for monorepo support)
 }
 
 // HookOutput represents the JSON output expected from an extension script

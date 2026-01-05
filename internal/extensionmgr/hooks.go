@@ -140,8 +140,14 @@ func ValidateExtensionHook(hookType string) error {
 	return fmt.Errorf("invalid hook type %q, must be one of: %v", hookType, validHooks)
 }
 
+// ModuleInfo contains optional module context for monorepo support.
+type ModuleInfo struct {
+	Dir  string // Directory containing the .version file
+	Name string // Module identifier
+}
+
 // RunPreBumpHooks is a convenience function to run pre-bump hooks
-func RunPreBumpHooks(ctx context.Context, cfg *config.Config, version, previousVersion, bumpType string) error {
+func RunPreBumpHooks(ctx context.Context, cfg *config.Config, version, previousVersion, bumpType string, moduleInfo *ModuleInfo) error {
 	if cfg == nil {
 		return nil
 	}
@@ -162,11 +168,17 @@ func RunPreBumpHooks(ctx context.Context, cfg *config.Config, version, previousV
 		ProjectRoot:     projectRoot,
 	}
 
+	// Add module info if provided (monorepo support)
+	if moduleInfo != nil {
+		input.ModuleDir = moduleInfo.Dir
+		input.ModuleName = moduleInfo.Name
+	}
+
 	return runner.RunHooks(ctx, PreBumpHook, input)
 }
 
 // RunPostBumpHooks is a convenience function to run post-bump hooks
-func RunPostBumpHooks(ctx context.Context, cfg *config.Config, version, previousVersion, bumpType string, prerelease, metadata *string) error {
+func RunPostBumpHooks(ctx context.Context, cfg *config.Config, version, previousVersion, bumpType string, prerelease, metadata *string, moduleInfo *ModuleInfo) error {
 	if cfg == nil {
 		return nil
 	}
@@ -187,6 +199,12 @@ func RunPostBumpHooks(ctx context.Context, cfg *config.Config, version, previous
 		Prerelease:      prerelease,
 		Metadata:        metadata,
 		ProjectRoot:     projectRoot,
+	}
+
+	// Add module info if provided (monorepo support)
+	if moduleInfo != nil {
+		input.ModuleDir = moduleInfo.Dir
+		input.ModuleName = moduleInfo.Name
 	}
 
 	return runner.RunHooks(ctx, PostBumpHook, input)
