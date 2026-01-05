@@ -13,6 +13,7 @@ import (
 	"github.com/indaco/sley/internal/plugins/releasegate"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/plugins/versionvalidator"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -99,10 +100,10 @@ func createTagAfterBump(version semver.SemVersion, bumpType string) error {
 	}
 
 	tagName := tm.FormatTagName(version)
-	fmt.Printf("Created tag: %s\n", tagName)
+	printer.PrintSuccess(fmt.Sprintf("Created tag: %s", tagName))
 
 	if plugin.GetConfig().Push {
-		fmt.Printf("Pushed tag: %s\n", tagName)
+		printer.PrintSuccess(fmt.Sprintf("Pushed tag: %s", tagName))
 	}
 
 	return nil
@@ -192,7 +193,7 @@ func syncDependencies(version semver.SemVersion) error {
 		return fmt.Errorf("failed to sync dependency versions: %w", err)
 	}
 
-	fmt.Printf("Synced version to %d dependency file(s)\n", len(plugin.GetConfig().Files))
+	printer.PrintSuccess(fmt.Sprintf("Synced version to %d dependency file(s)", len(plugin.GetConfig().Files)))
 	return nil
 }
 
@@ -226,12 +227,12 @@ func generateChangelogAfterBump(version, previousVersion semver.SemVersion, bump
 	mode := plugin.GetConfig().Mode
 	switch mode {
 	case "versioned":
-		fmt.Printf("Generated changelog: %s/%s.md\n", plugin.GetConfig().ChangesDir, versionStr)
+		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md", plugin.GetConfig().ChangesDir, versionStr))
 	case "unified":
-		fmt.Printf("Updated changelog: %s\n", plugin.GetConfig().ChangelogPath)
+		printer.PrintSuccess(fmt.Sprintf("Updated changelog: %s", plugin.GetConfig().ChangelogPath))
 	case "both":
-		fmt.Printf("Generated changelog: %s/%s.md and %s\n",
-			plugin.GetConfig().ChangesDir, versionStr, plugin.GetConfig().ChangelogPath)
+		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md and %s",
+			plugin.GetConfig().ChangesDir, versionStr, plugin.GetConfig().ChangelogPath))
 	}
 
 	return nil

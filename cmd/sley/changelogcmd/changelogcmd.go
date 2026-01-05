@@ -6,6 +6,7 @@ import (
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins/changeloggenerator"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/urfave/cli/v3"
 )
 
@@ -74,8 +75,8 @@ func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
 		return fmt.Errorf("failed to merge changelog files: %w", err)
 	}
 
-	fmt.Printf("Successfully merged changelog files from %s into %s\n",
-		genCfg.ChangesDir, genCfg.ChangelogPath)
+	printer.PrintSuccess(fmt.Sprintf("Successfully merged changelog files from %s into %s",
+		genCfg.ChangesDir, genCfg.ChangelogPath))
 
 	return nil
 }

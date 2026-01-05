@@ -12,6 +12,7 @@ import (
 	"github.com/indaco/sley/internal/plugins/changelogparser"
 	"github.com/indaco/sley/internal/plugins/commitparser"
 	"github.com/indaco/sley/internal/plugins/commitparser/gitlog"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
@@ -195,7 +196,7 @@ func runSingleModuleAuto(cmd *cli.Command, path, label, meta, since, until strin
 		return err
 	}
 
-	fmt.Printf("Bumped version from %s to %s\n", current.String(), next.String())
+	printer.PrintSuccess(fmt.Sprintf("Bumped version from %s to %s", current.String(), next.String()))
 	return nil
 }
 

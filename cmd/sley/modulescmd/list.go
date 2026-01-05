@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
 )
@@ -57,7 +59,7 @@ func runList(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	if len(modules) == 0 {
-		fmt.Println("No modules found in workspace")
+		printer.PrintInfo("No modules found in workspace")
 		return nil
 	}
 
@@ -73,18 +75,25 @@ func runList(ctx context.Context, cmd *cli.Command) error {
 }
 
 func outputText(modules []*workspace.Module, verbose bool) error {
-	fmt.Printf("Found %d module(s):\n", len(modules))
+	printer.PrintBold(fmt.Sprintf("Found %d module(s):", len(modules)))
 	for _, mod := range modules {
 		if verbose {
 			fmt.Printf("  - %s\n", mod.Name)
-			fmt.Printf("    Path: %s\n", mod.RelPath)
-			fmt.Printf("    Version: %s\n", mod.CurrentVersion)
+			fmt.Printf("    %s\n", printer.Faint(fmt.Sprintf("Path: %s", mod.RelPath)))
+			fmt.Printf("    %s\n", printer.Faint(fmt.Sprintf("Version: %s", mod.CurrentVersion)))
 		} else {
 			version := mod.CurrentVersion
 			if version == "" {
 				version = "unknown"
 			}
 			fmt.Printf("  - %s (%s)\n", mod.Name, version)
+
+			// Display the directory path in faint style for disambiguation
+			// RelPath includes the .version filename, so we extract just the directory
+			dirPath := filepath.Dir(mod.RelPath)
+			if dirPath != "." {
+				fmt.Printf("    %s\n", printer.Faint(dirPath))
+			}
 		}
 	}
 	return nil

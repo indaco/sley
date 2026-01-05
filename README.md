@@ -147,7 +147,7 @@ USAGE:
    sley [global options] [command [command options]]
 
 VERSION:
-   v0.6.0-rc3
+   v0.6.0-rc4
 
 COMMANDS:
    show              Display current version

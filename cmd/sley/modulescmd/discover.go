@@ -7,6 +7,7 @@ import (
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
 )
@@ -46,11 +47,11 @@ func runDiscover(ctx context.Context, cmd *cli.Command) error {
 
 	// Show discovery settings
 	discovery := cfg.GetDiscoveryConfig()
-	fmt.Println("Discovery settings:")
-	fmt.Printf("  Enabled: %v\n", *discovery.Enabled)
-	fmt.Printf("  Recursive: %v\n", *discovery.Recursive)
-	fmt.Printf("  Max depth: %d\n", *discovery.MaxDepth)
-	fmt.Printf("  Exclude patterns: %v\n", cfg.GetExcludePatterns())
+	printer.PrintBold("Discovery settings:")
+	fmt.Printf("  %s\n", printer.Faint(fmt.Sprintf("Enabled: %v", *discovery.Enabled)))
+	fmt.Printf("  %s\n", printer.Faint(fmt.Sprintf("Recursive: %v", *discovery.Recursive)))
+	fmt.Printf("  %s\n", printer.Faint(fmt.Sprintf("Max depth: %d", *discovery.MaxDepth)))
+	fmt.Printf("  %s\n", printer.Faint(fmt.Sprintf("Exclude patterns: %v", cfg.GetExcludePatterns())))
 	fmt.Println()
 
 	// Detect context
@@ -59,27 +60,27 @@ func runDiscover(ctx context.Context, cmd *cli.Command) error {
 		return fmt.Errorf("failed to detect context: %w", err)
 	}
 
-	fmt.Printf("Detection mode: %s\n", detectedCtx.Mode)
+	printer.PrintInfo(fmt.Sprintf("Detection mode: %s", detectedCtx.Mode))
 	fmt.Println()
 
 	switch detectedCtx.Mode {
 	case workspace.SingleModule:
-		fmt.Printf("Single module found:\n")
-		fmt.Printf("  Path: %s\n", detectedCtx.Path)
+		printer.PrintSuccess("Single module found:")
+		fmt.Printf("  %s\n", printer.Faint(fmt.Sprintf("Path: %s", detectedCtx.Path)))
 
 	case workspace.MultiModule:
-		fmt.Printf("Multiple modules found (%d):\n", len(detectedCtx.Modules))
+		printer.PrintSuccess(fmt.Sprintf("Multiple modules found (%d):", len(detectedCtx.Modules)))
 		for _, mod := range detectedCtx.Modules {
 			version := mod.CurrentVersion
 			if version == "" {
 				version = "unknown"
 			}
 			fmt.Printf("  - %s (%s)\n", mod.Name, version)
-			fmt.Printf("    Path: %s\n", mod.RelPath)
+			fmt.Printf("    %s\n", printer.Faint(fmt.Sprintf("Path: %s", mod.RelPath)))
 		}
 
 	case workspace.NoModules:
-		fmt.Println("No modules found in workspace")
+		printer.PrintInfo("No modules found in workspace")
 	}
 
 	return nil

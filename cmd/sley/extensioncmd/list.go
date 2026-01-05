@@ -6,6 +6,7 @@ import (
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/extensions"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/urfave/cli/v3"
 )
 
@@ -24,19 +25,19 @@ func listCmd() *cli.Command {
 func runExtenstionList() error {
 	cfg, err := config.LoadConfigFn()
 	if err != nil {
-		fmt.Println("failed to load configuration:", err)
+		printer.PrintError(fmt.Sprintf("failed to load configuration: %v", err))
 		return nil
 	}
 
 	if len(cfg.Extensions) == 0 {
-		fmt.Println("No extensions registered.")
+		printer.PrintInfo("No extensions registered.")
 		return nil
 	}
 
-	fmt.Println("List of Registered Extensions:")
+	printer.PrintBold("List of Registered Extensions:")
 	fmt.Println()
-	fmt.Println("  NAME              VERSION     ENABLED   DESCRIPTION")
-	fmt.Println("  ----------------------------------------------------------")
+	fmt.Printf("  %s\n", printer.Faint("NAME              VERSION     ENABLED   DESCRIPTION"))
+	fmt.Printf("  %s\n", printer.Faint("----------------------------------------------------------"))
 
 	for _, ext := range cfg.Extensions {
 		version := "?"

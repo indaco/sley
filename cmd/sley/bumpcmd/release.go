@@ -8,6 +8,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
@@ -112,6 +113,6 @@ func runSingleModuleRelease(cmd *cli.Command, path string, isPreserveMeta bool) 
 		return err
 	}
 
-	fmt.Printf("Promoted to release version: %s\n", newVersion.String())
+	printer.PrintSuccess(fmt.Sprintf("Promoted to release version: %s", newVersion.String()))
 	return nil
 }

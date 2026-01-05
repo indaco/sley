@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/urfave/cli/v3"
 )
 
@@ -40,7 +41,7 @@ func runExtenstionRemove(cmd *cli.Command) error {
 
 	cfg, err := config.LoadConfigFn()
 	if err != nil {
-		fmt.Println("failed to load configuration:", err)
+		printer.PrintError(fmt.Sprintf("failed to load configuration: %v", err))
 		return nil
 	}
 
@@ -53,7 +54,7 @@ func runExtenstionRemove(cmd *cli.Command) error {
 	}
 
 	if extensionToRemove == nil {
-		fmt.Printf("extension %q not found\n", extensionName)
+		printer.PrintWarning(fmt.Sprintf("extension %q not found", extensionName))
 		return nil
 	}
 
@@ -62,7 +63,7 @@ func runExtenstionRemove(cmd *cli.Command) error {
 
 	// Save the updated config back to the file
 	if err := config.SaveConfigFn(cfg); err != nil {
-		fmt.Println("failed to save updated configuration:", err)
+		printer.PrintError(fmt.Sprintf("failed to save updated configuration: %v", err))
 		return nil
 	}
 
@@ -74,9 +75,9 @@ func runExtenstionRemove(cmd *cli.Command) error {
 		if err := os.RemoveAll(extensionDir); err != nil {
 			return fmt.Errorf("failed to remove extension directory: %w", err)
 		}
-		fmt.Printf("Extension %q and its directory removed successfully.\n", extensionName)
+		printer.PrintSuccess(fmt.Sprintf("Extension %q and its directory removed successfully.", extensionName))
 	} else {
-		fmt.Printf("Extension %q removed, but its directory is preserved.\n", extensionName)
+		printer.PrintInfo(fmt.Sprintf("Extension %q removed, but its directory is preserved.", extensionName))
 	}
 
 	return nil

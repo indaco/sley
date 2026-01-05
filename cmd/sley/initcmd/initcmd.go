@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
@@ -35,9 +36,9 @@ func runInitCmd(cmd *cli.Command) error {
 	}
 
 	if created {
-		fmt.Printf("Initialized %s with version %s\n", path, version.String())
+		printer.PrintSuccess(fmt.Sprintf("Initialized %s with version %s", path, version.String()))
 	} else {
-		fmt.Printf("Version file already exists at %s\n", path)
+		printer.PrintInfo(fmt.Sprintf("Version file already exists at %s", path))
 	}
 	return nil
 }

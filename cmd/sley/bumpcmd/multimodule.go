@@ -7,6 +7,7 @@ import (
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
 )
@@ -66,8 +67,8 @@ func printQuietSummary(results []workspace.ExecutionResult) {
 	success := workspace.SuccessCount(results)
 	errors := workspace.ErrorCount(results)
 	if errors > 0 {
-		fmt.Printf("Completed: %d succeeded, %d failed\n", success, errors)
+		printer.PrintWarning(fmt.Sprintf("Completed: %d succeeded, %d failed", success, errors))
 	} else {
-		fmt.Printf("Success: %d module(s) bumped\n", success)
+		printer.PrintSuccess(fmt.Sprintf("Success: %d module(s) bumped", success))
 	}
 }

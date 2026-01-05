@@ -9,6 +9,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
@@ -79,7 +80,7 @@ func runSingleModuleSet(path string, version semver.SemVersion) error {
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
-	fmt.Printf("Set version to %s in %s\n", version.String(), path)
+	printer.PrintSuccess(fmt.Sprintf("Set version to %s in %s", version.String(), path))
 	return nil
 }
 
@@ -131,8 +132,8 @@ func printQuietSummary(results []workspace.ExecutionResult) {
 	success := workspace.SuccessCount(results)
 	errors := workspace.ErrorCount(results)
 	if errors > 0 {
-		fmt.Printf("Completed: %d succeeded, %d failed\n", success, errors)
+		printer.PrintWarning(fmt.Sprintf("Completed: %d succeeded, %d failed", success, errors))
 	} else {
-		fmt.Printf("Success: %d module(s) updated\n", success)
+		printer.PrintSuccess(fmt.Sprintf("Success: %d module(s) updated", success))
 	}
 }

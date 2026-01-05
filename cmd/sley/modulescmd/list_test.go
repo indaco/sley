@@ -143,8 +143,15 @@ func TestOutputText_SingleModule(t *testing.T) {
 	}
 	output := buf.String()
 
-	if output != "Found 1 module(s):\n  - module-a (1.0.0)\n" {
-		t.Errorf("unexpected output: %q", output)
+	// Now expects the path to be displayed on a second line
+	if !strings.Contains(output, "Found 1 module(s):") {
+		t.Errorf("expected header, got: %q", output)
+	}
+	if !strings.Contains(output, "module-a (1.0.0)") {
+		t.Errorf("expected module name and version, got: %q", output)
+	}
+	if !strings.Contains(output, "module-a") {
+		t.Errorf("expected module path, got: %q", output)
 	}
 }
 
@@ -180,9 +187,22 @@ func TestOutputText_MultipleModules(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "Found 2 module(s):\n  - module-a (1.0.0)\n  - module-b (2.0.0)\n"
-	if output != expected {
-		t.Errorf("output = %q, want %q", output, expected)
+	// Now expects paths to be displayed
+	if !strings.Contains(output, "Found 2 module(s):") {
+		t.Errorf("expected header, got: %q", output)
+	}
+	if !strings.Contains(output, "module-a (1.0.0)") {
+		t.Errorf("expected module-a with version, got: %q", output)
+	}
+	if !strings.Contains(output, "module-b (2.0.0)") {
+		t.Errorf("expected module-b with version, got: %q", output)
+	}
+	// Paths should be present
+	if !strings.Contains(output, "module-a") {
+		t.Errorf("expected module-a path, got: %q", output)
+	}
+	if !strings.Contains(output, "module-b") {
+		t.Errorf("expected module-b path, got: %q", output)
 	}
 }
 
@@ -246,9 +266,118 @@ func TestOutputText_UnknownVersion(t *testing.T) {
 	}
 	output := buf.String()
 
-	expected := "Found 1 module(s):\n  - module-a (unknown)\n"
-	if output != expected {
-		t.Errorf("output = %q, want %q", output, expected)
+	// Now expects the path to be displayed
+	if !strings.Contains(output, "Found 1 module(s):") {
+		t.Errorf("expected header, got: %q", output)
+	}
+	if !strings.Contains(output, "module-a (unknown)") {
+		t.Errorf("expected module-a with unknown version, got: %q", output)
+	}
+	if !strings.Contains(output, "module-a") {
+		t.Errorf("expected module-a path, got: %q", output)
+	}
+}
+
+func TestOutputText_CurrentDirectoryModule(t *testing.T) {
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	modules := []*workspace.Module{
+		{
+			Name:           "root-module",
+			RelPath:        ".version",
+			CurrentVersion: "1.0.0",
+		},
+	}
+	err := outputText(modules, false)
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	if err != nil {
+		t.Fatalf("outputText failed: %v", err)
+	}
+
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("failed to read from pipe: %v", err)
+	}
+	output := buf.String()
+
+	// For modules in current directory (RelPath = ".version"), path should not be displayed
+	if !strings.Contains(output, "Found 1 module(s):") {
+		t.Errorf("expected header, got: %q", output)
+	}
+	if !strings.Contains(output, "root-module (1.0.0)") {
+		t.Errorf("expected module with version, got: %q", output)
+	}
+	// Count newlines - should only be 2 (header + module line) without the path line
+	lines := strings.Split(strings.TrimSpace(output), "\n")
+	if len(lines) != 2 {
+		t.Errorf("expected 2 lines of output, got %d: %q", len(lines), output)
+	}
+}
+
+func TestOutputText_DuplicateModuleNames(t *testing.T) {
+	var buf bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	modules := []*workspace.Module{
+		{
+			Name:           "version",
+			RelPath:        "backend/gateway/internal/version/.version",
+			CurrentVersion: "0.8.0-alpha.6",
+		},
+		{
+			Name:           "version",
+			RelPath:        "cli/internal/version/.version",
+			CurrentVersion: "0.8.0-alpha.6",
+		},
+		{
+			Name:           "ai-services",
+			RelPath:        "backend/ai-services/.version",
+			CurrentVersion: "0.8.0-alpha.6",
+		},
+	}
+	err := outputText(modules, false)
+
+	w.Close()
+	os.Stdout = oldStdout
+
+	if err != nil {
+		t.Fatalf("outputText failed: %v", err)
+	}
+
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("failed to read from pipe: %v", err)
+	}
+	output := buf.String()
+
+	// Verify header
+	if !strings.Contains(output, "Found 3 module(s):") {
+		t.Errorf("expected header with 3 modules, got: %q", output)
+	}
+
+	// Verify all modules are listed with their versions
+	if !strings.Contains(output, "version (0.8.0-alpha.6)") {
+		t.Errorf("expected version module entries, got: %q", output)
+	}
+	if !strings.Contains(output, "ai-services (0.8.0-alpha.6)") {
+		t.Errorf("expected ai-services module, got: %q", output)
+	}
+
+	// Verify disambiguating paths are present
+	if !strings.Contains(output, "backend/gateway/internal/version") {
+		t.Errorf("expected first version module path, got: %q", output)
+	}
+	if !strings.Contains(output, "cli/internal/version") {
+		t.Errorf("expected second version module path, got: %q", output)
+	}
+	if !strings.Contains(output, "backend/ai-services") {
+		t.Errorf("expected ai-services module path, got: %q", output)
 	}
 }
 

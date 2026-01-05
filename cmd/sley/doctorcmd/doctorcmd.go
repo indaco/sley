@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
@@ -27,6 +28,6 @@ func runDoctorCmd(cmd *cli.Command) error {
 	if err != nil {
 		return fmt.Errorf("invalid version file at %s: %w", path, err)
 	}
-	fmt.Printf("Valid version file at %s\n", path)
+	printer.PrintSuccess(fmt.Sprintf("Valid version file at %s", path))
 	return nil
 }
