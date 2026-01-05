@@ -1,4 +1,6 @@
 <h1 align="center">
+  <img src="assets/logo.svg" alt="sley logo" width="120" height="120">
+  <br>
   <code>sley</code>
 </h1>
 <h2 align="center" style="font-size: 1.5rem;">
@@ -60,6 +62,7 @@ sley bump patch
 - [Extension System](#extension-system)
 - [Monorepo / Multi-Module Support](#monorepo--multi-module-support)
 - [Contributing](#contributing)
+- [AI Assistance](#ai-assistance)
 - [License](#license)
 
 ## Features
@@ -521,6 +524,10 @@ For detailed documentation on module discovery, configuration, and patterns, see
 Contributions are welcome!
 
 See the [Contributing Guide](/CONTRIBUTING.md) for setting up the development tools.
+
+## AI Assistance
+
+Built by humans, with some help from AI. Starting from v0.5.0, [Claude Code](https://claude.ai/code) assisted with test generation, documentation scaffolding, code review, and tedious refactoring (like renaming from "semver" to "sley"). The project logo was also AI-generated under the maintainer's direction. All output was reviewed, reworked and approved by the maintainer.
 
 ## License
 
