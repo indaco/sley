@@ -91,7 +91,7 @@ func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config
 		return err
 	}
 
-	if err := runPreBumpExtensionHooks(ctx, cfg, newVersion.String(), previousVersion.String(), "major", isSkipHooks); err != nil {
+	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), "major", isSkipHooks); err != nil {
 		return err
 	}
 

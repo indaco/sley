@@ -90,7 +90,7 @@ func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config
 		return err
 	}
 
-	if err := runPreBumpExtensionHooks(ctx, cfg, newVersion.String(), previousVersion.String(), "minor", isSkipHooks); err != nil {
+	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), "minor", isSkipHooks); err != nil {
 		return err
 	}
 

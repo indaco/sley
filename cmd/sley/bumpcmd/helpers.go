@@ -3,6 +3,7 @@ package bumpcmd
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/indaco/sley/internal/config"
@@ -17,12 +18,28 @@ import (
 	"github.com/indaco/sley/internal/semver"
 )
 
+// moduleInfoFromPath derives module info from a .version file path.
+// For single-module projects, this provides the directory context for extensions.
+func moduleInfoFromPath(versionPath string) *extensionmgr.ModuleInfo {
+	dir := filepath.Dir(versionPath)
+	name := filepath.Base(dir)
+	// If the .version is in the current directory, use "." as name
+	if dir == "." || name == "." {
+		return nil
+	}
+	return &extensionmgr.ModuleInfo{
+		Dir:  dir,
+		Name: name,
+	}
+}
+
 // runPreBumpExtensionHooks runs pre-bump extension hooks if not skipped.
-func runPreBumpExtensionHooks(ctx context.Context, cfg *config.Config, newVersion, prevVersion, bumpType string, skipHooks bool) error {
+func runPreBumpExtensionHooks(ctx context.Context, cfg *config.Config, path, newVersion, prevVersion, bumpType string, skipHooks bool) error {
 	if skipHooks {
 		return nil
 	}
-	return extensionmgr.RunPreBumpHooks(ctx, cfg, newVersion, prevVersion, bumpType)
+	moduleInfo := moduleInfoFromPath(path)
+	return extensionmgr.RunPreBumpHooks(ctx, cfg, newVersion, prevVersion, bumpType, moduleInfo)
 }
 
 // runPostBumpExtensionHooks runs post-bump extension hooks if not skipped.
@@ -37,7 +54,8 @@ func runPostBumpExtensionHooks(ctx context.Context, cfg *config.Config, path, pr
 	}
 
 	prereleasePtr, metadataPtr := extractVersionPointers(currentVersion)
-	return extensionmgr.RunPostBumpHooks(ctx, cfg, currentVersion.String(), prevVersion, bumpType, prereleasePtr, metadataPtr)
+	moduleInfo := moduleInfoFromPath(path)
+	return extensionmgr.RunPostBumpHooks(ctx, cfg, currentVersion.String(), prevVersion, bumpType, prereleasePtr, metadataPtr, moduleInfo)
 }
 
 // extractVersionPointers extracts prerelease and metadata as pointers (nil if empty).
