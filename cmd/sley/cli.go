@@ -56,7 +56,7 @@ func newCLI(cfg *config.Config) *cli.Command {
 			bumpcmd.Run(cfg),
 			changelogcmd.Run(cfg),
 			precmd.Run(),
-			doctorcmd.Run(),
+			doctorcmd.Run(cfg),
 			initcmd.Run(),
 			extensioncmd.Run(),
 			modulescmd.Run(),
