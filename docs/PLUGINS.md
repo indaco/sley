@@ -17,6 +17,8 @@ Plugins are **built-in** features that extend sley's core functionality. Unlike 
 | [release-gate](./plugins/RELEASE_GATE.md)               | Pre-bump validation (clean worktree, branch, WIP)      | Disabled |
 | [audit-log](./plugins/AUDIT_LOG.md)                     | Records version changes with metadata to a log file    | Disabled |
 
+> **Note**: The "Default" column shows which plugins are active when running sley without a `.sley.yaml` configuration file. When using `sley init --yes`, a recommended starting configuration is created with both `commit-parser` and `tag-manager` enabled.
+
 ## Quick Start
 
 Enable plugins in your `.sley.yaml`:
