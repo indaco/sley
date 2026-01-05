@@ -58,3 +58,57 @@ func TestModule_String(t *testing.T) {
 			module.String(), module.DisplayName())
 	}
 }
+
+func TestModule_DisplayNameWithPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		module   *Module
+		expected string
+	}{
+		{
+			name: "with version and path",
+			module: &Module{
+				Name:           "version",
+				CurrentVersion: "1.0.0",
+				Dir:            "backend/gateway/internal/version",
+			},
+			expected: "version (1.0.0) - backend/gateway/internal/version",
+		},
+		{
+			name: "without version but with path",
+			module: &Module{
+				Name:           "version",
+				CurrentVersion: "",
+				Dir:            "cli/internal/version",
+			},
+			expected: "version - cli/internal/version",
+		},
+		{
+			name: "with version but root dir",
+			module: &Module{
+				Name:           "myapp",
+				CurrentVersion: "2.0.0",
+				Dir:            ".",
+			},
+			expected: "myapp (2.0.0)",
+		},
+		{
+			name: "with version but empty dir",
+			module: &Module{
+				Name:           "myapp",
+				CurrentVersion: "2.0.0",
+				Dir:            "",
+			},
+			expected: "myapp (2.0.0)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.module.DisplayNameWithPath()
+			if got != tt.expected {
+				t.Errorf("DisplayNameWithPath() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}

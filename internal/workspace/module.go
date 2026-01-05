@@ -35,6 +35,17 @@ func (m *Module) DisplayName() string {
 	return fmt.Sprintf("%s (%s)", m.Name, m.CurrentVersion)
 }
 
+// DisplayNameWithPath returns a formatted name with path for disambiguation.
+// Format: "module-name (version) - path/to/module"
+// Useful in TUI when multiple modules have the same name.
+func (m *Module) DisplayNameWithPath() string {
+	base := m.DisplayName()
+	if m.Dir == "" || m.Dir == "." {
+		return base
+	}
+	return fmt.Sprintf("%s - %s", base, m.Dir)
+}
+
 // String returns a string representation of the module.
 func (m *Module) String() string {
 	return m.DisplayName()
