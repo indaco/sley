@@ -15,6 +15,8 @@ plugins:
     format: "grouped"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
+    # Custom header template (optional)
+    # header-template: ".changes/header.md"
 
     # Repository configuration for commit/compare links
     repository:
@@ -103,6 +105,9 @@ plugins:
     # Contributors section
     contributors:
       enabled: true
+      # Custom format template (optional)
+      # format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+      # icon: ""  # Optional icon before "Contributors" header
 
   # Commit parser works well with changelog generator
   # It determines bump type, generator creates the changelog
