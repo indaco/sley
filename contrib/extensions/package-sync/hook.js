@@ -128,6 +128,9 @@ function main() {
         // Extract required fields
         const version = input.version;
         const projectRoot = input.project_root;
+        // For monorepo support: use module_dir if provided, otherwise fall back to project_root
+        const moduleDir = input.module_dir || projectRoot;
+        const moduleName = input.module_name || null;
         const config = input.config || {};
 
         // Validate required fields
@@ -161,10 +164,23 @@ function main() {
         let hasError = false;
 
         for (const fileConfig of fileConfigs) {
-          const filePath = path.join(
-            projectRoot,
-            fileConfig.path || fileConfig,
-          );
+          // Determine base directory for file resolution:
+          // - If path is absolute, use it directly
+          // - If 'relative_to' is specified, respect that setting
+          // - Otherwise, use moduleDir (which falls back to projectRoot for single-module projects)
+          let baseDir = moduleDir;
+          const configPath = fileConfig.path || fileConfig;
+
+          if (path.isAbsolute(configPath)) {
+            // Absolute path - use as-is
+            baseDir = "";
+          } else if (fileConfig.relative_to === "project") {
+            // Explicitly relative to project root
+            baseDir = projectRoot;
+          }
+          // else: use moduleDir (default, supports monorepo)
+
+          const filePath = baseDir ? path.join(baseDir, configPath) : configPath;
           const jsonPaths = fileConfig.json_paths || ["version"];
 
           const result = updateJsonFile(filePath, version, jsonPaths);
@@ -182,6 +198,8 @@ function main() {
           data: {
             files_processed: fileConfigs.length,
             version: version,
+            module_dir: moduleDir !== projectRoot ? moduleDir : undefined,
+            module_name: moduleName,
           },
         };
 
