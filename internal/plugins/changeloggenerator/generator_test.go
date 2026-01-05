@@ -646,13 +646,14 @@ func TestWriteVersionedFile(t *testing.T) {
 		t.Errorf("expected file at %s", expectedPath)
 	}
 
-	// Check content
+	// Check content - file should be normalized with single trailing newline
 	data, readErr := os.ReadFile(expectedPath)
 	if readErr != nil {
 		t.Fatalf("failed to read file: %v", readErr)
 	}
-	if string(data) != content {
-		t.Errorf("file content = %q, want %q", string(data), content)
+	expectedContent := "## v1.0.0\n\nTest content\n"
+	if string(data) != expectedContent {
+		t.Errorf("file content = %q, want %q", string(data), expectedContent)
 	}
 }
 

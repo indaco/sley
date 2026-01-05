@@ -214,7 +214,10 @@ func (g *Generator) WriteVersionedFile(version, content string) error {
 	filename := fmt.Sprintf("%s.md", version)
 	path := filepath.Join(dir, filename)
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	// Normalize content: trim trailing whitespace and ensure single trailing newline
+	normalizedContent := strings.TrimRight(content, "\n\r\t ") + "\n"
+
+	if err := os.WriteFile(path, []byte(normalizedContent), 0644); err != nil {
 		return fmt.Errorf("failed to write changelog file: %w", err)
 	}
 
@@ -237,11 +240,14 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 	if existingContent == "" {
 		// Create new changelog with header
 		header := g.getDefaultHeader()
-		finalContent = header + "\n" + newContent
+		finalContent = header + "\n\n" + strings.TrimRight(newContent, "\n\r\t ")
 	} else {
 		// Insert new content after header
 		finalContent = g.insertAfterHeader(existingContent, newContent)
 	}
+
+	// Normalize: trim trailing whitespace and ensure single trailing newline
+	finalContent = strings.TrimRight(finalContent, "\n\r\t ") + "\n"
 
 	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
 		return fmt.Errorf("failed to write changelog: %w", err)
@@ -337,12 +343,17 @@ func (g *Generator) MergeVersionedFiles() error {
 		if err != nil {
 			continue // Skip unreadable files
 		}
-		sb.WriteString(string(data))
+		// Trim trailing whitespace and add consistent spacing
+		content := strings.TrimRight(string(data), "\n\r\t ")
+		sb.WriteString(content)
+		sb.WriteString("\n\n")
 	}
 
 	// Write to unified changelog
 	path := g.config.ChangelogPath
-	if err := os.WriteFile(path, []byte(sb.String()), 0644); err != nil {
+	// Normalize: trim trailing whitespace and ensure single trailing newline
+	finalContent := strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
+	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
 		return fmt.Errorf("failed to write unified changelog: %w", err)
 	}
 
