@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/indaco/sley/internal/printer"
 )
 
 // OutputFormatter formats execution results for display.
@@ -18,14 +20,25 @@ type OutputFormatter interface {
 
 // TextFormatter formats output as human-readable text.
 type TextFormatter struct {
-	// Operation name for display
+	// Operation name for display (e.g., "Version Summary")
 	operation string
+	// Action verb for success message (e.g., "validated", "updated")
+	actionVerb string
 }
 
-// NewTextFormatter creates a new text formatter.
+// NewTextFormatter creates a new text formatter with default "updated" action verb.
 func NewTextFormatter(operation string) *TextFormatter {
 	return &TextFormatter{
-		operation: operation,
+		operation:  operation,
+		actionVerb: "updated",
+	}
+}
+
+// NewTextFormatterWithVerb creates a new text formatter with a custom action verb.
+func NewTextFormatterWithVerb(operation, actionVerb string) *TextFormatter {
+	return &TextFormatter{
+		operation:  operation,
+		actionVerb: actionVerb,
 	}
 }
 
@@ -46,16 +59,27 @@ func (f *TextFormatter) FormatResults(results []ExecutionResult) string {
 	successCount := 0
 	for _, result := range results {
 		if result.Success {
-			sb.WriteString(fmt.Sprintf("  ✓ %s", result.Module.Name))
-			if result.OldVersion != "" && result.NewVersion != "" && result.OldVersion != result.NewVersion {
-				sb.WriteString(fmt.Sprintf(": %s -> %s", result.OldVersion, result.NewVersion))
-			} else if result.NewVersion != "" {
-				sb.WriteString(fmt.Sprintf(": %s", result.NewVersion))
+			// Bold green checkmark
+			sb.WriteString(fmt.Sprintf("  %s %s", printer.SuccessBadge("✓"), result.Module.Name))
+
+			// Version info in faint
+			var versionInfo string
+			switch {
+			case result.OldVersion != "" && result.NewVersion != "" && result.OldVersion != result.NewVersion:
+				versionInfo = fmt.Sprintf(": %s -> %s (%s)", result.OldVersion, result.NewVersion, formatDuration(result.Duration))
+			case result.NewVersion != "":
+				versionInfo = fmt.Sprintf(": %s (%s)", result.NewVersion, formatDuration(result.Duration))
+			default:
+				versionInfo = fmt.Sprintf(" (%s)", formatDuration(result.Duration))
 			}
-			sb.WriteString(fmt.Sprintf(" (%s)\n", formatDuration(result.Duration)))
+			sb.WriteString(printer.Faint(versionInfo))
+			sb.WriteString("\n")
 			successCount++
 		} else {
-			sb.WriteString(fmt.Sprintf("  ✗ %s: %v\n", result.Module.Name, result.Error))
+			// Bold red X mark
+			sb.WriteString(fmt.Sprintf("  %s %s: ", printer.ErrorBadge("✗"), result.Module.Name))
+			sb.WriteString(printer.Faint(result.Error.Error()))
+			sb.WriteString("\n")
 		}
 	}
 
@@ -63,17 +87,22 @@ func (f *TextFormatter) FormatResults(results []ExecutionResult) string {
 	sb.WriteString("\n")
 	if successCount == len(results) {
 		totalDuration := TotalDuration(results)
-		sb.WriteString(fmt.Sprintf("Success: %d module%s updated in %s\n",
+		msg := fmt.Sprintf("Success: %d module%s %s in %s",
 			len(results),
 			pluralize(len(results)),
+			f.actionVerb,
 			formatDuration(totalDuration),
-		))
+		)
+		sb.WriteString(printer.Success(msg))
+		sb.WriteString("\n")
 	} else {
 		errorCount := len(results) - successCount
-		sb.WriteString(fmt.Sprintf("Completed: %d succeeded, %d failed\n",
+		msg := fmt.Sprintf("Completed: %d succeeded, %d failed",
 			successCount,
 			errorCount,
-		))
+		)
+		sb.WriteString(printer.Warning(msg))
+		sb.WriteString("\n")
 	}
 
 	return sb.String()
@@ -235,12 +264,23 @@ func pluralize(count int) string {
 type TableFormatter struct {
 	// Operation name for display
 	operation string
+	// Action verb for success message (e.g., "validated", "updated")
+	actionVerb string
 }
 
-// NewTableFormatter creates a new table formatter.
+// NewTableFormatter creates a new table formatter with default "updated" action verb.
 func NewTableFormatter(operation string) *TableFormatter {
 	return &TableFormatter{
-		operation: operation,
+		operation:  operation,
+		actionVerb: "updated",
+	}
+}
+
+// NewTableFormatterWithVerb creates a new table formatter with a custom action verb.
+func NewTableFormatterWithVerb(operation, actionVerb string) *TableFormatter {
+	return &TableFormatter{
+		operation:  operation,
+		actionVerb: actionVerb,
 	}
 }
 
@@ -322,9 +362,10 @@ func (f *TableFormatter) FormatResults(results []ExecutionResult) string {
 	sb.WriteString("\n")
 	if successCount == len(results) {
 		totalDuration := TotalDuration(results)
-		sb.WriteString(fmt.Sprintf("Success: %d module%s updated in %s\n",
+		sb.WriteString(fmt.Sprintf("Success: %d module%s %s in %s\n",
 			len(results),
 			pluralize(len(results)),
+			f.actionVerb,
 			formatDuration(totalDuration),
 		))
 	} else {
@@ -414,13 +455,20 @@ func (f *TableFormatter) FormatModuleList(modules []*Module) string {
 }
 
 // GetFormatter returns the appropriate formatter based on the format string.
+// Uses "updated" as the default action verb.
 func GetFormatter(format string, operation string) OutputFormatter {
+	return GetFormatterWithVerb(format, operation, "updated")
+}
+
+// GetFormatterWithVerb returns the appropriate formatter with a custom action verb.
+// Use this for read-only operations like "show" (checked) or "doctor" (validated).
+func GetFormatterWithVerb(format, operation, actionVerb string) OutputFormatter {
 	switch format {
 	case "json":
 		return NewJSONFormatter()
 	case "table":
-		return NewTableFormatter(operation)
+		return NewTableFormatterWithVerb(operation, actionVerb)
 	default:
-		return NewTextFormatter(operation)
+		return NewTextFormatterWithVerb(operation, actionVerb)
 	}
 }

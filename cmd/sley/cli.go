@@ -15,6 +15,7 @@ import (
 	"github.com/indaco/sley/cmd/sley/showcmd"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/console"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/version"
 	"github.com/urfave/cli/v3"
 )
@@ -25,9 +26,10 @@ var noColorFlag bool
 // configuring all subcommands and flags for the sley cli.
 func newCLI(cfg *config.Config) *cli.Command {
 	return &cli.Command{
-		Name:    "sley",
-		Version: fmt.Sprintf("v%s", version.GetVersion()),
-		Usage:   "Version orchestrator for semantic versioning",
+		Name:                  "sley",
+		Version:               fmt.Sprintf("v%s", version.GetVersion()),
+		Usage:                 "Version orchestrator for semantic versioning",
+		EnableShellCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "path",
@@ -48,6 +50,7 @@ func newCLI(cfg *config.Config) *cli.Command {
 		},
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			console.SetNoColor(noColorFlag)
+			printer.SetNoColor(noColorFlag)
 			return ctx, nil
 		},
 		Commands: []*cli.Command{

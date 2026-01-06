@@ -619,3 +619,127 @@ func TestTableFormatter_FormatModuleList_LongPath(t *testing.T) {
 		t.Error("Long paths should be truncated with ...")
 	}
 }
+
+func TestNewTextFormatterWithVerb(t *testing.T) {
+	tests := []struct {
+		name       string
+		operation  string
+		actionVerb string
+		wantVerb   string
+	}{
+		{"validated verb", "Validation Summary", "validated", "validated"},
+		{"checked verb", "Version Summary", "checked", "checked"},
+		{"custom verb", "Custom Op", "processed", "processed"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formatter := NewTextFormatterWithVerb(tt.operation, tt.actionVerb)
+
+			module := &Module{Name: "test-module", Path: "/path/.version"}
+			results := []ExecutionResult{
+				{
+					Module:     module,
+					NewVersion: "1.0.0",
+					Success:    true,
+					Duration:   10 * time.Millisecond,
+				},
+			}
+
+			output := formatter.FormatResults(results)
+
+			if !strings.Contains(output, tt.operation) {
+				t.Errorf("Output should contain operation %q", tt.operation)
+			}
+			if !strings.Contains(output, tt.wantVerb) {
+				t.Errorf("Output should contain verb %q, got: %s", tt.wantVerb, output)
+			}
+		})
+	}
+}
+
+func TestNewTableFormatterWithVerb(t *testing.T) {
+	formatter := NewTableFormatterWithVerb("Validation Summary", "validated")
+
+	module := &Module{Name: "test-module", Path: "/path/.version"}
+	results := []ExecutionResult{
+		{
+			Module:     module,
+			NewVersion: "1.0.0",
+			Success:    true,
+			Duration:   10 * time.Millisecond,
+		},
+	}
+
+	output := formatter.FormatResults(results)
+
+	if !strings.Contains(output, "Validation Summary") {
+		t.Error("Output should contain operation name")
+	}
+	if !strings.Contains(output, "validated") {
+		t.Errorf("Output should contain 'validated', got: %s", output)
+	}
+}
+
+func TestGetFormatterWithVerb(t *testing.T) {
+	tests := []struct {
+		name       string
+		format     string
+		operation  string
+		actionVerb string
+	}{
+		{"text formatter", "text", "Version Summary", "checked"},
+		{"table formatter", "table", "Validation Summary", "validated"},
+		{"default to text", "", "Bump Summary", "updated"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			formatter := GetFormatterWithVerb(tt.format, tt.operation, tt.actionVerb)
+
+			if formatter == nil {
+				t.Error("GetFormatterWithVerb should not return nil")
+			}
+
+			module := &Module{Name: "test", Path: "/path/.version"}
+			results := []ExecutionResult{
+				{
+					Module:     module,
+					NewVersion: "1.0.0",
+					Success:    true,
+					Duration:   10 * time.Millisecond,
+				},
+			}
+
+			output := formatter.FormatResults(results)
+			if !strings.Contains(output, tt.actionVerb) {
+				t.Errorf("Output should contain verb %q", tt.actionVerb)
+			}
+		})
+	}
+}
+
+func TestGetFormatterWithVerb_JSON(t *testing.T) {
+	// JSON formatter doesn't use actionVerb, just verify it returns JSONFormatter
+	formatter := GetFormatterWithVerb("json", "Test Op", "tested")
+
+	if formatter == nil {
+		t.Error("GetFormatterWithVerb should not return nil for json")
+	}
+
+	module := &Module{Name: "test", Path: "/path/.version"}
+	results := []ExecutionResult{
+		{
+			Module:     module,
+			NewVersion: "1.0.0",
+			Success:    true,
+			Duration:   10 * time.Millisecond,
+		},
+	}
+
+	output := formatter.FormatResults(results)
+	// JSON formatter output should be valid JSON object
+	if !strings.HasPrefix(output, "{") {
+		t.Error("JSON formatter should output JSON object")
+	}
+}
