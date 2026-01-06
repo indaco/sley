@@ -33,7 +33,11 @@ func NewMockFileSystem() *MockFileSystem {
 	}
 }
 
-func (m *MockFileSystem) ReadFile(path string) ([]byte, error) {
+func (m *MockFileSystem) ReadFile(ctx context.Context, path string) ([]byte, error) {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if m.ReadErr != nil {
 		return nil, m.ReadErr
 	}
@@ -46,7 +50,11 @@ func (m *MockFileSystem) ReadFile(path string) ([]byte, error) {
 	return data, nil
 }
 
-func (m *MockFileSystem) WriteFile(path string, data []byte, perm fs.FileMode) error {
+func (m *MockFileSystem) WriteFile(ctx context.Context, path string, data []byte, perm fs.FileMode) error {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if m.WriteErr != nil {
 		return m.WriteErr
 	}
@@ -57,7 +65,11 @@ func (m *MockFileSystem) WriteFile(path string, data []byte, perm fs.FileMode) e
 	return nil
 }
 
-func (m *MockFileSystem) Stat(path string) (fs.FileInfo, error) {
+func (m *MockFileSystem) Stat(ctx context.Context, path string) (fs.FileInfo, error) {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	if m.StatErr != nil {
 		return nil, m.StatErr
 	}
@@ -73,7 +85,11 @@ func (m *MockFileSystem) Stat(path string) (fs.FileInfo, error) {
 	return nil, fs.ErrNotExist
 }
 
-func (m *MockFileSystem) MkdirAll(path string, perm fs.FileMode) error {
+func (m *MockFileSystem) MkdirAll(ctx context.Context, path string, perm fs.FileMode) error {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if m.MkdirErr != nil {
 		return m.MkdirErr
 	}
@@ -83,7 +99,11 @@ func (m *MockFileSystem) MkdirAll(path string, perm fs.FileMode) error {
 	return nil
 }
 
-func (m *MockFileSystem) Remove(path string) error {
+func (m *MockFileSystem) Remove(ctx context.Context, path string) error {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if m.RemoveErr != nil {
 		return m.RemoveErr
 	}
@@ -94,11 +114,15 @@ func (m *MockFileSystem) Remove(path string) error {
 	return nil
 }
 
-func (m *MockFileSystem) RemoveAll(path string) error {
-	return m.Remove(path)
+func (m *MockFileSystem) RemoveAll(ctx context.Context, path string) error {
+	return m.Remove(ctx, path)
 }
 
-func (m *MockFileSystem) ReadDir(path string) ([]fs.DirEntry, error) {
+func (m *MockFileSystem) ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error) {
+	// Check if context is cancelled
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 

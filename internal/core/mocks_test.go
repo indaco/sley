@@ -9,15 +9,16 @@ import (
 
 func TestMockFileSystem(t *testing.T) {
 	mockFS := NewMockFileSystem()
+	ctx := context.Background()
 
 	t.Run("write and read file", func(t *testing.T) {
 		content := []byte("test content")
-		err := mockFS.WriteFile("/test/file.txt", content, 0644)
+		err := mockFS.WriteFile(ctx, "/test/file.txt", content, 0644)
 		if err != nil {
 			t.Fatalf("WriteFile failed: %v", err)
 		}
 
-		data, err := mockFS.ReadFile("/test/file.txt")
+		data, err := mockFS.ReadFile(ctx, "/test/file.txt")
 		if err != nil {
 			t.Fatalf("ReadFile failed: %v", err)
 		}
@@ -28,7 +29,7 @@ func TestMockFileSystem(t *testing.T) {
 	})
 
 	t.Run("read non-existent file", func(t *testing.T) {
-		_, err := mockFS.ReadFile("/nonexistent")
+		_, err := mockFS.ReadFile(ctx, "/nonexistent")
 		if !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected fs.ErrNotExist, got %v", err)
 		}
@@ -36,7 +37,7 @@ func TestMockFileSystem(t *testing.T) {
 
 	t.Run("stat file", func(t *testing.T) {
 		mockFS.SetFile("/stat/test.txt", []byte("hello"))
-		info, err := mockFS.Stat("/stat/test.txt")
+		info, err := mockFS.Stat(ctx, "/stat/test.txt")
 		if err != nil {
 			t.Fatalf("Stat failed: %v", err)
 		}
@@ -49,12 +50,12 @@ func TestMockFileSystem(t *testing.T) {
 	})
 
 	t.Run("mkdir and stat directory", func(t *testing.T) {
-		err := mockFS.MkdirAll("/test/dir", 0755)
+		err := mockFS.MkdirAll(ctx, "/test/dir", 0755)
 		if err != nil {
 			t.Fatalf("MkdirAll failed: %v", err)
 		}
 
-		info, err := mockFS.Stat("/test/dir")
+		info, err := mockFS.Stat(ctx, "/test/dir")
 		if err != nil {
 			t.Fatalf("Stat failed: %v", err)
 		}
@@ -65,12 +66,12 @@ func TestMockFileSystem(t *testing.T) {
 
 	t.Run("remove file", func(t *testing.T) {
 		mockFS.SetFile("/remove/test.txt", []byte("to be removed"))
-		err := mockFS.Remove("/remove/test.txt")
+		err := mockFS.Remove(ctx, "/remove/test.txt")
 		if err != nil {
 			t.Fatalf("Remove failed: %v", err)
 		}
 
-		_, err = mockFS.ReadFile("/remove/test.txt")
+		_, err = mockFS.ReadFile(ctx, "/remove/test.txt")
 		if !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected fs.ErrNotExist after removal, got %v", err)
 		}
@@ -78,7 +79,7 @@ func TestMockFileSystem(t *testing.T) {
 
 	t.Run("error injection", func(t *testing.T) {
 		mockFS.ReadErr = errors.New("read error")
-		_, err := mockFS.ReadFile("/any/path")
+		_, err := mockFS.ReadFile(ctx, "/any/path")
 		if err == nil || err.Error() != "read error" {
 			t.Errorf("expected read error, got %v", err)
 		}
@@ -183,17 +184,18 @@ func TestMockGitClient(t *testing.T) {
 
 func TestOSFileSystem_WriteAndRead(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
 	path := tmpDir + "/test.txt"
 	content := []byte("hello world")
 
-	err := osFS.WriteFile(path, content, 0600)
+	err := osFS.WriteFile(ctx, path, content, 0600)
 	if err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	data, err := osFS.ReadFile(path)
+	data, err := osFS.ReadFile(ctx, path)
 	if err != nil {
 		t.Fatalf("ReadFile failed: %v", err)
 	}
@@ -205,9 +207,10 @@ func TestOSFileSystem_WriteAndRead(t *testing.T) {
 
 func TestOSFileSystem_Stat(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
-	info, err := osFS.Stat(tmpDir)
+	info, err := osFS.Stat(ctx, tmpDir)
 	if err != nil {
 		t.Fatalf("Stat failed: %v", err)
 	}
@@ -218,15 +221,16 @@ func TestOSFileSystem_Stat(t *testing.T) {
 
 func TestOSFileSystem_MkdirAll(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
 	path := tmpDir + "/a/b/c"
-	err := osFS.MkdirAll(path, 0755)
+	err := osFS.MkdirAll(ctx, path, 0755)
 	if err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 
-	info, err := osFS.Stat(path)
+	info, err := osFS.Stat(ctx, path)
 	if err != nil {
 		t.Fatalf("Stat failed: %v", err)
 	}
@@ -237,20 +241,21 @@ func TestOSFileSystem_MkdirAll(t *testing.T) {
 
 func TestOSFileSystem_Remove(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
 	path := tmpDir + "/to-remove.txt"
-	err := osFS.WriteFile(path, []byte("test"), 0644)
+	err := osFS.WriteFile(ctx, path, []byte("test"), 0644)
 	if err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	err = osFS.Remove(path)
+	err = osFS.Remove(ctx, path)
 	if err != nil {
 		t.Fatalf("Remove failed: %v", err)
 	}
 
-	_, err = osFS.ReadFile(path)
+	_, err = osFS.ReadFile(ctx, path)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected fs.ErrNotExist after removal, got %v", err)
 	}
@@ -258,25 +263,26 @@ func TestOSFileSystem_Remove(t *testing.T) {
 
 func TestOSFileSystem_RemoveAll(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
 	path := tmpDir + "/remove-all-test"
-	err := osFS.MkdirAll(path+"/subdir", 0755)
+	err := osFS.MkdirAll(ctx, path+"/subdir", 0755)
 	if err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 
-	err = osFS.WriteFile(path+"/file.txt", []byte("test"), 0644)
+	err = osFS.WriteFile(ctx, path+"/file.txt", []byte("test"), 0644)
 	if err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	err = osFS.RemoveAll(path)
+	err = osFS.RemoveAll(ctx, path)
 	if err != nil {
 		t.Fatalf("RemoveAll failed: %v", err)
 	}
 
-	_, err = osFS.Stat(path)
+	_, err = osFS.Stat(ctx, path)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected fs.ErrNotExist after RemoveAll, got %v", err)
 	}
@@ -284,25 +290,26 @@ func TestOSFileSystem_RemoveAll(t *testing.T) {
 
 func TestOSFileSystem_ReadDir(t *testing.T) {
 	osFS := NewOSFileSystem()
+	ctx := context.Background()
 	tmpDir := t.TempDir()
 
 	dirPath := tmpDir + "/read-dir-test"
-	err := osFS.MkdirAll(dirPath, 0755)
+	err := osFS.MkdirAll(ctx, dirPath, 0755)
 	if err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 
-	err = osFS.WriteFile(dirPath+"/file1.txt", []byte("test1"), 0644)
+	err = osFS.WriteFile(ctx, dirPath+"/file1.txt", []byte("test1"), 0644)
 	if err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	err = osFS.WriteFile(dirPath+"/file2.txt", []byte("test2"), 0644)
+	err = osFS.WriteFile(ctx, dirPath+"/file2.txt", []byte("test2"), 0644)
 	if err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	entries, err := osFS.ReadDir(dirPath)
+	entries, err := osFS.ReadDir(ctx, dirPath)
 	if err != nil {
 		t.Fatalf("ReadDir failed: %v", err)
 	}
@@ -314,16 +321,17 @@ func TestOSFileSystem_ReadDir(t *testing.T) {
 
 func TestEnsureParentDir(t *testing.T) {
 	mockFS := NewMockFileSystem()
+	ctx := context.Background()
 
 	t.Run("creates parent directory", func(t *testing.T) {
 		filePath := "/a/b/c/file.txt"
-		err := EnsureParentDir(mockFS, filePath, 0755)
+		err := EnsureParentDir(ctx, mockFS, filePath, 0755)
 		if err != nil {
 			t.Fatalf("EnsureParentDir failed: %v", err)
 		}
 
 		// Verify parent directory was created
-		info, err := mockFS.Stat("/a/b/c")
+		info, err := mockFS.Stat(ctx, "/a/b/c")
 		if err != nil {
 			t.Fatalf("parent directory not created: %v", err)
 		}
@@ -333,7 +341,7 @@ func TestEnsureParentDir(t *testing.T) {
 	})
 
 	t.Run("handles root path", func(t *testing.T) {
-		err := EnsureParentDir(mockFS, "/file.txt", 0755)
+		err := EnsureParentDir(ctx, mockFS, "/file.txt", 0755)
 		if err != nil {
 			t.Fatalf("EnsureParentDir failed for root: %v", err)
 		}
@@ -342,10 +350,11 @@ func TestEnsureParentDir(t *testing.T) {
 
 func TestMockFileSystem_ErrorInjection(t *testing.T) {
 	mockFS := NewMockFileSystem()
+	ctx := context.Background()
 
 	t.Run("write error", func(t *testing.T) {
 		mockFS.WriteErr = errors.New("write error")
-		err := mockFS.WriteFile("/test", []byte("data"), 0644)
+		err := mockFS.WriteFile(ctx, "/test", []byte("data"), 0644)
 		if err == nil || err.Error() != "write error" {
 			t.Errorf("expected write error, got %v", err)
 		}
@@ -354,7 +363,7 @@ func TestMockFileSystem_ErrorInjection(t *testing.T) {
 
 	t.Run("stat error", func(t *testing.T) {
 		mockFS.StatErr = errors.New("stat error")
-		_, err := mockFS.Stat("/test")
+		_, err := mockFS.Stat(ctx, "/test")
 		if err == nil || err.Error() != "stat error" {
 			t.Errorf("expected stat error, got %v", err)
 		}
@@ -363,7 +372,7 @@ func TestMockFileSystem_ErrorInjection(t *testing.T) {
 
 	t.Run("mkdir error", func(t *testing.T) {
 		mockFS.MkdirErr = errors.New("mkdir error")
-		err := mockFS.MkdirAll("/test", 0755)
+		err := mockFS.MkdirAll(ctx, "/test", 0755)
 		if err == nil || err.Error() != "mkdir error" {
 			t.Errorf("expected mkdir error, got %v", err)
 		}
@@ -372,7 +381,7 @@ func TestMockFileSystem_ErrorInjection(t *testing.T) {
 
 	t.Run("remove error", func(t *testing.T) {
 		mockFS.RemoveErr = errors.New("remove error")
-		err := mockFS.Remove("/test")
+		err := mockFS.Remove(ctx, "/test")
 		if err == nil || err.Error() != "remove error" {
 			t.Errorf("expected remove error, got %v", err)
 		}
@@ -406,16 +415,17 @@ func TestMockFileSystem_GetFile(t *testing.T) {
 
 func TestMockFileSystem_RemoveAll(t *testing.T) {
 	mockFS := NewMockFileSystem()
+	ctx := context.Background()
 
 	t.Run("remove directory", func(t *testing.T) {
 		mockFS.dirs["/test-dir"] = true
 
-		err := mockFS.RemoveAll("/test-dir")
+		err := mockFS.RemoveAll(ctx, "/test-dir")
 		if err != nil {
 			t.Fatalf("RemoveAll failed: %v", err)
 		}
 
-		_, err = mockFS.Stat("/test-dir")
+		_, err = mockFS.Stat(ctx, "/test-dir")
 		if !errors.Is(err, fs.ErrNotExist) {
 			t.Error("directory should be removed")
 		}
@@ -424,7 +434,7 @@ func TestMockFileSystem_RemoveAll(t *testing.T) {
 	t.Run("remove file", func(t *testing.T) {
 		mockFS.SetFile("/test-file.txt", []byte("content"))
 
-		err := mockFS.RemoveAll("/test-file.txt")
+		err := mockFS.RemoveAll(ctx, "/test-file.txt")
 		if err != nil {
 			t.Fatalf("RemoveAll failed: %v", err)
 		}
@@ -437,7 +447,7 @@ func TestMockFileSystem_RemoveAll(t *testing.T) {
 
 	t.Run("with remove error", func(t *testing.T) {
 		mockFS.RemoveErr = errors.New("remove failed")
-		err := mockFS.RemoveAll("/anything")
+		err := mockFS.RemoveAll(ctx, "/anything")
 		if err == nil || err.Error() != "remove failed" {
 			t.Errorf("expected remove error, got %v", err)
 		}
@@ -447,6 +457,7 @@ func TestMockFileSystem_RemoveAll(t *testing.T) {
 
 func TestMockFileSystem_ReadDir(t *testing.T) {
 	mockFS := NewMockFileSystem()
+	ctx := context.Background()
 
 	// Create some files and directories
 	mockFS.SetFile("/test/file1.txt", []byte("content1"))
@@ -454,7 +465,7 @@ func TestMockFileSystem_ReadDir(t *testing.T) {
 	mockFS.dirs["/test/subdir"] = true
 	mockFS.SetFile("/other/file.txt", []byte("other"))
 
-	entries, err := mockFS.ReadDir("/test")
+	entries, err := mockFS.ReadDir(ctx, "/test")
 	if err != nil {
 		t.Fatalf("ReadDir failed: %v", err)
 	}

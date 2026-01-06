@@ -8,27 +8,28 @@ import (
 )
 
 // FileSystem abstracts file system operations for testability.
+// All methods accept context.Context to support cancellation and timeouts.
 type FileSystem interface {
 	// ReadFile reads the entire file at path and returns its contents.
-	ReadFile(path string) ([]byte, error)
+	ReadFile(ctx context.Context, path string) ([]byte, error)
 
 	// WriteFile writes data to the file at path with the given permissions.
-	WriteFile(path string, data []byte, perm fs.FileMode) error
+	WriteFile(ctx context.Context, path string, data []byte, perm fs.FileMode) error
 
 	// Stat returns file info for the path.
-	Stat(path string) (fs.FileInfo, error)
+	Stat(ctx context.Context, path string) (fs.FileInfo, error)
 
 	// MkdirAll creates a directory path, along with any necessary parents.
-	MkdirAll(path string, perm fs.FileMode) error
+	MkdirAll(ctx context.Context, path string, perm fs.FileMode) error
 
 	// Remove removes the file or empty directory at path.
-	Remove(path string) error
+	Remove(ctx context.Context, path string) error
 
 	// RemoveAll removes path and any children it contains.
-	RemoveAll(path string) error
+	RemoveAll(ctx context.Context, path string) error
 
 	// ReadDir reads the directory named by path and returns a list of directory entries.
-	ReadDir(path string) ([]fs.DirEntry, error)
+	ReadDir(ctx context.Context, path string) ([]fs.DirEntry, error)
 }
 
 // CommandExecutor abstracts command execution for testability.
