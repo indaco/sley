@@ -20,18 +20,8 @@ func TestCLI_InitCommand_CreatesFile(t *testing.T) {
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
-	// Save original directory and change to temp
-	originalDir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatal(err)
-	}
+	// Use t.Chdir which properly handles directory restoration
+	t.Chdir(tmp)
 
 	// Prepare and run the CLI command with --yes to skip interactive prompts
 	cfg := &config.Config{Path: versionPath}

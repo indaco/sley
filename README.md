@@ -204,26 +204,38 @@ If the `.version` file does not exist when running the CLI:
 
 This ensures your project always has a starting point.
 
-Alternatively, run `sley init` explicitly:
+### Using `sley init`
+
+The recommended way to initialize a new project is with `sley init`:
 
 ```bash
+# Interactive mode - select plugins and generate .sley.yaml
 sley init
-# => Initialized .version with version 0.1.0
-```
 
-You can also specify a custom path:
+# Non-interactive with sensible defaults
+sley init --yes
 
-```bash
+# Enable specific plugins
+sley init --enable commit-parser,tag-manager,changelog-generator
+
+# Custom path
 sley init --path internal/version/.version
 ```
 
-This behavior ensures your project always has a valid version starting point.
+**Available flags:**
+
+| Flag           | Description                                               |
+| -------------- | --------------------------------------------------------- |
+| `--yes`, `-y`  | Use defaults without prompts (commit-parser, tag-manager) |
+| `--enable`     | Comma-separated list of plugins to enable                 |
+| `--force`      | Overwrite existing .sley.yaml                             |
+| `--path`, `-p` | Custom path for .version file                             |
 
 **To disable auto-initialization**, use the `--strict` flag.
 This is useful in CI/CD environments or stricter workflows where you want the command to fail if the file is missing:
 
 ```bash
-sley patch --strict
+sley bump patch --strict
 # => Error: .version file not found
 ```
 
@@ -419,8 +431,62 @@ sley validate
 
 ```bash
 sley init
-# => Initialized .version with version 0.1.0
+# => Interactive mode: select plugins, create .sley.yaml
 ```
+
+Use `--yes` for non-interactive initialization with defaults:
+
+```bash
+sley init --yes
+# => Created .version with version 0.1.0
+# => Created .sley.yaml with default plugins (commit-parser, tag-manager)
+```
+
+Enable specific plugins:
+
+```bash
+sley init --enable commit-parser,changelog-generator,audit-log
+# => Created .sley.yaml with 3 plugins enabled
+```
+
+Force overwrite existing configuration:
+
+```bash
+sley init --yes --force
+# => Overwrites existing .sley.yaml
+```
+
+### Interactive Mode
+
+When running `sley init` without flags in an interactive terminal, you'll see:
+
+```
+Initializing sley...
+
+Detected:
+  - Git repository
+  - package.json (Node.js project)
+
+Select plugins to enable:
+  [x] Commit Parser - Analyze conventional commits to determine bump type
+  [x] Tag Manager - Auto-create git tags after version bumps
+  [ ] Version Validator - Enforce versioning policies
+  [ ] Dependency Check - Sync version to package.json and other files
+  [ ] Changelog Parser - Infer bump type from CHANGELOG.md
+  [ ] Changelog Generator - Generate changelogs from commits
+  [ ] Release Gate - Pre-bump validation (clean worktree, CI status)
+  [ ] Audit Log - Record version history with metadata
+
+Created .version with version 0.1.0
+Created .sley.yaml with 2 plugins enabled
+
+Next steps:
+  - Review .sley.yaml and adjust settings
+  - Run 'sley bump patch' to increment version
+  - Run 'sley doctor' to verify setup
+```
+
+The init command automatically detects your project type (Git, Node.js, Go, Rust, Python) and suggests relevant plugins.
 
 ## Plugin System
 
