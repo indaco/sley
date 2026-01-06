@@ -150,3 +150,60 @@ func ConfirmOverwrite() (bool, error) {
 
 	return confirmed, nil
 }
+
+// confirmVersionMigration asks the user if they want to use the detected version.
+func confirmVersionMigration(version, file string) (bool, error) {
+	var confirmed bool
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title(fmt.Sprintf("Use version %s from %s?", version, file)).
+				Description("This will initialize .version with the detected version.").
+				Value(&confirmed),
+		),
+	).WithKeyMap(customKeyMap())
+
+	if err := form.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return false, nil
+		}
+		return false, fmt.Errorf("confirmation failed: %w", err)
+	}
+
+	return confirmed, nil
+}
+
+// selectVersionSource prompts the user to select a version source from multiple options.
+func selectVersionSource(sources []VersionSource) (*VersionSource, error) {
+	if len(sources) == 0 {
+		return nil, nil
+	}
+
+	options := make([]huh.Option[int], len(sources))
+	for i, s := range sources {
+		label := fmt.Sprintf("%s from %s (%s)", s.Version, s.File, s.Format)
+		options[i] = huh.NewOption(label, i)
+	}
+
+	var selected int
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[int]().
+				Title("Select version to use:").
+				Description("Choose which version to migrate to .version file").
+				Options(options...).
+				Value(&selected),
+		),
+	).WithKeyMap(customKeyMap())
+
+	if err := form.Run(); err != nil {
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("selection failed: %w", err)
+	}
+
+	return &sources[selected], nil
+}

@@ -147,7 +147,7 @@ USAGE:
    sley [global options] [command [command options]]
 
 VERSION:
-   v0.6.0-rc4
+   v0.6.0-rc5
 
 COMMANDS:
    show              Display current version
@@ -224,6 +224,9 @@ sley init --enable commit-parser,tag-manager,changelog-generator
 # Initialize as monorepo with workspace configuration
 sley init --workspace --yes
 
+# Migrate version from existing package.json, Cargo.toml, etc.
+sley init --migrate --yes
+
 # Custom path
 sley init --path internal/version/.version
 ```
@@ -236,6 +239,7 @@ sley init --path internal/version/.version
 | `--template`   | Use a pre-configured template (see below)                 |
 | `--enable`     | Comma-separated list of plugins to enable                 |
 | `--workspace`  | Initialize as monorepo with workspace configuration       |
+| `--migrate`    | Detect version from existing files (package.json, etc.)   |
 | `--force`      | Overwrite existing .sley.yaml                             |
 | `--path`, `-p` | Custom path for .version file                             |
 
@@ -472,6 +476,13 @@ Force overwrite existing configuration:
 ```bash
 sley init --yes --force
 # => Overwrites existing .sley.yaml
+```
+
+Migrate version from existing project files:
+
+```bash
+sley init --migrate --yes
+# => Detected 2.0.0 from package.json, uses it for .version
 ```
 
 ### Interactive Mode
