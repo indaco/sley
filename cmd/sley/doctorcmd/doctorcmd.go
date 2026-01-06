@@ -20,7 +20,7 @@ func Run(cfg *config.Config) *cli.Command {
 	return &cli.Command{
 		Name:      "doctor",
 		Aliases:   []string{"validate"},
-		Usage:     "Validate the .version file",
+		Usage:     "Validate .version file(s) and configuration",
 		UsageText: "sley doctor [--all] [--module name] [--format text|json|table]",
 		Flags:     flags.MultiModuleFlags(),
 		Action: func(ctx context.Context, cmd *cli.Command) error {

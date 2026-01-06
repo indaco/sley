@@ -155,8 +155,8 @@ COMMANDS:
    bump              Bump semantic version (patch, minor, major)
    changelog         Manage changelog files
    pre               Set pre-release label (e.g., alpha, beta.1)
-   doctor, validate  Validate the .version file
-   init              Initialize a .version file (auto-detects Git tag or starts from 0.1.0)
+   doctor, validate  Validate .version file(s) and configuration
+   init              Initialize .version file and .sley.yaml configuration
    extension         Manage extensions for sley
    modules, mods     Manage and discover modules in workspace
    help, h           Shows a list of commands or help for one command
