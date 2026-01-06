@@ -24,6 +24,10 @@ func Run() *cli.Command {
 				Usage:   "Use default settings without prompts",
 			},
 			&cli.StringFlag{
+				Name:  "template",
+				Usage: "Use a pre-configured template (basic, git, automation, strict, full)",
+			},
+			&cli.StringFlag{
 				Name:  "enable",
 				Usage: "Comma-separated list of plugins to enable (e.g., commit-parser,tag-manager)",
 			},
@@ -42,6 +46,7 @@ func Run() *cli.Command {
 func runInitCmd(cmd *cli.Command) error {
 	path := cmd.String("path")
 	yesFlag := cmd.Bool("yes")
+	templateFlag := cmd.String("template")
 	enableFlag := cmd.String("enable")
 	forceFlag := cmd.Bool("force")
 
@@ -55,7 +60,7 @@ func runInitCmd(cmd *cli.Command) error {
 	projectCtx := DetectProjectContext()
 
 	// Step 3: Determine which plugins to enable
-	selectedPlugins, err := determinePlugins(projectCtx, yesFlag, enableFlag)
+	selectedPlugins, err := determinePlugins(projectCtx, yesFlag, templateFlag, enableFlag)
 	if err != nil {
 		return err
 	}
@@ -98,18 +103,27 @@ func initializeVersionFile(path string) (bool, error) {
 }
 
 // determinePlugins decides which plugins to enable based on flags and user input.
-func determinePlugins(ctx *ProjectContext, yesFlag bool, enableFlag string) ([]string, error) {
-	// Priority 1: --enable flag
+func determinePlugins(ctx *ProjectContext, yesFlag bool, templateFlag, enableFlag string) ([]string, error) {
+	// Priority 1: --enable flag (most specific)
 	if enableFlag != "" {
 		return parseEnableFlag(enableFlag), nil
 	}
 
-	// Priority 2: --yes flag (use defaults)
+	// Priority 2: --template flag
+	if templateFlag != "" {
+		template, err := GetTemplate(templateFlag)
+		if err != nil {
+			return nil, err
+		}
+		return template.Plugins, nil
+	}
+
+	// Priority 3: --yes flag (use defaults)
 	if yesFlag {
 		return DefaultPluginNames(), nil
 	}
 
-	// Priority 3: Interactive prompt
+	// Priority 4: Interactive prompt
 	if !isTerminalInteractive() {
 		// Non-interactive terminal, use defaults
 		return DefaultPluginNames(), nil

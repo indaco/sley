@@ -215,6 +215,9 @@ sley init
 # Non-interactive with sensible defaults
 sley init --yes
 
+# Use a pre-configured template
+sley init --template automation
+
 # Enable specific plugins
 sley init --enable commit-parser,tag-manager,changelog-generator
 
@@ -227,9 +230,20 @@ sley init --path internal/version/.version
 | Flag           | Description                                               |
 | -------------- | --------------------------------------------------------- |
 | `--yes`, `-y`  | Use defaults without prompts (commit-parser, tag-manager) |
+| `--template`   | Use a pre-configured template (see below)                 |
 | `--enable`     | Comma-separated list of plugins to enable                 |
 | `--force`      | Overwrite existing .sley.yaml                             |
 | `--path`, `-p` | Custom path for .version file                             |
+
+**Available templates:**
+
+| Template     | Plugins Enabled                                             |
+| ------------ | ----------------------------------------------------------- |
+| `basic`      | commit-parser                                               |
+| `git`        | commit-parser, tag-manager                                  |
+| `automation` | commit-parser, tag-manager, changelog-generator             |
+| `strict`     | commit-parser, tag-manager, version-validator, release-gate |
+| `full`       | All plugins enabled                                         |
 
 **To disable auto-initialization**, use the `--strict` flag.
 This is useful in CI/CD environments or stricter workflows where you want the command to fail if the file is missing:
