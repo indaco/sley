@@ -36,6 +36,10 @@ func Run() *cli.Command {
 				Usage: "Initialize as monorepo/workspace with module discovery",
 			},
 			&cli.BoolFlag{
+				Name:  "migrate",
+				Usage: "Detect and use version from existing files (package.json, Cargo.toml, etc.)",
+			},
+			&cli.BoolFlag{
 				Name:  "force",
 				Usage: "Overwrite existing .sley.yaml if it exists",
 			},
@@ -53,6 +57,7 @@ func runInitCmd(cmd *cli.Command) error {
 	templateFlag := cmd.String("template")
 	enableFlag := cmd.String("enable")
 	workspaceFlag := cmd.Bool("workspace")
+	migrateFlag := cmd.Bool("migrate")
 	forceFlag := cmd.Bool("force")
 
 	// Handle workspace mode differently
@@ -60,8 +65,14 @@ func runInitCmd(cmd *cli.Command) error {
 		return runWorkspaceInit(path, yesFlag, templateFlag, enableFlag, forceFlag)
 	}
 
-	// Step 1: Initialize .version file if needed
-	versionCreated, err := initializeVersionFile(path)
+	// Step 1: Handle migration if requested
+	var migratedVersion string
+	if migrateFlag {
+		migratedVersion = handleMigration(yesFlag)
+	}
+
+	// Step 2: Initialize .version file if needed
+	versionCreated, err := initializeVersionFileWithMigration(path, migratedVersion)
 	if err != nil {
 		return err
 	}
@@ -98,6 +109,31 @@ func runInitCmd(cmd *cli.Command) error {
 // initializeVersionFile creates the .version file if it doesn't exist.
 // Returns true if created, false if already existed.
 func initializeVersionFile(path string) (bool, error) {
+	return initializeVersionFileWithMigration(path, "")
+}
+
+// initializeVersionFileWithMigration creates the .version file with an optional migrated version.
+// If migratedVersion is non-empty, it will be used instead of the default.
+func initializeVersionFileWithMigration(path string, migratedVersion string) (bool, error) {
+	// Check if file already exists
+	if _, err := os.Stat(path); err == nil {
+		// File exists, verify it's readable
+		_, err = semver.ReadVersion(path)
+		if err != nil {
+			return false, fmt.Errorf("failed to read version file at %s: %w", path, err)
+		}
+		return false, nil
+	}
+
+	// Use migrated version if provided, otherwise use default initialization
+	if migratedVersion != "" {
+		if err := os.WriteFile(path, []byte(migratedVersion+"\n"), 0600); err != nil {
+			return false, fmt.Errorf("failed to write version file: %w", err)
+		}
+		return true, nil
+	}
+
+	// Default initialization (may use git tag)
 	created, err := semver.InitializeVersionFileWithFeedback(path)
 	if err != nil {
 		return false, err
@@ -110,6 +146,47 @@ func initializeVersionFile(path string) (bool, error) {
 	}
 
 	return created, nil
+}
+
+// handleMigration detects versions from existing files and handles user interaction.
+func handleMigration(yesFlag bool) string {
+	sources := DetectExistingVersions()
+	if len(sources) == 0 {
+		printer.PrintInfo("No existing version files detected for migration")
+		return ""
+	}
+
+	// Show detected versions
+	printer.PrintInfo(fmt.Sprintf("Detected %d version source%s:", len(sources), pluralize(len(sources))))
+	fmt.Print(FormatVersionSources(sources))
+
+	// Get best version
+	best := GetBestVersionSource(sources)
+	if best == nil {
+		return ""
+	}
+
+	// In non-interactive mode or with --yes, use the best version automatically
+	if yesFlag || !isTerminalInteractive() {
+		printer.PrintSuccess(fmt.Sprintf("Using version %s from %s", best.Version, best.File))
+		return best.Version
+	}
+
+	// Interactive mode: ask user to confirm or select
+	if len(sources) == 1 {
+		confirmed, err := confirmVersionMigration(best.Version, best.File)
+		if err != nil || !confirmed {
+			return ""
+		}
+		return best.Version
+	}
+
+	// Multiple sources: let user choose
+	selected, err := selectVersionSource(sources)
+	if err != nil || selected == nil {
+		return ""
+	}
+	return selected.Version
 }
 
 // determinePlugins decides which plugins to enable based on flags and user input.
