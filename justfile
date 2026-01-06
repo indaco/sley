@@ -73,6 +73,11 @@ test-coverage:
     @echo "* Run all tests and generate coverage report."
     go test -count=1 -timeout 30s $(go list ./... | grep -Ev 'internal/testutils') -covermode=atomic -coverprofile=coverage.txt
 
+# Run all tests with race detector
+test-race:
+    @echo "* Running tests with race detector..."
+    {{ go }} test -race $({{ go }} list ./... | grep -Ev 'internal/testutils')
+
 # Run modernize, lint, and reportcard
 check: modernize lint reportcard
 

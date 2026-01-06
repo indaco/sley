@@ -811,3 +811,188 @@ func TestHookOutput_EmptyData(t *testing.T) {
 		t.Errorf("expected message 'No data', got '%s'", decoded.Message)
 	}
 }
+
+/* ------------------------------------------------------------------------- */
+/* PATH TRAVERSAL SECURITY TESTS                                             */
+/* ------------------------------------------------------------------------- */
+
+// TestExecuteExtensionHook_PathTraversal tests that path traversal attempts are blocked
+func TestExecuteExtensionHook_PathTraversal(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a secret file outside the extension directory
+	secretDir := filepath.Join(tmpDir, "secret")
+	if err := os.MkdirAll(secretDir, 0755); err != nil {
+		t.Fatalf("failed to create secret directory: %v", err)
+	}
+	secretFile := filepath.Join(secretDir, "sensitive.sh")
+	script := `#!/bin/sh
+read input
+echo '{"success": true, "message": "Accessed secret file"}'
+`
+	if err := os.WriteFile(secretFile, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create secret file: %v", err)
+	}
+
+	// Create extension directory
+	extDir := filepath.Join(tmpDir, "extension")
+	if err := os.MkdirAll(extDir, 0755); err != nil {
+		t.Fatalf("failed to create extension directory: %v", err)
+	}
+
+	input := HookInput{
+		Hook:        "post-bump",
+		Version:     "1.0.0",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name        string
+		entryPoint  string
+		wantErrText string
+	}{
+		{
+			name:        "path traversal with ..",
+			entryPoint:  "../secret/sensitive.sh",
+			wantErrText: "invalid script path",
+		},
+		{
+			name:        "path traversal with multiple ..",
+			entryPoint:  "../../etc/passwd",
+			wantErrText: "invalid script path",
+		},
+		{
+			name:        "path traversal attempt to parent",
+			entryPoint:  "../sensitive.sh",
+			wantErrText: "invalid script path",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, input)
+
+			if err == nil {
+				t.Fatal("expected error for path traversal attempt, got nil")
+			}
+
+			if !contains(err.Error(), tt.wantErrText) {
+				t.Errorf("expected error containing %q, got %q", tt.wantErrText, err.Error())
+			}
+		})
+	}
+}
+
+// TestExecuteExtensionHook_ValidPaths tests that valid paths within extension dir work
+func TestExecuteExtensionHook_ValidPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create extension directory with nested structure
+	extDir := filepath.Join(tmpDir, "extension")
+	hooksDir := filepath.Join(extDir, "hooks")
+	if err := os.MkdirAll(hooksDir, 0755); err != nil {
+		t.Fatalf("failed to create hooks directory: %v", err)
+	}
+
+	// Create script in root of extension
+	rootScript := filepath.Join(extDir, "hook.sh")
+	script := `#!/bin/sh
+read input
+echo '{"success": true, "message": "Valid path"}'
+`
+	if err := os.WriteFile(rootScript, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create root script: %v", err)
+	}
+
+	// Create script in subdirectory
+	nestedScript := filepath.Join(hooksDir, "nested.sh")
+	if err := os.WriteFile(nestedScript, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create nested script: %v", err)
+	}
+
+	input := HookInput{
+		Hook:        "post-bump",
+		Version:     "1.0.0",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+
+	tests := []struct {
+		name       string
+		entryPoint string
+		wantErr    bool
+	}{
+		{
+			name:       "script in extension root",
+			entryPoint: "hook.sh",
+			wantErr:    false,
+		},
+		{
+			name:       "script in subdirectory",
+			entryPoint: "hooks/nested.sh",
+			wantErr:    false,
+		},
+		{
+			name:       "script with ./prefix",
+			entryPoint: "./hook.sh",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			output, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, input)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected error, got nil")
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+				if !output.Success {
+					t.Error("expected success=true")
+				}
+			}
+		})
+	}
+}
+
+// TestExecuteExtensionHook_PathCleaning tests that paths are properly cleaned
+func TestExecuteExtensionHook_PathCleaning(t *testing.T) {
+	tmpDir := t.TempDir()
+	extDir := filepath.Join(tmpDir, "extension")
+	if err := os.MkdirAll(extDir, 0755); err != nil {
+		t.Fatalf("failed to create extension directory: %v", err)
+	}
+
+	scriptPath := filepath.Join(extDir, "hook.sh")
+	script := `#!/bin/sh
+read input
+echo '{"success": true, "message": "Path cleaned"}'
+`
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create script: %v", err)
+	}
+
+	input := HookInput{
+		Hook:        "validate",
+		Version:     "1.0.0",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+
+	// Path with redundant ./ should be cleaned and work
+	output, err := ExecuteExtensionHook(ctx, extDir, "./././hook.sh", input)
+	if err != nil {
+		t.Fatalf("unexpected error for cleaned path: %v", err)
+	}
+	if !output.Success {
+		t.Error("expected success=true for cleaned path")
+	}
+}

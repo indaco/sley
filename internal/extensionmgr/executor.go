@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
+
+	"github.com/indaco/sley/internal/pathutil"
 )
 
 // HookInput represents the JSON input passed to an extension script
@@ -63,16 +65,19 @@ func NewScriptExecutorWithTimeout(timeout time.Duration) *ScriptExecutor {
 
 // Execute runs an extension script with the provided input and returns the output
 func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error) {
-	// Validate script path
-	absPath, err := filepath.Abs(scriptPath)
+	// Clean and validate script path to prevent path traversal attacks
+	cleanPath := filepath.Clean(scriptPath)
+
+	// Resolve to absolute path
+	absPath, err := filepath.Abs(cleanPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve script path: %w", err)
+		return nil, fmt.Errorf("failed to resolve script path %s: %w", scriptPath, err)
 	}
 
 	// Check if script exists and is executable
 	info, err := os.Stat(absPath)
 	if err != nil {
-		return nil, fmt.Errorf("script not found: %w", err)
+		return nil, fmt.Errorf("script not found at %s: %w", absPath, err)
 	}
 
 	if info.IsDir() {
@@ -133,12 +138,19 @@ func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input H
 }
 
 // ExecuteExtensionHook is a convenience function to execute an extension hook
-// It resolves the full script path relative to the extension directory
+// It resolves the full script path relative to the extension directory and validates
+// that the script remains within the extension directory to prevent path traversal attacks
 func ExecuteExtensionHook(ctx context.Context, extensionPath, entry string, input HookInput) (*HookOutput, error) {
 	executor := NewScriptExecutor()
 
-	// Resolve full script path
+	// Validate that the entry point doesn't attempt path traversal
+	// This prevents malicious extensions from accessing files outside their directory
 	scriptPath := filepath.Join(extensionPath, entry)
+
+	// Validate the script path is within the extension directory
+	if _, err := pathutil.ValidatePath(scriptPath, extensionPath); err != nil {
+		return nil, fmt.Errorf("invalid script path: %w", err)
+	}
 
 	return executor.Execute(ctx, scriptPath, input)
 }

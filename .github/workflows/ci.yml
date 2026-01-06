@@ -82,3 +82,33 @@ jobs:
 
       - name: Run test
         run: just test
+
+  test-race:
+    name: test-race
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: go.sum
+          check-latest: true
+
+      - name: Install Go modules
+        run: go mod download
+
+      - name: Verify dependencies
+        run: go mod verify
+
+      - name: Install just
+        uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Run tests with race detector
+        run: just test-race
