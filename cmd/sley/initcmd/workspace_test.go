@@ -144,7 +144,7 @@ func TestGenerateWorkspaceConfigWithComments(t *testing.T) {
 	}
 	plugins := []string{"commit-parser", "tag-manager"}
 
-	data, err := GenerateWorkspaceConfigWithComments(".version", plugins, modules)
+	data, err := GenerateWorkspaceConfigWithComments(plugins, modules)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -198,7 +198,7 @@ func TestGenerateWorkspaceConfigWithComments_NoModules(t *testing.T) {
 	modules := []DiscoveredModule{}
 	plugins := []string{"commit-parser"}
 
-	data, err := GenerateWorkspaceConfigWithComments(".version", plugins, modules)
+	data, err := GenerateWorkspaceConfigWithComments(plugins, modules)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -332,7 +332,7 @@ func TestCreateWorkspaceConfigFile(t *testing.T) {
 			{Name: "api", RelPath: "services/api/.version", Version: "1.0.0"},
 		}
 
-		created, err := createWorkspaceConfigFile(".version", []string{"commit-parser"}, modules, false)
+		created, err := createWorkspaceConfigFile([]string{"commit-parser"}, modules, false)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -356,7 +356,7 @@ func TestCreateWorkspaceConfigFile(t *testing.T) {
 		}
 
 		modules := []DiscoveredModule{}
-		created, err := createWorkspaceConfigFile(".version", []string{"commit-parser"}, modules, true)
+		created, err := createWorkspaceConfigFile([]string{"commit-parser"}, modules, true)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -451,20 +451,6 @@ func TestPrintWorkspaceSuccessSummary(t *testing.T) {
 			t.Error("should not print created message when configCreated is false")
 		}
 	})
-}
-
-func TestGenerateWorkspaceConfigWithComments_CustomPath(t *testing.T) {
-	modules := []DiscoveredModule{}
-	plugins := []string{"commit-parser"}
-
-	data, err := GenerateWorkspaceConfigWithComments("custom/path/.version", plugins, modules)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !strings.Contains(string(data), "path: custom/path/.version") {
-		t.Error("expected custom path in config")
-	}
 }
 
 func TestWritePluginConfig(t *testing.T) {

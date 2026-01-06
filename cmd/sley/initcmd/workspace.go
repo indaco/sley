@@ -41,7 +41,7 @@ func runWorkspaceInit(path string, yesFlag bool, templateFlag, enableFlag string
 	}
 
 	// Step 4: Create .sley.yaml with workspace configuration
-	configCreated, err := createWorkspaceConfigFile(path, selectedPlugins, modules, forceFlag)
+	configCreated, err := createWorkspaceConfigFile(selectedPlugins, modules, forceFlag)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func discoverVersionFiles(root string) ([]DiscoveredModule, error) {
 }
 
 // createWorkspaceConfigFile generates and writes the .sley.yaml with workspace configuration.
-func createWorkspaceConfigFile(path string, plugins []string, modules []DiscoveredModule, forceFlag bool) (bool, error) {
+func createWorkspaceConfigFile(plugins []string, modules []DiscoveredModule, forceFlag bool) (bool, error) {
 	configPath := ".sley.yaml"
 
 	// Check if config already exists
@@ -131,7 +131,7 @@ func createWorkspaceConfigFile(path string, plugins []string, modules []Discover
 	}
 
 	// Generate config with workspace section
-	configData, err := GenerateWorkspaceConfigWithComments(path, plugins, modules)
+	configData, err := GenerateWorkspaceConfigWithComments(plugins, modules)
 	if err != nil {
 		return false, fmt.Errorf("failed to generate config: %w", err)
 	}
@@ -144,7 +144,8 @@ func createWorkspaceConfigFile(path string, plugins []string, modules []Discover
 }
 
 // GenerateWorkspaceConfigWithComments generates YAML config with workspace section.
-func GenerateWorkspaceConfigWithComments(path string, plugins []string, modules []DiscoveredModule) ([]byte, error) {
+// In workspace mode, the root path field is omitted since each module defines its own path.
+func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredModule) ([]byte, error) {
 	var sb strings.Builder
 
 	// Header
@@ -160,14 +161,6 @@ func GenerateWorkspaceConfigWithComments(path string, plugins []string, modules 
 		}
 		sb.WriteString("\n")
 	}
-
-	// Path (use default for workspace mode)
-	if path == "" || path == ".version" {
-		sb.WriteString("path: .version\n")
-	} else {
-		sb.WriteString(fmt.Sprintf("path: %s\n", path))
-	}
-	sb.WriteString("\n")
 
 	// Plugins section
 	sb.WriteString("plugins:\n")
