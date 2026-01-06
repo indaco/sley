@@ -221,6 +221,9 @@ sley init --template automation
 # Enable specific plugins
 sley init --enable commit-parser,tag-manager,changelog-generator
 
+# Initialize as monorepo with workspace configuration
+sley init --workspace --yes
+
 # Custom path
 sley init --path internal/version/.version
 ```
@@ -232,6 +235,7 @@ sley init --path internal/version/.version
 | `--yes`, `-y`  | Use defaults without prompts (commit-parser, tag-manager) |
 | `--template`   | Use a pre-configured template (see below)                 |
 | `--enable`     | Comma-separated list of plugins to enable                 |
+| `--workspace`  | Initialize as monorepo with workspace configuration       |
 | `--force`      | Overwrite existing .sley.yaml                             |
 | `--path`, `-p` | Custom path for .version file                             |
 

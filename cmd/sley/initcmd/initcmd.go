@@ -32,6 +32,10 @@ func Run() *cli.Command {
 				Usage: "Comma-separated list of plugins to enable (e.g., commit-parser,tag-manager)",
 			},
 			&cli.BoolFlag{
+				Name:  "workspace",
+				Usage: "Initialize as monorepo/workspace with module discovery",
+			},
+			&cli.BoolFlag{
 				Name:  "force",
 				Usage: "Overwrite existing .sley.yaml if it exists",
 			},
@@ -48,7 +52,13 @@ func runInitCmd(cmd *cli.Command) error {
 	yesFlag := cmd.Bool("yes")
 	templateFlag := cmd.String("template")
 	enableFlag := cmd.String("enable")
+	workspaceFlag := cmd.Bool("workspace")
 	forceFlag := cmd.Bool("force")
+
+	// Handle workspace mode differently
+	if workspaceFlag {
+		return runWorkspaceInit(path, yesFlag, templateFlag, enableFlag, forceFlag)
+	}
 
 	// Step 1: Initialize .version file if needed
 	versionCreated, err := initializeVersionFile(path)
