@@ -32,7 +32,8 @@ func Run(cfg *config.Config) *cli.Command {
 // runDoctorCmd checks that the .version file is valid.
 func runDoctorCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
 	// Get execution context to determine single vs multi-module mode
-	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg)
+	// Use WithDefaultAll since doctor is a read-only command - no need for TUI prompt
+	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg, clix.WithDefaultAll())
 	if err != nil {
 		return err
 	}

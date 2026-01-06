@@ -784,7 +784,7 @@ func TestGetMultiModuleContext_NoModulesFound(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, ctxErr := getMultiModuleContext(ctx, cmd, cfg, false)
+	_, ctxErr := getMultiModuleContext(ctx, cmd, cfg, &executionOptions{}, false)
 	if ctxErr == nil {
 		t.Fatal("expected error for no modules found")
 	}
@@ -843,7 +843,7 @@ func TestGetMultiModuleContext_NonInteractive(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	execCtx, err := getMultiModuleContext(ctx, cmd, cfg, false)
+	execCtx, err := getMultiModuleContext(ctx, cmd, cfg, &executionOptions{}, false)
 	if err != nil {
 		t.Fatalf("getMultiModuleContext() error = %v", err)
 	}

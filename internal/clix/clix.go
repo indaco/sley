@@ -114,6 +114,22 @@ func (ec *ExecutionContext) IsMultiModule() bool {
 	return ec.Mode == MultiModuleMode
 }
 
+// ExecutionOption configures execution context behavior.
+type ExecutionOption func(*executionOptions)
+
+type executionOptions struct {
+	defaultToAll bool // Skip TUI prompt and default to all modules (for read-only commands)
+}
+
+// WithDefaultAll configures the execution context to default to all modules
+// without showing a TUI prompt. Use this for read-only commands like "show"
+// and "doctor" where prompting adds friction without value.
+func WithDefaultAll() ExecutionOption {
+	return func(o *executionOptions) {
+		o.defaultToAll = true
+	}
+}
+
 // GetExecutionContext determines the execution context for a command.
 // It follows this logic:
 //  1. If --path flag provided -> single-module mode
@@ -126,7 +142,12 @@ func (ec *ExecutionContext) IsMultiModule() bool {
 // The context parameter is used for cancellation and timeouts.
 // The cmd parameter provides access to CLI flags.
 // The cfg parameter provides workspace configuration.
-func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Config) (*ExecutionContext, error) {
+// Optional ExecutionOption can be passed to modify behavior (e.g., WithDefaultAll).
+func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, opts ...ExecutionOption) (*ExecutionContext, error) {
+	options := &executionOptions{}
+	for _, opt := range opts {
+		opt(options)
+	}
 	// Check if --path flag is provided
 	if cmd.IsSet("path") {
 		path := cmd.String("path")
@@ -151,7 +172,7 @@ func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 
 	// If explicit multi-module flags are set, detect modules
 	if hasAll || hasModule {
-		return getMultiModuleContext(ctx, cmd, cfg, true)
+		return getMultiModuleContext(ctx, cmd, cfg, options, true)
 	}
 
 	// Detect workspace context
@@ -178,7 +199,7 @@ func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 
 	case workspace.MultiModule:
 		// Multiple modules found, determine if we should prompt
-		return getMultiModuleContext(ctx, cmd, cfg, false)
+		return getMultiModuleContext(ctx, cmd, cfg, options, false)
 
 	case workspace.NoModules:
 		// No modules found, fall back to default path
@@ -198,7 +219,7 @@ func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 
 // getMultiModuleContext handles multi-module execution context setup.
 // It discovers modules, filters based on flags, and optionally shows TUI.
-func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, skipDetection bool) (*ExecutionContext, error) {
+func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, options *executionOptions, skipDetection bool) (*ExecutionContext, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
@@ -227,7 +248,8 @@ func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Co
 	}
 
 	// Check if we should skip TUI prompt
-	shouldPrompt := tui.IsInteractive() && !cmd.Bool("yes") && !cmd.Bool("non-interactive") && !cmd.Bool("all")
+	// Skip prompting for read-only commands (defaultToAll) or when explicit flags are set
+	shouldPrompt := tui.IsInteractive() && !cmd.Bool("yes") && !cmd.Bool("non-interactive") && !cmd.Bool("all") && !options.defaultToAll
 
 	if shouldPrompt {
 		// Show TUI module selection
