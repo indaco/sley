@@ -10,11 +10,12 @@ import (
 
 func TestVersionManager_Read(t *testing.T) {
 	mockFS := core.NewMockFileSystem()
+	ctx := context.Background()
 	mockFS.SetFile("/test/.version", []byte("1.2.3-alpha.1+build.123\n"))
 
 	mgr := NewVersionManager(mockFS, nil)
 
-	v, err := mgr.Read("/test/.version")
+	v, err := mgr.Read(ctx, "/test/.version")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -32,9 +33,10 @@ func TestVersionManager_Read(t *testing.T) {
 
 func TestVersionManager_Read_FileNotFound(t *testing.T) {
 	mockFS := core.NewMockFileSystem()
+	ctx := context.Background()
 	mgr := NewVersionManager(mockFS, nil)
 
-	_, err := mgr.Read("/nonexistent/.version")
+	_, err := mgr.Read(ctx, "/nonexistent/.version")
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -42,11 +44,12 @@ func TestVersionManager_Read_FileNotFound(t *testing.T) {
 
 func TestVersionManager_Read_InvalidVersion(t *testing.T) {
 	mockFS := core.NewMockFileSystem()
+	ctx := context.Background()
 	mockFS.SetFile("/test/.version", []byte("not-a-version\n"))
 
 	mgr := NewVersionManager(mockFS, nil)
 
-	_, err := mgr.Read("/test/.version")
+	_, err := mgr.Read(ctx, "/test/.version")
 	if err == nil {
 		t.Fatal("expected error for invalid version, got nil")
 	}
@@ -54,11 +57,12 @@ func TestVersionManager_Read_InvalidVersion(t *testing.T) {
 
 func TestVersionManager_Save(t *testing.T) {
 	mockFS := core.NewMockFileSystem()
+	ctx := context.Background()
 	mgr := NewVersionManager(mockFS, nil)
 
 	v := SemVersion{Major: 2, Minor: 0, Patch: 0, PreRelease: "beta.1"}
 
-	err := mgr.Save("/test/.version", v)
+	err := mgr.Save(ctx, "/test/.version", v)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -192,12 +196,13 @@ func TestVersionManager_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
 			mockFS := core.NewMockFileSystem()
 			mockFS.SetFile("/test/.version", []byte(tt.initial))
 
 			mgr := NewVersionManager(mockFS, nil)
 
-			err := mgr.Update("/test/.version", tt.bumpType, tt.pre, tt.meta, tt.preserve)
+			err := mgr.Update(ctx, "/test/.version", tt.bumpType, tt.pre, tt.meta, tt.preserve)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -211,12 +216,13 @@ func TestVersionManager_Update(t *testing.T) {
 }
 
 func TestVersionManager_Update_InvalidBumpType(t *testing.T) {
+	ctx := context.Background()
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/test/.version", []byte("1.0.0\n"))
 
 	mgr := NewVersionManager(mockFS, nil)
 
-	err := mgr.Update("/test/.version", "invalid", "", "", false)
+	err := mgr.Update(ctx, "/test/.version", "invalid", "", "", false)
 	if err == nil {
 		t.Fatal("expected error for invalid bump type, got nil")
 	}

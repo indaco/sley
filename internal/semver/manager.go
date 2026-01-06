@@ -34,8 +34,8 @@ func DefaultVersionManager() *VersionManager {
 }
 
 // Read reads a version from the given path.
-func (m *VersionManager) Read(path string) (SemVersion, error) {
-	data, err := m.fs.ReadFile(path)
+func (m *VersionManager) Read(ctx context.Context, path string) (SemVersion, error) {
+	data, err := m.fs.ReadFile(ctx, path)
 	if err != nil {
 		return SemVersion{}, err
 	}
@@ -43,18 +43,18 @@ func (m *VersionManager) Read(path string) (SemVersion, error) {
 }
 
 // Save writes a version to the given path.
-func (m *VersionManager) Save(path string, version SemVersion) error {
+func (m *VersionManager) Save(ctx context.Context, path string, version SemVersion) error {
 	// Ensure parent directory exists
-	if err := m.fs.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := m.fs.MkdirAll(ctx, filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	return m.fs.WriteFile(path, []byte(version.String()+"\n"), VersionFilePerm)
+	return m.fs.WriteFile(ctx, path, []byte(version.String()+"\n"), VersionFilePerm)
 }
 
 // Initialize creates a version file if it doesn't exist.
 // It tries to use the latest git tag, or falls back to 0.1.0.
 func (m *VersionManager) Initialize(ctx context.Context, path string) error {
-	if _, err := m.fs.Stat(path); err == nil {
+	if _, err := m.fs.Stat(ctx, path); err == nil {
 		return nil // Already exists
 	}
 
@@ -71,12 +71,12 @@ func (m *VersionManager) Initialize(ctx context.Context, path string) error {
 		}
 	}
 
-	return m.Save(path, version)
+	return m.Save(ctx, path, version)
 }
 
 // InitializeWithFeedback initializes the version file and returns whether it was created.
 func (m *VersionManager) InitializeWithFeedback(ctx context.Context, path string) (created bool, err error) {
-	if _, err := m.fs.Stat(path); err == nil {
+	if _, err := m.fs.Stat(ctx, path); err == nil {
 		return false, nil
 	}
 
@@ -88,8 +88,8 @@ func (m *VersionManager) InitializeWithFeedback(ctx context.Context, path string
 }
 
 // Update reads, bumps, and saves the version.
-func (m *VersionManager) Update(path string, bumpType string, pre string, meta string, preserve bool) error {
-	version, err := m.Read(path)
+func (m *VersionManager) Update(ctx context.Context, path string, bumpType string, pre string, meta string, preserve bool) error {
+	version, err := m.Read(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -116,15 +116,15 @@ func (m *VersionManager) Update(path string, bumpType string, pre string, meta s
 		version.Build = ""
 	}
 
-	return m.Save(path, version)
+	return m.Save(ctx, path, version)
 }
 
 // UpdatePreRelease updates only the pre-release portion of the version.
 // If label is provided, it switches to that label (starting at .1).
 // If label is empty, it increments the existing pre-release number.
 // Returns an error if no label is provided and the version has no pre-release.
-func (m *VersionManager) UpdatePreRelease(path string, label string, meta string, preserve bool) error {
-	version, err := m.Read(path)
+func (m *VersionManager) UpdatePreRelease(ctx context.Context, path string, label string, meta string, preserve bool) error {
+	version, err := m.Read(ctx, path)
 	if err != nil {
 		return err
 	}
@@ -148,7 +148,7 @@ func (m *VersionManager) UpdatePreRelease(path string, label string, meta string
 		version.Build = ""
 	}
 
-	return m.Save(path, version)
+	return m.Save(ctx, path, version)
 }
 
 // extractPreReleaseBase extracts the base label from a pre-release string.
