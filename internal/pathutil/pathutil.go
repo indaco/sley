@@ -1,4 +1,3 @@
-// Package pathutil provides utilities for safe path handling.
 package pathutil
 
 import (
