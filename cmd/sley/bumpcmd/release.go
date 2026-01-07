@@ -80,23 +80,8 @@ func runSingleModuleRelease(cmd *cli.Command, registry *plugins.PluginRegistry, 
 		newVersion.Build = ""
 	}
 
-	// Validate release gates before bumping
-	if err := validateReleaseGate(registry, newVersion, previousVersion, "release"); err != nil {
-		return err
-	}
-
-	// Validate version policy before bumping
-	if err := validateVersionPolicy(registry, newVersion, previousVersion, "release"); err != nil {
-		return err
-	}
-
-	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(registry, newVersion); err != nil {
-		return err
-	}
-
-	// Validate tag availability before bumping
-	if err := validateTagAvailable(registry, newVersion); err != nil {
+	// Execute all pre-bump validations
+	if err := executePreBumpValidations(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 
@@ -104,13 +89,8 @@ func runSingleModuleRelease(cmd *cli.Command, registry *plugins.PluginRegistry, 
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
-	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "release"); err != nil {
-		return err
-	}
-
-	// Record audit log entry
-	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "release"); err != nil {
+	// Execute all post-bump actions
+	if err := executePostBumpActions(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 

@@ -162,23 +162,8 @@ func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, pat
 
 	next = setBuildMetadata(current, next, meta, isPreserveMeta)
 
-	// Validate release gates before bumping
-	if err := validateReleaseGate(registry, next, current, "auto"); err != nil {
-		return err
-	}
-
-	// Validate version policy before bumping
-	if err := validateVersionPolicy(registry, next, current, "auto"); err != nil {
-		return err
-	}
-
-	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(registry, next); err != nil {
-		return err
-	}
-
-	// Validate tag availability before bumping
-	if err := validateTagAvailable(registry, next); err != nil {
+	// Execute all pre-bump validations
+	if err := executePreBumpValidations(registry, next, current, "auto"); err != nil {
 		return err
 	}
 
@@ -186,13 +171,8 @@ func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, pat
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
-	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, next, current, "auto"); err != nil {
-		return err
-	}
-
-	// Record audit log entry
-	if err := recordAuditLogEntry(registry, next, current, "auto"); err != nil {
+	// Execute all post-bump actions
+	if err := executePostBumpActions(registry, next, current, "auto"); err != nil {
 		return err
 	}
 

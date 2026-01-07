@@ -82,23 +82,8 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
 
-	// Validate release gates before bumping
-	if err := validateReleaseGate(registry, newVersion, previousVersion, "pre"); err != nil {
-		return err
-	}
-
-	// Validate version policy before bumping
-	if err := validateVersionPolicy(registry, newVersion, previousVersion, "pre"); err != nil {
-		return err
-	}
-
-	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(registry, newVersion); err != nil {
-		return err
-	}
-
-	// Validate tag availability before bumping
-	if err := validateTagAvailable(registry, newVersion); err != nil {
+	// Execute all pre-bump validations
+	if err := executePreBumpValidations(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 
@@ -110,18 +95,8 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 		return err
 	}
 
-	// Sync dependency files after updating .version
-	if err := syncDependencies(registry, newVersion); err != nil {
-		return err
-	}
-
-	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "pre"); err != nil {
-		return err
-	}
-
-	// Record audit log entry
-	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "pre"); err != nil {
+	// Execute all post-bump actions
+	if err := executePostBumpActions(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 

@@ -3,12 +3,10 @@ package bumpcmd
 import (
 	"context"
 
-	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
-	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
@@ -32,93 +30,12 @@ func majorCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command
 
 // runBumpMajor increments the major version and resets minor and patch.
 func runBumpMajor(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
-	pre := cmd.String("pre")
-	meta := cmd.String("meta")
-	isPreserveMeta := cmd.Bool("preserve-meta")
-	isSkipHooks := cmd.Bool("skip-hooks")
-
-	if err := hooks.RunPreReleaseHooksFn(isSkipHooks); err != nil {
+	if err := hooks.RunPreReleaseHooksFn(cmd.Bool("skip-hooks")); err != nil {
 		return err
 	}
 
-	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg)
-	if err != nil {
-		return err
-	}
+	params := extractBumpParams(cmd, "major")
+	params.versionCalc = makeMajorCalculator(params.pre, params.meta, params.preserveMeta)
 
-	if !execCtx.IsSingleModule() {
-		return runMultiModuleBump(ctx, cmd, execCtx, operations.BumpMajor, pre, meta, isPreserveMeta)
-	}
-
-	return runSingleModuleMajorBump(ctx, cmd, cfg, registry, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
-}
-
-// runSingleModuleMajorBump handles major bump for single-module mode.
-func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
-	if _, err := clix.FromCommandFn(cmd); err != nil {
-		return err
-	}
-
-	previousVersion, err := semver.ReadVersion(execCtx.Path)
-	if err != nil {
-		return err
-	}
-
-	// Calculate new version
-	newVersion := previousVersion
-	newVersion.Major++
-	newVersion.Minor = 0
-	newVersion.Patch = 0
-	newVersion.PreRelease = pre
-	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
-
-	// Validate release gates before bumping
-	if err := validateReleaseGate(registry, newVersion, previousVersion, "major"); err != nil {
-		return err
-	}
-
-	// Validate version policy before bumping
-	if err := validateVersionPolicy(registry, newVersion, previousVersion, "major"); err != nil {
-		return err
-	}
-
-	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(registry, newVersion); err != nil {
-		return err
-	}
-
-	// Validate tag availability before bumping
-	if err := validateTagAvailable(registry, newVersion); err != nil {
-		return err
-	}
-
-	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), "major", isSkipHooks); err != nil {
-		return err
-	}
-
-	if err := semver.UpdateVersion(execCtx.Path, "major", pre, meta, isPreserveMeta); err != nil {
-		return err
-	}
-
-	// Sync dependency files after updating .version
-	if err := syncDependencies(registry, newVersion); err != nil {
-		return err
-	}
-
-	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "major"); err != nil {
-		return err
-	}
-
-	// Record audit log entry
-	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "major"); err != nil {
-		return err
-	}
-
-	if err := runPostBumpExtensionHooks(ctx, cfg, execCtx.Path, previousVersion.String(), "major", isSkipHooks); err != nil {
-		return err
-	}
-
-	// Create tag after successful bump
-	return createTagAfterBump(registry, newVersion, "major")
+	return executeStandardBump(ctx, cmd, cfg, registry, params, operations.BumpMajor)
 }
