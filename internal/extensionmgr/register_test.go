@@ -57,8 +57,8 @@ entry: extension.go
 func TestRegisterLocalExtension_InvalidPath(t *testing.T) {
 	tmpDir := os.TempDir()
 	err := RegisterLocalExtensionFn("/nonexistent/path", ".sley.yaml", tmpDir)
-	if err == nil || !strings.Contains(err.Error(), "extension path error") {
-		t.Errorf("extension extension path error, got: %v", err)
+	if err == nil || !strings.Contains(err.Error(), "extension path") {
+		t.Errorf("expected extension path error, got: %v", err)
 	}
 }
 

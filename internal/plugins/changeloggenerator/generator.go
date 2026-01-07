@@ -208,7 +208,7 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 func (g *Generator) WriteVersionedFile(version, content string) error {
 	dir := g.config.ChangesDir
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("failed to create changes directory: %w", err)
+		return fmt.Errorf("failed to create changes directory %q: %w", dir, err)
 	}
 
 	filename := fmt.Sprintf("%s.md", version)
@@ -218,7 +218,7 @@ func (g *Generator) WriteVersionedFile(version, content string) error {
 	normalizedContent := strings.TrimRight(content, "\n\r\t ") + "\n"
 
 	if err := os.WriteFile(path, []byte(normalizedContent), 0644); err != nil {
-		return fmt.Errorf("failed to write changelog file: %w", err)
+		return fmt.Errorf("failed to write changelog file %q: %w", path, err)
 	}
 
 	return nil
@@ -250,7 +250,7 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 	finalContent = strings.TrimRight(finalContent, "\n\r\t ") + "\n"
 
 	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
-		return fmt.Errorf("failed to write changelog: %w", err)
+		return fmt.Errorf("failed to write changelog %q: %w", path, err)
 	}
 
 	return nil
@@ -308,7 +308,7 @@ func (g *Generator) MergeVersionedFiles() error {
 	// Read all version files
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return fmt.Errorf("failed to read changes directory: %w", err)
+		return fmt.Errorf("failed to read changes directory %q: %w", dir, err)
 	}
 
 	// Collect version files (excluding header template and directories)
@@ -354,7 +354,7 @@ func (g *Generator) MergeVersionedFiles() error {
 	// Normalize: trim trailing whitespace and ensure single trailing newline
 	finalContent := strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
 	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
-		return fmt.Errorf("failed to write unified changelog: %w", err)
+		return fmt.Errorf("failed to write unified changelog %q: %w", path, err)
 	}
 
 	return nil

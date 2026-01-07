@@ -32,22 +32,22 @@ var (
 func readJSONVersion(path, field string) (string, error) {
 	data, err := readFileFn(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
-		return "", fmt.Errorf("failed to parse JSON: %w", err)
+		return "", fmt.Errorf("failed to parse JSON in %q: %w", path, err)
 	}
 
 	value, err := getNestedValue(obj, field)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	version, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("field %q is not a string", field)
+		return "", fmt.Errorf("field %q in %q is not a string", field, path)
 	}
 
 	return version, nil
@@ -57,29 +57,29 @@ func readJSONVersion(path, field string) (string, error) {
 func writeJSONVersion(path, field, version string) error {
 	data, err := readFileFn(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := json.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("failed to parse JSON: %w", err)
+		return fmt.Errorf("failed to parse JSON in %q: %w", path, err)
 	}
 
 	if err := setNestedValue(obj, field, version); err != nil {
-		return err
+		return fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	// Marshal with indentation for readability
 	updated, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON: %w", err)
+		return fmt.Errorf("failed to marshal JSON for %q: %w", path, err)
 	}
 
 	// Add trailing newline
 	updated = append(updated, '\n')
 
 	if err := writeFileFn(path, updated, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
@@ -89,22 +89,22 @@ func writeJSONVersion(path, field, version string) error {
 func readYAMLVersion(path, field string) (string, error) {
 	data, err := readFileFn(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := yaml.Unmarshal(data, &obj); err != nil {
-		return "", fmt.Errorf("failed to parse YAML: %w", err)
+		return "", fmt.Errorf("failed to parse YAML in %q: %w", path, err)
 	}
 
 	value, err := getNestedValue(obj, field)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	version, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("field %q is not a string", field)
+		return "", fmt.Errorf("field %q in %q is not a string", field, path)
 	}
 
 	return version, nil
@@ -114,25 +114,25 @@ func readYAMLVersion(path, field string) (string, error) {
 func writeYAMLVersion(path, field, version string) error {
 	data, err := readFileFn(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := yaml.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("failed to parse YAML: %w", err)
+		return fmt.Errorf("failed to parse YAML in %q: %w", path, err)
 	}
 
 	if err := setNestedValue(obj, field, version); err != nil {
-		return err
+		return fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	updated, err := yaml.Marshal(obj)
 	if err != nil {
-		return fmt.Errorf("failed to marshal YAML: %w", err)
+		return fmt.Errorf("failed to marshal YAML for %q: %w", path, err)
 	}
 
 	if err := writeFileFn(path, updated, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
@@ -142,22 +142,22 @@ func writeYAMLVersion(path, field, version string) error {
 func readTOMLVersion(path, field string) (string, error) {
 	data, err := readFileFn(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := toml.Unmarshal(data, &obj); err != nil {
-		return "", fmt.Errorf("failed to parse TOML: %w", err)
+		return "", fmt.Errorf("failed to parse TOML in %q: %w", path, err)
 	}
 
 	value, err := getNestedValue(obj, field)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	version, ok := value.(string)
 	if !ok {
-		return "", fmt.Errorf("field %q is not a string", field)
+		return "", fmt.Errorf("field %q in %q is not a string", field, path)
 	}
 
 	return version, nil
@@ -167,25 +167,25 @@ func readTOMLVersion(path, field string) (string, error) {
 func writeTOMLVersion(path, field, version string) error {
 	data, err := readFileFn(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	var obj map[string]any
 	if err := toml.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("failed to parse TOML: %w", err)
+		return fmt.Errorf("failed to parse TOML in %q: %w", path, err)
 	}
 
 	if err := setNestedValue(obj, field, version); err != nil {
-		return err
+		return fmt.Errorf("in file %q: %w", path, err)
 	}
 
 	updated, err := toml.Marshal(obj)
 	if err != nil {
-		return fmt.Errorf("failed to marshal TOML: %w", err)
+		return fmt.Errorf("failed to marshal TOML for %q: %w", path, err)
 	}
 
 	if err := writeFileFn(path, updated, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
@@ -195,7 +195,7 @@ func writeTOMLVersion(path, field, version string) error {
 func readRawVersion(path string) (string, error) {
 	data, err := readFileFn(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	return strings.TrimSpace(string(data)), nil
@@ -210,7 +210,7 @@ func writeRawVersion(path, version string) error {
 	}
 
 	if err := writeFileFn(path, []byte(content), 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil
@@ -220,17 +220,17 @@ func writeRawVersion(path, version string) error {
 func readRegexVersion(path, pattern string) (string, error) {
 	data, err := readFileFn(path)
 	if err != nil {
-		return "", fmt.Errorf("failed to read file: %w", err)
+		return "", fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", fmt.Errorf("invalid regex pattern: %w", err)
+		return "", fmt.Errorf("invalid regex pattern %q: %w", pattern, err)
 	}
 
 	matches := re.FindSubmatch(data)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("no version match found (pattern must have capturing group)")
+		return "", fmt.Errorf("no version match found in %q (pattern %q must have capturing group)", path, pattern)
 	}
 
 	return string(matches[1]), nil
@@ -240,17 +240,17 @@ func readRegexVersion(path, pattern string) (string, error) {
 func writeRegexVersion(path, pattern, version string) error {
 	data, err := readFileFn(path)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return fmt.Errorf("invalid regex pattern: %w", err)
+		return fmt.Errorf("invalid regex pattern %q: %w", pattern, err)
 	}
 
 	// Find the first match to ensure pattern is valid
 	if !re.Match(data) {
-		return fmt.Errorf("pattern does not match file contents")
+		return fmt.Errorf("pattern %q does not match contents of %q", pattern, path)
 	}
 
 	// Replace using ReplaceAllFunc to preserve surrounding text
@@ -265,7 +265,7 @@ func writeRegexVersion(path, pattern, version string) error {
 	})
 
 	if err := writeFileFn(path, updated, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write file %q: %w", path, err)
 	}
 
 	return nil

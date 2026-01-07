@@ -18,16 +18,16 @@ func registerLocalExtension(localPath, configPath, extensionDirectory string) er
 	// 1. Validate source path (ensure it's a directory)
 	info, err := os.Stat(localPath)
 	if err != nil {
-		return fmt.Errorf("extension path error: %w", err)
+		return fmt.Errorf("extension path %q error: %w", localPath, err)
 	}
 	if !info.IsDir() {
-		return fmt.Errorf("extension path must be a directory")
+		return fmt.Errorf("extension path %q must be a directory", localPath)
 	}
 
 	// 2. Load and validate the extension manifest
 	manifest, err := extensions.LoadExtensionManifestFn(localPath)
 	if err != nil {
-		return fmt.Errorf("failed to load extension manifest: %w", err)
+		return fmt.Errorf("failed to load extension manifest from %q: %w", localPath, err)
 	}
 
 	// 3. Resolve base extension directory
@@ -63,7 +63,7 @@ Then run this command again.
 
 	// 5. Copy the extension files to the destination directory
 	if err := copyDirFn(localPath, destPath); err != nil {
-		return fmt.Errorf("failed to copy extension files: %w", err)
+		return fmt.Errorf("failed to copy extension files from %q to %q: %w", localPath, destPath, err)
 	}
 
 	// 6. Update the config
@@ -75,7 +75,7 @@ Then run this command again.
 
 	// 7. Add the extension to the config file
 	if err := AddExtensionToConfigFn(absConfigPath, extensionCfg); err != nil {
-		return fmt.Errorf("failed to update config: %w", err)
+		return fmt.Errorf("failed to update config %q: %w", absConfigPath, err)
 	}
 
 	// 8. Success message

@@ -197,12 +197,12 @@ func (p *AuditLogPlugin) readLogFile() (*AuditLogFile, error) {
 
 	data, err := p.fileOps.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file: %w", err)
+		return nil, fmt.Errorf("failed to read audit log %q: %w", path, err)
 	}
 
 	var logFile AuditLogFile
 	if err := p.unmarshalFn(data, &logFile); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal: %w", err)
+		return nil, fmt.Errorf("failed to parse audit log %q: %w", path, err)
 	}
 
 	return &logFile, nil
@@ -212,12 +212,12 @@ func (p *AuditLogPlugin) readLogFile() (*AuditLogFile, error) {
 func (p *AuditLogPlugin) writeLogFile(logFile *AuditLogFile) error {
 	data, err := p.marshalFn(logFile)
 	if err != nil {
-		return fmt.Errorf("failed to marshal: %w", err)
+		return fmt.Errorf("failed to marshal audit log: %w", err)
 	}
 
 	path := p.config.GetPath()
 	if err := p.fileOps.WriteFile(path, data, 0644); err != nil {
-		return fmt.Errorf("failed to write file: %w", err)
+		return fmt.Errorf("failed to write audit log %q: %w", path, err)
 	}
 
 	return nil
