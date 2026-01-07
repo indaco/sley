@@ -7,12 +7,13 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
 // minorCmd returns the "minor" subcommand.
-func minorCmd(cfg *config.Config) *cli.Command {
+func minorCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:      "minor",
 		Usage:     "Increment minor version and reset patch",
@@ -24,13 +25,13 @@ func minorCmd(cfg *config.Config) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runBumpMinor(ctx, cmd, cfg)
+			return runBumpMinor(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runBumpMinor increments the minor version and resets patch.
-func runBumpMinor(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runBumpMinor(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	pre := cmd.String("pre")
 	meta := cmd.String("meta")
 	isPreserveMeta := cmd.Bool("preserve-meta")
@@ -49,11 +50,11 @@ func runBumpMinor(ctx context.Context, cmd *cli.Command, cfg *config.Config) err
 		return runMultiModuleBump(ctx, cmd, execCtx, operations.BumpMinor, pre, meta, isPreserveMeta)
 	}
 
-	return runSingleModuleMinorBump(ctx, cmd, cfg, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
+	return runSingleModuleMinorBump(ctx, cmd, cfg, registry, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
 }
 
 // runSingleModuleMinorBump handles minor bump for single-module mode.
-func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
+func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -71,22 +72,22 @@ func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
 
 	// Validate release gates before bumping
-	if err := validateReleaseGate(newVersion, previousVersion, "minor"); err != nil {
+	if err := validateReleaseGate(registry, newVersion, previousVersion, "minor"); err != nil {
 		return err
 	}
 
 	// Validate version policy before bumping
-	if err := validateVersionPolicy(newVersion, previousVersion, "minor"); err != nil {
+	if err := validateVersionPolicy(registry, newVersion, previousVersion, "minor"); err != nil {
 		return err
 	}
 
 	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(newVersion); err != nil {
+	if err := validateDependencyConsistency(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Validate tag availability before bumping
-	if err := validateTagAvailable(newVersion); err != nil {
+	if err := validateTagAvailable(registry, newVersion); err != nil {
 		return err
 	}
 
@@ -99,17 +100,17 @@ func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Sync dependency files after updating .version
-	if err := syncDependencies(newVersion); err != nil {
+	if err := syncDependencies(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(newVersion, previousVersion, "minor"); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "minor"); err != nil {
 		return err
 	}
 
 	// Record audit log entry
-	if err := recordAuditLogEntry(newVersion, previousVersion, "minor"); err != nil {
+	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "minor"); err != nil {
 		return err
 	}
 
@@ -118,5 +119,5 @@ func runSingleModuleMinorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Create tag after successful bump
-	return createTagAfterBump(newVersion, "minor")
+	return createTagAfterBump(registry, newVersion, "minor")
 }

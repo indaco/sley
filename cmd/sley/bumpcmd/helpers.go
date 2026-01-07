@@ -8,6 +8,7 @@ import (
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/extensionmgr"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/auditlog"
 	"github.com/indaco/sley/internal/plugins/changeloggenerator"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
@@ -83,8 +84,8 @@ func calculateNewBuild(meta string, preserveMeta bool, currentBuild string) stri
 
 // validateTagAvailable checks if a tag can be created for the version.
 // Returns nil if tag manager is not enabled or tag is available.
-func validateTagAvailable(version semver.SemVersion) error {
-	tm := tagmanager.GetTagManagerFn()
+func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVersion) error {
+	tm := registry.GetTagManager()
 	if tm == nil {
 		return nil
 	}
@@ -100,8 +101,8 @@ func validateTagAvailable(version semver.SemVersion) error {
 }
 
 // createTagAfterBump creates a git tag for the version if tag manager is enabled.
-func createTagAfterBump(version semver.SemVersion, bumpType string) error {
-	tm := tagmanager.GetTagManagerFn()
+func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string) error {
+	tm := registry.GetTagManager()
 	if tm == nil {
 		return nil
 	}
@@ -129,8 +130,8 @@ func createTagAfterBump(version semver.SemVersion, bumpType string) error {
 
 // validateVersionPolicy checks if the version bump is allowed by configured policies.
 // Returns nil if version validator is not enabled or validation passes.
-func validateVersionPolicy(newVersion, previousVersion semver.SemVersion, bumpType string) error {
-	vv := versionvalidator.GetVersionValidatorFn()
+func validateVersionPolicy(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+	vv := registry.GetVersionValidator()
 	if vv == nil {
 		return nil
 	}
@@ -147,8 +148,8 @@ func validateVersionPolicy(newVersion, previousVersion semver.SemVersion, bumpTy
 
 // validateReleaseGate checks if quality gates pass before allowing the bump.
 // Returns nil if release gate is not enabled or all gates pass.
-func validateReleaseGate(newVersion, previousVersion semver.SemVersion, bumpType string) error {
-	rg := releasegate.GetReleaseGateFn()
+func validateReleaseGate(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+	rg := registry.GetReleaseGate()
 	if rg == nil {
 		return nil
 	}
@@ -165,8 +166,8 @@ func validateReleaseGate(newVersion, previousVersion semver.SemVersion, bumpType
 
 // validateDependencyConsistency checks if all dependency files match the current version.
 // Returns nil if dependency checker is not enabled or all files are consistent.
-func validateDependencyConsistency(version semver.SemVersion) error {
-	dc := dependencycheck.GetDependencyCheckerFn()
+func validateDependencyConsistency(registry *plugins.PluginRegistry, version semver.SemVersion) error {
+	dc := registry.GetDependencyChecker()
 	if dc == nil {
 		return nil
 	}
@@ -196,8 +197,8 @@ func validateDependencyConsistency(version semver.SemVersion) error {
 
 // syncDependencies updates all configured dependency files to match the new version.
 // Returns nil if dependency checker is not enabled or auto-sync is disabled.
-func syncDependencies(version semver.SemVersion) error {
-	dc := dependencycheck.GetDependencyCheckerFn()
+func syncDependencies(registry *plugins.PluginRegistry, version semver.SemVersion) error {
+	dc := registry.GetDependencyChecker()
 	if dc == nil {
 		return nil
 	}
@@ -217,8 +218,8 @@ func syncDependencies(version semver.SemVersion) error {
 
 // generateChangelogAfterBump generates changelog entries if changelog generator is enabled.
 // Returns nil if changelog generator is not enabled.
-func generateChangelogAfterBump(version, previousVersion semver.SemVersion, bumpType string) error {
-	cg := changeloggenerator.GetChangelogGeneratorFn()
+func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, previousVersion semver.SemVersion, bumpType string) error {
+	cg := registry.GetChangelogGenerator()
 	if cg == nil {
 		return nil
 	}
@@ -258,8 +259,8 @@ func generateChangelogAfterBump(version, previousVersion semver.SemVersion, bump
 
 // recordAuditLogEntry records the version bump to the audit log if enabled.
 // Returns nil if audit log is not enabled or if logging fails (doesn't block the bump).
-func recordAuditLogEntry(version, previousVersion semver.SemVersion, bumpType string) error {
-	al := auditlog.GetAuditLogFn()
+func recordAuditLogEntry(registry *plugins.PluginRegistry, version, previousVersion semver.SemVersion, bumpType string) error {
+	al := registry.GetAuditLog()
 	if al == nil {
 		return nil
 	}

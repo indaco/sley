@@ -7,12 +7,13 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
 // majorCmd returns the "major" subcommand.
-func majorCmd(cfg *config.Config) *cli.Command {
+func majorCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:      "major",
 		Usage:     "Increment major version and reset minor and patch",
@@ -24,13 +25,13 @@ func majorCmd(cfg *config.Config) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runBumpMajor(ctx, cmd, cfg)
+			return runBumpMajor(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runBumpMajor increments the major version and resets minor and patch.
-func runBumpMajor(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runBumpMajor(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	pre := cmd.String("pre")
 	meta := cmd.String("meta")
 	isPreserveMeta := cmd.Bool("preserve-meta")
@@ -49,11 +50,11 @@ func runBumpMajor(ctx context.Context, cmd *cli.Command, cfg *config.Config) err
 		return runMultiModuleBump(ctx, cmd, execCtx, operations.BumpMajor, pre, meta, isPreserveMeta)
 	}
 
-	return runSingleModuleMajorBump(ctx, cmd, cfg, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
+	return runSingleModuleMajorBump(ctx, cmd, cfg, registry, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
 }
 
 // runSingleModuleMajorBump handles major bump for single-module mode.
-func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
+func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -72,22 +73,22 @@ func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
 
 	// Validate release gates before bumping
-	if err := validateReleaseGate(newVersion, previousVersion, "major"); err != nil {
+	if err := validateReleaseGate(registry, newVersion, previousVersion, "major"); err != nil {
 		return err
 	}
 
 	// Validate version policy before bumping
-	if err := validateVersionPolicy(newVersion, previousVersion, "major"); err != nil {
+	if err := validateVersionPolicy(registry, newVersion, previousVersion, "major"); err != nil {
 		return err
 	}
 
 	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(newVersion); err != nil {
+	if err := validateDependencyConsistency(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Validate tag availability before bumping
-	if err := validateTagAvailable(newVersion); err != nil {
+	if err := validateTagAvailable(registry, newVersion); err != nil {
 		return err
 	}
 
@@ -100,17 +101,17 @@ func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Sync dependency files after updating .version
-	if err := syncDependencies(newVersion); err != nil {
+	if err := syncDependencies(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(newVersion, previousVersion, "major"); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "major"); err != nil {
 		return err
 	}
 
 	// Record audit log entry
-	if err := recordAuditLogEntry(newVersion, previousVersion, "major"); err != nil {
+	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "major"); err != nil {
 		return err
 	}
 
@@ -119,5 +120,5 @@ func runSingleModuleMajorBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Create tag after successful bump
-	return createTagAfterBump(newVersion, "major")
+	return createTagAfterBump(registry, newVersion, "major")
 }

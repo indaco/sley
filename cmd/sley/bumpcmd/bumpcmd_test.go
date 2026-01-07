@@ -12,6 +12,7 @@ import (
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/auditlog"
 	"github.com/indaco/sley/internal/plugins/changeloggenerator"
 	"github.com/indaco/sley/internal/plugins/commitparser"
@@ -32,7 +33,8 @@ func TestCLI_BumpCommand_Variants(t *testing.T) {
 
 	// Prepare the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name     string
@@ -78,7 +80,8 @@ func TestCLI_BumpCommand_AutoInitFeedback(t *testing.T) {
 
 			// Prepare and run the CLI command
 			cfg := &config.Config{Path: versionPath}
-			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+			registry := plugins.NewPluginRegistry()
+			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 			output, err := testutils.CaptureStdout(func() {
 				testutils.RunCLITest(t, appCli, tt.args, tmpDir)
 			})
@@ -234,7 +237,8 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			defer restore()
 
 			cfg := &config.Config{Path: versionPath}
-			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+			registry := plugins.NewPluginRegistry()
+			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 			err := appCli.Run(context.Background(), tt.args)
 			if err == nil || !strings.Contains(err.Error(), tt.expectedErr) {
@@ -250,7 +254,8 @@ func TestCLI_BumpReleaseCmd(t *testing.T) {
 
 	// Prepare the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name           string
@@ -298,7 +303,8 @@ func TestCLI_BumpAutoCmd(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name     string
@@ -372,12 +378,13 @@ func TestCLI_BumpAutoCmd_InferredBump(t *testing.T) {
 	defer func() { tryInferBumpTypeFromCommitParserPluginFn = originalInfer }()
 
 	// Mock the inference to simulate an inferred "minor" bump
-	tryInferBumpTypeFromCommitParserPluginFn = func(since, until string) string {
+	tryInferBumpTypeFromCommitParserPluginFn = func(registry *plugins.PluginRegistry, since, until string) string {
 		return "minor"
 	}
 
 	cfg := &config.Config{Path: versionPath, Plugins: &config.PluginConfig{CommitParser: true}}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath,
@@ -400,7 +407,8 @@ func TestCLI_BumpAutoCommand_WithLabelAndMeta(t *testing.T) {
 
 	// Prepare the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name    string
@@ -466,12 +474,13 @@ func TestCLI_BumpAutoCmd_InferredPromotion(t *testing.T) {
 	originalInfer := tryInferBumpTypeFromCommitParserPluginFn
 	defer func() { tryInferBumpTypeFromCommitParserPluginFn = originalInfer }()
 
-	tryInferBumpTypeFromCommitParserPluginFn = func(since, until string) string {
+	tryInferBumpTypeFromCommitParserPluginFn = func(registry *plugins.PluginRegistry, since, until string) string {
 		return "minor"
 	}
 
 	cfg := &config.Config{Path: versionPath, Plugins: &config.PluginConfig{CommitParser: true}}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath,
@@ -494,13 +503,14 @@ func TestCLI_BumpAutoCmd_PromotePreReleaseWithPreserveMeta(t *testing.T) {
 
 	// Override tryInferBumpTypeFromCommitParserPlugin
 	originalInfer := tryInferBumpTypeFromCommitParserPluginFn
-	tryInferBumpTypeFromCommitParserPluginFn = func(since, until string) string {
+	tryInferBumpTypeFromCommitParserPluginFn = func(registry *plugins.PluginRegistry, since, until string) string {
 		return "minor" // Force a non-empty inference so that promotePreRelease is called
 	}
 	t.Cleanup(func() { tryInferBumpTypeFromCommitParserPluginFn = originalInfer })
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath, "--preserve-meta",
@@ -529,7 +539,7 @@ func TestCLI_BumpAutoCmd_InferredBumpFails(t *testing.T) {
 	}
 
 	// Force inference to return something
-	tryInferBumpTypeFromCommitParserPluginFn = func(since, until string) string {
+	tryInferBumpTypeFromCommitParserPluginFn = func(registry *plugins.PluginRegistry, since, until string) string {
 		return "minor"
 	}
 
@@ -540,7 +550,8 @@ func TestCLI_BumpAutoCmd_InferredBumpFails(t *testing.T) {
 
 	// Prepare and run CLI
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath,
@@ -569,7 +580,8 @@ func TestTryInferBumpTypeFromCommitParserPlugin_GetCommitsError(t *testing.T) {
 			commitparser.GetCommitParserFn = originalParser
 		})
 	}, func() {
-		label := tryInferBumpTypeFromCommitParserPlugin("", "")
+		registry := plugins.NewPluginRegistry()
+		label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
 		if label != "" {
 			t.Errorf("expected empty label on gitlog error, got %q", label)
 		}
@@ -588,7 +600,8 @@ func TestTryInferBumpTypeFromCommitParserPlugin_ParserError(t *testing.T) {
 			}
 		},
 		func() {
-			label := tryInferBumpTypeFromCommitParserPlugin("", "")
+			registry := plugins.NewPluginRegistry()
+			label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
 			if label != "" {
 				t.Errorf("expected empty label on parser error, got %q", label)
 			}
@@ -603,12 +616,14 @@ func TestTryInferBumpTypeFromCommitParserPlugin_Success(t *testing.T) {
 			gitlog.GetCommitsFn = func(since, until string) ([]string, error) {
 				return []string{"feat: add feature"}, nil
 			}
-			commitparser.GetCommitParserFn = func() commitparser.CommitParser {
-				return testutils.MockCommitParser{Label: "minor"}
-			}
 		},
 		func() {
-			label := tryInferBumpTypeFromCommitParserPlugin("", "")
+			registry := plugins.NewPluginRegistry()
+			parser := testutils.MockCommitParser{Label: "minor"}
+			if err := registry.RegisterCommitParser(&parser); err != nil {
+				t.Fatalf("failed to register parser: %v", err)
+			}
+			label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
 			if label != "minor" {
 				t.Errorf("expected label 'minor', got %q", label)
 			}
@@ -622,7 +637,8 @@ func TestBumpReleaseCmd_ErrorOnReadVersion(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "release", "--path", versionPath,
 	})
@@ -646,7 +662,8 @@ func TestCLI_BumpReleaseCommand_SaveVersionFails(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "release", "--path", versionPath, "--strict",
 	})
@@ -702,7 +719,8 @@ func TestCLI_BumpAutoCmd_Errors(t *testing.T) {
 
 			// Prepare and run the CLI command
 			cfg := &config.Config{Path: versionPath}
-			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+			registry := plugins.NewPluginRegistry()
+			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 			err := appCli.Run(context.Background(), tt.args)
 			if err == nil || !strings.Contains(err.Error(), tt.expectedErr) {
@@ -726,7 +744,8 @@ func TestCLI_BumpAutoCmd_InitVersionFileFails(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath,
@@ -750,7 +769,8 @@ func TestCLI_BumpAutoCmd_BumpNextFails(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath, "--no-infer",
@@ -778,7 +798,8 @@ func TestCLI_BumpAutoCmd_SaveVersionFails(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--path", versionPath, "--strict",
@@ -796,7 +817,8 @@ func TestCLI_BumpAutoCommand_InvalidLabel(t *testing.T) {
 
 		// Prepare and run the CLI command
 		cfg := &config.Config{Path: versionPath}
-		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+		registry := plugins.NewPluginRegistry()
+		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 		err := appCli.Run(context.Background(), []string{
 			"sley", "bump", "auto", "--label", "banana", "--path", versionPath,
@@ -836,7 +858,8 @@ func TestCLI_BumpAutoCmd_BumpByLabelFails(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "auto", "--label", "patch", "--path", versionPath,
@@ -859,7 +882,8 @@ func TestBumpReleaseCmd_ErrorOnInitVersionFile(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "release", "--path", versionPath,
@@ -879,7 +903,8 @@ func TestCLI_BumpPreCmd(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name     string
@@ -927,7 +952,8 @@ func TestCLI_BumpPreCmd_ErrorNoPreRelease(t *testing.T) {
 	testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{"sley", "bump", "pre"})
 	if err == nil || !strings.Contains(err.Error(), "current version has no pre-release") {
@@ -978,7 +1004,8 @@ func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
 			defer restore()
 
 			cfg := &config.Config{Path: versionPath}
-			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+			registry := plugins.NewPluginRegistry()
+			appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 			err := appCli.Run(context.Background(), tt.args)
 			if err == nil || !strings.Contains(err.Error(), tt.expectedErr) {
@@ -993,7 +1020,8 @@ func TestCLI_BumpPreCmd_PreserveMetadata(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	tests := []struct {
 		name     string
@@ -1231,10 +1259,11 @@ func TestDetermineBumpType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tryInferBumpTypeFromChangelogParserPluginFn = func() string { return tt.mockChangelog }
-			tryInferBumpTypeFromCommitParserPluginFn = func(since, until string) string { return tt.mockCommit }
+			tryInferBumpTypeFromChangelogParserPluginFn = func(registry *plugins.PluginRegistry) string { return tt.mockChangelog }
+			tryInferBumpTypeFromCommitParserPluginFn = func(registry *plugins.PluginRegistry, since, until string) string { return tt.mockCommit }
 
-			result := determineBumpType(tt.label, tt.disableInfer, "", "")
+			registry := plugins.NewPluginRegistry()
+			result := determineBumpType(registry, tt.label, tt.disableInfer, "", "")
 
 			if string(result) != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, string(result))
@@ -1251,7 +1280,8 @@ func TestTryInferBumpTypeFromChangelogParserPlugin_NoParser(t *testing.T) {
 	// Use the actual function
 	tryInferBumpTypeFromChangelogParserPluginFn = tryInferBumpTypeFromChangelogParserPlugin
 
-	label := tryInferBumpTypeFromChangelogParserPlugin()
+	registry := plugins.NewPluginRegistry()
+	label := tryInferBumpTypeFromChangelogParserPlugin(registry)
 	if label != "" {
 		t.Errorf("expected empty label when no parser, got %q", label)
 	}
@@ -1305,7 +1335,8 @@ func TestGetNextVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := getNextVersion(tt.current, tt.label, tt.disableInfer, "", "", false)
+			registry := plugins.NewPluginRegistry()
+			result, err := getNextVersion(registry, tt.current, tt.label, tt.disableInfer, "", "", false)
 			if tt.expectError {
 				if err == nil {
 					t.Error("expected error, got nil")
@@ -1421,26 +1452,31 @@ func TestValidateTagAvailable(t *testing.T) {
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return nil }
-		err := validateTagAvailable(version)
+		err := validateTagAvailable(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock tag manager validates", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockTagManager{}
 		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return mock }
-		err := validateTagAvailable(version)
+		err := validateTagAvailable(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock tag manager returns validation error", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockTagManager{validateErr: fmt.Errorf("tag exists")}
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return mock }
-		err := validateTagAvailable(version)
+		if err := registry.RegisterTagManager(mock); err != nil {
+			t.Fatalf("failed to register tag manager: %v", err)
+		}
+		err := validateTagAvailable(registry, version)
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -1459,8 +1495,9 @@ func TestCreateTagAfterBump(t *testing.T) {
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return nil }
-		err := createTagAfterBump(version, "minor")
+		err := createTagAfterBump(registry, version, "minor")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -1483,26 +1520,31 @@ func TestValidateVersionPolicy(t *testing.T) {
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil validator returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator { return nil }
-		err := validateVersionPolicy(newVersion, prevVersion, "major")
+		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock validator validates successfully", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockVersionValidator{}
 		versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator { return mock }
-		err := validateVersionPolicy(newVersion, prevVersion, "major")
+		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock validator returns error", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockVersionValidator{validateErr: fmt.Errorf("policy violation")}
-		versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator { return mock }
-		err := validateVersionPolicy(newVersion, prevVersion, "major")
+		if err := registry.RegisterVersionValidator(mock); err != nil {
+			t.Fatalf("failed to register version validator: %v", err)
+		}
+		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -1522,26 +1564,31 @@ func TestValidateReleaseGate(t *testing.T) {
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil gate returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate { return nil }
-		err := validateReleaseGate(newVersion, prevVersion, "major")
+		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock gate validates successfully", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockReleaseGate{}
 		releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate { return mock }
-		err := validateReleaseGate(newVersion, prevVersion, "major")
+		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
 	})
 
 	t.Run("mock gate returns error", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		mock := &mockReleaseGate{validateErr: fmt.Errorf("gate failed")}
-		releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate { return mock }
-		err := validateReleaseGate(newVersion, prevVersion, "major")
+		if err := registry.RegisterReleaseGate(mock); err != nil {
+			t.Fatalf("failed to register release gate: %v", err)
+		}
+		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
@@ -1560,8 +1607,9 @@ func TestValidateDependencyConsistency(t *testing.T) {
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		dependencycheck.GetDependencyCheckerFn = func() dependencycheck.DependencyChecker { return nil }
-		err := validateDependencyConsistency(version)
+		err := validateDependencyConsistency(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -1583,8 +1631,9 @@ func TestSyncDependencies(t *testing.T) {
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		dependencycheck.GetDependencyCheckerFn = func() dependencycheck.DependencyChecker { return nil }
-		err := syncDependencies(version)
+		err := syncDependencies(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -1607,8 +1656,9 @@ func TestGenerateChangelogAfterBump(t *testing.T) {
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil generator returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		changeloggenerator.GetChangelogGeneratorFn = func() changeloggenerator.ChangelogGenerator { return nil }
-		err := generateChangelogAfterBump(version, prevVersion, "major")
+		err := generateChangelogAfterBump(registry, version, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -1631,8 +1681,9 @@ func TestRecordAuditLogEntry(t *testing.T) {
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil audit log returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		auditlog.GetAuditLogFn = func() auditlog.AuditLog { return nil }
-		err := recordAuditLogEntry(version, prevVersion, "major")
+		err := recordAuditLogEntry(registry, version, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -1771,7 +1822,8 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return plugin }
 
 		// Mock CreateTag to succeed
-		err := createTagAfterBump(version, "patch")
+		registry := plugins.NewPluginRegistry()
+		err := createTagAfterBump(registry, version, "patch")
 		// This will fail in test environment without git, but we're testing the code path
 		if err != nil && !strings.Contains(err.Error(), "failed to create tag") {
 			t.Errorf("unexpected error type: %v", err)
@@ -1779,12 +1831,13 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 	})
 
 	t.Run("disabled plugin returns nil", func(t *testing.T) {
+		registry := plugins.NewPluginRegistry()
 		plugin := tagmanager.NewTagManager(&tagmanager.Config{
 			Enabled: false,
 		})
 		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return plugin }
 
-		err := createTagAfterBump(version, "patch")
+		err := createTagAfterBump(registry, version, "patch")
 		if err != nil {
 			t.Errorf("expected nil error for disabled plugin, got %v", err)
 		}
@@ -1818,17 +1871,14 @@ func TestSingleModuleBump_ValidateReleaseGateFails(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
-	// Save and restore
-	origGetReleaseGateFn := releasegate.GetReleaseGateFn
-	defer func() { releasegate.GetReleaseGateFn = origGetReleaseGateFn }()
-
 	// Create a release gate that fails validation
-	releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate {
-		return &mockReleaseGate{validateErr: fmt.Errorf("release gate failed")}
-	}
-
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	mock := &mockReleaseGate{validateErr: fmt.Errorf("release gate failed")}
+	if err := registry.RegisterReleaseGate(mock); err != nil {
+		t.Fatalf("failed to register release gate: %v", err)
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "patch",
@@ -1843,17 +1893,14 @@ func TestSingleModuleBump_ValidateVersionPolicyFails(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
-	// Save and restore
-	origGetVersionValidatorFn := versionvalidator.GetVersionValidatorFn
-	defer func() { versionvalidator.GetVersionValidatorFn = origGetVersionValidatorFn }()
-
 	// Create a validator that fails
-	versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator {
-		return &mockVersionValidator{validateErr: fmt.Errorf("policy violation")}
-	}
-
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	mock := &mockVersionValidator{validateErr: fmt.Errorf("policy violation")}
+	if err := registry.RegisterVersionValidator(mock); err != nil {
+		t.Fatalf("failed to register version validator: %v", err)
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "minor",
@@ -1885,10 +1932,13 @@ func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
 			{Path: pkgPath, Field: "version", Format: "json"},
 		},
 	})
-	dependencycheck.GetDependencyCheckerFn = func() dependencycheck.DependencyChecker { return plugin }
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	if err := registry.RegisterDependencyChecker(plugin); err != nil {
+		t.Fatalf("failed to register dependency checker: %v", err)
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "major",
@@ -1903,17 +1953,14 @@ func TestSingleModuleBump_ValidateTagAvailableFails(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
-	// Save and restore
-	origGetTagManagerFn := tagmanager.GetTagManagerFn
-	defer func() { tagmanager.GetTagManagerFn = origGetTagManagerFn }()
-
 	// Create a tag manager that fails validation
-	tagmanager.GetTagManagerFn = func() tagmanager.TagManager {
-		return &mockTagManager{validateErr: fmt.Errorf("tag already exists")}
-	}
-
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	mock := &mockTagManager{validateErr: fmt.Errorf("tag already exists")}
+	if err := registry.RegisterTagManager(mock); err != nil {
+		t.Fatalf("failed to register tag manager: %v", err)
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "patch",
@@ -1936,7 +1983,8 @@ func TestSingleModuleBump_UpdateVersionFails(t *testing.T) {
 	})
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "bump", "minor", "--strict",

@@ -3,11 +3,12 @@ package bumpcmd
 import (
 	"github.com/indaco/sley/cmd/sley/flags"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/urfave/cli/v3"
 )
 
 // Run returns the "bump" parent command.
-func Run(cfg *config.Config) *cli.Command {
+func Run(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	cmdFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:  "pre",
@@ -30,12 +31,12 @@ func Run(cfg *config.Config) *cli.Command {
 		UsageText: "sley bump <subcommand> [--flags]",
 		Flags:     cmdFlags,
 		Commands: []*cli.Command{
-			patchCmd(cfg),
-			minorCmd(cfg),
-			majorCmd(cfg),
-			preCmd(cfg),
-			releaseCmd(cfg),
-			autoCmd(cfg),
+			patchCmd(cfg, registry),
+			minorCmd(cfg, registry),
+			majorCmd(cfg, registry),
+			preCmd(cfg, registry),
+			releaseCmd(cfg, registry),
+			autoCmd(cfg, registry),
 		},
 	}
 }

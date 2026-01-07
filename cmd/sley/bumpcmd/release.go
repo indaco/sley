@@ -8,13 +8,14 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
 // releaseCmd returns the "release" subcommand.
-func releaseCmd(cfg *config.Config) *cli.Command {
+func releaseCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:      "release",
 		Usage:     "Promote pre-release to final version (e.g. 1.2.3-alpha -> 1.2.3)",
@@ -26,13 +27,13 @@ func releaseCmd(cfg *config.Config) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runBumpRelease(ctx, cmd, cfg)
+			return runBumpRelease(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runBumpRelease promotes a pre-release version to a final release.
-func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	isPreserveMeta := cmd.Bool("preserve-meta")
 	isSkipHooks := cmd.Bool("skip-hooks")
 
@@ -49,7 +50,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 
 	// Handle single-module mode
 	if execCtx.IsSingleModule() {
-		return runSingleModuleRelease(cmd, execCtx.Path, isPreserveMeta)
+		return runSingleModuleRelease(cmd, registry, execCtx.Path, isPreserveMeta)
 	}
 
 	// Handle multi-module mode
@@ -63,7 +64,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 }
 
 // runSingleModuleRelease handles the single-module release operation.
-func runSingleModuleRelease(cmd *cli.Command, path string, isPreserveMeta bool) error {
+func runSingleModuleRelease(cmd *cli.Command, registry *plugins.PluginRegistry, path string, isPreserveMeta bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -80,22 +81,22 @@ func runSingleModuleRelease(cmd *cli.Command, path string, isPreserveMeta bool) 
 	}
 
 	// Validate release gates before bumping
-	if err := validateReleaseGate(newVersion, previousVersion, "release"); err != nil {
+	if err := validateReleaseGate(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 
 	// Validate version policy before bumping
-	if err := validateVersionPolicy(newVersion, previousVersion, "release"); err != nil {
+	if err := validateVersionPolicy(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 
 	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(newVersion); err != nil {
+	if err := validateDependencyConsistency(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Validate tag availability before bumping
-	if err := validateTagAvailable(newVersion); err != nil {
+	if err := validateTagAvailable(registry, newVersion); err != nil {
 		return err
 	}
 
@@ -104,12 +105,12 @@ func runSingleModuleRelease(cmd *cli.Command, path string, isPreserveMeta bool) 
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(newVersion, previousVersion, "release"); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 
 	// Record audit log entry
-	if err := recordAuditLogEntry(newVersion, previousVersion, "release"); err != nil {
+	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "release"); err != nil {
 		return err
 	}
 
