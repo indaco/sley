@@ -7,12 +7,13 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
 // patchCmd returns the "patch" subcommand.
-func patchCmd(cfg *config.Config) *cli.Command {
+func patchCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:      "patch",
 		Usage:     "Increment patch version",
@@ -24,13 +25,13 @@ func patchCmd(cfg *config.Config) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runBumpPatch(ctx, cmd, cfg)
+			return runBumpPatch(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runBumpPatch executes the patch bump logic.
-func runBumpPatch(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runBumpPatch(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	pre := cmd.String("pre")
 	meta := cmd.String("meta")
 	isPreserveMeta := cmd.Bool("preserve-meta")
@@ -49,11 +50,11 @@ func runBumpPatch(ctx context.Context, cmd *cli.Command, cfg *config.Config) err
 		return runMultiModuleBump(ctx, cmd, execCtx, operations.BumpPatch, pre, meta, isPreserveMeta)
 	}
 
-	return runSingleModulePatchBump(ctx, cmd, cfg, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
+	return runSingleModulePatchBump(ctx, cmd, cfg, registry, execCtx, pre, meta, isPreserveMeta, isSkipHooks)
 }
 
 // runSingleModulePatchBump handles patch bump for single-module mode.
-func runSingleModulePatchBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
+func runSingleModulePatchBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, execCtx *clix.ExecutionContext, pre, meta string, isPreserveMeta, isSkipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -70,22 +71,22 @@ func runSingleModulePatchBump(ctx context.Context, cmd *cli.Command, cfg *config
 	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
 
 	// Validate release gates before bumping
-	if err := validateReleaseGate(newVersion, previousVersion, "patch"); err != nil {
+	if err := validateReleaseGate(registry, newVersion, previousVersion, "patch"); err != nil {
 		return err
 	}
 
 	// Validate version policy before bumping
-	if err := validateVersionPolicy(newVersion, previousVersion, "patch"); err != nil {
+	if err := validateVersionPolicy(registry, newVersion, previousVersion, "patch"); err != nil {
 		return err
 	}
 
 	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(newVersion); err != nil {
+	if err := validateDependencyConsistency(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Validate tag availability before bumping
-	if err := validateTagAvailable(newVersion); err != nil {
+	if err := validateTagAvailable(registry, newVersion); err != nil {
 		return err
 	}
 
@@ -98,17 +99,17 @@ func runSingleModulePatchBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Sync dependency files after updating .version
-	if err := syncDependencies(newVersion); err != nil {
+	if err := syncDependencies(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(newVersion, previousVersion, "patch"); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "patch"); err != nil {
 		return err
 	}
 
 	// Record audit log entry
-	if err := recordAuditLogEntry(newVersion, previousVersion, "patch"); err != nil {
+	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "patch"); err != nil {
 		return err
 	}
 
@@ -117,5 +118,5 @@ func runSingleModulePatchBump(ctx context.Context, cmd *cli.Command, cfg *config
 	}
 
 	// Create tag after successful bump
-	return createTagAfterBump(newVersion, "patch")
+	return createTagAfterBump(registry, newVersion, "patch")
 }

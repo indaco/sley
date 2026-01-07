@@ -32,12 +32,14 @@ func runCLI(args []string) error {
 		cfg.Path = ".version"
 	}
 
-	plugins.RegisterBuiltinPlugins(cfg)
+	// Create plugin registry and register builtin plugins
+	registry := plugins.NewPluginRegistry()
+	plugins.RegisterBuiltinPlugins(cfg, registry)
 
 	if err := hooks.LoadPreReleaseHooksFromConfigFn(cfg); err != nil {
 		return fmt.Errorf("failed to load pre-release hooks: %w", err)
 	}
 
-	app := newCLI(cfg)
+	app := newCLI(cfg, registry)
 	return app.Run(context.Background(), args)
 }

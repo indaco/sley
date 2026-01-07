@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -23,7 +24,8 @@ func TestNewCLI_BasicStructure(t *testing.T) {
 	_ = os.WriteFile(versionPath, []byte("1.2.3\n"), semver.VersionFilePerm)
 
 	cfg := &config.Config{Path: versionPath}
-	app := newCLI(cfg)
+	registry := plugins.NewPluginRegistry()
+	app := newCLI(cfg, registry)
 
 	wantCommands := []string{"show", "set", "bump", "pre", "doctor", "init"}
 	for _, name := range wantCommands {
@@ -54,7 +56,8 @@ func TestNewCLI_ShowCommand(t *testing.T) {
 	os.Stdout = w
 
 	cfg := &config.Config{Path: versionPath}
-	app := newCLI(cfg)
+	registry := plugins.NewPluginRegistry()
+	app := newCLI(cfg, registry)
 
 	err = app.Run(context.Background(), []string{"sley", "show", "--path", versionPath})
 
@@ -99,7 +102,8 @@ func TestNewCLI_UsesConfigPath(t *testing.T) {
 	})
 
 	cfg := &config.Config{Path: versionPath}
-	app := newCLI(cfg)
+	registry := plugins.NewPluginRegistry()
+	app := newCLI(cfg, registry)
 
 	err = app.Run(context.Background(), []string{"sley", "bump", "patch"})
 	if err != nil {

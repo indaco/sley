@@ -23,9 +23,10 @@ func TestRegisterConfiguredPlugins_WithCommitParser(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	p := commitparser.GetCommitParserFn()
+	p := registry.GetCommitParser()
 	if p == nil {
 		t.Fatal("expected commit parser to be registered, got nil")
 	}
@@ -44,9 +45,10 @@ func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if p := commitparser.GetCommitParserFn(); p != nil {
+	if p := registry.GetCommitParser(); p != nil {
 		t.Errorf("expected no commit parser to be registered, got %q", p.Name())
 	}
 }
@@ -54,9 +56,10 @@ func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
 func TestRegisterConfiguredPlugins_NilConfig(t *testing.T) {
 	commitparser.ResetCommitParser()
 
-	RegisterBuiltinPlugins(nil)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(nil, registry)
 
-	if p := commitparser.GetCommitParserFn(); p != nil {
+	if p := registry.GetCommitParser(); p != nil {
 		t.Errorf("expected no commit parser to be registered, got %q", p.Name())
 	}
 }
@@ -68,9 +71,10 @@ func TestRegisterConfiguredPlugins_NilPluginsField(t *testing.T) {
 		Plugins: nil, // explicit nil
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if p := commitparser.GetCommitParserFn(); p != nil {
+	if p := registry.GetCommitParser(); p != nil {
 		t.Errorf("expected no commit parser to be registered, got %q", p.Name())
 	}
 }
@@ -93,9 +97,10 @@ func TestRegisterConfiguredPlugins_WithTagManager(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	tm := tagmanager.GetTagManagerFn()
+	tm := registry.GetTagManager()
 	if tm == nil {
 		t.Fatal("expected tag manager to be registered, got nil")
 	}
@@ -117,9 +122,10 @@ func TestRegisterConfiguredPlugins_TagManagerDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if tm := tagmanager.GetTagManagerFn(); tm != nil {
+	if tm := registry.GetTagManager(); tm != nil {
 		t.Errorf("expected no tag manager to be registered when disabled")
 	}
 }
@@ -134,9 +140,10 @@ func TestRegisterConfiguredPlugins_TagManagerNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if tm := tagmanager.GetTagManagerFn(); tm != nil {
+	if tm := registry.GetTagManager(); tm != nil {
 		t.Errorf("expected no tag manager to be registered when nil")
 	}
 }
@@ -157,9 +164,10 @@ func TestRegisterConfiguredPlugins_WithVersionValidator(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	vv := versionvalidator.GetVersionValidatorFn()
+	vv := registry.GetVersionValidator()
 	if vv == nil {
 		t.Fatal("expected version validator to be registered, got nil")
 	}
@@ -181,9 +189,10 @@ func TestRegisterConfiguredPlugins_VersionValidatorDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if vv := versionvalidator.GetVersionValidatorFn(); vv != nil {
+	if vv := registry.GetVersionValidator(); vv != nil {
 		t.Errorf("expected no version validator to be registered when disabled")
 	}
 }
@@ -198,9 +207,10 @@ func TestRegisterConfiguredPlugins_VersionValidatorNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if vv := versionvalidator.GetVersionValidatorFn(); vv != nil {
+	if vv := registry.GetVersionValidator(); vv != nil {
 		t.Errorf("expected no version validator to be registered when nil")
 	}
 }
@@ -276,15 +286,16 @@ func TestRegisterConfiguredPlugins_AllPlugins(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if p := commitparser.GetCommitParserFn(); p == nil {
+	if p := registry.GetCommitParser(); p == nil {
 		t.Error("expected commit parser to be registered")
 	}
-	if tm := tagmanager.GetTagManagerFn(); tm == nil {
+	if tm := registry.GetTagManager(); tm == nil {
 		t.Error("expected tag manager to be registered")
 	}
-	if vv := versionvalidator.GetVersionValidatorFn(); vv == nil {
+	if vv := registry.GetVersionValidator(); vv == nil {
 		t.Error("expected version validator to be registered")
 	}
 }
@@ -305,9 +316,10 @@ func TestRegisterConfiguredPlugins_WithDependencyCheck(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	dc := dependencycheck.GetDependencyCheckerFn()
+	dc := registry.GetDependencyChecker()
 	if dc == nil {
 		t.Fatal("expected dependency check to be registered, got nil")
 	}
@@ -329,9 +341,10 @@ func TestRegisterConfiguredPlugins_DependencyCheckDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if dc := dependencycheck.GetDependencyCheckerFn(); dc != nil {
+	if dc := registry.GetDependencyChecker(); dc != nil {
 		t.Errorf("expected no dependency check to be registered when disabled")
 	}
 }
@@ -346,9 +359,10 @@ func TestRegisterConfiguredPlugins_DependencyCheckNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if dc := dependencycheck.GetDependencyCheckerFn(); dc != nil {
+	if dc := registry.GetDependencyChecker(); dc != nil {
 		t.Errorf("expected no dependency check to be registered when nil")
 	}
 }
@@ -369,9 +383,10 @@ func TestRegisterConfiguredPlugins_WithChangelogParser(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	cp := changelogparser.GetChangelogParserFn()
+	cp := registry.GetChangelogParser()
 	if cp == nil {
 		t.Fatal("expected changelog parser to be registered, got nil")
 	}
@@ -393,9 +408,10 @@ func TestRegisterConfiguredPlugins_ChangelogParserDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if cp := changelogparser.GetChangelogParserFn(); cp != nil {
+	if cp := registry.GetChangelogParser(); cp != nil {
 		t.Errorf("expected no changelog parser to be registered when disabled")
 	}
 }
@@ -410,9 +426,10 @@ func TestRegisterConfiguredPlugins_ChangelogParserNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if cp := changelogparser.GetChangelogParserFn(); cp != nil {
+	if cp := registry.GetChangelogParser(); cp != nil {
 		t.Errorf("expected no changelog parser to be registered when nil")
 	}
 }
@@ -430,9 +447,10 @@ func TestRegisterConfiguredPlugins_WithChangelogGenerator(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	cg := changeloggenerator.GetChangelogGeneratorFn()
+	cg := registry.GetChangelogGenerator()
 	if cg == nil {
 		t.Fatal("expected changelog generator to be registered, got nil")
 	}
@@ -454,9 +472,10 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if cg := changeloggenerator.GetChangelogGeneratorFn(); cg != nil {
+	if cg := registry.GetChangelogGenerator(); cg != nil {
 		t.Errorf("expected no changelog generator to be registered when disabled")
 	}
 }
@@ -471,9 +490,10 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if cg := changeloggenerator.GetChangelogGeneratorFn(); cg != nil {
+	if cg := registry.GetChangelogGenerator(); cg != nil {
 		t.Errorf("expected no changelog generator to be registered when nil")
 	}
 }
@@ -492,9 +512,10 @@ func TestRegisterConfiguredPlugins_WithReleaseGate(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	rg := releasegate.GetReleaseGateFn()
+	rg := registry.GetReleaseGate()
 	if rg == nil {
 		t.Fatal("expected release gate to be registered, got nil")
 	}
@@ -516,9 +537,10 @@ func TestRegisterConfiguredPlugins_ReleaseGateDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if rg := releasegate.GetReleaseGateFn(); rg != nil {
+	if rg := registry.GetReleaseGate(); rg != nil {
 		t.Errorf("expected no release gate to be registered when disabled")
 	}
 }
@@ -533,9 +555,10 @@ func TestRegisterConfiguredPlugins_ReleaseGateNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if rg := releasegate.GetReleaseGateFn(); rg != nil {
+	if rg := registry.GetReleaseGate(); rg != nil {
 		t.Errorf("expected no release gate to be registered when nil")
 	}
 }
@@ -554,9 +577,10 @@ func TestRegisterConfiguredPlugins_WithAuditLog(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	al := auditlog.GetAuditLogFn()
+	al := registry.GetAuditLog()
 	if al == nil {
 		t.Fatal("expected audit log to be registered, got nil")
 	}
@@ -578,9 +602,10 @@ func TestRegisterConfiguredPlugins_AuditLogDisabled(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if al := auditlog.GetAuditLogFn(); al != nil {
+	if al := registry.GetAuditLog(); al != nil {
 		t.Errorf("expected no audit log to be registered when disabled")
 	}
 }
@@ -595,9 +620,10 @@ func TestRegisterConfiguredPlugins_AuditLogNil(t *testing.T) {
 		},
 	}
 
-	RegisterBuiltinPlugins(cfg)
+	registry := NewPluginRegistry()
+	RegisterBuiltinPlugins(cfg, registry)
 
-	if al := auditlog.GetAuditLogFn(); al != nil {
+	if al := registry.GetAuditLog(); al != nil {
 		t.Errorf("expected no audit log to be registered when nil")
 	}
 }

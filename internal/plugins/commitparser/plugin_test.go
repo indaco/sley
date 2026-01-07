@@ -34,7 +34,7 @@ func TestDefaultCommitParser_Version(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCommitParser_Parse(t *testing.T) {
-	parser := newCommitParser()
+	parser := NewCommitParser()
 
 	tests := []struct {
 		name         string

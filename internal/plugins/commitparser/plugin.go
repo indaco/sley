@@ -43,7 +43,7 @@ func (CommitParserPlugin) Version() string { return "v0.1.0" }
 /* ------------------------------------------------------------------------- */
 
 // NewCommitParser returns a new Conventional Commits parser.
-func newCommitParser() CommitParser {
+func NewCommitParser() CommitParser {
 	return &CommitParserPlugin{}
 }
 

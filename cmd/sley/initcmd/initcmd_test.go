@@ -12,6 +12,7 @@ import (
 	"github.com/indaco/sley/cmd/sley/bumpcmd"
 	"github.com/indaco/sley/cmd/sley/precmd"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/testutils"
 	"github.com/urfave/cli/v3"
 )
@@ -27,7 +28,7 @@ func TestCLI_InitCommand_CreatesFile(t *testing.T) {
 	cfg := &config.Config{Path: versionPath}
 	appCli := testutils.BuildCLIForTests(
 		cfg.Path,
-		[]*cli.Command{Run(), bumpcmd.Run(cfg)},
+		[]*cli.Command{Run(), bumpcmd.Run(cfg, plugins.NewPluginRegistry())},
 	)
 
 	output, err := testutils.CaptureStdout(func() {
@@ -64,7 +65,7 @@ func TestCLI_InitCommand_InitializationError(t *testing.T) {
 	cfg := &config.Config{Path: versionPath}
 	appCli := testutils.BuildCLIForTests(
 		cfg.Path,
-		[]*cli.Command{Run(), bumpcmd.Run(cfg)},
+		[]*cli.Command{Run(), bumpcmd.Run(cfg, plugins.NewPluginRegistry())},
 	)
 
 	err := appCli.Run(context.Background(), []string{"sley", "init"})
@@ -88,7 +89,7 @@ func TestCLI_InitCommand_FileAlreadyExists(t *testing.T) {
 	cfg := &config.Config{Path: versionPath}
 	appCli := testutils.BuildCLIForTests(
 		cfg.Path,
-		[]*cli.Command{Run(), bumpcmd.Run(cfg)},
+		[]*cli.Command{Run(), bumpcmd.Run(cfg, plugins.NewPluginRegistry())},
 	)
 
 	err := appCli.Run(context.Background(), []string{"sley", "init", "--yes"})
@@ -121,7 +122,7 @@ func TestCLI_InitCommand_ExistingInvalidContent(t *testing.T) {
 	cfg := &config.Config{Path: path}
 	appCli := testutils.BuildCLIForTests(
 		cfg.Path,
-		[]*cli.Command{Run(), bumpcmd.Run(cfg)},
+		[]*cli.Command{Run(), bumpcmd.Run(cfg, plugins.NewPluginRegistry())},
 	)
 
 	err := appCli.Run(context.Background(), []string{
@@ -164,7 +165,7 @@ func TestCLI_Command_InitializeVersionFilePermissionErrors(t *testing.T) {
 			cfg := &config.Config{Path: protectedPath}
 			appCli := testutils.BuildCLIForTests(
 				cfg.Path,
-				[]*cli.Command{Run(), bumpcmd.Run(cfg), precmd.Run(cfg)},
+				[]*cli.Command{Run(), bumpcmd.Run(cfg, plugins.NewPluginRegistry()), precmd.Run(cfg)},
 			)
 
 			err := appCli.Run(context.Background(), append(tt.command, "--path", protectedPath))

@@ -15,6 +15,7 @@ import (
 	"github.com/indaco/sley/cmd/sley/showcmd"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/console"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/version"
 	"github.com/urfave/cli/v3"
@@ -24,7 +25,7 @@ var noColorFlag bool
 
 // newCLI builds and returns the root CLI command,
 // configuring all subcommands and flags for the sley cli.
-func newCLI(cfg *config.Config) *cli.Command {
+func newCLI(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:                  "sley",
 		Version:               fmt.Sprintf("v%s", version.GetVersion()),
@@ -56,7 +57,7 @@ func newCLI(cfg *config.Config) *cli.Command {
 		Commands: []*cli.Command{
 			showcmd.Run(cfg),
 			setcmd.Run(cfg),
-			bumpcmd.Run(cfg),
+			bumpcmd.Run(cfg, registry),
 			changelogcmd.Run(cfg),
 			precmd.Run(cfg),
 			doctorcmd.Run(cfg),

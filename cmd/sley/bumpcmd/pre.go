@@ -7,12 +7,13 @@ import (
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
 
 // preCmd returns the "pre" subcommand for incrementing pre-release versions.
-func preCmd(cfg *config.Config) *cli.Command {
+func preCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	return &cli.Command{
 		Name:      "pre",
 		Usage:     "Increment pre-release version (e.g., rc.1 -> rc.2)",
@@ -29,13 +30,13 @@ func preCmd(cfg *config.Config) *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runBumpPre(ctx, cmd, cfg)
+			return runBumpPre(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runBumpPre executes the pre-release bump logic.
-func runBumpPre(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runBumpPre(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	label := cmd.String("label")
 	meta := cmd.String("meta")
 	isPreserveMeta := cmd.Bool("preserve-meta")
@@ -54,11 +55,11 @@ func runBumpPre(ctx context.Context, cmd *cli.Command, cfg *config.Config) error
 		return fmt.Errorf("pre-release bump not yet supported for multi-module mode")
 	}
 
-	return runSingleModulePreBump(ctx, cmd, cfg, execCtx, label, meta, isPreserveMeta, isSkipHooks)
+	return runSingleModulePreBump(ctx, cmd, cfg, registry, execCtx, label, meta, isPreserveMeta, isSkipHooks)
 }
 
 // runSingleModulePreBump handles pre-release bump for single-module mode.
-func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, execCtx *clix.ExecutionContext, label, meta string, isPreserveMeta, isSkipHooks bool) error {
+func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, execCtx *clix.ExecutionContext, label, meta string, isPreserveMeta, isSkipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -82,22 +83,22 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 	newVersion.Build = calculateNewBuild(meta, isPreserveMeta, previousVersion.Build)
 
 	// Validate release gates before bumping
-	if err := validateReleaseGate(newVersion, previousVersion, "pre"); err != nil {
+	if err := validateReleaseGate(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 
 	// Validate version policy before bumping
-	if err := validateVersionPolicy(newVersion, previousVersion, "pre"); err != nil {
+	if err := validateVersionPolicy(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 
 	// Validate dependency consistency before bumping
-	if err := validateDependencyConsistency(newVersion); err != nil {
+	if err := validateDependencyConsistency(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Validate tag availability before bumping
-	if err := validateTagAvailable(newVersion); err != nil {
+	if err := validateTagAvailable(registry, newVersion); err != nil {
 		return err
 	}
 
@@ -110,17 +111,17 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 
 	// Sync dependency files after updating .version
-	if err := syncDependencies(newVersion); err != nil {
+	if err := syncDependencies(registry, newVersion); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(newVersion, previousVersion, "pre"); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 
 	// Record audit log entry
-	if err := recordAuditLogEntry(newVersion, previousVersion, "pre"); err != nil {
+	if err := recordAuditLogEntry(registry, newVersion, previousVersion, "pre"); err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 
 	// Create tag after successful bump
-	return createTagAfterBump(newVersion, "pre")
+	return createTagAfterBump(registry, newVersion, "pre")
 }
 
 // extractPreReleaseBase extracts the base label from a pre-release string.

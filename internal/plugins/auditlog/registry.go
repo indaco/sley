@@ -35,12 +35,12 @@ func ResetAuditLog() {
 
 // Register registers the audit log plugin with the given configuration.
 func Register(cfg *config.AuditLogConfig) {
-	internalCfg := fromConfigStruct(cfg)
+	internalCfg := FromConfigStruct(cfg)
 	RegisterAuditLogFn(NewAuditLog(internalCfg))
 }
 
-// fromConfigStruct converts the config package struct to internal config.
-func fromConfigStruct(cfg *config.AuditLogConfig) *Config {
+// FromConfigStruct converts the config package struct to internal config.
+func FromConfigStruct(cfg *config.AuditLogConfig) *Config {
 	if cfg == nil {
 		return DefaultConfig()
 	}
