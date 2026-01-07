@@ -45,6 +45,11 @@ modernize:
     @echo "* Running go-modernize"
     modernize --fix ./...
 
+# Run govulncheck
+security-scan:
+    @echo "* Running govulncheck"
+    govulncheck ./...
+
 # Run golangci-lint
 lint:
     @echo "* Running golangci-lint"

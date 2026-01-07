@@ -29,6 +29,12 @@ if command -v go >/dev/null 2>&1; then
     log_warning 'Failed to install go-modernize'
   fi
 
+  if go install golang.org/x/vuln/cmd/govulncheck@latest; then
+    log_success 'govulncheck installed'
+  else
+    log_warning 'Failed to install govulncheck'
+  fi
+
   # goreportcard-cli requires manual installation:
   # git clone https://github.com/gojp/goreportcard.git && cd goreportcard && make install && go install ./cmd/goreportcard-cli
   if command -v goreportcard-cli >/dev/null 2>&1; then
