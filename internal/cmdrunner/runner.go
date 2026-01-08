@@ -18,6 +18,10 @@ const (
 
 // RunCommandContext executes a command with the given context.
 // The context should be used to control cancellation and timeouts.
+//
+// Security: Arguments are passed directly to exec.CommandContext (not shell-interpreted),
+// preventing command injection. The command parameter should be a trusted executable name,
+// not user input. Arguments in args are safely escaped by the Go runtime.
 func RunCommandContext(ctx context.Context, dir string, command string, args ...string) error {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = dir
@@ -36,6 +40,10 @@ func RunCommandContext(ctx context.Context, dir string, command string, args ...
 
 // RunCommandOutputContext executes a command and returns its output.
 // The context should be used to control cancellation and timeouts.
+//
+// Security: Arguments are passed directly to exec.CommandContext (not shell-interpreted),
+// preventing command injection. The command parameter should be a trusted executable name,
+// not user input. Arguments in args are safely escaped by the Go runtime.
 func RunCommandOutputContext(ctx context.Context, dir string, command string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Dir = dir
