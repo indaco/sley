@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/pathutil"
 )
 
@@ -43,8 +44,9 @@ type ScriptExecutor struct {
 	Timeout time.Duration
 }
 
-// DefaultTimeout is the default execution timeout for extension scripts
-const DefaultTimeout = 30 * time.Second
+// DefaultTimeout is the default execution timeout for extension scripts.
+// Uses core.TimeoutDefault for consistency across the codebase.
+const DefaultTimeout = core.TimeoutDefault
 
 // MaxOutputSize limits the amount of data read from script stdout/stderr
 const MaxOutputSize = 1024 * 1024 // 1MB
@@ -85,7 +87,7 @@ func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input H
 	}
 
 	// Check if file is executable (Unix-like systems)
-	if info.Mode()&0111 == 0 {
+	if info.Mode()&core.PermExecutable == 0 {
 		return nil, fmt.Errorf("script is not executable: %s", absPath)
 	}
 

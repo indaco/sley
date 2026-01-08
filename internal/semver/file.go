@@ -1,9 +1,14 @@
 package semver
 
-import "context"
+import (
+	"context"
+
+	"github.com/indaco/sley/internal/core"
+)
 
 // VersionFilePerm defines secure file permissions for version files (owner read/write only).
-const VersionFilePerm = 0600
+// References core.PermOwnerRW for consistency across the codebase.
+const VersionFilePerm = core.PermOwnerRW
 
 // ReadVersion reads a version string from the given file and parses it into a SemVersion.
 // This is a convenience function that uses the default VersionManager with context.Background().
