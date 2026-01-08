@@ -54,14 +54,6 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 		sb.WriteString("\n")
 	}
 
-	// Full changelog link at the end
-	if remote != nil && previousVersion != "" {
-		compareURL := buildCompareURL(remote, previousVersion, version)
-		if compareURL != "" {
-			sb.WriteString(fmt.Sprintf("**Full Changelog:** [%s...%s](%s)\n", previousVersion, version, compareURL))
-		}
-	}
-
 	return sb.String()
 }
 

@@ -51,11 +51,13 @@ var KnownProviders = map[string]string{
 
 // Mockable functions for testing.
 var (
-	execCommand          = exec.Command
-	GetCommitsWithMetaFn = getCommitsWithMeta
-	GetRemoteInfoFn      = getRemoteInfo
-	GetLatestTagFn       = getLatestTag
-	GetContributorsFn    = getContributors
+	execCommand                 = exec.Command
+	GetCommitsWithMetaFn        = getCommitsWithMeta
+	GetRemoteInfoFn             = getRemoteInfo
+	GetLatestTagFn              = getLatestTag
+	GetContributorsFn           = getContributors
+	GetHistoricalContributorsFn = getHistoricalContributors
+	GetNewContributorsFn        = getNewContributors
 )
 
 // getCommitsWithMeta retrieves commits between two refs with full metadata.
@@ -250,4 +252,101 @@ func extractUsername(email, authorName string) (username string, host string) {
 	// Fall back to using author name converted to lowercase with spaces removed
 	// This is a best-effort guess
 	return strings.ToLower(strings.ReplaceAll(authorName, " ", "")), ""
+}
+
+// NewContributor represents a first-time contributor with their first contribution details.
+type NewContributor struct {
+	Contributor
+	FirstCommit CommitInfo // The commit that introduced this contributor
+	PRNumber    string     // PR number if available (extracted from commit message)
+}
+
+// getHistoricalContributors returns all unique contributor usernames before a given ref.
+// This is used to determine if a contributor is new (first-time) in this release.
+func getHistoricalContributors(beforeRef string) (map[string]struct{}, error) {
+	if beforeRef == "" {
+		return make(map[string]struct{}), nil
+	}
+
+	// git log --format="%ae|%an" beforeRef
+	// Returns all author emails and names from the beginning of history up to beforeRef
+	cmd := execCommand("git", "log", "--format=%ae|%an", beforeRef)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		// If the ref doesn't exist (e.g., first release), return empty set
+		if strings.Contains(stderrMsg, "unknown revision") ||
+			strings.Contains(stderrMsg, "bad revision") {
+			return make(map[string]struct{}), nil
+		}
+		return nil, fmt.Errorf("git log failed: %w", err)
+	}
+
+	usernames := make(map[string]struct{})
+	for line := range strings.SplitSeq(strings.TrimSpace(string(output)), "\n") {
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "|", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		email, authorName := parts[0], parts[1]
+		username, _ := extractUsername(email, authorName)
+		if username != "" {
+			usernames[username] = struct{}{}
+		}
+	}
+
+	return usernames, nil
+}
+
+// prNumberExtractRe extracts PR number from commit messages like "(#123)" or "Merge pull request #123".
+var prNumberExtractRe = regexp.MustCompile(`#(\d+)`)
+
+// getNewContributors identifies first-time contributors in a set of commits.
+// It checks if the contributor has any commits before previousVersion.
+func getNewContributors(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+	// Get historical contributor usernames (before this release)
+	historicalUsernames, err := GetHistoricalContributorsFn(previousVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get historical contributors: %w", err)
+	}
+
+	// Track which usernames we've already processed in this release
+	seenInRelease := make(map[string]bool)
+	var newContributors []NewContributor
+
+	for _, commit := range commits {
+		username, host := extractUsername(commit.AuthorEmail, commit.Author)
+		if username == "" || seenInRelease[username] {
+			continue
+		}
+		seenInRelease[username] = true
+
+		// Check if this is a new contributor (not in historical set)
+		if _, existed := historicalUsernames[username]; !existed {
+			// Extract PR number from commit subject
+			prNumber := ""
+			if matches := prNumberExtractRe.FindStringSubmatch(commit.Subject); len(matches) == 2 {
+				prNumber = matches[1]
+			}
+
+			newContributors = append(newContributors, NewContributor{
+				Contributor: Contributor{
+					Name:     commit.Author,
+					Username: username,
+					Email:    commit.AuthorEmail,
+					Host:     host,
+				},
+				FirstCommit: commit,
+				PRNumber:    prNumber,
+			})
+		}
+	}
+
+	return newContributors, nil
 }

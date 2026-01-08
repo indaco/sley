@@ -499,3 +499,246 @@ func TestContributor_Fields(t *testing.T) {
 		t.Errorf("Host = %q, want 'github.com'", contrib.Host)
 	}
 }
+
+func TestNewContributor_Fields(t *testing.T) {
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Email:    "newdev@users.noreply.github.com",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{
+			Hash:      "abc123",
+			ShortHash: "abc123",
+			Subject:   "feat: first feature (#42)",
+		},
+		PRNumber: "42",
+	}
+
+	if nc.Name != "New Dev" {
+		t.Errorf("Name = %q, want 'New Dev'", nc.Name)
+	}
+	if nc.Username != "newdev" {
+		t.Errorf("Username = %q, want 'newdev'", nc.Username)
+	}
+	if nc.PRNumber != "42" {
+		t.Errorf("PRNumber = %q, want '42'", nc.PRNumber)
+	}
+	if nc.FirstCommit.ShortHash != "abc123" {
+		t.Errorf("FirstCommit.ShortHash = %q, want 'abc123'", nc.FirstCommit.ShortHash)
+	}
+}
+
+func TestGetNewContributors(t *testing.T) {
+	// Save and restore original function
+	originalFn := GetHistoricalContributorsFn
+	defer func() { GetHistoricalContributorsFn = originalFn }()
+
+	tests := []struct {
+		name                string
+		commits             []CommitInfo
+		historicalUsernames map[string]struct{}
+		previousVersion     string
+		wantCount           int
+		wantUsernames       []string
+	}{
+		{
+			name: "all new contributors (first release)",
+			commits: []CommitInfo{
+				{Author: "Alice", AuthorEmail: "alice@users.noreply.github.com", ShortHash: "abc123", Subject: "feat: initial (#1)"},
+				{Author: "Bob", AuthorEmail: "bob@users.noreply.github.com", ShortHash: "def456", Subject: "docs: readme"},
+			},
+			historicalUsernames: map[string]struct{}{},
+			previousVersion:     "",
+			wantCount:           2,
+			wantUsernames:       []string{"alice", "bob"},
+		},
+		{
+			name: "mix of new and existing contributors",
+			commits: []CommitInfo{
+				{Author: "Alice", AuthorEmail: "alice@users.noreply.github.com", ShortHash: "abc123", Subject: "feat: new (#5)"},
+				{Author: "Charlie", AuthorEmail: "charlie@users.noreply.github.com", ShortHash: "def456", Subject: "fix: bug (#6)"},
+			},
+			historicalUsernames: map[string]struct{}{
+				"alice": {},
+			},
+			previousVersion: "v1.0.0",
+			wantCount:       1,
+			wantUsernames:   []string{"charlie"},
+		},
+		{
+			name: "no new contributors",
+			commits: []CommitInfo{
+				{Author: "Alice", AuthorEmail: "alice@users.noreply.github.com", ShortHash: "abc123", Subject: "feat: update"},
+			},
+			historicalUsernames: map[string]struct{}{
+				"alice": {},
+			},
+			previousVersion: "v1.0.0",
+			wantCount:       0,
+			wantUsernames:   []string{},
+		},
+		{
+			name: "deduplicates same contributor multiple commits",
+			commits: []CommitInfo{
+				{Author: "NewUser", AuthorEmail: "newuser@users.noreply.github.com", ShortHash: "abc123", Subject: "feat: first (#10)"},
+				{Author: "NewUser", AuthorEmail: "newuser@users.noreply.github.com", ShortHash: "def456", Subject: "feat: second (#11)"},
+			},
+			historicalUsernames: map[string]struct{}{},
+			previousVersion:     "v1.0.0",
+			wantCount:           1,
+			wantUsernames:       []string{"newuser"},
+		},
+		{
+			name: "extracts PR number from commit subject",
+			commits: []CommitInfo{
+				{Author: "Dev", AuthorEmail: "dev@users.noreply.github.com", ShortHash: "abc123", Subject: "feat: add feature (#123)"},
+			},
+			historicalUsernames: map[string]struct{}{},
+			previousVersion:     "v1.0.0",
+			wantCount:           1,
+			wantUsernames:       []string{"dev"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
+				return tt.historicalUsernames, nil
+			}
+
+			got, err := getNewContributors(tt.commits, tt.previousVersion)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(got) != tt.wantCount {
+				t.Errorf("got %d new contributors, want %d", len(got), tt.wantCount)
+			}
+
+			// Verify usernames
+			gotUsernames := make(map[string]bool)
+			for _, nc := range got {
+				gotUsernames[nc.Username] = true
+			}
+
+			for _, wantUsername := range tt.wantUsernames {
+				if !gotUsernames[wantUsername] {
+					t.Errorf("expected username %q not found in new contributors", wantUsername)
+				}
+			}
+		})
+	}
+}
+
+func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
+	// Save and restore original function
+	originalFn := GetHistoricalContributorsFn
+	defer func() { GetHistoricalContributorsFn = originalFn }()
+
+	GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
+		return map[string]struct{}{}, nil
+	}
+
+	tests := []struct {
+		name         string
+		subject      string
+		wantPRNumber string
+	}{
+		{
+			name:         "PR number at end",
+			subject:      "feat: add feature (#123)",
+			wantPRNumber: "123",
+		},
+		{
+			name:         "PR number in middle",
+			subject:      "Merge pull request #456 from branch",
+			wantPRNumber: "456",
+		},
+		{
+			name:         "no PR number",
+			subject:      "feat: add feature without PR",
+			wantPRNumber: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commits := []CommitInfo{
+				{Author: "Dev", AuthorEmail: "dev@users.noreply.github.com", ShortHash: "abc123", Subject: tt.subject},
+			}
+
+			got, err := getNewContributors(commits, "v1.0.0")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if len(got) != 1 {
+				t.Fatalf("expected 1 new contributor, got %d", len(got))
+			}
+
+			if got[0].PRNumber != tt.wantPRNumber {
+				t.Errorf("PRNumber = %q, want %q", got[0].PRNumber, tt.wantPRNumber)
+			}
+		})
+	}
+}
+
+func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
+	// Save and restore original function
+	originalFn := GetHistoricalContributorsFn
+	defer func() { GetHistoricalContributorsFn = originalFn }()
+
+	// Mock the function
+	GetHistoricalContributorsFn = func(beforeRef string) (map[string]struct{}, error) {
+		return map[string]struct{}{
+			"alice":   {},
+			"bob":     {},
+			"charlie": {},
+		}, nil
+	}
+
+	usernames, err := GetHistoricalContributorsFn("v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(usernames) != 3 {
+		t.Errorf("expected 3 historical contributors, got %d", len(usernames))
+	}
+	if _, ok := usernames["alice"]; !ok {
+		t.Error("expected alice in historical contributors")
+	}
+}
+
+func TestGetNewContributorsFn_MockSuccess(t *testing.T) {
+	// Save and restore original function
+	originalFn := GetNewContributorsFn
+	defer func() { GetNewContributorsFn = originalFn }()
+
+	// Mock the function
+	GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+		return []NewContributor{
+			{
+				Contributor: Contributor{
+					Name:     "New Dev",
+					Username: "newdev",
+					Host:     "github.com",
+				},
+				PRNumber: "42",
+			},
+		}, nil
+	}
+
+	commits := []CommitInfo{{Author: "New Dev", AuthorEmail: "newdev@users.noreply.github.com"}}
+	newContribs, err := GetNewContributorsFn(commits, "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(newContribs) != 1 {
+		t.Errorf("expected 1 new contributor, got %d", len(newContribs))
+	}
+	if newContribs[0].Username != "newdev" {
+		t.Errorf("Username = %q, want 'newdev'", newContribs[0].Username)
+	}
+}

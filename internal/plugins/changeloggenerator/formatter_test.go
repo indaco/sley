@@ -97,10 +97,7 @@ func TestGroupedFormatter_FormatChangelog(t *testing.T) {
 		t.Error("expected version header with 'v' prefix")
 	}
 
-	// Check full changelog link at the end
-	if !strings.Contains(result, "**Full Changelog:** [v0.9.0...v1.0.0](https://github.com/testowner/testrepo/compare/v0.9.0...v1.0.0)") {
-		t.Error("expected full changelog link")
-	}
+	// Note: Full Changelog link is now generated in generator.go, not in formatters
 
 	// Check section headers
 	if !strings.Contains(result, "### Enhancements") {
@@ -195,10 +192,7 @@ func TestKeepAChangelogFormatter_FormatChangelog(t *testing.T) {
 		t.Error("expected version header with brackets and no 'v' prefix")
 	}
 
-	// Check full changelog link at the end
-	if !strings.Contains(result, "**Full Changelog:** [v0.9.0...v1.0.0](https://github.com/testowner/testrepo/compare/v0.9.0...v1.0.0)") {
-		t.Error("expected full changelog link")
-	}
+	// Note: Full Changelog link is now generated in generator.go, not in formatters
 
 	// Check standard Keep a Changelog sections
 	if !strings.Contains(result, "### Added") {
@@ -335,5 +329,75 @@ func TestKeepAChangelogFormatter_SectionOrder(t *testing.T) {
 	}
 	if changedPos > fixedPos {
 		t.Error("Changed should come before Fixed")
+	}
+}
+
+func TestKeepAChangelogFormatter_UnknownTypeMapping(t *testing.T) {
+	cfg := DefaultConfig()
+	formatter := &KeepAChangelogFormatter{config: cfg}
+
+	tests := []struct {
+		name            string
+		commitType      string
+		expectedSection string
+	}{
+		{
+			name:            "unknown type with content",
+			commitType:      "custom",
+			expectedSection: "Changed",
+		},
+		{
+			name:            "empty type (non-conventional)",
+			commitType:      "",
+			expectedSection: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			commit := &GroupedCommit{
+				ParsedCommit: &ParsedCommit{
+					Type:        tt.commitType,
+					Description: "some change",
+				},
+			}
+
+			section := formatter.mapTypeToSection(commit)
+			if section != tt.expectedSection {
+				t.Errorf("mapTypeToSection(%q) = %q, want %q",
+					tt.commitType, section, tt.expectedSection)
+			}
+		})
+	}
+}
+
+func TestGroupedFormatter_WithoutRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature"},
+					Type:        "feat",
+					Description: "add feature",
+				},
+				GroupLabel: "Enhancements",
+				GroupOrder: 0,
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements"}
+
+	result := formatter.FormatChangelog("v1.0.0", "", grouped, sortedKeys, nil)
+
+	// Without remote, commit entries should just have the description without links
+	if !strings.Contains(result, "add feature") {
+		t.Error("expected description in output")
+	}
+	// Should not contain full URL
+	if strings.Contains(result, "https://") {
+		t.Error("should not contain URLs without remote")
 	}
 }

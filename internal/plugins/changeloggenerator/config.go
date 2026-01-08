@@ -21,6 +21,9 @@ var DefaultGroupIcons = map[string]string{
 // DefaultContributorIcon is the default icon for the contributors section.
 const DefaultContributorIcon = "\u2764\uFE0F" // red heart ❤️
 
+// DefaultNewContributorsIcon is the default icon for the new contributors section.
+const DefaultNewContributorsIcon = "\U0001F389" // party popper 🎉
+
 // Config holds the internal configuration for the changelog generator plugin.
 type Config struct {
 	// Enabled controls whether the plugin is active.
@@ -93,9 +96,12 @@ type GroupConfig struct {
 
 // ContributorsConfig configures the contributors section.
 type ContributorsConfig struct {
-	Enabled bool
-	Format  string
-	Icon    string
+	Enabled               bool
+	Format                string
+	Icon                  string
+	ShowNewContributors   bool
+	NewContributorsFormat string
+	NewContributorsIcon   string
 }
 
 // DefaultConfig returns the default changelog generator configuration.
@@ -112,8 +118,9 @@ func DefaultConfig() *Config {
 		Groups:          DefaultGroups(),
 		ExcludePatterns: DefaultExcludePatterns(),
 		Contributors: &ContributorsConfig{
-			Enabled: true,
-			Format:  "- [@{{.Username}}](https://{{.Host}}/{{.Username}})",
+			Enabled:             true,
+			Format:              "- [@{{.Username}}](https://{{.Host}}/{{.Username}})",
+			ShowNewContributors: true,
 		},
 	}
 }
@@ -163,77 +170,108 @@ func FromConfigStruct(cfg *config.ChangelogGeneratorConfig) *Config {
 		UseDefaultIcons:        cfg.UseDefaultIcons,
 	}
 
-	// Convert repository config
-	if cfg.Repository != nil {
-		result.Repository = &RepositoryConfig{
-			Provider:   cfg.Repository.Provider,
-			Host:       cfg.Repository.Host,
-			Owner:      cfg.Repository.Owner,
-			Repo:       cfg.Repository.Repo,
-			AutoDetect: cfg.Repository.AutoDetect,
-		}
-	} else {
-		result.Repository = &RepositoryConfig{AutoDetect: true}
+	result.Repository = convertRepositoryConfig(cfg.Repository)
+	result.Groups, result.GroupIcons = convertGroupsConfig(cfg)
+
+	if len(result.ExcludePatterns) == 0 {
+		result.ExcludePatterns = DefaultExcludePatterns()
 	}
 
-	// Convert groups
+	result.Contributors = convertContributorsConfig(cfg)
+
+	return result
+}
+
+// convertRepositoryConfig converts repository configuration.
+func convertRepositoryConfig(repo *config.RepositoryConfig) *RepositoryConfig {
+	if repo == nil {
+		return &RepositoryConfig{AutoDetect: true}
+	}
+	return &RepositoryConfig{
+		Provider:   repo.Provider,
+		Host:       repo.Host,
+		Owner:      repo.Owner,
+		Repo:       repo.Repo,
+		AutoDetect: repo.AutoDetect,
+	}
+}
+
+// convertGroupsConfig converts groups configuration with icon handling.
+func convertGroupsConfig(cfg *config.ChangelogGeneratorConfig) ([]GroupConfig, map[string]string) {
 	if len(cfg.Groups) > 0 {
-		// Full custom groups provided - use them directly
-		result.Groups = make([]GroupConfig, len(cfg.Groups))
+		groups := make([]GroupConfig, len(cfg.Groups))
 		for i, g := range cfg.Groups {
-			result.Groups[i] = GroupConfig{
+			groups[i] = GroupConfig{
 				Pattern: g.Pattern,
 				Label:   g.Label,
 				Icon:    g.Icon,
 				Order:   g.Order,
 			}
 		}
-	} else {
-		// Use defaults, optionally with icons
-		result.Groups = DefaultGroups()
-		result.GroupIcons = cfg.GroupIcons
+		return groups, nil
+	}
 
-		// Apply icons to default groups by label
-		// Priority: user-defined GroupIcons > DefaultGroupIcons (when UseDefaultIcons is true)
-		for i, g := range result.Groups {
-			// First check for user-defined icon override
-			if icon, ok := cfg.GroupIcons[g.Label]; ok {
-				result.Groups[i].Icon = icon
-			} else if cfg.UseDefaultIcons {
-				// Fall back to default icons when UseDefaultIcons is enabled
-				if icon, ok := DefaultGroupIcons[g.Label]; ok {
-					result.Groups[i].Icon = icon
-				}
+	// Use defaults, optionally with icons
+	groups := DefaultGroups()
+	applyGroupIcons(groups, cfg.GroupIcons, cfg.UseDefaultIcons)
+	return groups, cfg.GroupIcons
+}
+
+// applyGroupIcons applies icons to groups based on configuration.
+func applyGroupIcons(groups []GroupConfig, groupIcons map[string]string, useDefaults bool) {
+	for i, g := range groups {
+		if icon, ok := groupIcons[g.Label]; ok {
+			groups[i].Icon = icon
+		} else if useDefaults {
+			if icon, ok := DefaultGroupIcons[g.Label]; ok {
+				groups[i].Icon = icon
 			}
 		}
 	}
+}
 
-	// Use default exclude patterns if none specified
-	if len(result.ExcludePatterns) == 0 {
-		result.ExcludePatterns = DefaultExcludePatterns()
+// convertContributorsConfig converts contributors configuration with icon handling.
+func convertContributorsConfig(cfg *config.ChangelogGeneratorConfig) *ContributorsConfig {
+	if cfg.Contributors == nil {
+		return defaultContributorsConfig(cfg.UseDefaultIcons)
 	}
 
-	// Convert contributors config
-	if cfg.Contributors != nil {
-		result.Contributors = &ContributorsConfig{
-			Enabled: cfg.Contributors.Enabled,
-			Format:  cfg.Contributors.Format,
-			Icon:    cfg.Contributors.Icon,
-		}
-		// Apply default contributor icon if UseDefaultIcons is true and no custom icon is set
-		if cfg.UseDefaultIcons && result.Contributors.Icon == "" {
-			result.Contributors.Icon = DefaultContributorIcon
-		}
-	} else {
-		result.Contributors = &ContributorsConfig{
-			Enabled: true,
-			Format:  "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
-		}
-		// Apply default contributor icon if UseDefaultIcons is true
-		if cfg.UseDefaultIcons {
-			result.Contributors.Icon = DefaultContributorIcon
-		}
+	contrib := &ContributorsConfig{
+		Enabled:               cfg.Contributors.Enabled,
+		Format:                cfg.Contributors.Format,
+		Icon:                  cfg.Contributors.Icon,
+		ShowNewContributors:   cfg.Contributors.GetShowNewContributors(),
+		NewContributorsFormat: cfg.Contributors.NewContributorsFormat,
+		NewContributorsIcon:   cfg.Contributors.NewContributorsIcon,
 	}
 
-	return result
+	applyDefaultContributorIcons(contrib, cfg.UseDefaultIcons)
+	return contrib
+}
+
+// defaultContributorsConfig returns the default contributors configuration.
+func defaultContributorsConfig(useDefaultIcons bool) *ContributorsConfig {
+	contrib := &ContributorsConfig{
+		Enabled:             true,
+		Format:              "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
+		ShowNewContributors: true,
+	}
+	if useDefaultIcons {
+		contrib.Icon = DefaultContributorIcon
+		contrib.NewContributorsIcon = DefaultNewContributorsIcon
+	}
+	return contrib
+}
+
+// applyDefaultContributorIcons applies default icons if UseDefaultIcons is enabled.
+func applyDefaultContributorIcons(contrib *ContributorsConfig, useDefaultIcons bool) {
+	if !useDefaultIcons {
+		return
+	}
+	if contrib.Icon == "" {
+		contrib.Icon = DefaultContributorIcon
+	}
+	if contrib.NewContributorsIcon == "" {
+		contrib.NewContributorsIcon = DefaultNewContributorsIcon
+	}
 }

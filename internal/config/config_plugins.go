@@ -264,6 +264,26 @@ type ContributorsConfig struct {
 
 	// Icon is the icon/emoji for the contributors section header (optional).
 	Icon string `yaml:"icon,omitempty"`
+
+	// ShowNewContributors enables the "New Contributors" section showing first-time contributors.
+	// Default: true when contributors are enabled.
+	ShowNewContributors *bool `yaml:"show-new-contributors,omitempty"`
+
+	// NewContributorsFormat is a Go template for new contributor entries.
+	// Available fields: {{.Name}}, {{.Username}}, {{.Host}}, {{.PRNumber}}, {{.CommitHash}}
+	// Default: "* [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution in [#{{.PRNumber}}](...)"
+	NewContributorsFormat string `yaml:"new-contributors-format,omitempty"`
+
+	// NewContributorsIcon is the icon for the "New Contributors" section header.
+	NewContributorsIcon string `yaml:"new-contributors-icon,omitempty"`
+}
+
+// GetShowNewContributors returns the show-new-contributors setting with default true.
+func (c *ContributorsConfig) GetShowNewContributors() bool {
+	if c.ShowNewContributors == nil {
+		return true
+	}
+	return *c.ShowNewContributors
 }
 
 // ReleaseGateConfig holds configuration for the release gate plugin.
