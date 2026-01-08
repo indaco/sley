@@ -1,6 +1,7 @@
 package auditlog
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -36,7 +37,7 @@ func (g *DefaultGitOps) GetBranch() (string, error) {
 
 // runGitCommand executes a git command and returns the trimmed output.
 func (g *DefaultGitOps) runGitCommand(args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	cmd := exec.CommandContext(context.Background(), "git", args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git command failed: %w", err)

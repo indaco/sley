@@ -53,7 +53,7 @@ echo '{"success": true, "message": "Test successful", "data": {"hook": "test"}}'
 	}
 
 	ctx := context.Background()
-	output, err := executor.Execute(ctx, scriptPath, input)
+	output, err := executor.Execute(ctx, scriptPath, &input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,7 +88,7 @@ echo '{"success": false, "message": "Test failure"}'
 	}
 
 	ctx := context.Background()
-	output, err := executor.Execute(ctx, scriptPath, input)
+	output, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -109,7 +109,7 @@ func TestScriptExecutor_Execute_NonExistentScript(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, "/nonexistent/script.sh", input)
+	_, err := executor.Execute(ctx, "/nonexistent/script.sh", &input)
 	if err == nil {
 		t.Fatal("expected error for nonexistent script")
 	}
@@ -136,7 +136,7 @@ echo '{"success": true}'
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error for non-executable script")
 	}
@@ -165,7 +165,7 @@ echo '{"success": true}'
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
@@ -193,7 +193,7 @@ echo 'not valid json'
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON output")
 	}
@@ -224,7 +224,7 @@ echo "{\"success\": true, \"message\": \"Received version: $version\"}"
 	}
 
 	ctx := context.Background()
-	output, err := executor.Execute(ctx, scriptPath, input)
+	output, err := executor.Execute(ctx, scriptPath, &input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -256,7 +256,7 @@ echo '{"success": true, "message": "Extension executed"}'
 	}
 
 	ctx := context.Background()
-	output, err := ExecuteExtensionHook(ctx, tmpDir, scriptName, input)
+	output, err := ExecuteExtensionHook(ctx, tmpDir, scriptName, &input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -454,7 +454,7 @@ echo '{"success": true, "message": "Release processed"}'
 			executor := NewScriptExecutorWithTimeout(tt.timeout)
 			ctx := context.Background()
 
-			output, err := executor.Execute(ctx, scriptPath, tt.input)
+			output, err := executor.Execute(ctx, scriptPath, &tt.input)
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Execute() error = %v, wantErr %v", err, tt.wantErr)
@@ -559,7 +559,7 @@ echo '{"success": true}'
 			executor := NewScriptExecutorWithTimeout(tt.timeout)
 			ctx := context.Background()
 
-			_, err := executor.Execute(ctx, scriptPath, tt.input)
+			_, err := executor.Execute(ctx, scriptPath, &tt.input)
 
 			if err == nil {
 				t.Fatal("expected error, got nil")
@@ -607,7 +607,7 @@ func TestScriptExecutor_Execute_DirectoryAsScript(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptDir, input)
+	_, err := executor.Execute(ctx, scriptDir, &input)
 	if err == nil {
 		t.Fatal("expected error when script path is a directory")
 	}
@@ -640,7 +640,7 @@ echo '{"success": true}'
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error for output exceeding max size")
 	}
@@ -672,7 +672,7 @@ echo '{"success": true}'
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error from cancelled context")
 	}
@@ -701,7 +701,7 @@ exit 0
 	}
 
 	ctx := context.Background()
-	_, err := executor.Execute(ctx, scriptPath, input)
+	_, err := executor.Execute(ctx, scriptPath, &input)
 	if err == nil {
 		t.Fatal("expected error for empty output")
 	}
@@ -747,7 +747,7 @@ echo '{"success": true, "message": "Relative path works"}'
 	}
 
 	ctx := context.Background()
-	output, err := executor.Execute(ctx, "./hook.sh", input)
+	output, err := executor.Execute(ctx, "./hook.sh", &input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -872,7 +872,7 @@ echo '{"success": true, "message": "Accessed secret file"}'
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, input)
+			_, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, &input)
 
 			if err == nil {
 				t.Fatal("expected error for path traversal attempt, got nil")
@@ -944,7 +944,7 @@ echo '{"success": true, "message": "Valid path"}'
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, input)
+			output, err := ExecuteExtensionHook(ctx, extDir, tt.entryPoint, &input)
 
 			if tt.wantErr {
 				if err == nil {
@@ -988,7 +988,7 @@ echo '{"success": true, "message": "Path cleaned"}'
 	ctx := context.Background()
 
 	// Path with redundant ./ should be cleaned and work
-	output, err := ExecuteExtensionHook(ctx, extDir, "./././hook.sh", input)
+	output, err := ExecuteExtensionHook(ctx, extDir, "./././hook.sh", &input)
 	if err != nil {
 		t.Fatalf("unexpected error for cleaned path: %v", err)
 	}

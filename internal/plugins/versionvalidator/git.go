@@ -1,6 +1,7 @@
 package versionvalidator
 
 import (
+	"context"
 	"os/exec"
 	"strings"
 
@@ -20,7 +21,7 @@ var _ core.GitBranchReader = (*OSGitBranchReader)(nil)
 
 // GetCurrentBranch returns the current git branch name.
 func (g *OSGitBranchReader) GetCurrentBranch() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--abbrev-ref", "HEAD")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err

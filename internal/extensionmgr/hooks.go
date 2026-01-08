@@ -44,7 +44,7 @@ func NewExtensionHookRunner(cfg *config.Config) *ExtensionHookRunner {
 }
 
 // RunHooks executes all enabled extensions for the specified hook point
-func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, input HookInput) error {
+func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, input *HookInput) error {
 	if r.Config == nil || len(r.Config.Extensions) == 0 {
 		return nil
 	}
@@ -174,7 +174,7 @@ func RunPreBumpHooks(ctx context.Context, cfg *config.Config, version, previousV
 		input.ModuleName = moduleInfo.Name
 	}
 
-	return runner.RunHooks(ctx, PreBumpHook, input)
+	return runner.RunHooks(ctx, PreBumpHook, &input)
 }
 
 // RunPostBumpHooks is a convenience function to run post-bump hooks
@@ -207,5 +207,5 @@ func RunPostBumpHooks(ctx context.Context, cfg *config.Config, version, previous
 		input.ModuleName = moduleInfo.Name
 	}
 
-	return runner.RunHooks(ctx, PostBumpHook, input)
+	return runner.RunHooks(ctx, PostBumpHook, &input)
 }

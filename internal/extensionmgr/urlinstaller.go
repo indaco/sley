@@ -1,6 +1,7 @@
 package extensionmgr
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"os"
@@ -86,7 +87,7 @@ func CloneRepository(repoURL *RepoURL) (string, error) {
 
 	// Clone the repository
 	cloneURL := repoURL.CloneURL()
-	cmd := exec.Command("git", "clone", "--depth", "1", cloneURL, tempDir)
+	cmd := exec.CommandContext(context.Background(), "git", "clone", "--depth", "1", cloneURL, tempDir)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -150,7 +151,7 @@ func IsURL(str string) bool {
 
 // ValidateGitAvailable checks if git is available in the system
 func ValidateGitAvailable() error {
-	cmd := exec.Command("git", "--version")
+	cmd := exec.CommandContext(context.Background(), "git", "--version")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("git is not available: %w (required for URL-based installation)", err)
 	}

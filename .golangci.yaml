@@ -1,13 +1,35 @@
 version: '2'
 run:
   tests: true
+  timeout: 5m
 linters:
   enable:
     - asasalint
     - bodyclose
+    - errcheck
+    - errorlint
     - gocritic
+    - gosec
+    - govet
+    - ineffassign
+    - noctx
+    - prealloc
     - revive
+    - staticcheck
+    - unconvert
+    - unused
   settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+      disabled-checks:
+        - hugeParam
+        - filepathJoin
+        - commentedOutCode
+    gosec:
+      excludes:
+        - G304
     revive:
       severity: warning
       rules:
@@ -15,6 +37,8 @@ linters:
           severity: error
         - name: var-naming
         - name: indent-error-flow
+        - name: error-return
+        - name: unexported-return
   exclusions:
     generated: lax
     presets:
@@ -25,6 +49,34 @@ linters:
     rules:
       - path: _test\.go
         text: should have comment
+      # Test files: allow exec.Command without context
+      - path: _test\.go
+        linters:
+          - noctx
+      # Test files: allow less strict file permissions
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G306"
+      # Test files: allow subprocess with variables (for mocking)
+      - path: _test\.go
+        linters:
+          - gosec
+        text: "G204"
+      # Test files: allow error pointer comparison for Unwrap tests
+      - path: _test\.go
+        linters:
+          - errorlint
+        text: "comparing with != will fail"
+      # Test files: string to byte comparison is fine
+      - path: _test\.go
+        linters:
+          - gocritic
+        text: "stringXbytes"
+      # Prealloc is often too noisy for small slices
+      - path: \.go$
+        linters:
+          - prealloc
     paths:
       - third_party$
       - builtin$

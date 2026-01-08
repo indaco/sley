@@ -127,6 +127,22 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	content := g.formatter.FormatChangelog(version, previousVersion, grouped, sortedKeys, remote)
 	sb.WriteString(content)
 
+	// New Contributors section (before Full Changelog link)
+	if g.config.Contributors != nil && g.config.Contributors.Enabled && g.config.Contributors.ShowNewContributors {
+		newContributors, err := GetNewContributorsFn(commits, previousVersion)
+		if err == nil && len(newContributors) > 0 {
+			g.writeNewContributorsSection(&sb, newContributors, remote)
+		}
+	}
+
+	// Full Changelog link
+	if remote != nil && previousVersion != "" {
+		compareURL := buildCompareURL(remote, previousVersion, version)
+		if compareURL != "" {
+			sb.WriteString(fmt.Sprintf("**Full Changelog:** [%s...%s](%s)\n\n", previousVersion, version, compareURL))
+		}
+	}
+
 	// Contributors section (applies to both formats)
 	if g.config.Contributors != nil && g.config.Contributors.Enabled {
 		contributors := GetContributorsFn(commits)
@@ -204,6 +220,107 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 
 	sb.WriteString(buf.String())
 	sb.WriteString("\n")
+}
+
+// newContributorTemplateData holds data for new contributor template rendering.
+type newContributorTemplateData struct {
+	Name       string
+	Username   string
+	Email      string
+	Host       string
+	PRNumber   string
+	CommitHash string
+}
+
+// writeNewContributorsSection writes the new contributors section.
+func (g *Generator) writeNewContributorsSection(sb *strings.Builder, newContributors []NewContributor, remote *RemoteInfo) {
+	// Section header
+	icon := g.config.Contributors.NewContributorsIcon
+	if icon != "" {
+		fmt.Fprintf(sb, "### %s New Contributors\n\n", icon)
+	} else {
+		sb.WriteString("### New Contributors\n\n")
+	}
+
+	for i := range newContributors {
+		g.writeNewContributorEntry(sb, &newContributors[i], remote)
+	}
+	sb.WriteString("\n")
+}
+
+// writeNewContributorEntry writes a single new contributor entry.
+func (g *Generator) writeNewContributorEntry(sb *strings.Builder, nc *NewContributor, remote *RemoteInfo) {
+	// Determine the host for URL generation
+	host := ""
+	if remote != nil {
+		host = remote.Host
+	}
+	if nc.Host != "" {
+		host = nc.Host
+	}
+
+	// Get format template
+	format := g.config.Contributors.NewContributorsFormat
+	if format == "" {
+		format = g.getDefaultNewContributorFormat(remote)
+	}
+
+	// Parse and execute template
+	tmpl, err := template.New("newContributor").Parse(format)
+	if err != nil {
+		// Fallback on template error
+		g.writeNewContributorFallback(sb, nc, remote)
+		return
+	}
+
+	data := newContributorTemplateData{
+		Name:       nc.Name,
+		Username:   nc.Username,
+		Email:      nc.Email,
+		Host:       host,
+		PRNumber:   nc.PRNumber,
+		CommitHash: nc.FirstCommit.ShortHash,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		// Fallback on execution error
+		g.writeNewContributorFallback(sb, nc, remote)
+		return
+	}
+
+	sb.WriteString(buf.String())
+	sb.WriteString("\n")
+}
+
+// getDefaultNewContributorFormat returns the default template based on remote availability.
+func (g *Generator) getDefaultNewContributorFormat(remote *RemoteInfo) string {
+	if remote != nil {
+		// With remote info, we can link to users and PRs
+		return "* [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution{{if .PRNumber}} in [#{{.PRNumber}}](https://{{.Host}}/" + remote.Owner + "/" + remote.Repo + "/pull/{{.PRNumber}}){{else}}{{if .CommitHash}} in {{.CommitHash}}{{end}}{{end}}"
+	}
+	// Without remote info, simpler format
+	return "* @{{.Username}} made their first contribution{{if .PRNumber}} in #{{.PRNumber}}{{else}}{{if .CommitHash}} in {{.CommitHash}}{{end}}{{end}}"
+}
+
+// writeNewContributorFallback writes a simple entry when template fails.
+func (g *Generator) writeNewContributorFallback(sb *strings.Builder, nc *NewContributor, remote *RemoteInfo) {
+	if nc.PRNumber != "" {
+		if remote != nil {
+			prURL := buildPRURL(remote, nc.PRNumber)
+			fmt.Fprintf(sb, "* [@%s](https://%s/%s) made their first contribution in [#%s](%s)\n",
+				nc.Username, nc.Host, nc.Username, nc.PRNumber, prURL)
+		} else {
+			fmt.Fprintf(sb, "* @%s made their first contribution in #%s\n", nc.Username, nc.PRNumber)
+		}
+	} else {
+		if remote != nil && nc.Host != "" {
+			fmt.Fprintf(sb, "* [@%s](https://%s/%s) made their first contribution\n",
+				nc.Username, nc.Host, nc.Username)
+		} else {
+			fmt.Fprintf(sb, "* @%s made their first contribution\n", nc.Username)
+		}
+	}
 }
 
 // WriteVersionedFile writes the changelog to a version-specific file.

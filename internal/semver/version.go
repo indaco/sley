@@ -95,15 +95,15 @@ func ParseVersion(s string) (SemVersion, error) {
 
 	major, err := strconv.Atoi(matches[1])
 	if err != nil {
-		return SemVersion{}, fmt.Errorf("%w: invalid major version: %v", errInvalidVersion, err)
+		return SemVersion{}, fmt.Errorf("%w: invalid major version: %s", errInvalidVersion, err.Error())
 	}
 	minor, err := strconv.Atoi(matches[2])
 	if err != nil {
-		return SemVersion{}, fmt.Errorf("%w: invalid minor version: %v", errInvalidVersion, err)
+		return SemVersion{}, fmt.Errorf("%w: invalid minor version: %s", errInvalidVersion, err.Error())
 	}
 	patch, err := strconv.Atoi(matches[3])
 	if err != nil {
-		return SemVersion{}, fmt.Errorf("%w: invalid patch version: %v", errInvalidVersion, err)
+		return SemVersion{}, fmt.Errorf("%w: invalid patch version: %s", errInvalidVersion, err.Error())
 	}
 
 	pre := matches[4]

@@ -26,19 +26,19 @@ var (
 
 // ParseConventionalCommit parses a commit message into its components.
 // Returns nil if the commit doesn't follow conventional commit format.
-func ParseConventionalCommit(commit CommitInfo) *ParsedCommit {
+func ParseConventionalCommit(commit *CommitInfo) *ParsedCommit {
 	matches := conventionalCommitRe.FindStringSubmatch(commit.Subject)
 	if matches == nil {
 		// Not a conventional commit, return with just the subject as description
 		return &ParsedCommit{
-			CommitInfo:  commit,
+			CommitInfo:  *commit,
 			Type:        "",
 			Description: commit.Subject,
 		}
 	}
 
 	parsed := &ParsedCommit{
-		CommitInfo:  commit,
+		CommitInfo:  *commit,
 		Type:        strings.ToLower(matches[1]),
 		Scope:       matches[2],
 		Breaking:    matches[3] == "!",
@@ -58,8 +58,8 @@ func ParseConventionalCommit(commit CommitInfo) *ParsedCommit {
 // ParseCommits parses a slice of CommitInfo into ParsedCommits.
 func ParseCommits(commits []CommitInfo) []*ParsedCommit {
 	parsed := make([]*ParsedCommit, 0, len(commits))
-	for _, c := range commits {
-		parsed = append(parsed, ParseConventionalCommit(c))
+	for i := range commits {
+		parsed = append(parsed, ParseConventionalCommit(&commits[i]))
 	}
 	return parsed
 }

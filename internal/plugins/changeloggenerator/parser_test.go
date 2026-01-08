@@ -80,7 +80,7 @@ func TestParseConventionalCommit(t *testing.T) {
 				Author:    "Test Author",
 			}
 
-			got := ParseConventionalCommit(commit)
+			got := ParseConventionalCommit(&commit)
 
 			if got.Type != tt.wantType {
 				t.Errorf("Type = %q, want %q", got.Type, tt.wantType)

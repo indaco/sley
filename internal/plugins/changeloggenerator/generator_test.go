@@ -1146,3 +1146,636 @@ Some description about this project.
 		t.Error("expected new version in result")
 	}
 }
+
+func TestWriteNewContributorsSection(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+	}
+	g, _ := NewGenerator(cfg)
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	newContributors := []NewContributor{
+		{
+			Contributor: Contributor{
+				Name:     "New Dev",
+				Username: "newdev",
+				Host:     "github.com",
+			},
+			FirstCommit: CommitInfo{ShortHash: "abc123"},
+			PRNumber:    "42",
+		},
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorsSection(&sb, newContributors, remote)
+	result := sb.String()
+
+	if !strings.Contains(result, "### New Contributors") {
+		t.Error("expected New Contributors header")
+	}
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in output")
+	}
+	if !strings.Contains(result, "#42") {
+		t.Error("expected PR number in output")
+	}
+}
+
+func TestWriteNewContributorsSection_WithIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+		NewContributorsIcon: "🎉",
+	}
+	g, _ := NewGenerator(cfg)
+
+	newContributors := []NewContributor{
+		{
+			Contributor: Contributor{
+				Name:     "New Dev",
+				Username: "newdev",
+				Host:     "github.com",
+			},
+			FirstCommit: CommitInfo{ShortHash: "abc123"},
+			PRNumber:    "42",
+		},
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorsSection(&sb, newContributors, nil)
+	result := sb.String()
+
+	if !strings.Contains(result, "### 🎉 New Contributors") {
+		t.Error("expected New Contributors header with icon")
+	}
+}
+
+func TestWriteNewContributorEntry_WithRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+	}
+	g, _ := NewGenerator(cfg)
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "owner",
+		Repo:     "repo",
+	}
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, remote)
+	result := sb.String()
+
+	if !strings.Contains(result, "newdev") {
+		t.Error("expected username in output")
+	}
+	if !strings.Contains(result, "first contribution") {
+		t.Error("expected 'first contribution' text")
+	}
+}
+
+func TestWriteNewContributorEntry_WithoutPR(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+	}
+	g, _ := NewGenerator(cfg)
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "owner",
+		Repo:     "repo",
+	}
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "", // No PR number
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, remote)
+	result := sb.String()
+
+	if !strings.Contains(result, "newdev") {
+		t.Error("expected username in output")
+	}
+	// Should contain commit hash when no PR number
+	if !strings.Contains(result, "abc123") {
+		t.Error("expected commit hash in output when no PR number")
+	}
+}
+
+func TestWriteNewContributorEntry_WithoutRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+	}
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, nil) // nil remote
+	result := sb.String()
+
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in output")
+	}
+	if !strings.Contains(result, "#42") {
+		t.Error("expected PR number in output")
+	}
+}
+
+func TestWriteNewContributorEntry_CustomFormat(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:               true,
+		ShowNewContributors:   true,
+		NewContributorsFormat: "* {{.Username}} joined in #{{.PRNumber}}",
+	}
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, nil)
+	result := sb.String()
+
+	if !strings.Contains(result, "newdev joined in #42") {
+		t.Errorf("expected custom format output, got: %s", result)
+	}
+}
+
+func TestWriteNewContributorFallback_WithPR(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "owner",
+		Repo:     "repo",
+	}
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorFallback(&sb, &nc, remote)
+	result := sb.String()
+
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in fallback output")
+	}
+	if !strings.Contains(result, "#42") {
+		t.Error("expected PR number in fallback output")
+	}
+}
+
+func TestWriteNewContributorFallback_WithoutPR(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorFallback(&sb, &nc, &RemoteInfo{Host: "github.com"})
+	result := sb.String()
+
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in fallback output")
+	}
+	if !strings.Contains(result, "first contribution") {
+		t.Error("expected 'first contribution' in fallback output")
+	}
+}
+
+func TestWriteNewContributorFallback_WithoutRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorFallback(&sb, &nc, nil)
+	result := sb.String()
+
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in fallback output")
+	}
+	if !strings.Contains(result, "#42") {
+		t.Error("expected PR number in fallback output")
+	}
+}
+
+func TestWriteNewContributorFallback_NoRemoteNoPR(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorFallback(&sb, &nc, nil)
+	result := sb.String()
+
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected username in fallback output")
+	}
+	if !strings.Contains(result, "first contribution") {
+		t.Error("expected 'first contribution' in fallback output")
+	}
+}
+
+func TestGetDefaultNewContributorFormat_WithRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "owner",
+		Repo:     "repo",
+	}
+
+	format := g.getDefaultNewContributorFormat(remote)
+
+	if !strings.Contains(format, "{{.Username}}") {
+		t.Error("expected username placeholder in format")
+	}
+	if !strings.Contains(format, "{{.PRNumber}}") {
+		t.Error("expected PR number placeholder in format")
+	}
+	if !strings.Contains(format, "owner/repo") {
+		t.Error("expected owner/repo in format for PR links")
+	}
+}
+
+func TestGetDefaultNewContributorFormat_WithoutRemote(t *testing.T) {
+	cfg := DefaultConfig()
+	g, _ := NewGenerator(cfg)
+
+	format := g.getDefaultNewContributorFormat(nil)
+
+	if !strings.Contains(format, "{{.Username}}") {
+		t.Error("expected username placeholder in format")
+	}
+	if !strings.Contains(format, "{{.PRNumber}}") {
+		t.Error("expected PR number placeholder in format")
+	}
+	// Should not contain full URL format
+	if strings.Contains(format, "https://{{.Host}}") {
+		t.Error("expected simpler format without full URLs when no remote")
+	}
+}
+
+func TestGenerateVersionChangelog_WithNewContributors(t *testing.T) {
+	// Save and restore original functions
+	originalGetNewContributorsFn := GetNewContributorsFn
+	originalGetContributorsFn := GetContributorsFn
+	defer func() {
+		GetNewContributorsFn = originalGetNewContributorsFn
+		GetContributorsFn = originalGetContributorsFn
+	}()
+
+	// Mock new contributors
+	GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+		return []NewContributor{
+			{
+				Contributor: Contributor{
+					Name:     "New Dev",
+					Username: "newdev",
+					Host:     "github.com",
+				},
+				FirstCommit: CommitInfo{ShortHash: "abc123"},
+				PRNumber:    "42",
+			},
+		}, nil
+	}
+
+	// Mock contributors
+	GetContributorsFn = func(commits []CommitInfo) []Contributor {
+		return []Contributor{
+			{Name: "New Dev", Username: "newdev", Host: "github.com"},
+		}
+	}
+
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:             true,
+		ShowNewContributors: true,
+	}
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "owner",
+		Repo:     "repo",
+	}
+
+	g, _ := NewGenerator(cfg)
+
+	commits := []CommitInfo{
+		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature (#42)", Author: "New Dev", AuthorEmail: "newdev@users.noreply.github.com"},
+	}
+
+	content, _ := g.GenerateVersionChangelog("v1.0.0", "v0.9.0", commits)
+
+	if !strings.Contains(content, "New Contributors") {
+		t.Error("expected New Contributors section in output")
+	}
+	if !strings.Contains(content, "Full Changelog") {
+		t.Error("expected Full Changelog link in output")
+	}
+	if !strings.Contains(content, "Contributors") {
+		t.Error("expected Contributors section in output")
+	}
+}
+
+func TestNewGenerator_InvalidFormat(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Format = "invalid-format"
+
+	_, err := NewGenerator(cfg)
+	if err == nil {
+		t.Error("expected error for invalid format")
+	}
+	if !strings.Contains(err.Error(), "unknown changelog format") {
+		t.Errorf("error = %v, expected to contain 'unknown changelog format'", err)
+	}
+}
+
+func TestResolveRemote_FillProviderFromHost(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Repository = &RepositoryConfig{
+		Host:  "github.com",
+		Owner: "owner",
+		Repo:  "repo",
+		// Provider not set - should be filled from host
+	}
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	remote, err := g.resolveRemote()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Provider should be filled from host
+	if remote.Provider != "github" {
+		t.Errorf("Provider = %q, want 'github'", remote.Provider)
+	}
+}
+
+func TestWriteContributorEntry_TemplateExecutionError(t *testing.T) {
+	cfg := DefaultConfig()
+	// Invalid template that parses but fails on execution
+	cfg.Contributors = &ContributorsConfig{
+		Enabled: true,
+		Format:  "- {{.NonExistentMethod}}",
+	}
+	g, err := NewGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	contrib := Contributor{
+		Name:     "Test User",
+		Username: "testuser",
+		Host:     "github.com",
+	}
+
+	var sb strings.Builder
+	g.writeContributorEntry(&sb, contrib, &RemoteInfo{Host: "github.com"})
+	result := sb.String()
+
+	// Should fallback to default format
+	if !strings.Contains(result, "@testuser") {
+		t.Error("expected fallback format with username")
+	}
+}
+
+func TestWriteNewContributorEntry_TemplateParseError(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:               true,
+		ShowNewContributors:   true,
+		NewContributorsFormat: "- {{.Invalid", // Invalid template syntax
+	}
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, &RemoteInfo{Host: "github.com", Owner: "owner", Repo: "repo"})
+	result := sb.String()
+
+	// Should fallback
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected fallback format with username")
+	}
+}
+
+func TestWriteNewContributorEntry_TemplateExecutionError(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors = &ContributorsConfig{
+		Enabled:               true,
+		ShowNewContributors:   true,
+		NewContributorsFormat: "- {{.NonExistent.Field}}", // Will fail on execution
+	}
+	g, _ := NewGenerator(cfg)
+
+	nc := NewContributor{
+		Contributor: Contributor{
+			Name:     "New Dev",
+			Username: "newdev",
+			Host:     "github.com",
+		},
+		FirstCommit: CommitInfo{ShortHash: "abc123"},
+		PRNumber:    "42",
+	}
+
+	var sb strings.Builder
+	g.writeNewContributorEntry(&sb, &nc, &RemoteInfo{Host: "github.com", Owner: "owner", Repo: "repo"})
+	result := sb.String()
+
+	// Should fallback
+	if !strings.Contains(result, "@newdev") {
+		t.Error("expected fallback format with username")
+	}
+}
+
+func TestCollectVersionFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	if err := os.MkdirAll(changesDir, 0755); err != nil {
+		t.Fatalf("failed to create changes dir: %v", err)
+	}
+
+	// Create version files and other files
+	files := map[string]string{
+		"v1.0.0.md": "version 1",
+		"v0.1.0.md": "version 0.1",
+		"README.md": "not a version",
+		"other.txt": "not markdown",
+		"notes.md":  "not starting with v",
+	}
+	for name, content := range files {
+		path := filepath.Join(changesDir, name)
+		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+			t.Fatalf("failed to create file: %v", err)
+		}
+	}
+
+	// Create a subdirectory (should be skipped)
+	subdir := filepath.Join(changesDir, "v2.0.0")
+	if err := os.MkdirAll(subdir, 0755); err != nil {
+		t.Fatalf("failed to create subdir: %v", err)
+	}
+
+	collected, err := collectVersionFiles(changesDir)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should only have v1.0.0.md and v0.1.0.md
+	if len(collected) != 2 {
+		t.Errorf("expected 2 version files, got %d", len(collected))
+	}
+
+	// Check files are the right ones
+	hasV1 := false
+	hasV01 := false
+	for _, f := range collected {
+		if strings.Contains(f, "v1.0.0.md") {
+			hasV1 = true
+		}
+		if strings.Contains(f, "v0.1.0.md") {
+			hasV01 = true
+		}
+	}
+	if !hasV1 || !hasV01 {
+		t.Error("expected both v1.0.0.md and v0.1.0.md in collected files")
+	}
+}
+
+func TestBuildMergedContent(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	if err := os.MkdirAll(changesDir, 0755); err != nil {
+		t.Fatalf("failed to create changes dir: %v", err)
+	}
+
+	// Create version files
+	v1Content := "## v1.0.0\n\nFirst release"
+	v2Content := "## v2.0.0\n\nSecond release"
+	if err := os.WriteFile(filepath.Join(changesDir, "v1.0.0.md"), []byte(v1Content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(changesDir, "v2.0.0.md"), []byte(v2Content), 0644); err != nil {
+		t.Fatalf("failed to create file: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	cfg.ChangesDir = changesDir
+	g, _ := NewGenerator(cfg)
+
+	files := []string{
+		filepath.Join(changesDir, "v2.0.0.md"),
+		filepath.Join(changesDir, "v1.0.0.md"),
+	}
+
+	content := g.buildMergedContent(files)
+
+	if !strings.Contains(content, "# Changelog") {
+		t.Error("expected header in merged content")
+	}
+	if !strings.Contains(content, "v1.0.0") {
+		t.Error("expected v1.0.0 in merged content")
+	}
+	if !strings.Contains(content, "v2.0.0") {
+		t.Error("expected v2.0.0 in merged content")
+	}
+}

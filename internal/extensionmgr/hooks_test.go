@@ -125,7 +125,7 @@ func TestExtensionHookRunner_RunHooks_NoExtensions(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -167,7 +167,7 @@ hooks:
 	}
 
 	ctx := context.Background()
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -219,7 +219,7 @@ echo '{"success": true, "message": "Hook executed"}'
 	}
 
 	ctx := context.Background()
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -261,7 +261,7 @@ hooks:
 	}
 
 	ctx := context.Background()
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err != nil {
 		t.Errorf("unexpected error (should skip): %v", err)
 	}
@@ -427,10 +427,10 @@ echo '{"success": true}'
 
 // Mock executor for testing error scenarios
 type mockExecutor struct {
-	executeFunc func(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error)
+	executeFunc func(ctx context.Context, scriptPath string, input *HookInput) (*HookOutput, error)
 }
 
-func (m *mockExecutor) Execute(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error) {
+func (m *mockExecutor) Execute(ctx context.Context, scriptPath string, input *HookInput) (*HookOutput, error) {
 	return m.executeFunc(ctx, scriptPath, input)
 }
 
@@ -468,7 +468,7 @@ hooks:
 
 	runner := NewExtensionHookRunner(cfg)
 	runner.Executor = &mockExecutor{
-		executeFunc: func(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error) {
+		executeFunc: func(ctx context.Context, scriptPath string, input *HookInput) (*HookOutput, error) {
 			return nil, fmt.Errorf("execution failed")
 		},
 	}
@@ -480,7 +480,7 @@ hooks:
 	}
 
 	ctx := context.Background()
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err == nil {
 		t.Error("expected error from executor")
 	}
@@ -647,7 +647,7 @@ func TestExtensionHookRunner_RunHooks_TableDriven(t *testing.T) {
 				ProjectRoot: "/test",
 			}
 
-			err := runner.RunHooks(context.Background(), tt.hookType, input)
+			err := runner.RunHooks(context.Background(), tt.hookType, &input)
 			assertHookError(t, err, tt.wantErr, tt.wantErrText)
 		})
 	}

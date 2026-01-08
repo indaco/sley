@@ -1,6 +1,7 @@
 package git
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -202,18 +203,18 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	// Initialize Git repository
-	cmd := exec.Command("git", "init", tempDir)
+	cmd := exec.CommandContext(context.Background(), "git", "init", tempDir)
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to initialize git repo: %v", err)
 	}
 
 	// Ensure Git has user config
-	cmd = exec.Command("git", "-C", tempDir, "config", "--local", "user.email", "test@example.com")
+	cmd = exec.CommandContext(context.Background(), "git", "-C", tempDir, "config", "--local", "user.email", "test@example.com")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to set git user.email: %v", err)
 	}
 
-	cmd = exec.Command("git", "-C", tempDir, "config", "--local", "user.name", "Test User")
+	cmd = exec.CommandContext(context.Background(), "git", "-C", tempDir, "config", "--local", "user.name", "Test User")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to set git user.name: %v", err)
 	}
@@ -225,16 +226,16 @@ func setupTestRepo(t *testing.T) string {
 	}
 
 	// Add file to Git
-	cmd = exec.Command("git", "-C", tempDir, "add", "testfile.txt")
+	cmd = exec.CommandContext(context.Background(), "git", "-C", tempDir, "add", "testfile.txt")
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("Failed to add file to git: %v", err)
 	}
 
 	// Commit changes
-	cmd = exec.Command("git", "-C", tempDir, "commit", "-m", "Initial commit")
+	cmd = exec.CommandContext(context.Background(), "git", "-C", tempDir, "commit", "-m", "Initial commit")
 	if err := cmd.Run(); err != nil {
 		// If commit fails, print git status for debugging
-		statusCmd := exec.Command("git", "-C", tempDir, "status")
+		statusCmd := exec.CommandContext(context.Background(), "git", "-C", tempDir, "status")
 		statusOutput, _ := statusCmd.CombinedOutput()
 		t.Fatalf("Failed to commit in source repo: %v\nGit Status:\n%s", err, statusOutput)
 	}

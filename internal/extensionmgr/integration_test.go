@@ -157,7 +157,7 @@ func TestExtensionLifecycle(t *testing.T) {
 		ProjectRoot:     projectDir,
 	}
 
-	if err := runner.RunHooks(ctx, PreBumpHook, preBumpInput); err != nil {
+	if err := runner.RunHooks(ctx, PreBumpHook, &preBumpInput); err != nil {
 		t.Errorf("failed to run pre-bump hooks: %v", err)
 	}
 
@@ -169,7 +169,7 @@ func TestExtensionLifecycle(t *testing.T) {
 		ProjectRoot:     projectDir,
 	}
 
-	if err := runner.RunHooks(ctx, PostBumpHook, postBumpInput); err != nil {
+	if err := runner.RunHooks(ctx, PostBumpHook, &postBumpInput); err != nil {
 		t.Errorf("failed to run post-bump hooks: %v", err)
 	}
 }
@@ -229,7 +229,7 @@ echo "{\"success\": true, \"message\": \"Executed $hook hook\"}"
 			ProjectRoot: tmpDir,
 		}
 
-		if err := runner.RunHooks(ctx, hookType, input); err != nil {
+		if err := runner.RunHooks(ctx, hookType, &input); err != nil {
 			t.Errorf("failed to run %s hook: %v", hookType, err)
 		}
 	}
@@ -284,7 +284,7 @@ echo '{"success": false, "message": "Extension reported an error"}'
 		ProjectRoot: tmpDir,
 	}
 
-	err := runner.RunHooks(ctx, PreBumpHook, input)
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
 	if err == nil {
 		t.Error("expected error from failing extension, got nil")
 	}
@@ -374,7 +374,7 @@ echo '{"success": true, "message": "Extension 2 executed"}'
 	}
 
 	// Both extensions should execute successfully
-	if err := runner.RunHooks(ctx, PostBumpHook, input); err != nil {
+	if err := runner.RunHooks(ctx, PostBumpHook, &input); err != nil {
 		t.Errorf("failed to run hooks for multiple extensions: %v", err)
 	}
 }

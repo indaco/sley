@@ -101,8 +101,8 @@ func (p *VersionValidatorPlugin) Validate(newVersion, previousVersion semver.Sem
 		return nil
 	}
 
-	for _, rule := range p.cfg.Rules {
-		if err := p.applyRule(rule, newVersion, previousVersion, bumpType); err != nil {
+	for i := range p.cfg.Rules {
+		if err := p.applyRule(&p.cfg.Rules[i], newVersion, previousVersion, bumpType); err != nil {
 			return err
 		}
 	}
@@ -116,8 +116,8 @@ func (p *VersionValidatorPlugin) ValidateSet(version semver.SemVersion) error {
 		return nil
 	}
 
-	for _, rule := range p.cfg.Rules {
-		if err := p.applySetRule(rule, version); err != nil {
+	for i := range p.cfg.Rules {
+		if err := p.applySetRule(&p.cfg.Rules[i], version); err != nil {
 			return err
 		}
 	}
@@ -126,7 +126,7 @@ func (p *VersionValidatorPlugin) ValidateSet(version semver.SemVersion) error {
 }
 
 // applyRule applies a single rule to a version bump operation.
-func (p *VersionValidatorPlugin) applyRule(rule Rule, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+func (p *VersionValidatorPlugin) applyRule(rule *Rule, newVersion, previousVersion semver.SemVersion, bumpType string) error {
 	switch rule.Type {
 	case RulePreReleaseFormat:
 		return p.validatePreReleaseFormat(rule, newVersion)
@@ -152,7 +152,7 @@ func (p *VersionValidatorPlugin) applyRule(rule Rule, newVersion, previousVersio
 }
 
 // applySetRule applies rules applicable to set operations.
-func (p *VersionValidatorPlugin) applySetRule(rule Rule, version semver.SemVersion) error {
+func (p *VersionValidatorPlugin) applySetRule(rule *Rule, version semver.SemVersion) error {
 	switch rule.Type {
 	case RulePreReleaseFormat:
 		return p.validatePreReleaseFormat(rule, version)
@@ -171,7 +171,7 @@ func (p *VersionValidatorPlugin) applySetRule(rule Rule, version semver.SemVersi
 }
 
 // validatePreReleaseFormat checks if the pre-release label matches the configured pattern.
-func (p *VersionValidatorPlugin) validatePreReleaseFormat(rule Rule, version semver.SemVersion) error {
+func (p *VersionValidatorPlugin) validatePreReleaseFormat(rule *Rule, version semver.SemVersion) error {
 	if version.PreRelease == "" {
 		return nil // No pre-release to validate
 	}
@@ -193,7 +193,7 @@ func (p *VersionValidatorPlugin) validatePreReleaseFormat(rule Rule, version sem
 }
 
 // validateMaxVersion checks if a version component exceeds the maximum allowed value.
-func (p *VersionValidatorPlugin) validateMaxVersion(rule Rule, value int, component string) error {
+func (p *VersionValidatorPlugin) validateMaxVersion(rule *Rule, value int, component string) error {
 	if rule.Value <= 0 {
 		return nil // No max configured
 	}
@@ -206,7 +206,7 @@ func (p *VersionValidatorPlugin) validateMaxVersion(rule Rule, value int, compon
 }
 
 // validateRequirePreRelease0x checks if 0.x versions require a pre-release label.
-func (p *VersionValidatorPlugin) validateRequirePreRelease0x(rule Rule, version semver.SemVersion) error {
+func (p *VersionValidatorPlugin) validateRequirePreRelease0x(rule *Rule, version semver.SemVersion) error {
 	if !rule.Enabled {
 		return nil
 	}
@@ -227,7 +227,7 @@ var getCurrentBranchFn = func() (string, error) {
 }
 
 // validateBranchConstraint checks if the bump type is allowed on the current branch.
-func (p *VersionValidatorPlugin) validateBranchConstraint(rule Rule, bumpType string) error {
+func (p *VersionValidatorPlugin) validateBranchConstraint(rule *Rule, bumpType string) error {
 	if rule.Branch == "" || len(rule.Allowed) == 0 {
 		return nil
 	}
@@ -257,7 +257,7 @@ func (p *VersionValidatorPlugin) validateBranchConstraint(rule Rule, bumpType st
 }
 
 // validateNoBumpType checks if a specific bump type is disallowed.
-func (p *VersionValidatorPlugin) validateNoBumpType(rule Rule, actualBumpType, restrictedType string) error {
+func (p *VersionValidatorPlugin) validateNoBumpType(rule *Rule, actualBumpType, restrictedType string) error {
 	if !rule.Enabled {
 		return nil
 	}

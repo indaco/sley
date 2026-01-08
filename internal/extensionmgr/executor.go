@@ -36,7 +36,7 @@ type HookOutput struct {
 
 // Executor defines the interface for executing extension scripts
 type Executor interface {
-	Execute(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error)
+	Execute(ctx context.Context, scriptPath string, input *HookInput) (*HookOutput, error)
 }
 
 // ScriptExecutor implements the Executor interface for running shell scripts
@@ -66,7 +66,7 @@ func NewScriptExecutorWithTimeout(timeout time.Duration) *ScriptExecutor {
 }
 
 // Execute runs an extension script with the provided input and returns the output
-func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input HookInput) (*HookOutput, error) {
+func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input *HookInput) (*HookOutput, error) {
 	// Clean and validate script path to prevent path traversal attacks
 	cleanPath := filepath.Clean(scriptPath)
 
@@ -142,7 +142,7 @@ func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input H
 // ExecuteExtensionHook is a convenience function to execute an extension hook
 // It resolves the full script path relative to the extension directory and validates
 // that the script remains within the extension directory to prevent path traversal attacks
-func ExecuteExtensionHook(ctx context.Context, extensionPath, entry string, input HookInput) (*HookOutput, error) {
+func ExecuteExtensionHook(ctx context.Context, extensionPath, entry string, input *HookInput) (*HookOutput, error) {
 	executor := NewScriptExecutor()
 
 	// Validate that the entry point doesn't attempt path traversal
