@@ -59,10 +59,6 @@ func (op *BumpOperation) Execute(ctx context.Context, mod *workspace.Module) err
 		return fmt.Errorf("failed to read version from %s: %w", mod.Path, err)
 	}
 
-	// Store old version for display
-	oldVersion := currentVer.String()
-	_ = oldVersion // For potential logging
-
 	// Perform the bump based on type
 	var newVer semver.SemVersion
 	switch op.bumpType {
