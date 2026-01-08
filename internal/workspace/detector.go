@@ -181,6 +181,11 @@ func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, roo
 	var modules []*Module
 
 	for _, entry := range entries {
+		// Check for context cancellation during iteration
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		name := entry.Name()
 		fullPath := filepath.Join(dir, name)
 
@@ -264,6 +269,11 @@ func (d *Detector) loadExplicitModules(ctx context.Context, root string) ([]*Mod
 
 	var modules []*Module
 	for _, moduleConfig := range d.cfg.Workspace.Modules {
+		// Check for context cancellation during iteration
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+
 		// Skip disabled modules
 		if !moduleConfig.IsEnabled() {
 			continue
