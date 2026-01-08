@@ -47,14 +47,22 @@ var (
 
 // String returns the string representation of the semantic version.
 func (v SemVersion) String() string {
-	s := fmt.Sprintf("%d.%d.%d", v.Major, v.Minor, v.Patch)
+	var sb strings.Builder
+	sb.Grow(20) // Pre-allocate for typical version string length
+	sb.WriteString(strconv.Itoa(v.Major))
+	sb.WriteByte('.')
+	sb.WriteString(strconv.Itoa(v.Minor))
+	sb.WriteByte('.')
+	sb.WriteString(strconv.Itoa(v.Patch))
 	if v.PreRelease != "" {
-		s += "-" + v.PreRelease
+		sb.WriteByte('-')
+		sb.WriteString(v.PreRelease)
 	}
 	if v.Build != "" {
-		s += "+" + v.Build
+		sb.WriteByte('+')
+		sb.WriteString(v.Build)
 	}
-	return s
+	return sb.String()
 }
 
 // maxVersionLength is the maximum allowed length for a version string.
