@@ -2,6 +2,15 @@
 
 The `changelogparser` plugin parses CHANGELOG.md files in [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format to automatically infer version bump types and validate changelog completeness.
 
+## Plugin Metadata
+
+| Field       | Value                              |
+| ----------- | ---------------------------------- |
+| Name        | `changelog-parser`                 |
+| Version     | v0.1.0                             |
+| Type        | `changelog-parser`                 |
+| Description | Infers bump type from CHANGELOG.md |
+
 ## Features
 
 - Parses `## [Unreleased]` section to detect change types

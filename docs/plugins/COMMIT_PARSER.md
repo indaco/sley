@@ -2,6 +2,15 @@
 
 The commit parser plugin analyzes git commit messages following the Conventional Commits specification and automatically determines the appropriate version bump type.
 
+## Plugin Metadata
+
+| Field       | Value                                          |
+| ----------- | ---------------------------------------------- |
+| Name        | `commit-parser`                                |
+| Version     | v0.1.0                                         |
+| Type        | `commit-parser`                                |
+| Description | Parses conventional commits to infer bump type |
+
 ## Status
 
 Built-in, **enabled by default**

@@ -2,6 +2,19 @@
 
 The dependency check plugin validates and synchronizes version numbers across multiple files in your repository. This ensures consistency between your `.version` file and other version declarations in package manifests, build files, and source code.
 
+## Plugin Metadata
+
+| Field       | Value                                |
+| ----------- | ------------------------------------ |
+| Name        | `dependency-check`                   |
+| Version     | v0.1.0                               |
+| Type        | `dependency-check`                   |
+| Description | Syncs version across dependent files |
+
+## Status
+
+Built-in, **disabled by default**
+
 ## Features
 
 - Validates version consistency across multiple file formats

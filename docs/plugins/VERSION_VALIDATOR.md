@@ -2,6 +2,15 @@
 
 The version validator plugin enforces versioning policies and constraints beyond basic SemVer syntax validation. It validates version bumps against configurable rules before the version file is updated.
 
+## Plugin Metadata
+
+| Field       | Value                                        |
+| ----------- | -------------------------------------------- |
+| Name        | `version-validator`                          |
+| Version     | v0.1.0                                       |
+| Type        | `version-validator`                          |
+| Description | Enforces versioning policies and constraints |
+
 ## Status
 
 Built-in, **disabled by default**

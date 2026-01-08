@@ -2,6 +2,15 @@
 
 The changelog generator plugin automatically generates changelog entries from conventional commits after version bumps. It supports multiple git hosting providers (GitHub, GitLab, Codeberg, Bitbucket, etc.) and can output to versioned files, a unified CHANGELOG.md, or both.
 
+## Plugin Metadata
+
+| Field       | Value                                |
+| ----------- | ------------------------------------ |
+| Name        | `changelog-generator`                |
+| Version     | v0.1.0                               |
+| Type        | `changelog-generator`                |
+| Description | Generates changelog from git commits |
+
 ## Status
 
 Built-in, **disabled by default**

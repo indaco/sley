@@ -2,6 +2,15 @@
 
 The audit log plugin records all version changes to a persistent log file with metadata such as author, timestamp, commit SHA, and branch. This provides a complete audit trail of version history for compliance, debugging, and rollback scenarios.
 
+## Plugin Metadata
+
+| Field       | Value                                   |
+| ----------- | --------------------------------------- |
+| Name        | `audit-log`                             |
+| Version     | v0.1.0                                  |
+| Type        | `audit-log`                             |
+| Description | Records version history for audit trail |
+
 ## Status
 
 Built-in, **disabled by default**

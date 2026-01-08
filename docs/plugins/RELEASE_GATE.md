@@ -2,6 +2,15 @@
 
 The release gate plugin enforces quality gates before allowing version bumps. It validates conditions like clean git state, branch constraints, and commit hygiene to ensure releases meet quality standards.
 
+## Plugin Metadata
+
+| Field       | Value                                     |
+| ----------- | ----------------------------------------- |
+| Name        | `release-gate`                            |
+| Version     | v0.1.0                                    |
+| Type        | `release-gate`                            |
+| Description | Pre-bump validation for release readiness |
+
 ## Status
 
 Built-in, **disabled by default**

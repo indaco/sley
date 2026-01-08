@@ -2,6 +2,15 @@
 
 The tag manager plugin automatically creates and manages git tags synchronized with version bumps. It validates tag availability before bumping and creates tags after successful version updates.
 
+## Plugin Metadata
+
+| Field       | Value                                            |
+| ----------- | ------------------------------------------------ |
+| Name        | `tag-manager`                                    |
+| Version     | v0.1.0                                           |
+| Type        | `tag-manager`                                    |
+| Description | Manages git tags synchronized with version bumps |
+
 ## Status
 
 Built-in, **disabled by default** (when running without configuration)
