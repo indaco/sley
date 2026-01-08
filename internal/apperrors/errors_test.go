@@ -59,7 +59,7 @@ func TestConfigError(t *testing.T) {
 		t.Error("expected errors.Is to match inner error")
 	}
 
-	if err.Unwrap() != inner {
+	if err.Unwrap() != inner { //nolint:errorlint // testing Unwrap returns exact error instance
 		t.Error("expected Unwrap to return inner error")
 	}
 }
@@ -109,7 +109,7 @@ func TestHookError(t *testing.T) {
 		t.Error("expected errors.Is to match inner error")
 	}
 
-	if err.Unwrap() != inner {
+	if err.Unwrap() != inner { //nolint:errorlint // testing Unwrap returns exact error instance
 		t.Error("expected Unwrap to return inner error")
 	}
 }
@@ -125,7 +125,7 @@ func TestGitError(t *testing.T) {
 	}
 
 	// Test Unwrap()
-	if err.Unwrap() != inner {
+	if err.Unwrap() != inner { //nolint:errorlint // testing Unwrap returns exact error instance
 		t.Error("expected Unwrap to return inner error")
 	}
 
