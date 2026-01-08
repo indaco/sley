@@ -85,3 +85,67 @@ type HookRunner interface {
 	// Name returns the hook's name for logging/error reporting.
 	Name() string
 }
+
+// Marshaler abstracts data marshaling operations (YAML, JSON, etc.).
+type Marshaler interface {
+	Marshal(v any) ([]byte, error)
+}
+
+// Unmarshaler abstracts data unmarshaling operations.
+type Unmarshaler interface {
+	Unmarshal(data []byte, v any) error
+}
+
+// MarshalUnmarshaler combines marshaling and unmarshaling.
+type MarshalUnmarshaler interface {
+	Marshaler
+	Unmarshaler
+}
+
+// GitTagOperations abstracts git tag operations for testability.
+type GitTagOperations interface {
+	// CreateAnnotatedTag creates an annotated git tag with the given name and message.
+	CreateAnnotatedTag(name, message string) error
+
+	// CreateLightweightTag creates a lightweight git tag with the given name.
+	CreateLightweightTag(name string) error
+
+	// TagExists checks if a git tag with the given name exists.
+	TagExists(name string) (bool, error)
+
+	// GetLatestTag returns the most recent semver tag from git.
+	GetLatestTag() (string, error)
+
+	// PushTag pushes a specific tag to the remote.
+	PushTag(name string) error
+}
+
+// GitCommitReader reads git commit information.
+type GitCommitReader interface {
+	// GetCommits returns commits between two references.
+	GetCommits(since, until string) ([]string, error)
+}
+
+// GitBranchReader reads git branch information.
+type GitBranchReader interface {
+	// GetCurrentBranch returns the current git branch name.
+	GetCurrentBranch() (string, error)
+}
+
+// FileCopier abstracts file and directory copy operations.
+type FileCopier interface {
+	// CopyDir recursively copies a directory from src to dst.
+	CopyDir(src, dst string) error
+
+	// CopyFile copies a single file from src to dst with given permissions.
+	CopyFile(src, dst string, perm FileMode) error
+}
+
+// FileMode is an alias for fs.FileMode to avoid import cycles.
+type FileMode = fs.FileMode
+
+// UserDirProvider provides user directory information.
+type UserDirProvider interface {
+	// HomeDir returns the current user's home directory.
+	HomeDir() (string, error)
+}
