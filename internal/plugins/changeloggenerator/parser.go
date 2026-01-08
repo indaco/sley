@@ -121,81 +121,78 @@ func GroupCommits(commits []*ParsedCommit, groups []GroupConfig) map[string][]*G
 	return result.Grouped
 }
 
-// GroupCommitsWithOptions groups commits with configurable handling of non-conventional commits.
+// compiledGroup holds a group config with its compiled regex and order.
+type compiledGroup struct {
+	GroupConfig
+	re    *regexp.Regexp
+	order int
+}
+
+// compileGroupPatterns compiles group patterns into regexes with order.
+func compileGroupPatterns(groups []GroupConfig) []compiledGroup {
+	compiled := make([]compiledGroup, 0, len(groups))
+	for i, g := range groups {
+		re, err := regexp.Compile(g.Pattern)
+		if err != nil {
+			continue
+		}
+		order := i
+		if g.Order > 0 {
+			order = g.Order
+		}
+		compiled = append(compiled, compiledGroup{GroupConfig: g, re: re, order: order})
+	}
+	return compiled
+}
+
+// matchCommitToGroup attempts to match a commit to a group, returning the match or nil.
+func matchCommitToGroup(commit *ParsedCommit, groups []compiledGroup) *GroupedCommit {
+	matchTarget := commit.Type
+	if matchTarget == "" {
+		matchTarget = commit.Subject
+	}
+	for _, group := range groups {
+		if group.re.MatchString(matchTarget) {
+			return &GroupedCommit{
+				ParsedCommit: commit,
+				GroupLabel:   group.Label,
+				GroupIcon:    group.Icon,
+				GroupOrder:   group.order,
+			}
+		}
+	}
+	return nil
+}
+
+// handleUnmatchedCommit returns a grouped commit for unmatched commits or nil if skipped.
+func handleUnmatchedCommit(commit *ParsedCommit, includeNonConventional bool) (*GroupedCommit, bool) {
+	if commit.Type != "" {
+		return &GroupedCommit{ParsedCommit: commit, GroupLabel: "Other", GroupOrder: 999}, false
+	}
+	if includeNonConventional {
+		return &GroupedCommit{ParsedCommit: commit, GroupLabel: "Other Changes", GroupOrder: 1000}, false
+	}
+	return nil, true // skipped
+}
+
+// GroupCommitsWithOptions groups commits by configured patterns with options.
 func GroupCommitsWithOptions(commits []*ParsedCommit, groups []GroupConfig, includeNonConventional bool) GroupCommitsResult {
 	result := GroupCommitsResult{
 		Grouped:                make(map[string][]*GroupedCommit),
 		SkippedNonConventional: make([]*ParsedCommit, 0),
 	}
 
-	// Compile group patterns with derived order from index
-	type compiledGroup struct {
-		GroupConfig
-		re    *regexp.Regexp
-		order int
-	}
-	compiledGroups := make([]compiledGroup, 0, len(groups))
-	for i, g := range groups {
-		re, err := regexp.Compile(g.Pattern)
-		if err != nil {
-			continue
-		}
-		// Use explicit Order if set (> 0), otherwise derive from array position
-		order := i
-		if g.Order > 0 {
-			order = g.Order
-		}
-		compiledGroups = append(compiledGroups, compiledGroup{GroupConfig: g, re: re, order: order})
-	}
+	compiledGroups := compileGroupPatterns(groups)
 
 	for _, commit := range commits {
-		matched := false
-		for _, group := range compiledGroups {
-			// Match against the commit type (e.g., "feat", "fix")
-			// or the full subject for non-conventional commits
-			matchTarget := commit.Type
-			if matchTarget == "" {
-				matchTarget = commit.Subject
-			}
-
-			if group.re.MatchString(matchTarget) {
-				gc := &GroupedCommit{
-					ParsedCommit: commit,
-					GroupLabel:   group.Label,
-					GroupIcon:    group.Icon,
-					GroupOrder:   group.order,
-				}
-				result.Grouped[group.Label] = append(result.Grouped[group.Label], gc)
-				matched = true
-				break
-			}
+		if gc := matchCommitToGroup(commit, compiledGroups); gc != nil {
+			result.Grouped[gc.GroupLabel] = append(result.Grouped[gc.GroupLabel], gc)
+			continue
 		}
-
-		// Handle unmatched commits
-		if !matched {
-			switch {
-			case commit.Type != "":
-				// Conventional commit with unrecognized type -> "Other"
-				gc := &GroupedCommit{
-					ParsedCommit: commit,
-					GroupLabel:   "Other",
-					GroupIcon:    "",
-					GroupOrder:   999,
-				}
-				result.Grouped["Other"] = append(result.Grouped["Other"], gc)
-			case includeNonConventional:
-				// Non-conventional commit included in "Other Changes"
-				gc := &GroupedCommit{
-					ParsedCommit: commit,
-					GroupLabel:   "Other Changes",
-					GroupIcon:    "",
-					GroupOrder:   1000,
-				}
-				result.Grouped["Other Changes"] = append(result.Grouped["Other Changes"], gc)
-			default:
-				// Non-conventional commit skipped (tracked for warning)
-				result.SkippedNonConventional = append(result.SkippedNonConventional, commit)
-			}
+		if gc, skipped := handleUnmatchedCommit(commit, includeNonConventional); skipped {
+			result.SkippedNonConventional = append(result.SkippedNonConventional, commit)
+		} else {
+			result.Grouped[gc.GroupLabel] = append(result.Grouped[gc.GroupLabel], gc)
 		}
 	}
 

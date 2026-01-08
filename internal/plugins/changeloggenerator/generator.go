@@ -303,62 +303,58 @@ func (g *Generator) insertAfterHeader(existing, newContent string) string {
 	return before + newContent + after
 }
 
-// MergeVersionedFiles merges all versioned changelog files into a unified CHANGELOG.md.
-func (g *Generator) MergeVersionedFiles() error {
-	dir := g.config.ChangesDir
-
-	// Read all version files
+// collectVersionFiles returns all version files in the directory.
+func collectVersionFiles(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return fmt.Errorf("failed to read changes directory %q: %w", dir, err)
+		return nil, fmt.Errorf("failed to read changes directory %q: %w", dir, err)
 	}
 
-	// Collect version files (excluding header template and directories)
-	var versionFiles []string
+	var files []string
 	for _, entry := range entries {
 		if entry.IsDir() {
 			continue
 		}
 		name := entry.Name()
 		if strings.HasPrefix(name, "v") && strings.HasSuffix(name, ".md") {
-			versionFiles = append(versionFiles, filepath.Join(dir, name))
+			files = append(files, filepath.Join(dir, name))
 		}
 	}
+	return files, nil
+}
 
-	if len(versionFiles) == 0 {
-		return nil // Nothing to merge
-	}
-
-	// Sort files by version (newest first)
-	sortVersionFiles(versionFiles)
-
-	// Build merged content
+// buildMergedContent concatenates all version file contents with a header.
+func (g *Generator) buildMergedContent(files []string) string {
 	var sb strings.Builder
-
-	// Add header
 	sb.WriteString(g.getDefaultHeader())
 	sb.WriteString("\n\n")
 
-	// Add each version's content
-	for _, file := range versionFiles {
-		data, err := os.ReadFile(file)
-		if err != nil {
-			continue // Skip unreadable files
+	for _, file := range files {
+		if data, err := os.ReadFile(file); err == nil {
+			content := strings.TrimRight(string(data), "\n\r\t ")
+			sb.WriteString(content)
+			sb.WriteString("\n\n")
 		}
-		// Trim trailing whitespace and add consistent spacing
-		content := strings.TrimRight(string(data), "\n\r\t ")
-		sb.WriteString(content)
-		sb.WriteString("\n\n")
+	}
+	return strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
+}
+
+// MergeVersionedFiles merges all versioned changelog files into a unified CHANGELOG.md.
+func (g *Generator) MergeVersionedFiles() error {
+	files, err := collectVersionFiles(g.config.ChangesDir)
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return nil
 	}
 
-	// Write to unified changelog
-	path := g.config.ChangelogPath
-	// Normalize: trim trailing whitespace and ensure single trailing newline
-	finalContent := strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
-	if err := os.WriteFile(path, []byte(finalContent), core.PermPublicRead); err != nil {
-		return fmt.Errorf("failed to write unified changelog %q: %w", path, err)
-	}
+	sortVersionFiles(files)
+	content := g.buildMergedContent(files)
 
+	if err := os.WriteFile(g.config.ChangelogPath, []byte(content), core.PermPublicRead); err != nil {
+		return fmt.Errorf("failed to write unified changelog %q: %w", g.config.ChangelogPath, err)
+	}
 	return nil
 }
 
