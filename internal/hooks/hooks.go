@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/indaco/sley/internal/console"
 )
@@ -12,19 +13,29 @@ type PreReleaseHook interface {
 }
 
 var (
+	hooksMu              sync.RWMutex
 	preReleaseHooks      []PreReleaseHook
 	RunPreReleaseHooksFn = runPreReleaseHooks
 )
 
 func RegisterPreReleaseHook(h PreReleaseHook) {
+	hooksMu.Lock()
+	defer hooksMu.Unlock()
 	preReleaseHooks = append(preReleaseHooks, h)
 }
 
 func GetPreReleaseHooks() []PreReleaseHook {
-	return preReleaseHooks
+	hooksMu.RLock()
+	defer hooksMu.RUnlock()
+	// Return a copy to prevent external modification
+	hooks := make([]PreReleaseHook, len(preReleaseHooks))
+	copy(hooks, preReleaseHooks)
+	return hooks
 }
 
 func ResetPreReleaseHooks() {
+	hooksMu.Lock()
+	defer hooksMu.Unlock()
 	preReleaseHooks = nil
 }
 
