@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/indaco/sley/internal/core"
 )
 
 // Generator handles changelog content generation.
@@ -217,7 +219,7 @@ func (g *Generator) WriteVersionedFile(version, content string) error {
 	// Normalize content: trim trailing whitespace and ensure single trailing newline
 	normalizedContent := strings.TrimRight(content, "\n\r\t ") + "\n"
 
-	if err := os.WriteFile(path, []byte(normalizedContent), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(normalizedContent), core.PermPublicRead); err != nil {
 		return fmt.Errorf("failed to write changelog file %q: %w", path, err)
 	}
 
@@ -249,7 +251,7 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 	// Normalize: trim trailing whitespace and ensure single trailing newline
 	finalContent = strings.TrimRight(finalContent, "\n\r\t ") + "\n"
 
-	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(finalContent), core.PermPublicRead); err != nil {
 		return fmt.Errorf("failed to write changelog %q: %w", path, err)
 	}
 
@@ -353,7 +355,7 @@ func (g *Generator) MergeVersionedFiles() error {
 	path := g.config.ChangelogPath
 	// Normalize: trim trailing whitespace and ensure single trailing newline
 	finalContent := strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
-	if err := os.WriteFile(path, []byte(finalContent), 0644); err != nil {
+	if err := os.WriteFile(path, []byte(finalContent), core.PermPublicRead); err != nil {
 		return fmt.Errorf("failed to write unified changelog %q: %w", path, err)
 	}
 

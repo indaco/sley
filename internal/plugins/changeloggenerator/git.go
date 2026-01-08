@@ -8,6 +8,19 @@ import (
 	"strings"
 )
 
+// Pre-compiled regexes for URL parsing (compiled once at package init).
+var (
+	// Remote URL formats
+	sshRemoteRe   = regexp.MustCompile(`git@([^:]+):([^/]+)/([^/]+?)(?:\.git)?$`)
+	httpsRemoteRe = regexp.MustCompile(`https?://([^/]+)/([^/]+)/([^/]+?)(?:\.git)?$`)
+	gitRemoteRe   = regexp.MustCompile(`git://([^/]+)/([^/]+)/([^/]+?)(?:\.git)?$`)
+
+	// Noreply email formats for username extraction
+	githubNoreplyRe   = regexp.MustCompile(`(?:\d+\+)?([^@]+)@users\.noreply\.github\.com`)
+	gitlabNoreplyRe   = regexp.MustCompile(`([^@]+)@noreply\.gitlab\.com`)
+	codebergNoreplyRe = regexp.MustCompile(`([^@]+)@noreply\.codeberg\.org`)
+)
+
 // CommitInfo represents a git commit with metadata.
 type CommitInfo struct {
 	Hash        string
@@ -151,20 +164,17 @@ func getRemoteInfo() (*RemoteInfo, error) {
 // - git://host/owner/repo.git (Git protocol)
 func parseRemoteURL(url string) (*RemoteInfo, error) {
 	// SSH format: git@host:owner/repo.git
-	sshRe := regexp.MustCompile(`git@([^:]+):([^/]+)/([^/]+?)(?:\.git)?$`)
-	if matches := sshRe.FindStringSubmatch(url); len(matches) == 4 {
+	if matches := sshRemoteRe.FindStringSubmatch(url); len(matches) == 4 {
 		return buildRemoteInfo(matches[1], matches[2], matches[3]), nil
 	}
 
 	// HTTPS format: https://host/owner/repo.git or https://host/owner/repo
-	httpsRe := regexp.MustCompile(`https?://([^/]+)/([^/]+)/([^/]+?)(?:\.git)?$`)
-	if matches := httpsRe.FindStringSubmatch(url); len(matches) == 4 {
+	if matches := httpsRemoteRe.FindStringSubmatch(url); len(matches) == 4 {
 		return buildRemoteInfo(matches[1], matches[2], matches[3]), nil
 	}
 
 	// Git protocol: git://host/owner/repo.git
-	gitRe := regexp.MustCompile(`git://([^/]+)/([^/]+)/([^/]+?)(?:\.git)?$`)
-	if matches := gitRe.FindStringSubmatch(url); len(matches) == 4 {
+	if matches := gitRemoteRe.FindStringSubmatch(url); len(matches) == 4 {
 		return buildRemoteInfo(matches[1], matches[2], matches[3]), nil
 	}
 
@@ -223,20 +233,17 @@ func getContributors(commits []CommitInfo) []Contributor {
 func extractUsername(email, authorName string) (username string, host string) {
 	// GitHub noreply format: 12345+username@users.noreply.github.com
 	// or: username@users.noreply.github.com
-	githubRe := regexp.MustCompile(`(?:\d+\+)?([^@]+)@users\.noreply\.github\.com`)
-	if matches := githubRe.FindStringSubmatch(email); len(matches) == 2 {
+	if matches := githubNoreplyRe.FindStringSubmatch(email); len(matches) == 2 {
 		return matches[1], "github.com"
 	}
 
 	// GitLab noreply format: username@noreply.gitlab.com
-	gitlabRe := regexp.MustCompile(`([^@]+)@noreply\.gitlab\.com`)
-	if matches := gitlabRe.FindStringSubmatch(email); len(matches) == 2 {
+	if matches := gitlabNoreplyRe.FindStringSubmatch(email); len(matches) == 2 {
 		return matches[1], "gitlab.com"
 	}
 
 	// Codeberg noreply format: username@noreply.codeberg.org
-	codebergRe := regexp.MustCompile(`([^@]+)@noreply\.codeberg\.org`)
-	if matches := codebergRe.FindStringSubmatch(email); len(matches) == 2 {
+	if matches := codebergNoreplyRe.FindStringSubmatch(email); len(matches) == 2 {
 		return matches[1], "codeberg.org"
 	}
 

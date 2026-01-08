@@ -129,38 +129,55 @@ func IncrementPreRelease(current, base string) string {
 		return formatPreReleaseWithSep(base, 1, ".")
 	}
 
-	// Try to match with different separators: dot, dash, or no separator
-	// Pattern: base + optional(separator + digits)
-	reDot := regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `\.(\d+)$`)
-	reDash := regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `-(\d+)$`)
-	reNoSep := regexp.MustCompile(`^` + regexp.QuoteMeta(base) + `(\d+)$`)
-
-	// Check dot separator (e.g., rc.1)
-	if matches := reDot.FindStringSubmatch(current); len(matches) == 2 {
-		n, err := strconv.Atoi(matches[1])
-		if err == nil {
-			return formatPreReleaseWithSep(base, n+1, ".")
-		}
+	// Check if current starts with base
+	if !strings.HasPrefix(current, base) {
+		return formatPreReleaseWithSep(base, 1, ".")
 	}
 
-	// Check dash separator (e.g., rc-1)
-	if matches := reDash.FindStringSubmatch(current); len(matches) == 2 {
-		n, err := strconv.Atoi(matches[1])
-		if err == nil {
-			return formatPreReleaseWithSep(base, n+1, "-")
-		}
+	// Get the suffix after base
+	suffix := current[len(base):]
+	if suffix == "" {
+		return formatPreReleaseWithSep(base, 1, ".")
 	}
 
-	// Check no separator (e.g., rc1)
-	if matches := reNoSep.FindStringSubmatch(current); len(matches) == 2 {
-		n, err := strconv.Atoi(matches[1])
-		if err == nil {
-			return formatPreReleaseWithSep(base, n+1, "")
-		}
+	// Determine separator and parse number
+	var sep string
+	var numStr string
+
+	switch suffix[0] {
+	case '.':
+		sep = "."
+		numStr = suffix[1:]
+	case '-':
+		sep = "-"
+		numStr = suffix[1:]
+	default:
+		// No separator, digits start immediately
+		sep = ""
+		numStr = suffix
 	}
 
-	// Default: start with base.1
-	return formatPreReleaseWithSep(base, 1, ".")
+	// Validate numStr is all digits
+	if numStr == "" || !isAllDigits(numStr) {
+		return formatPreReleaseWithSep(base, 1, ".")
+	}
+
+	n, err := strconv.Atoi(numStr)
+	if err != nil {
+		return formatPreReleaseWithSep(base, 1, ".")
+	}
+
+	return formatPreReleaseWithSep(base, n+1, sep)
+}
+
+// isAllDigits returns true if s consists entirely of ASCII digits.
+func isAllDigits(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 func formatPreReleaseWithSep(base string, num int, sep string) string {
