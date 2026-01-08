@@ -4,15 +4,16 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/indaco/sley/internal/apperrors"
+	"github.com/indaco/sley/internal/core"
 )
 
 // Default timeouts for command execution.
+// These reference the centralized timeout constants in core package.
 const (
-	DefaultTimeout       = 30 * time.Second
-	DefaultOutputTimeout = 5 * time.Second
+	DefaultTimeout       = core.TimeoutDefault
+	DefaultOutputTimeout = core.TimeoutShort
 )
 
 // RunCommandContext executes a command with the given context.

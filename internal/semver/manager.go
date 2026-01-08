@@ -45,7 +45,7 @@ func (m *VersionManager) Read(ctx context.Context, path string) (SemVersion, err
 // Save writes a version to the given path.
 func (m *VersionManager) Save(ctx context.Context, path string, version SemVersion) error {
 	// Ensure parent directory exists
-	if err := m.fs.MkdirAll(ctx, filepath.Dir(path), 0755); err != nil {
+	if err := m.fs.MkdirAll(ctx, filepath.Dir(path), core.PermDirDefault); err != nil {
 		return err
 	}
 	return m.fs.WriteFile(ctx, path, []byte(version.String()+"\n"), VersionFilePerm)

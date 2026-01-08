@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
@@ -127,7 +128,7 @@ func initializeVersionFileWithMigration(path string, migratedVersion string) (bo
 
 	// Use migrated version if provided, otherwise use default initialization
 	if migratedVersion != "" {
-		if err := os.WriteFile(path, []byte(migratedVersion+"\n"), 0600); err != nil {
+		if err := os.WriteFile(path, []byte(migratedVersion+"\n"), semver.VersionFilePerm); err != nil {
 			return false, fmt.Errorf("failed to write version file: %w", err)
 		}
 		return true, nil
@@ -268,7 +269,7 @@ func createConfigFile(selectedPlugins []string, forceFlag bool) (bool, error) {
 	}
 
 	// Write config file
-	if err := os.WriteFile(configPath, configData, 0600); err != nil {
+	if err := os.WriteFile(configPath, configData, config.ConfigFilePerm); err != nil {
 		return false, fmt.Errorf("failed to write config file: %w", err)
 	}
 

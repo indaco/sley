@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-yaml"
+	"github.com/indaco/sley/internal/core"
 )
 
 // AuditLog defines the interface for audit logging.
@@ -216,7 +217,7 @@ func (p *AuditLogPlugin) writeLogFile(logFile *AuditLogFile) error {
 	}
 
 	path := p.config.GetPath()
-	if err := p.fileOps.WriteFile(path, data, 0644); err != nil {
+	if err := p.fileOps.WriteFile(path, data, core.PermPublicRead); err != nil {
 		return fmt.Errorf("failed to write audit log %q: %w", path, err)
 	}
 

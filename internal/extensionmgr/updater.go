@@ -39,5 +39,5 @@ func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
 		return err
 	}
 
-	return os.WriteFile(path, out, 0644)
+	return os.WriteFile(path, out, config.ConfigFilePerm)
 }

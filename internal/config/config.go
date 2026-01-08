@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/goccy/go-yaml"
+	"github.com/indaco/sley/internal/core"
 )
 
 // ExtensionConfig holds configuration for external extensions.
@@ -84,7 +85,8 @@ func NormalizeVersionPath(path string) string {
 }
 
 // ConfigFilePerm defines secure file permissions for config files (owner read/write only).
-const ConfigFilePerm = 0600
+// References core.PermOwnerRW for consistency across the codebase.
+const ConfigFilePerm = core.PermOwnerRW
 
 func saveConfig(cfg *Config) error {
 	const configFile = ".sley.yaml"

@@ -136,7 +136,7 @@ func createWorkspaceConfigFile(plugins []string, modules []DiscoveredModule, for
 		return false, fmt.Errorf("failed to generate config: %w", err)
 	}
 
-	if err := os.WriteFile(configPath, configData, 0600); err != nil {
+	if err := os.WriteFile(configPath, configData, config.ConfigFilePerm); err != nil {
 		return false, fmt.Errorf("failed to write config file: %w", err)
 	}
 
