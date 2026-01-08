@@ -13,7 +13,6 @@ import (
 // Key differences from grouped format:
 // - Version header: ## [version] - date (no "v" prefix, brackets around version)
 // - Standard sections: Added, Changed, Deprecated, Removed, Fixed, Security
-// - No compare links (not part of the spec)
 // - No custom icons (strict section names)
 type KeepAChangelogFormatter struct {
 	config *Config
@@ -53,6 +52,14 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 			sb.WriteString(entry)
 		}
 		sb.WriteString("\n")
+	}
+
+	// Full changelog link at the end
+	if remote != nil && previousVersion != "" {
+		compareURL := buildCompareURL(remote, previousVersion, version)
+		if compareURL != "" {
+			sb.WriteString(fmt.Sprintf("**Full Changelog:** [%s...%s](%s)\n", previousVersion, version, compareURL))
+		}
 	}
 
 	return sb.String()

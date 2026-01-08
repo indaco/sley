@@ -27,14 +27,6 @@ func (f *GroupedFormatter) FormatChangelog(
 	date := time.Now().Format("2006-01-02")
 	sb.WriteString(fmt.Sprintf("## %s - %s\n\n", version, date))
 
-	// Compare link
-	if remote != nil && previousVersion != "" {
-		compareURL := buildCompareURL(remote, previousVersion, version)
-		if compareURL != "" {
-			sb.WriteString(fmt.Sprintf("[compare changes](%s)\n\n", compareURL))
-		}
-	}
-
 	// Grouped commits
 	for _, label := range sortedKeys {
 		commits := grouped[label]
@@ -56,6 +48,14 @@ func (f *GroupedFormatter) FormatChangelog(
 			sb.WriteString(entry)
 		}
 		sb.WriteString("\n")
+	}
+
+	// Full changelog link at the end
+	if remote != nil && previousVersion != "" {
+		compareURL := buildCompareURL(remote, previousVersion, version)
+		if compareURL != "" {
+			sb.WriteString(fmt.Sprintf("**Full Changelog:** [%s...%s](%s)\n", previousVersion, version, compareURL))
+		}
 	}
 
 	return sb.String()

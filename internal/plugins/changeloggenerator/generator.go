@@ -271,7 +271,7 @@ func (g *Generator) getDefaultHeader() string {
 
 All notable changes to this project will be documented in this file.
 
-The format adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).`
+This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).`
 }
 
 // insertAfterHeader inserts new content after the changelog header.

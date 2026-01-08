@@ -97,9 +97,9 @@ func TestGroupedFormatter_FormatChangelog(t *testing.T) {
 		t.Error("expected version header with 'v' prefix")
 	}
 
-	// Check compare link
-	if !strings.Contains(result, "[compare changes](https://github.com/testowner/testrepo/compare/v0.9.0...v1.0.0)") {
-		t.Error("expected compare link")
+	// Check full changelog link at the end
+	if !strings.Contains(result, "**Full Changelog:** [v0.9.0...v1.0.0](https://github.com/testowner/testrepo/compare/v0.9.0...v1.0.0)") {
+		t.Error("expected full changelog link")
 	}
 
 	// Check section headers
@@ -195,9 +195,9 @@ func TestKeepAChangelogFormatter_FormatChangelog(t *testing.T) {
 		t.Error("expected version header with brackets and no 'v' prefix")
 	}
 
-	// Check NO compare link (not part of Keep a Changelog spec)
-	if strings.Contains(result, "compare changes") {
-		t.Error("Keep a Changelog format should not include compare links")
+	// Check full changelog link at the end
+	if !strings.Contains(result, "**Full Changelog:** [v0.9.0...v1.0.0](https://github.com/testowner/testrepo/compare/v0.9.0...v1.0.0)") {
+		t.Error("expected full changelog link")
 	}
 
 	// Check standard Keep a Changelog sections
