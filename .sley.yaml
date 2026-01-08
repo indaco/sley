@@ -10,23 +10,10 @@ plugins:
       provider: "github"
       owner: "indaco"
       repo: "sley"
-    # Use default patterns/labels, just add icons
-    group-icons:
-      Enhancements: "🚀"
-      Fixes: "🩹"
-      Refactors: "💅"
-      Documentation: "📖"
-      Performance: "⚡"
-      Styling: "🎨"
-      Tests: "✅"
-      Chores: "🏡"
-      CI: "🤖"
-      Build: "📦"
-      Reverts: "◀️"
+    use-default-icons: true
     exclude-patterns:
       - "^Merge"
       - "^WIP"
       - "^release"
     contributors:
       enabled: true
-      icon: "❤️"
