@@ -13,8 +13,9 @@ Built-in, **disabled by default**
 - Multiple output modes: versioned files, unified CHANGELOG.md, or both
 - Commit grouping by type (feat, fix, docs, etc.) with customizable labels
 - GitHub, GitLab, Codeberg, Bitbucket, and custom git hosting support
-- Compare links between versions
+- Full Changelog compare links between versions
 - Commit and PR/MR links
+- New Contributors section (first-time contributors detection)
 - Contributors section
 - Configurable exclude patterns for filtering commits
 - Optional icons/emojis per commit group (grouped format only)
@@ -115,8 +116,6 @@ Example output:
 ```markdown
 ## v1.2.0 - 2026-01-04
 
-[compare changes](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
-
 ### Enhancements
 
 - **cli:** Add changelog generator plugin ([abc123](https://github.com/owner/repo/commit/abc123))
@@ -124,13 +123,25 @@ Example output:
 ### Fixes
 
 - **parser:** Handle edge case ([ghi789](https://github.com/owner/repo/commit/ghi789))
+
+### New Contributors
+
+- [@newdev](https://github.com/newdev) made their first contribution in [#42](https://github.com/owner/repo/pull/42)
+
+**Full Changelog:** [v1.1.0...v1.2.0](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
+
+### Contributors
+
+- [@alice](https://github.com/alice)
+- [@newdev](https://github.com/newdev)
 ```
 
 **Features**:
 
 - Custom group labels via `groups` configuration
 - Optional icons via `group-icons` or `groups[].icon`
-- Compare links between versions
+- New Contributors section (detects first-time contributors)
+- Full Changelog compare links between versions
 - Commit and PR/MR links
 
 #### Format: `keepachangelog`
@@ -153,14 +164,26 @@ Example output:
 ### Fixed
 
 - **parser:** Handle edge case ([ghi789](https://github.com/owner/repo/commit/ghi789))
+
+### New Contributors
+
+- [@newdev](https://github.com/newdev) made their first contribution in [#42](https://github.com/owner/repo/pull/42)
+
+**Full Changelog:** [v1.1.0...v1.2.0](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
+
+### Contributors
+
+- [@alice](https://github.com/alice)
+- [@newdev](https://github.com/newdev)
 ```
 
 **Features**:
 
 - Standard sections: Added, Changed, Deprecated, Removed, Fixed, Security, Breaking Changes
 - Version header with brackets (no "v" prefix)
+- New Contributors section (detects first-time contributors)
+- Full Changelog compare links
 - Commit and PR/MR links
-- No compare links (not part of the spec)
 - Custom group configuration is ignored
 
 **Commit type mapping**:
@@ -493,8 +516,6 @@ Example `.changes/v1.2.0.md`:
 ```markdown
 ## v1.2.0 - 2026-01-03
 
-[compare changes](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
-
 ### Enhancements
 
 - **cli:** Add changelog generator plugin ([abc123](https://github.com/owner/repo/commit/abc123))
@@ -504,10 +525,16 @@ Example `.changes/v1.2.0.md`:
 
 - **parser:** Handle edge case in commit parsing ([ghi789](https://github.com/owner/repo/commit/ghi789))
 
+### New Contributors
+
+- [@bob](https://github.com/bob) made their first contribution in [#42](https://github.com/owner/repo/pull/42)
+
+**Full Changelog:** [v1.1.0...v1.2.0](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
+
 ### Contributors
 
-- Alice Smith ([@alice](https://github.com/alice))
-- Bob Jones ([@bob](https://github.com/bob))
+- [@alice](https://github.com/alice)
+- [@bob](https://github.com/bob)
 ```
 
 ### Unified Mode
@@ -521,11 +548,20 @@ All notable changes to this project will be documented in this file.
 
 ## v1.2.0 - 2026-01-03
 
-[compare changes](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
-
 ### Enhancements
 
 - **cli:** Add changelog generator plugin ([abc123](https://github.com/owner/repo/commit/abc123))
+
+### New Contributors
+
+- [@newdev](https://github.com/newdev) made their first contribution in [#42](https://github.com/owner/repo/pull/42)
+
+**Full Changelog:** [v1.1.0...v1.2.0](https://github.com/owner/repo/compare/v1.1.0...v1.2.0)
+
+### Contributors
+
+- [@alice](https://github.com/alice)
+- [@newdev](https://github.com/newdev)
 
 ## v1.1.0 - 2025-12-15
 
@@ -663,16 +699,59 @@ plugins:
 
 ### Contributors Configuration
 
-The contributors section lists all unique contributors for a version. You can customize the output format using a Go template:
+The contributors section lists all unique contributors for a version. Additionally, the plugin can detect and highlight first-time contributors in a separate "New Contributors" section.
 
 ```yaml
 contributors:
   enabled: true
   format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})" # default
   icon: "" # optional icon before "Contributors" header
+  show-new-contributors: true # enable "New Contributors" section (default: true)
+  new-contributors-format: "" # custom format for new contributor entries
+  new-contributors-icon: "" # optional icon before "New Contributors" header
 ```
 
-#### Format Template Variables
+#### Configuration Options
+
+| Option                    | Type   | Default | Description                             |
+| ------------------------- | ------ | ------- | --------------------------------------- |
+| `enabled`                 | bool   | true    | Enable/disable contributors section     |
+| `format`                  | string | (link)  | Go template for contributor formatting  |
+| `icon`                    | string | ""      | Icon before "Contributors" header       |
+| `show-new-contributors`   | bool   | true    | Enable "New Contributors" section       |
+| `new-contributors-format` | string | (auto)  | Go template for new contributor entries |
+| `new-contributors-icon`   | string | ""      | Icon before "New Contributors" header   |
+
+When `use-default-icons: true` is set, the default icons are:
+
+- Contributors: ❤️
+- New Contributors: 🎉
+
+#### New Contributors Section
+
+The plugin automatically detects first-time contributors by checking if a username has any commits before the previous version tag. New contributors are displayed with a link to their first PR:
+
+```markdown
+### 🎉 New Contributors
+
+- [@newdev](https://github.com/newdev) made their first contribution in [#42](https://github.com/owner/repo/pull/42)
+- [@another](https://github.com/another) made their first contribution in abc123
+```
+
+If no PR number is found in the commit message, the commit hash is shown instead.
+
+#### New Contributors Format Template Variables
+
+| Variable          | Description                                      |
+| ----------------- | ------------------------------------------------ |
+| `{{.Name}}`       | Full name from git (e.g., "Alice Smith")         |
+| `{{.Username}}`   | Username extracted from email or derived         |
+| `{{.Email}}`      | Email address                                    |
+| `{{.Host}}`       | Git host for URL generation (e.g., "github.com") |
+| `{{.PRNumber}}`   | PR number extracted from commit message          |
+| `{{.CommitHash}}` | Short commit hash of first contribution          |
+
+#### Contributors Format Template Variables
 
 | Variable        | Description                                      |
 | --------------- | ------------------------------------------------ |
@@ -702,6 +781,16 @@ Simple username without link:
 ```yaml
 format: "- @{{.Username}}"
 # Output: - @alice
+```
+
+#### Disabling New Contributors
+
+To disable the new contributors section:
+
+```yaml
+contributors:
+  enabled: true
+  show-new-contributors: false
 ```
 
 ## Integration with Other Plugins

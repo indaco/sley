@@ -118,6 +118,12 @@ plugins:
       # format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
       # icon: ""  # Optional icon before "Contributors" header
 
+      # New Contributors section - detects first-time contributors
+      show-new-contributors: true  # Enable "New Contributors" section (default: true)
+      # new-contributors-format: ""  # Custom format for new contributor entries
+      # new-contributors-icon: ""  # Optional icon before "New Contributors" header
+      # Available variables: {{.Name}}, {{.Username}}, {{.Host}}, {{.PRNumber}}, {{.CommitHash}}
+
   # Commit parser works well with changelog generator
   # It determines bump type, generator creates the changelog
   commit-parser: true
