@@ -5,38 +5,36 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+
+	"github.com/indaco/sley/internal/core"
 )
 
-var (
-	// walkFn is used to walk the file tree; override in tests if needed.
-	walkFn = filepath.Walk
+// OSFileCopier implements core.FileCopier using OS file operations.
+type OSFileCopier struct {
+	walkFn      func(root string, fn filepath.WalkFunc) error
+	relFn       func(basepath, targpath string) (string, error)
+	openSrcFile func(name string) (*os.File, error)
+	openDstFile func(name string, flag int, perm os.FileMode) (*os.File, error)
+	copyFn      func(dst io.Writer, src io.Reader) (int64, error)
+}
 
-	// relFn computes relative file paths; override in tests to simulate failure.
-	relFn = filepath.Rel
-
-	// openSrcFile is a hook for opening source files (for mocking in tests).
-	openSrcFile = os.Open
-
-	// openDstFile is a hook for creating destination files (for mocking in tests).
-	openDstFile = os.OpenFile
-
-	// copyFn performs the actual file copy; override in tests to simulate errors.
-	copyFn = io.Copy
-
-	// skipNames defines a set of directory or file names excluded during directory copying.
-	skipNames = map[string]struct{}{
-		".git":         {},
-		".DS_Store":    {},
-		"node_modules": {},
+// NewOSFileCopier creates an OSFileCopier with default OS implementations.
+func NewOSFileCopier() *OSFileCopier {
+	return &OSFileCopier{
+		walkFn:      filepath.Walk,
+		relFn:       filepath.Rel,
+		openSrcFile: os.Open,
+		openDstFile: os.OpenFile,
+		copyFn:      io.Copy,
 	}
+}
 
-	copyDirFn = copyDir
-)
+// Verify OSFileCopier implements core.FileCopier.
+var _ core.FileCopier = (*OSFileCopier)(nil)
 
-// copyDir recursively copies all files and subdirectories from src to dst.
-// It preserves permissions and creates necessary subfolders automatically.
-func copyDir(src, dst string) error {
-	return walkFn(src, func(path string, info os.FileInfo, err error) error {
+// CopyDir recursively copies all files and subdirectories from src to dst.
+func (c *OSFileCopier) CopyDir(src, dst string) error {
+	return c.walkFn(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("walk error at %q: %w", path, err)
 		}
@@ -49,7 +47,7 @@ func copyDir(src, dst string) error {
 			return nil
 		}
 
-		rel, err := relFn(src, path)
+		rel, err := c.relFn(src, path)
 		if err != nil {
 			return fmt.Errorf("failed to compute relative path from %q to %q: %w", src, path, err)
 		}
@@ -60,31 +58,43 @@ func copyDir(src, dst string) error {
 			return os.MkdirAll(target, info.Mode())
 		}
 
-		return copyFile(path, target, info.Mode())
+		return c.CopyFile(path, target, info.Mode())
 	})
 }
 
-// copyFile copies a single file from src to dst, preserving the given permissions.
-// Used internally by CopyDir.
-func copyFile(src, dst string, perm os.FileMode) error {
-	in, err := openSrcFile(src)
+// CopyFile copies a single file from src to dst with given permissions.
+func (c *OSFileCopier) CopyFile(src, dst string, perm core.FileMode) error {
+	in, err := c.openSrcFile(src)
 	if err != nil {
 		return fmt.Errorf("failed to open source %q: %w", src, err)
 	}
 	defer in.Close()
 
-	out, err := openDstFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
+	out, err := c.openDstFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 	if err != nil {
 		return fmt.Errorf("failed to create destination %q: %w", dst, err)
 	}
 	defer out.Close()
 
-	if _, err := copyFn(out, in); err != nil {
+	if _, err := c.copyFn(out, in); err != nil {
 		return fmt.Errorf("failed to copy %q to %q: %w", src, dst, err)
 	}
 
 	return nil
 }
+
+// defaultFileCopier is the default file copier for backward compatibility.
+var defaultFileCopier = NewOSFileCopier()
+
+// skipNames defines a set of directory or file names excluded during directory copying.
+var skipNames = map[string]struct{}{
+	".git":         {},
+	".DS_Store":    {},
+	"node_modules": {},
+}
+
+// copyDirFn is kept for backward compatibility during migration.
+var copyDirFn = func(src, dst string) error { return defaultFileCopier.CopyDir(src, dst) }
 
 // shouldSkipEntry determines whether a file should be skipped or a directory subtree should be skipped.
 func shouldSkipEntry(info os.FileInfo) (skipFile bool, skipDir bool) {

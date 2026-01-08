@@ -83,14 +83,17 @@ func TestCopyDir_SkipsExcludedFiles(t *testing.T) {
 }
 
 func TestCopyDir_FailsOnRel(t *testing.T) {
-	origRel := relFn
-	defer func() { relFn = origRel }()
-
-	relFn = func(basepath, targpath string) (string, error) {
-		return "", errors.New("mock Rel error")
+	// Create a custom OSFileCopier with mocked relFn
+	copier := &OSFileCopier{
+		walkFn: filepath.Walk,
+		relFn: func(basepath, targpath string) (string, error) {
+			return "", errors.New("mock Rel error")
+		},
+		openSrcFile: os.Open,
+		openDstFile: os.OpenFile,
+		copyFn:      io.Copy,
 	}
 
-	// Valid walkFn
 	src := t.TempDir()
 	file := filepath.Join(src, "file.txt")
 	if err := os.WriteFile(file, []byte("hello"), 0644); err != nil {
@@ -98,7 +101,7 @@ func TestCopyDir_FailsOnRel(t *testing.T) {
 	}
 
 	dst := t.TempDir()
-	err := copyDirFn(src, dst)
+	err := copier.CopyDir(src, dst)
 
 	if err == nil || !strings.Contains(err.Error(), "mock Rel error") {
 		t.Fatalf("expected mock Rel error, got: %v", err)
@@ -143,21 +146,25 @@ func TestCopyDir_FailsOnOpenTarget(t *testing.T) {
 }
 
 func TestCopyFile_FailsOnCopy(t *testing.T) {
-	origCopy := copyFn
-	defer func() { copyFn = origCopy }()
-
-	copyFn = func(dst io.Writer, src io.Reader) (int64, error) {
-		return 0, errors.New("mock copy failure")
+	// Create a custom OSFileCopier with mocked copyFn
+	copier := &OSFileCopier{
+		walkFn:      filepath.Walk,
+		relFn:       filepath.Rel,
+		openSrcFile: os.Open,
+		openDstFile: os.OpenFile,
+		copyFn: func(dst io.Writer, src io.Reader) (int64, error) {
+			return 0, errors.New("mock copy failure")
+		},
 	}
 
-	src := filepath.Join(t.TempDir(), "source.txt")
-	dst := filepath.Join(t.TempDir(), "dest.txt")
+	srcPath := filepath.Join(t.TempDir(), "source.txt")
+	dstPath := filepath.Join(t.TempDir(), "dest.txt")
 
-	if err := os.WriteFile(src, []byte("data"), 0644); err != nil {
+	if err := os.WriteFile(srcPath, []byte("data"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	err := copyFile(src, dst, 0644)
+	err := copier.CopyFile(srcPath, dstPath, 0644)
 	if err == nil || !strings.Contains(err.Error(), "mock copy failure") {
 		t.Fatalf("expected mock copy error, got: %v", err)
 	}

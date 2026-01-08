@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -217,11 +218,12 @@ func (p *VersionValidatorPlugin) validateRequirePreRelease0x(rule Rule, version 
 	return nil
 }
 
-// getCurrentBranch returns the current git branch name.
-var getCurrentBranchFn = getCurrentBranch
+// defaultCurrentBranchReader is the default branch reader for backward compatibility.
+var defaultCurrentBranchReader core.GitBranchReader = defaultBranchReader
 
-func getCurrentBranch() (string, error) {
-	return getBranchFromGit()
+// getCurrentBranchFn is kept for backward compatibility during migration.
+var getCurrentBranchFn = func() (string, error) {
+	return defaultCurrentBranchReader.GetCurrentBranch()
 }
 
 // validateBranchConstraint checks if the bump type is allowed on the current branch.

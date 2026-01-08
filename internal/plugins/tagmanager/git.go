@@ -5,21 +5,27 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/indaco/sley/internal/core"
 )
 
-// Function variables for testability.
-var (
-	createAnnotatedTagFn   = createAnnotatedTag
-	createLightweightTagFn = createLightweightTag
-	tagExistsFn            = tagExists
-	getLatestTagFn         = getLatestTag
-	pushTagFn              = pushTag
-	execCommand            = exec.Command
-)
+// OSGitTagOperations implements core.GitTagOperations using actual git commands.
+type OSGitTagOperations struct {
+	execCommand func(name string, arg ...string) *exec.Cmd
+}
 
-// createAnnotatedTag creates an annotated git tag with the given name and message.
-func createAnnotatedTag(name, message string) error {
-	cmd := execCommand("git", "tag", "-a", name, "-m", message)
+// NewOSGitTagOperations creates a new OSGitTagOperations with the default exec.Command.
+func NewOSGitTagOperations() *OSGitTagOperations {
+	return &OSGitTagOperations{
+		execCommand: exec.Command,
+	}
+}
+
+// Verify OSGitTagOperations implements core.GitTagOperations.
+var _ core.GitTagOperations = (*OSGitTagOperations)(nil)
+
+func (g *OSGitTagOperations) CreateAnnotatedTag(name, message string) error {
+	cmd := g.execCommand("git", "tag", "-a", name, "-m", message)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -33,9 +39,8 @@ func createAnnotatedTag(name, message string) error {
 	return nil
 }
 
-// createLightweightTag creates a lightweight git tag with the given name.
-func createLightweightTag(name string) error {
-	cmd := execCommand("git", "tag", name)
+func (g *OSGitTagOperations) CreateLightweightTag(name string) error {
+	cmd := g.execCommand("git", "tag", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -49,9 +54,8 @@ func createLightweightTag(name string) error {
 	return nil
 }
 
-// tagExists checks if a git tag with the given name exists.
-func tagExists(name string) (bool, error) {
-	cmd := execCommand("git", "tag", "-l", name)
+func (g *OSGitTagOperations) TagExists(name string) (bool, error) {
+	cmd := g.execCommand("git", "tag", "-l", name)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 
@@ -64,9 +68,8 @@ func tagExists(name string) (bool, error) {
 	return output == name, nil
 }
 
-// getLatestTag returns the most recent semver tag from git.
-func getLatestTag() (string, error) {
-	cmd := execCommand("git", "describe", "--tags", "--abbrev=0")
+func (g *OSGitTagOperations) GetLatestTag() (string, error) {
+	cmd := g.execCommand("git", "describe", "--tags", "--abbrev=0")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -87,9 +90,8 @@ func getLatestTag() (string, error) {
 	return tag, nil
 }
 
-// pushTag pushes a specific tag to the remote.
-func pushTag(name string) error {
-	cmd := execCommand("git", "push", "origin", name)
+func (g *OSGitTagOperations) PushTag(name string) error {
+	cmd := g.execCommand("git", "push", "origin", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -102,6 +104,20 @@ func pushTag(name string) error {
 	}
 	return nil
 }
+
+// defaultGitTagOps is the default git tag operations for backward compatibility.
+var defaultGitTagOps = NewOSGitTagOperations()
+
+// Function variables for backward compatibility during migration.
+// These delegate to the interface-based implementation.
+var (
+	createAnnotatedTagFn   = func(name, message string) error { return defaultGitTagOps.CreateAnnotatedTag(name, message) }
+	createLightweightTagFn = func(name string) error { return defaultGitTagOps.CreateLightweightTag(name) }
+	tagExistsFn            = func(name string) (bool, error) { return defaultGitTagOps.TagExists(name) }
+	getLatestTagFn         = func() (string, error) { return defaultGitTagOps.GetLatestTag() }
+	pushTagFn              = func(name string) error { return defaultGitTagOps.PushTag(name) }
+	execCommand            = exec.Command
+)
 
 // ListTags returns all git tags matching a pattern.
 func ListTags(pattern string) ([]string, error) {

@@ -334,3 +334,253 @@ func (m *MockGitClient) IsValidRepo(path string) bool {
 	defer m.mu.Unlock()
 	return m.IsValidRepos[path]
 }
+
+// MockGitTagOperations is a mock git tag operations for testing.
+type MockGitTagOperations struct {
+	mu sync.Mutex
+
+	// Error responses for each operation
+	CreateAnnotatedTagErr   error
+	CreateLightweightTagErr error
+	TagExistsErr            error
+	GetLatestTagErr         error
+	PushTagErr              error
+
+	// Response values
+	TagExistsResult  bool
+	GetLatestTagName string
+
+	// Call tracking
+	CreatedTags []string
+	PushedTags  []string
+}
+
+// NewMockGitTagOperations creates a new MockGitTagOperations.
+func NewMockGitTagOperations() *MockGitTagOperations {
+	return &MockGitTagOperations{
+		CreatedTags: make([]string, 0),
+		PushedTags:  make([]string, 0),
+	}
+}
+
+func (m *MockGitTagOperations) CreateAnnotatedTag(name, message string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.CreateAnnotatedTagErr != nil {
+		return m.CreateAnnotatedTagErr
+	}
+	m.CreatedTags = append(m.CreatedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) CreateLightweightTag(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.CreateLightweightTagErr != nil {
+		return m.CreateLightweightTagErr
+	}
+	m.CreatedTags = append(m.CreatedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) TagExists(name string) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.TagExistsErr != nil {
+		return false, m.TagExistsErr
+	}
+	return m.TagExistsResult, nil
+}
+
+func (m *MockGitTagOperations) GetLatestTag() (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetLatestTagErr != nil {
+		return "", m.GetLatestTagErr
+	}
+	return m.GetLatestTagName, nil
+}
+
+func (m *MockGitTagOperations) PushTag(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.PushTagErr != nil {
+		return m.PushTagErr
+	}
+	m.PushedTags = append(m.PushedTags, name)
+	return nil
+}
+
+// MockGitCommitReader is a mock git commit reader for testing.
+type MockGitCommitReader struct {
+	mu sync.Mutex
+
+	// GetCommitsErr is the error to return from GetCommits.
+	GetCommitsErr error
+
+	// Commits is the list of commits to return.
+	Commits []string
+
+	// Calls tracks calls to GetCommits.
+	Calls []struct{ Since, Until string }
+}
+
+// NewMockGitCommitReader creates a new MockGitCommitReader.
+func NewMockGitCommitReader() *MockGitCommitReader {
+	return &MockGitCommitReader{
+		Commits: make([]string, 0),
+		Calls:   make([]struct{ Since, Until string }, 0),
+	}
+}
+
+func (m *MockGitCommitReader) GetCommits(since, until string) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.Calls = append(m.Calls, struct{ Since, Until string }{since, until})
+	if m.GetCommitsErr != nil {
+		return nil, m.GetCommitsErr
+	}
+	return m.Commits, nil
+}
+
+// MockGitBranchReader is a mock git branch reader for testing.
+type MockGitBranchReader struct {
+	mu sync.Mutex
+
+	// GetCurrentBranchErr is the error to return.
+	GetCurrentBranchErr error
+
+	// BranchName is the branch name to return.
+	BranchName string
+}
+
+// NewMockGitBranchReader creates a new MockGitBranchReader.
+func NewMockGitBranchReader() *MockGitBranchReader {
+	return &MockGitBranchReader{
+		BranchName: "main",
+	}
+}
+
+func (m *MockGitBranchReader) GetCurrentBranch() (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetCurrentBranchErr != nil {
+		return "", m.GetCurrentBranchErr
+	}
+	return m.BranchName, nil
+}
+
+// MockMarshaler is a mock marshaler for testing.
+type MockMarshaler struct {
+	mu sync.Mutex
+
+	// MarshalErr is the error to return from Marshal.
+	MarshalErr error
+
+	// MarshalOutput is the output to return from Marshal.
+	MarshalOutput []byte
+
+	// UnmarshalErr is the error to return from Unmarshal.
+	UnmarshalErr error
+
+	// Calls tracks marshal calls.
+	MarshalCalls []any
+}
+
+// NewMockMarshaler creates a new MockMarshaler.
+func NewMockMarshaler() *MockMarshaler {
+	return &MockMarshaler{
+		MarshalCalls: make([]any, 0),
+	}
+}
+
+func (m *MockMarshaler) Marshal(v any) ([]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.MarshalCalls = append(m.MarshalCalls, v)
+	if m.MarshalErr != nil {
+		return nil, m.MarshalErr
+	}
+	return m.MarshalOutput, nil
+}
+
+func (m *MockMarshaler) Unmarshal(data []byte, v any) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.UnmarshalErr
+}
+
+// MockUserDirProvider is a mock user directory provider for testing.
+type MockUserDirProvider struct {
+	mu sync.Mutex
+
+	// HomeDirErr is the error to return from HomeDir.
+	HomeDirErr error
+
+	// HomeDirPath is the path to return from HomeDir.
+	HomeDirPath string
+}
+
+// NewMockUserDirProvider creates a new MockUserDirProvider.
+func NewMockUserDirProvider() *MockUserDirProvider {
+	return &MockUserDirProvider{
+		HomeDirPath: "/home/testuser",
+	}
+}
+
+func (m *MockUserDirProvider) HomeDir() (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.HomeDirErr != nil {
+		return "", m.HomeDirErr
+	}
+	return m.HomeDirPath, nil
+}
+
+// MockFileCopier is a mock file copier for testing.
+type MockFileCopier struct {
+	mu sync.Mutex
+
+	// CopyDirErr is the error to return from CopyDir.
+	CopyDirErr error
+
+	// CopyFileErr is the error to return from CopyFile.
+	CopyFileErr error
+
+	// CopyDirCalls tracks CopyDir calls.
+	CopyDirCalls []struct{ Src, Dst string }
+
+	// CopyFileCalls tracks CopyFile calls.
+	CopyFileCalls []struct {
+		Src, Dst string
+		Perm     FileMode
+	}
+}
+
+// NewMockFileCopier creates a new MockFileCopier.
+func NewMockFileCopier() *MockFileCopier {
+	return &MockFileCopier{
+		CopyDirCalls: make([]struct{ Src, Dst string }, 0),
+		CopyFileCalls: make([]struct {
+			Src, Dst string
+			Perm     FileMode
+		}, 0),
+	}
+}
+
+func (m *MockFileCopier) CopyDir(src, dst string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.CopyDirCalls = append(m.CopyDirCalls, struct{ Src, Dst string }{src, dst})
+	return m.CopyDirErr
+}
+
+func (m *MockFileCopier) CopyFile(src, dst string, perm FileMode) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.CopyFileCalls = append(m.CopyFileCalls, struct {
+		Src, Dst string
+		Perm     FileMode
+	}{src, dst, perm})
+	return m.CopyFileErr
+}

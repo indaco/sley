@@ -5,12 +5,16 @@ import (
 	"testing"
 )
 
-func TestCreateAnnotatedTag(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
+// createTestGitTagOps creates an OSGitTagOperations with a custom exec.Command for testing.
+func createTestGitTagOps(mockExec func(name string, args ...string) *exec.Cmd) *OSGitTagOperations {
+	return &OSGitTagOperations{
+		execCommand: mockExec,
+	}
+}
 
+func TestOSGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			// Verify correct arguments
 			if name != "git" {
 				t.Errorf("expected git command, got %s", name)
@@ -19,22 +23,22 @@ func TestCreateAnnotatedTag(t *testing.T) {
 				t.Errorf("unexpected args: %v", args)
 			}
 			return exec.Command("true")
-		}
+		})
 
-		err := createAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
 		if err != nil {
-			t.Errorf("createAnnotatedTag() error = %v", err)
+			t.Errorf("CreateAnnotatedTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'tag already exists' >&2 && exit 1")
-		}
+		})
 
-		err := createAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
 		if err == nil {
-			t.Error("createAnnotatedTag() expected error")
+			t.Error("CreateAnnotatedTag() expected error")
 		}
 		if err.Error() == "" {
 			t.Error("expected error message")
@@ -42,191 +46,179 @@ func TestCreateAnnotatedTag(t *testing.T) {
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		err := createAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
 		if err == nil {
-			t.Error("createAnnotatedTag() expected error")
+			t.Error("CreateAnnotatedTag() expected error")
 		}
 	})
 }
 
-func TestCreateLightweightTag(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_CreateLightweightTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 2 || args[0] != "tag" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
-		}
+		})
 
-		err := createLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag("v1.0.0")
 		if err != nil {
-			t.Errorf("createLightweightTag() error = %v", err)
+			t.Errorf("CreateLightweightTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'error' >&2 && exit 1")
-		}
+		})
 
-		err := createLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag("v1.0.0")
 		if err == nil {
-			t.Error("createLightweightTag() expected error")
+			t.Error("CreateLightweightTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		err := createLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag("v1.0.0")
 		if err == nil {
-			t.Error("createLightweightTag() expected error")
+			t.Error("CreateLightweightTag() expected error")
 		}
 	})
 }
 
-func TestTagExists(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_TagExists(t *testing.T) {
 	t.Run("tag exists", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "v1.0.0")
-		}
+		})
 
-		exists, err := tagExists("v1.0.0")
+		exists, err := ops.TagExists("v1.0.0")
 		if err != nil {
-			t.Errorf("tagExists() error = %v", err)
+			t.Errorf("TagExists() error = %v", err)
 		}
 		if !exists {
-			t.Error("tagExists() expected true")
+			t.Error("TagExists() expected true")
 		}
 	})
 
 	t.Run("tag does not exist", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
-		}
+		})
 
-		exists, err := tagExists("v1.0.0")
+		exists, err := ops.TagExists("v1.0.0")
 		if err != nil {
-			t.Errorf("tagExists() error = %v", err)
+			t.Errorf("TagExists() error = %v", err)
 		}
 		if exists {
-			t.Error("tagExists() expected false")
+			t.Error("TagExists() expected false")
 		}
 	})
 
 	t.Run("error", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		_, err := tagExists("v1.0.0")
+		_, err := ops.TagExists("v1.0.0")
 		if err == nil {
-			t.Error("tagExists() expected error")
+			t.Error("TagExists() expected error")
 		}
 	})
 }
 
-func TestGetLatestTag(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_GetLatestTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "v1.2.3")
-		}
+		})
 
-		tag, err := getLatestTag()
+		tag, err := ops.GetLatestTag()
 		if err != nil {
-			t.Errorf("getLatestTag() error = %v", err)
+			t.Errorf("GetLatestTag() error = %v", err)
 		}
 		if tag != "v1.2.3" {
-			t.Errorf("getLatestTag() = %q, want %q", tag, "v1.2.3")
+			t.Errorf("GetLatestTag() = %q, want %q", tag, "v1.2.3")
 		}
 	})
 
 	t.Run("empty output", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
-		}
+		})
 
-		_, err := getLatestTag()
+		_, err := ops.GetLatestTag()
 		if err == nil {
-			t.Error("getLatestTag() expected error for empty output")
+			t.Error("GetLatestTag() expected error for empty output")
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'fatal: No names found' >&2 && exit 128")
-		}
+		})
 
-		_, err := getLatestTag()
+		_, err := ops.GetLatestTag()
 		if err == nil {
-			t.Error("getLatestTag() expected error")
+			t.Error("GetLatestTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		_, err := getLatestTag()
+		_, err := ops.GetLatestTag()
 		if err == nil {
-			t.Error("getLatestTag() expected error")
+			t.Error("GetLatestTag() expected error")
 		}
 	})
 }
 
-func TestPushTag(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_PushTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 3 || args[0] != "push" || args[1] != "origin" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
-		}
+		})
 
-		err := pushTag("v1.0.0")
+		err := ops.PushTag("v1.0.0")
 		if err != nil {
-			t.Errorf("pushTag() error = %v", err)
+			t.Errorf("PushTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'remote rejected' >&2 && exit 1")
-		}
+		})
 
-		err := pushTag("v1.0.0")
+		err := ops.PushTag("v1.0.0")
 		if err == nil {
-			t.Error("pushTag() expected error")
+			t.Error("PushTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		err := pushTag("v1.0.0")
+		err := ops.PushTag("v1.0.0")
 		if err == nil {
-			t.Error("pushTag() expected error")
+			t.Error("PushTag() expected error")
 		}
 	})
 }
@@ -343,4 +335,14 @@ func TestDeleteTag(t *testing.T) {
 			t.Error("DeleteTag() expected error")
 		}
 	})
+}
+
+func TestNewOSGitTagOperations(t *testing.T) {
+	ops := NewOSGitTagOperations()
+	if ops == nil {
+		t.Fatal("NewOSGitTagOperations() returned nil")
+	}
+	if ops.execCommand == nil {
+		t.Error("execCommand should not be nil")
+	}
 }
