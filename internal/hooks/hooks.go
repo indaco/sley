@@ -1,6 +1,7 @@
 package hooks
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -12,7 +13,7 @@ import (
 // PreReleaseHook is the interface for pre-release hooks.
 type PreReleaseHook interface {
 	HookName() string
-	Run() error
+	Run(ctx context.Context) error
 }
 
 // HookProvider provides access to registered hooks.
@@ -73,14 +74,14 @@ func NewPreReleaseHookRunner(provider HookProvider, printer OutputPrinter) *PreR
 }
 
 // Run executes all registered pre-release hooks.
-func (r *PreReleaseHookRunner) Run(skip bool) error {
+func (r *PreReleaseHookRunner) Run(ctx context.Context, skip bool) error {
 	if skip {
 		return nil
 	}
 
 	for _, hook := range r.provider.GetHooks() {
 		r.printer.Printf("Running pre-release hook: %s... ", hook.HookName())
-		if err := hook.Run(); err != nil {
+		if err := hook.Run(ctx); err != nil {
 			r.printer.PrintFailure("FAIL")
 			return fmt.Errorf("pre-release hook %q failed: %w", hook.HookName(), err)
 		}
@@ -100,8 +101,8 @@ var (
 var defaultRunner = NewPreReleaseHookRunner(nil, nil)
 
 // RunPreReleaseHooksFn is kept for backward compatibility during migration.
-var RunPreReleaseHooksFn = func(skip bool) error {
-	return defaultRunner.Run(skip)
+var RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
+	return defaultRunner.Run(ctx, skip)
 }
 
 func RegisterPreReleaseHook(h PreReleaseHook) {
@@ -126,6 +127,6 @@ func ResetPreReleaseHooks() {
 }
 
 // runPreReleaseHooks is kept for direct testing.
-func runPreReleaseHooks(skip bool) error {
-	return defaultRunner.Run(skip)
+func runPreReleaseHooks(ctx context.Context, skip bool) error {
+	return defaultRunner.Run(ctx, skip)
 }

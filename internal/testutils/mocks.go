@@ -1,6 +1,9 @@
 package testutils
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // MockCommitParser implements the plugins.CommitParser interface for testing.
 type MockCommitParser struct {
@@ -30,7 +33,7 @@ func (m MockHook) HookName() string {
 	return m.Name
 }
 
-func (m MockHook) Run() error {
+func (m MockHook) Run(ctx context.Context) error {
 	if m.ShouldErr {
 		return fmt.Errorf("%s failed", m.Name)
 	}

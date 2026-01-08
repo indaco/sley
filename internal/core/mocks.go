@@ -461,7 +461,7 @@ func NewMockGitBranchReader() *MockGitBranchReader {
 	}
 }
 
-func (m *MockGitBranchReader) GetCurrentBranch() (string, error) {
+func (m *MockGitBranchReader) GetCurrentBranch(_ context.Context) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.GetCurrentBranchErr != nil {

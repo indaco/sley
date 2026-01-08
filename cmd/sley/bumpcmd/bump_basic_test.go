@@ -111,7 +111,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "patch"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }
@@ -135,7 +135,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "minor"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }
@@ -159,7 +159,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "major"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }
@@ -183,7 +183,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "auto"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }
@@ -207,7 +207,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "release"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }

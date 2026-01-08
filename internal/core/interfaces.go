@@ -129,7 +129,7 @@ type GitCommitReader interface {
 // GitBranchReader reads git branch information.
 type GitBranchReader interface {
 	// GetCurrentBranch returns the current git branch name.
-	GetCurrentBranch() (string, error)
+	GetCurrentBranch(ctx context.Context) (string, error)
 }
 
 // FileCopier abstracts file and directory copy operations.

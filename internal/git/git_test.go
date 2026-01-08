@@ -18,14 +18,15 @@ func TestDefaultCloneOrUpdate(t *testing.T) {
 		originalUpdateRepo := UpdateRepo
 		defer func() { UpdateRepo = originalUpdateRepo }()
 
-		UpdateRepo = func(repoPath string) error {
+		UpdateRepo = func(ctx context.Context, repoPath string) error {
 			if repoPath != tempDir {
 				t.Errorf("UpdateRepo called with wrong path: got %s, want %s", repoPath, tempDir)
 			}
 			return nil
 		}
 
-		err := DefaultCloneOrUpdate("https://github.com/octocat/Hello-World.git", tempDir)
+		ctx := context.Background()
+		err := DefaultCloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", tempDir)
 		if err != nil {
 			t.Fatalf("DefaultCloneOrUpdate failed: %v", err)
 		}
@@ -39,14 +40,15 @@ func TestDefaultCloneOrUpdate(t *testing.T) {
 		originalCloneRepo := CloneRepoFunc
 		defer func() { CloneRepoFunc = originalCloneRepo }()
 
-		CloneRepoFunc = func(repoURL, repoPath string) error {
+		CloneRepoFunc = func(ctx context.Context, repoURL, repoPath string) error {
 			if repoPath != destRepo {
 				t.Errorf("CloneRepoFunc called with wrong path: got %s, want %s", repoPath, destRepo)
 			}
 			return nil
 		}
 
-		err := DefaultCloneOrUpdate("https://github.com/octocat/Hello-World.git", destRepo)
+		ctx := context.Background()
+		err := DefaultCloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", destRepo)
 		if err != nil {
 			t.Fatalf("DefaultCloneOrUpdate failed: %v", err)
 		}
@@ -82,7 +84,8 @@ func TestCloneRepo(t *testing.T) {
 	tempDir := t.TempDir()
 	destRepo := filepath.Join(tempDir, "cloned_repo")
 
-	err := CloneRepo(sourceRepo, destRepo)
+	ctx := context.Background()
+	err := CloneRepo(ctx, sourceRepo, destRepo)
 	if err != nil {
 		t.Fatalf("CloneRepo failed: %v", err)
 	}
@@ -100,12 +103,13 @@ func TestUpdateRepo(t *testing.T) {
 	tempDir := t.TempDir()
 	destRepo := filepath.Join(tempDir, "cloned_repo")
 
-	err := CloneRepo(sourceRepo, destRepo)
+	ctx := context.Background()
+	err := CloneRepo(ctx, sourceRepo, destRepo)
 	if err != nil {
 		t.Fatalf("CloneRepo failed: %v", err)
 	}
 
-	err = UpdateRepo(destRepo)
+	err = UpdateRepo(ctx, destRepo)
 	if err != nil {
 		t.Fatalf("UpdateRepo failed: %v", err)
 	}
@@ -117,14 +121,15 @@ func TestForceReclone(t *testing.T) {
 	tempDir := t.TempDir()
 	destRepo := filepath.Join(tempDir, "cloned_repo")
 
+	ctx := context.Background()
 	// First clone
-	err := CloneRepo(sourceRepo, destRepo)
+	err := CloneRepo(ctx, sourceRepo, destRepo)
 	if err != nil {
 		t.Fatalf("CloneRepo failed: %v", err)
 	}
 
 	// Force re-clone
-	err = ForceReclone(sourceRepo, destRepo)
+	err = ForceReclone(ctx, sourceRepo, destRepo)
 	if err != nil {
 		t.Fatalf("ForceReclone failed: %v", err)
 	}
@@ -139,8 +144,9 @@ func TestForceReclone(t *testing.T) {
 func TestFailRemoveExistingRepo(t *testing.T) {
 	repoPath := setupReadOnlyDir(t)
 
+	ctx := context.Background()
 	// Attempt to force re-clone (expected to fail)
-	err := ForceReclone("https://github.com/octocat/Hello-World.git", repoPath)
+	err := ForceReclone(ctx, "https://github.com/octocat/Hello-World.git", repoPath)
 
 	if err == nil {
 		t.Fatal("Expected failure when removing repo, but got nil")
@@ -161,8 +167,9 @@ func TestFailCloneRepo(t *testing.T) {
 	tempDir := t.TempDir()
 	destRepo := filepath.Join(tempDir, "cloned_repo")
 
+	ctx := context.Background()
 	// Attempt to clone from an invalid repo URL
-	err := CloneRepo("https://invalid.repo.url/nonexistent.git", destRepo)
+	err := CloneRepo(ctx, "https://invalid.repo.url/nonexistent.git", destRepo)
 	if err == nil {
 		t.Fatal("Expected failure due to invalid repo URL, but got nil")
 	}

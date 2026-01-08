@@ -1,6 +1,7 @@
 package versionvalidator
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"slices"
@@ -222,8 +223,8 @@ func (p *VersionValidatorPlugin) validateRequirePreRelease0x(rule *Rule, version
 var defaultCurrentBranchReader core.GitBranchReader = defaultBranchReader
 
 // getCurrentBranchFn is kept for backward compatibility during migration.
-var getCurrentBranchFn = func() (string, error) {
-	return defaultCurrentBranchReader.GetCurrentBranch()
+var getCurrentBranchFn = func(ctx context.Context) (string, error) {
+	return defaultCurrentBranchReader.GetCurrentBranch(ctx)
 }
 
 // validateBranchConstraint checks if the bump type is allowed on the current branch.
@@ -232,7 +233,11 @@ func (p *VersionValidatorPlugin) validateBranchConstraint(rule *Rule, bumpType s
 		return nil
 	}
 
-	branch, err := getCurrentBranchFn()
+	// Use background context with timeout for git operations
+	ctx, cancel := context.WithTimeout(context.Background(), core.TimeoutShort)
+	defer cancel()
+
+	branch, err := getCurrentBranchFn(ctx)
 	if err != nil {
 		// If we can't get the branch, skip this validation
 		return nil

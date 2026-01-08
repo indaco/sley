@@ -20,8 +20,15 @@ func NewOSGitBranchReader() *OSGitBranchReader {
 var _ core.GitBranchReader = (*OSGitBranchReader)(nil)
 
 // GetCurrentBranch returns the current git branch name.
-func (g *OSGitBranchReader) GetCurrentBranch() (string, error) {
-	cmd := exec.CommandContext(context.Background(), "git", "rev-parse", "--abbrev-ref", "HEAD")
+func (g *OSGitBranchReader) GetCurrentBranch(ctx context.Context) (string, error) {
+	// Apply default timeout if context has no deadline
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, core.TimeoutShort)
+		defer cancel()
+	}
+
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "--abbrev-ref", "HEAD")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err

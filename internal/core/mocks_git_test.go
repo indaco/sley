@@ -216,10 +216,11 @@ func TestMockGitCommitReader(t *testing.T) {
 
 func TestMockGitBranchReader(t *testing.T) {
 	mock := NewMockGitBranchReader()
+	ctx := context.Background()
 
 	t.Run("get current branch", func(t *testing.T) {
 		mock.BranchName = "main"
-		branch, err := mock.GetCurrentBranch()
+		branch, err := mock.GetCurrentBranch(ctx)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -230,7 +231,7 @@ func TestMockGitBranchReader(t *testing.T) {
 
 	t.Run("get current branch with error", func(t *testing.T) {
 		mock.GetCurrentBranchErr = errors.New("branch error")
-		_, err := mock.GetCurrentBranch()
+		_, err := mock.GetCurrentBranch(ctx)
 		if err == nil || err.Error() != "branch error" {
 			t.Errorf("expected 'branch error', got %v", err)
 		}

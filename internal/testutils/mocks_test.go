@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"context"
 	"testing"
 )
 
@@ -57,7 +58,8 @@ func TestMockHook(t *testing.T) {
 			t.Errorf("HookName() = %q, want %q", got, "pre-release")
 		}
 
-		if err := mock.Run(); err != nil {
+		ctx := context.Background()
+		if err := mock.Run(ctx); err != nil {
 			t.Errorf("Run() unexpected error: %v", err)
 		}
 	})
@@ -72,7 +74,8 @@ func TestMockHook(t *testing.T) {
 			t.Errorf("HookName() = %q, want %q", got, "validation")
 		}
 
-		err := mock.Run()
+		ctx := context.Background()
+		err := mock.Run(ctx)
 		if err == nil {
 			t.Error("Run() expected error, got nil")
 		}

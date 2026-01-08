@@ -38,7 +38,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, r
 	isSkipHooks := cmd.Bool("skip-hooks")
 
 	// Run pre-release hooks first (before any version operations)
-	if err := hooks.RunPreReleaseHooksFn(isSkipHooks); err != nil {
+	if err := hooks.RunPreReleaseHooksFn(ctx, isSkipHooks); err != nil {
 		return err
 	}
 

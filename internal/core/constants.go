@@ -43,6 +43,14 @@ const (
 
 	// TimeoutLong is a longer timeout for potentially slow operations (2 minutes).
 	TimeoutLong = 2 * time.Minute
+
+	// TimeoutGit is the default timeout for git operations (60 seconds).
+	// Git operations like clone and pull can take longer than regular commands.
+	TimeoutGit = 60 * time.Second
+
+	// TimeoutExtension is the default timeout for extension script execution (30 seconds).
+	// This matches TimeoutDefault for consistency with other external operations.
+	TimeoutExtension = TimeoutDefault
 )
 
 // Discovery constants for workspace module discovery.

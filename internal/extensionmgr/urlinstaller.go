@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/indaco/sley/internal/core"
 )
 
 // RepoURL represents a parsed repository URL
@@ -85,14 +87,20 @@ func CloneRepository(repoURL *RepoURL) (string, error) {
 		return "", fmt.Errorf("failed to create temp directory: %w", err)
 	}
 
-	// Clone the repository
+	// Clone the repository with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), core.TimeoutGit)
+	defer cancel()
+
 	cloneURL := repoURL.CloneURL()
-	cmd := exec.CommandContext(context.Background(), "git", "clone", "--depth", "1", cloneURL, tempDir)
+	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", cloneURL, tempDir)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Clean up temp dir on failure
 		_ = os.RemoveAll(tempDir)
+		if ctx.Err() == context.DeadlineExceeded {
+			return "", fmt.Errorf("git clone timeout after %v: %w\noutput: %s", core.TimeoutGit, err, string(output))
+		}
 		return "", fmt.Errorf("git clone failed: %w\noutput: %s", err, string(output))
 	}
 
@@ -151,8 +159,15 @@ func IsURL(str string) bool {
 
 // ValidateGitAvailable checks if git is available in the system
 func ValidateGitAvailable() error {
-	cmd := exec.CommandContext(context.Background(), "git", "--version")
+	// Short timeout for version check
+	ctx, cancel := context.WithTimeout(context.Background(), core.TimeoutShort)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "git", "--version")
 	if err := cmd.Run(); err != nil {
+		if ctx.Err() == context.DeadlineExceeded {
+			return fmt.Errorf("git version check timeout: %w (required for URL-based installation)", err)
+		}
 		return fmt.Errorf("git is not available: %w (required for URL-based installation)", err)
 	}
 	return nil

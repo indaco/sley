@@ -5,6 +5,7 @@ package workspace
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -162,16 +163,10 @@ func (d *Detector) DiscoverModules(ctx context.Context, root string) ([]*Module,
 
 // scanDirectory scans a single directory for .version files and subdirectories.
 func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, root string, discovery *config.DiscoveryConfig, matcher *patternMatcher) ([]*Module, error) {
-	// Check max depth
-	maxDepth := 10
-	if discovery.MaxDepth != nil {
-		maxDepth = *discovery.MaxDepth
-	}
-	if depth > maxDepth {
+	if d.exceedsMaxDepth(depth, discovery) {
 		return nil, nil
 	}
 
-	// Read directory entries
 	entries, err := d.fs.ReadDir(ctx, dir)
 	if err != nil {
 		// Skip directories we can't read (permission issues, etc.)
@@ -181,49 +176,74 @@ func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, roo
 	var modules []*Module
 
 	for _, entry := range entries {
-		// Check for context cancellation during iteration
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 
-		name := entry.Name()
-		fullPath := filepath.Join(dir, name)
-
-		// Skip if matches exclude patterns
-		relPath, err := filepath.Rel(root, fullPath)
+		result, err := d.processEntry(ctx, entry, dir, depth, root, discovery, matcher)
 		if err != nil {
-			relPath = name
+			return nil, err
 		}
-		if matcher.matches(name) || matcher.matches(relPath) {
-			continue
-		}
-
-		if entry.IsDir() {
-			// Check if recursive scanning is enabled
-			recursive := true
-			if discovery.Recursive != nil {
-				recursive = *discovery.Recursive
-			}
-
-			// Scan subdirectory recursively if enabled
-			if recursive {
-				subModules, err := d.scanDirectory(ctx, fullPath, depth+1, root, discovery, matcher)
-				if err != nil {
-					return nil, err
-				}
-				modules = append(modules, subModules...)
-			}
-		} else if name == ".version" {
-			// Found a .version file
-			module, err := d.createModule(ctx, fullPath, root)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create module for %s: %w", fullPath, err)
-			}
-			modules = append(modules, module)
-		}
+		modules = append(modules, result...)
 	}
 
 	return modules, nil
+}
+
+// exceedsMaxDepth checks if current depth exceeds the configured maximum.
+func (d *Detector) exceedsMaxDepth(depth int, discovery *config.DiscoveryConfig) bool {
+	maxDepth := core.MaxDiscoveryDepth
+	if discovery.MaxDepth != nil {
+		maxDepth = *discovery.MaxDepth
+	}
+	return depth > maxDepth
+}
+
+// processEntry handles a single directory entry during scanning.
+func (d *Detector) processEntry(ctx context.Context, entry fs.DirEntry, dir string, depth int, root string, discovery *config.DiscoveryConfig, matcher *patternMatcher) ([]*Module, error) {
+	name := entry.Name()
+	fullPath := filepath.Join(dir, name)
+
+	if d.shouldSkipEntry(name, fullPath, root, matcher) {
+		return nil, nil
+	}
+
+	if entry.IsDir() {
+		return d.handleDirectory(ctx, fullPath, depth, root, discovery, matcher)
+	}
+
+	if name == ".version" {
+		return d.handleVersionFile(ctx, fullPath, root)
+	}
+
+	return nil, nil
+}
+
+// shouldSkipEntry checks if an entry should be skipped based on exclude patterns.
+func (d *Detector) shouldSkipEntry(name, fullPath, root string, matcher *patternMatcher) bool {
+	relPath, err := filepath.Rel(root, fullPath)
+	if err != nil {
+		relPath = name
+	}
+	return matcher.matches(name) || matcher.matches(relPath)
+}
+
+// handleDirectory processes a directory entry during scanning.
+func (d *Detector) handleDirectory(ctx context.Context, fullPath string, depth int, root string, discovery *config.DiscoveryConfig, matcher *patternMatcher) ([]*Module, error) {
+	recursive := discovery.Recursive == nil || *discovery.Recursive
+	if !recursive {
+		return nil, nil
+	}
+	return d.scanDirectory(ctx, fullPath, depth+1, root, discovery, matcher)
+}
+
+// handleVersionFile processes a .version file found during scanning.
+func (d *Detector) handleVersionFile(ctx context.Context, fullPath, root string) ([]*Module, error) {
+	module, err := d.createModule(ctx, fullPath, root)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create module for %s: %w", fullPath, err)
+	}
+	return []*Module{module}, nil
 }
 
 // createModule creates a Module from a .version file path.

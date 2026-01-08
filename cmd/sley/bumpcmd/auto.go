@@ -85,7 +85,7 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 	disableInfer := isNoInferFlag || (cfg != nil && cfg.Plugins != nil && !cfg.Plugins.CommitParser)
 
 	// Run pre-release hooks first (before any version operations)
-	if err := hooks.RunPreReleaseHooksFn(isSkipHooks); err != nil {
+	if err := hooks.RunPreReleaseHooksFn(ctx, isSkipHooks); err != nil {
 		return err
 	}
 

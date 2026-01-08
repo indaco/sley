@@ -1,6 +1,7 @@
 package versionvalidator
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -415,7 +416,7 @@ func TestVersionValidatorPlugin_BranchConstraint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getCurrentBranchFn = func() (string, error) {
+			getCurrentBranchFn = func(_ context.Context) (string, error) {
 				if tt.branchErr {
 					return "", nil
 				}
@@ -791,7 +792,7 @@ func TestVersionValidatorPlugin_BranchConstraint_EmptyFields(t *testing.T) {
 	original := getCurrentBranchFn
 	defer func() { getCurrentBranchFn = original }()
 
-	getCurrentBranchFn = func() (string, error) {
+	getCurrentBranchFn = func(_ context.Context) (string, error) {
 		return "main", nil
 	}
 
@@ -834,7 +835,7 @@ func TestVersionValidatorPlugin_BranchConstraint_GetBranchError(t *testing.T) {
 	defer func() { getCurrentBranchFn = original }()
 
 	// Mock getCurrentBranchFn to return an error
-	getCurrentBranchFn = func() (string, error) {
+	getCurrentBranchFn = func(_ context.Context) (string, error) {
 		return "", fmt.Errorf("git not available")
 	}
 

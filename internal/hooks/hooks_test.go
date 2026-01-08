@@ -1,6 +1,7 @@
 package hooks
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -92,13 +93,14 @@ func TestRunPreReleaseHooks(t *testing.T) {
 				RegisterPreReleaseHook(h)
 			}
 
-			err := runPreReleaseHooks(tt.skip)
+			ctx := context.Background()
+			err := runPreReleaseHooks(ctx, tt.skip)
 
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("expected error=%v, got error=%v", tt.wantErr, err != nil)
 			}
 
-			if tt.wantErr && !errors.Is(err, tt.hooks[1].Run()) {
+			if tt.wantErr && !errors.Is(err, tt.hooks[1].Run(ctx)) {
 				// error wrapping check
 				if err == nil || !containsError(err.Error(), tt.errMessage) {
 					t.Errorf("expected error message to contain %q, got: %v", tt.errMessage, err)
@@ -156,7 +158,8 @@ func TestPreReleaseHookRunner_WithMocks(t *testing.T) {
 			printer := &mockPrinter{}
 			runner := NewPreReleaseHookRunner(provider, printer)
 
-			err := runner.Run(tt.skip)
+			ctx := context.Background()
+			err := runner.Run(ctx, tt.skip)
 
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("expected error=%v, got error=%v", tt.wantErr, err != nil)

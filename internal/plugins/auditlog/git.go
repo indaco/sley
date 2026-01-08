@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+
+	"github.com/indaco/sley/internal/core"
 )
 
 // DefaultGitOps implements GitOperations using git commands.
@@ -37,7 +39,10 @@ func (g *DefaultGitOps) GetBranch() (string, error) {
 
 // runGitCommand executes a git command and returns the trimmed output.
 func (g *DefaultGitOps) runGitCommand(args ...string) (string, error) {
-	cmd := exec.CommandContext(context.Background(), "git", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), core.TimeoutShort)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "git", args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("git command failed: %w", err)

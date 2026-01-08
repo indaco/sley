@@ -71,16 +71,8 @@ func matchIgnorePattern(pattern, path string) bool {
 	}
 
 	// Directory pattern (ends with /)
-	if before, ok := strings.CutSuffix(pattern, "/"); ok {
-		dirPattern := before
-		// Match directory itself
-		if path == dirPattern {
-			return true
-		}
-		// Match anything under directory
-		if strings.HasPrefix(path, dirPattern+"/") {
-			return true
-		}
+	if matchDirectoryPattern(pattern, path) {
+		return true
 	}
 
 	// Check if pattern contains wildcard
@@ -91,34 +83,50 @@ func matchIgnorePattern(pattern, path string) bool {
 	}
 
 	// Glob pattern matching
+	return matchGlobPattern(pattern, path)
+}
+
+// matchDirectoryPattern checks if pattern is a directory pattern and matches.
+func matchDirectoryPattern(pattern, path string) bool {
+	before, ok := strings.CutSuffix(pattern, "/")
+	if !ok {
+		return false
+	}
+	// Match directory itself or anything under it
+	return path == before || strings.HasPrefix(path, before+"/")
+}
+
+// matchGlobPattern handles glob pattern matching.
+func matchGlobPattern(pattern, path string) bool {
 	// If pattern contains /, it's a path pattern
 	if strings.Contains(pattern, "/") {
-		matched, err := filepath.Match(pattern, path)
-		if err != nil {
-			return false
-		}
-		if matched {
-			return true
-		}
-
-		// Also try matching against just the filename part
-		_, filename := filepath.Split(path)
-		matched, err = filepath.Match(pattern, filename)
-		return err == nil && matched
+		return matchPathGlob(pattern, path)
 	}
-
 	// Simple glob pattern (no /), match against any path component
+	return matchComponentGlob(pattern, path)
+}
+
+// matchPathGlob matches a glob pattern that contains path separators.
+func matchPathGlob(pattern, path string) bool {
+	matched, err := filepath.Match(pattern, path)
+	if err == nil && matched {
+		return true
+	}
+	// Also try matching against just the filename part
+	_, filename := filepath.Split(path)
+	matched, err = filepath.Match(pattern, filename)
+	return err == nil && matched
+}
+
+// matchComponentGlob matches a simple glob pattern against path components.
+func matchComponentGlob(pattern, path string) bool {
 	pathComponents := strings.SplitSeq(path, "/")
 	for component := range pathComponents {
 		matched, err := filepath.Match(pattern, component)
-		if err != nil {
-			continue
-		}
-		if matched {
+		if err == nil && matched {
 			return true
 		}
 	}
-
 	// Also try matching the full path
 	matched, err := filepath.Match(pattern, path)
 	return err == nil && matched

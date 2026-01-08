@@ -102,7 +102,7 @@ func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
 			args: []string{"sley", "bump", "pre", "--label", "rc"},
 			override: func() func() {
 				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(skip bool) error {
+				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
 					return fmt.Errorf("mock pre-release hooks error")
 				}
 				return func() { hooks.RunPreReleaseHooksFn = original }

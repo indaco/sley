@@ -30,7 +30,7 @@ func patchCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command
 
 // runBumpPatch executes the patch bump logic.
 func runBumpPatch(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
-	if err := hooks.RunPreReleaseHooksFn(cmd.Bool("skip-hooks")); err != nil {
+	if err := hooks.RunPreReleaseHooksFn(ctx, cmd.Bool("skip-hooks")); err != nil {
 		return err
 	}
 
