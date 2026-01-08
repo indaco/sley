@@ -140,3 +140,13 @@ func FormatValidationWarn(symbol, badge, category, message string) string {
 	styledMessage := faintStyle.Render(message)
 	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, category, styledMessage)
 }
+
+// FormatValidationFaint formats a validation result with all faint styling.
+// Used for disabled or inactive items.
+func FormatValidationFaint(symbol, badge, category, message string) string {
+	styledSymbol := faintStyle.Render(symbol)
+	styledBadge := faintStyle.Render(badge)
+	styledCategory := faintStyle.Render(category)
+	styledMessage := faintStyle.Render(message)
+	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, styledCategory, styledMessage)
+}

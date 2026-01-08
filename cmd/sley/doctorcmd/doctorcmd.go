@@ -12,6 +12,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/workspace"
@@ -37,6 +38,13 @@ func runDoctorCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) err
 	// First, validate the configuration file
 	if err := validateConfiguration(ctx, cmd, cfg); err != nil {
 		return err
+	}
+
+	// Show plugin status
+	format := cmd.String("format")
+	quiet := cmd.Bool("quiet")
+	if !quiet {
+		printPluginStatus(cfg, format)
 	}
 
 	// Get execution context to determine single vs multi-module mode
@@ -258,4 +266,120 @@ func printQuietSummary(results []workspace.ExecutionResult) {
 	} else {
 		printer.PrintSuccess(fmt.Sprintf("Success: %d module(s) validated", success))
 	}
+}
+
+// printPluginStatus displays the status of all available plugins.
+func printPluginStatus(cfg *config.Config, format string) {
+	builtinPlugins := plugins.GetBuiltinPlugins()
+
+	if format == "json" {
+		printPluginStatusJSON(cfg, builtinPlugins)
+		return
+	}
+
+	// Text/table format
+	fmt.Println()
+	printer.PrintInfo("Plugin Status:")
+	printer.PrintFaint(strings.Repeat("-", 70))
+
+	enabledCount := 0
+	for _, p := range builtinPlugins {
+		enabled := isPluginEnabled(cfg, p.Type)
+		if enabled {
+			enabledCount++
+		}
+
+		// Format: status symbol, badge, name, version, description
+		name := fmt.Sprintf("%-20s", p.Name)
+		version := fmt.Sprintf("%-7s", p.Version)
+		desc := truncateString(p.Description, 30)
+
+		if enabled {
+			fmt.Println(printer.FormatValidationPass("✓", "[ON] ", name, version+"  "+desc))
+		} else {
+			fmt.Println(printer.FormatValidationFaint("-", "[OFF]", name, version+"  "+desc))
+		}
+	}
+
+	printer.PrintFaint(strings.Repeat("-", 70))
+	printer.PrintInfo(fmt.Sprintf("Summary: %d/%d plugins enabled", enabledCount, len(builtinPlugins)))
+	fmt.Println()
+}
+
+// printPluginStatusJSON prints plugin status in JSON format.
+func printPluginStatusJSON(cfg *config.Config, builtinPlugins []plugins.PluginMetadata) {
+	type pluginStatus struct {
+		Name        string `json:"name"`
+		Type        string `json:"type"`
+		Version     string `json:"version"`
+		Description string `json:"description"`
+		Enabled     bool   `json:"enabled"`
+	}
+
+	output := make([]pluginStatus, len(builtinPlugins))
+	enabledCount := 0
+
+	for i, p := range builtinPlugins {
+		enabled := isPluginEnabled(cfg, p.Type)
+		if enabled {
+			enabledCount++
+		}
+
+		output[i] = pluginStatus{
+			Name:        p.Name,
+			Type:        string(p.Type),
+			Version:     p.Version,
+			Description: p.Description,
+			Enabled:     enabled,
+		}
+	}
+
+	data, err := json.Marshal(map[string]any{
+		"plugins": output,
+		"summary": map[string]int{
+			"total":   len(builtinPlugins),
+			"enabled": enabledCount,
+		},
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error formatting JSON: %v\n", err)
+		return
+	}
+
+	fmt.Println(string(data))
+}
+
+// isPluginEnabled checks if a plugin is enabled in the configuration.
+func isPluginEnabled(cfg *config.Config, pluginType plugins.PluginType) bool {
+	if cfg == nil || cfg.Plugins == nil {
+		return false
+	}
+	return checkPluginEnabled(cfg.Plugins, pluginType)
+}
+
+// checkPluginEnabled checks if a specific plugin type is enabled.
+func checkPluginEnabled(p *config.PluginConfig, pluginType plugins.PluginType) bool {
+	checkers := map[plugins.PluginType]func() bool{
+		plugins.TypeCommitParser:       func() bool { return p.CommitParser },
+		plugins.TypeTagManager:         func() bool { return p.TagManager != nil && p.TagManager.Enabled },
+		plugins.TypeVersionValidator:   func() bool { return p.VersionValidator != nil && p.VersionValidator.Enabled },
+		plugins.TypeDependencyChecker:  func() bool { return p.DependencyCheck != nil && p.DependencyCheck.Enabled },
+		plugins.TypeChangelogParser:    func() bool { return p.ChangelogParser != nil && p.ChangelogParser.Enabled },
+		plugins.TypeChangelogGenerator: func() bool { return p.ChangelogGenerator != nil && p.ChangelogGenerator.Enabled },
+		plugins.TypeReleaseGate:        func() bool { return p.ReleaseGate != nil && p.ReleaseGate.Enabled },
+		plugins.TypeAuditLog:           func() bool { return p.AuditLog != nil && p.AuditLog.Enabled },
+	}
+
+	if checker, ok := checkers[pluginType]; ok {
+		return checker()
+	}
+	return false
+}
+
+// truncateString truncates a string to maxLen characters, adding "..." if truncated.
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }

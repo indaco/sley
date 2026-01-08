@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/testutils"
 	"github.com/urfave/cli/v3"
 )
@@ -444,5 +445,290 @@ func TestCLI_ValidateCommand_MultiModule_TableFormat(t *testing.T) {
 	// Output should contain table-formatted data
 	if !strings.Contains(output, "module-a") || !strings.Contains(output, "module-b") {
 		t.Errorf("expected table output with module names, got: %q", output)
+	}
+}
+
+func TestIsPluginEnabled(t *testing.T) {
+	tests := []struct {
+		name       string
+		cfg        *config.Config
+		pluginType plugins.PluginType
+		expected   bool
+	}{
+		{
+			name:       "nil config",
+			cfg:        nil,
+			pluginType: plugins.TypeCommitParser,
+			expected:   false,
+		},
+		{
+			name:       "nil plugins",
+			cfg:        &config.Config{},
+			pluginType: plugins.TypeCommitParser,
+			expected:   false,
+		},
+		{
+			name: "commit-parser enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					CommitParser: true,
+				},
+			},
+			pluginType: plugins.TypeCommitParser,
+			expected:   true,
+		},
+		{
+			name: "commit-parser disabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					CommitParser: false,
+				},
+			},
+			pluginType: plugins.TypeCommitParser,
+			expected:   false,
+		},
+		{
+			name: "tag-manager enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					TagManager: &config.TagManagerConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeTagManager,
+			expected:   true,
+		},
+		{
+			name: "tag-manager nil",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{},
+			},
+			pluginType: plugins.TypeTagManager,
+			expected:   false,
+		},
+		{
+			name: "version-validator enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					VersionValidator: &config.VersionValidatorConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeVersionValidator,
+			expected:   true,
+		},
+		{
+			name: "dependency-check enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					DependencyCheck: &config.DependencyCheckConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeDependencyChecker,
+			expected:   true,
+		},
+		{
+			name: "changelog-parser enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					ChangelogParser: &config.ChangelogParserConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeChangelogParser,
+			expected:   true,
+		},
+		{
+			name: "changelog-generator enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					ChangelogGenerator: &config.ChangelogGeneratorConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeChangelogGenerator,
+			expected:   true,
+		},
+		{
+			name: "release-gate enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					ReleaseGate: &config.ReleaseGateConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeReleaseGate,
+			expected:   true,
+		},
+		{
+			name: "audit-log enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					AuditLog: &config.AuditLogConfig{Enabled: true},
+				},
+			},
+			pluginType: plugins.TypeAuditLog,
+			expected:   true,
+		},
+		{
+			name: "unknown plugin type",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{},
+			},
+			pluginType: plugins.PluginType("unknown"),
+			expected:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isPluginEnabled(tt.cfg, tt.pluginType)
+			if result != tt.expected {
+				t.Errorf("isPluginEnabled() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTruncateString(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		maxLen   int
+		expected string
+	}{
+		{
+			name:     "short string unchanged",
+			input:    "hello",
+			maxLen:   10,
+			expected: "hello",
+		},
+		{
+			name:     "exact length unchanged",
+			input:    "hello",
+			maxLen:   5,
+			expected: "hello",
+		},
+		{
+			name:     "long string truncated",
+			input:    "hello world",
+			maxLen:   8,
+			expected: "hello...",
+		},
+		{
+			name:     "empty string",
+			input:    "",
+			maxLen:   10,
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := truncateString(tt.input, tt.maxLen)
+			if result != tt.expected {
+				t.Errorf("truncateString(%q, %d) = %q, want %q", tt.input, tt.maxLen, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestPluginStatus_InDoctorOutput(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
+
+	// Config with some plugins enabled
+	cfg := &config.Config{
+		Path: versionPath,
+		Plugins: &config.PluginConfig{
+			CommitParser: true,
+			TagManager:   &config.TagManagerConfig{Enabled: true},
+		},
+	}
+
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{"sley", "doctor"}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("Failed to capture stdout: %v", err)
+	}
+
+	// Verify plugin status section appears
+	if !strings.Contains(output, "Plugin Status:") {
+		t.Errorf("expected output to contain 'Plugin Status:', got: %q", output)
+	}
+
+	// Verify enabled plugins show [ON]
+	if !strings.Contains(output, "[ON]") {
+		t.Errorf("expected output to contain '[ON]' for enabled plugins, got: %q", output)
+	}
+
+	// Verify disabled plugins show [OFF]
+	if !strings.Contains(output, "[OFF]") {
+		t.Errorf("expected output to contain '[OFF]' for disabled plugins, got: %q", output)
+	}
+
+	// Verify summary shows correct count
+	if !strings.Contains(output, "2/8 plugins enabled") {
+		t.Errorf("expected output to contain '2/8 plugins enabled', got: %q", output)
+	}
+}
+
+func TestPluginStatus_QuietMode(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
+
+	cfg := &config.Config{
+		Path: versionPath,
+		Plugins: &config.PluginConfig{
+			CommitParser: true,
+		},
+	}
+
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{"sley", "doctor", "--quiet"}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("Failed to capture stdout: %v", err)
+	}
+
+	// Quiet mode should NOT show plugin status
+	if strings.Contains(output, "Plugin Status:") {
+		t.Errorf("quiet mode should not show plugin status, got: %q", output)
+	}
+}
+
+func TestPluginStatus_JSONFormat(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
+
+	cfg := &config.Config{
+		Path: versionPath,
+		Plugins: &config.PluginConfig{
+			CommitParser: true,
+			TagManager:   &config.TagManagerConfig{Enabled: true},
+		},
+	}
+
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{"sley", "doctor", "--format", "json"}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("Failed to capture stdout: %v", err)
+	}
+
+	// Verify JSON output contains plugin info
+	if !strings.Contains(output, `"plugins"`) {
+		t.Errorf("expected JSON output to contain 'plugins' key, got: %q", output)
+	}
+	if !strings.Contains(output, `"enabled":true`) {
+		t.Errorf("expected JSON output to contain enabled plugins, got: %q", output)
+	}
+	if !strings.Contains(output, `"commit-parser"`) {
+		t.Errorf("expected JSON output to contain 'commit-parser', got: %q", output)
 	}
 }
