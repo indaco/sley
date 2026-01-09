@@ -44,18 +44,22 @@ changelog:
       - '^docs:'
       - '^test:'
 
-brews:
-  - repository:
+homebrew_casks:
+  - name: sley
+    repository:
       owner: indaco
       name: homebrew-tap
-    directory: Formula
+    directory: Casks
     homepage: https://github.com/indaco/sley
     description: A CLI tool for managing semantic versioning using a .version file
-    license: MIT
-    install: |
-      bin.install "sley"
-    test: |
-      system "#{bin}/sley", "--version"
+    binaries:
+      - sley
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/sley"]
+          end
 
 release:
   footer: >-
