@@ -49,6 +49,27 @@ This plugin isn't trying to match the flexibility of dedicated changelog tools -
 4. Generates markdown content with links to commits, PRs, and version comparisons
 5. Writes to versioned file (`.changes/vX.Y.Z.md`), unified CHANGELOG.md, or both
 
+## PR Links in Changelog
+
+The changelog is generated from **commit messages**I. For PR numbers to appear in the changelog, they must be present in the commit message itself (format: `#123` or `(#123)`).
+
+**Option 1: Use Squash and Merge (Recommended)**
+
+GitHub's squash merge automatically appends `(#123)` to the commit message, which the parser will detect.
+
+**Option 2: Include PR Numbers Manually**
+
+Add the PR number to your commit messages:
+
+```
+feat(api): add new endpoint (#123)
+fix: resolve timeout issue (#456)
+```
+
+**Option 3: Rebase and Merge**
+
+Include the PR number in your original commit messages before merging.
+
 ## Usage
 
 Once enabled, the plugin works automatically with all bump commands:
