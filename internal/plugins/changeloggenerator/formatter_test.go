@@ -24,6 +24,11 @@ func TestNewFormatter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "github format",
+			format:  "github",
+			wantErr: false,
+		},
+		{
 			name:    "unknown format",
 			format:  "invalid",
 			wantErr: true,

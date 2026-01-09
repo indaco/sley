@@ -18,7 +18,7 @@ Built-in, **disabled by default**
 ## Features
 
 - Automatic changelog generation from conventional commits
-- Multiple changelog formats: grouped (default) or Keep a Changelog
+- Multiple changelog formats: grouped (default), Keep a Changelog, or GitHub
 - Multiple output modes: versioned files, unified CHANGELOG.md, or both
 - Commit grouping by type (feat, fix, docs, etc.) with customizable labels
 - GitHub, GitLab, Codeberg, Bitbucket, and custom git hosting support
@@ -105,7 +105,7 @@ plugins:
 | -------------------------- | ------ | ---------------- | -------------------------------------------------------------------- |
 | `enabled`                  | bool   | false            | Enable/disable the plugin                                            |
 | `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                             |
-| `format`                   | string | `"grouped"`      | Changelog format: "grouped" or "keepachangelog"                      |
+| `format`                   | string | `"grouped"`      | Changelog format: "grouped", "keepachangelog", or "github"           |
 | `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                              |
 | `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                       |
 | `header-template`          | string | (built-in)       | Path to custom header template                                       |
@@ -182,6 +182,36 @@ Follows the [Keep a Changelog](https://keepachangelog.com) specification with st
 | `revert`                               | Removed                  |
 | `docs`, `test`, `chore`, `ci`, `build` | (skipped)                |
 | Any type with `!` or `BREAKING CHANGE` | Breaking Changes         |
+
+#### Format: `github`
+
+Follows the GitHub release style with inline contributor attribution per commit. Breaking changes are highlighted in a separate section at the top.
+
+```markdown
+## v2.0.0 - 2024-01-15
+
+### ⚠️ Breaking Changes
+
+- **api:** Remove deprecated endpoints by @maintainer in #100
+- Change authentication flow by @dev in #101
+
+### What's Changed
+
+- **core:** Add new caching layer by @johndoe in #123
+- Fix memory leak in parser by @janedoe in #456
+- **api:** Update rate limiting by @contributor
+
+**Full Changelog:** [v1.0.0...v2.0.0](https://github.com/owner/repo/compare/v1.0.0...v2.0.0)
+```
+
+Key features:
+
+- Breaking changes highlighted in "⚠️ Breaking Changes" section (appears first when present)
+- Regular changes listed in "What's Changed" section
+- Inline contributor attribution (`by @username`)
+- Inline PR references (`in #123`)
+- Automatic username extraction from git author email (supports GitHub, GitLab, Codeberg noreply formats)
+- Custom group configuration is ignored
 
 ### Groups Configuration
 

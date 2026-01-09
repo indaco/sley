@@ -10,8 +10,9 @@ plugins:
     # - "both": Creates both versioned files and updates CHANGELOG.md
     mode: "versioned"
     # Formats:
-    # - "grouped"
-    # - "keepachangelog": Keep a Changelog spec
+    # - "grouped": Groups commits by type with custom labels and optional icons
+    # - "keepachangelog": Keep a Changelog spec with standard sections
+    # - "github": GitHub release style with inline contributor attribution
     format: "grouped"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
