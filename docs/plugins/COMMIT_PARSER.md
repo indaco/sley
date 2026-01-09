@@ -60,8 +60,8 @@ git commit -m "fix: resolve login timeout"
 git commit -m "feat!: redesign API endpoints"
 
 sley bump auto
-# Output: Inferred bump type: major
-# Version bumped from 1.2.3 to 2.0.0
+# => Inferred bump type: major
+# => Version bumped from 1.2.3 to 2.0.0
 ```
 
 ## Conventional Commit Format

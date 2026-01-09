@@ -112,8 +112,8 @@ Once enabled, the plugin works automatically with all bump commands:
 
 ```bash
 sley bump patch
-# Output: Version bumped from 1.2.3 to 1.2.4
-# Creates/updates .version-history.json
+# => Version bumped from 1.2.3 to 1.2.4
+# => Creates/updates .version-history.json
 ```
 
 ## Querying the Audit Log

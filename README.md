@@ -41,29 +41,45 @@ A command-line tool for managing [SemVer 2.0.0](https://semver.org/) versions us
 ## Quick Start
 
 ```bash
-# Initialize version file
-sley init
+# 1. Install (choose your method from Installation section below)
+brew install indaco/tap/sley
 
-# Show current version
+# 2. Initialize your project
+sley init --yes
+# => Created .version with version 0.1.0
+# => Created .sley.yaml with default plugins
+
+# 3. Verify your setup
 sley show
+# => 0.1.0
 
-# Bump patch version (1.2.3 -> 1.2.4)
+# 4. Make your first version bump
 sley bump patch
+# => 0.1.1
+
+# 5. Check the result
+cat .version
+# => 0.1.1
 ```
+
+You're ready! Continue to [Usage](#usage) for common workflows, or [Installation](#installation) to get started.
 
 ## Table of Contents
 
 - [Quick Start](#quick-start)
 - [Features](#features)
+- [Prerequisites](#prerequisites)
 - [Why .version?](#why-version)
 - [Installation](#installation)
 - [CLI Commands & Options](#cli-commands--options)
 - [Configuration](#configuration)
 - [Auto-initialization](#auto-initialization)
 - [Usage](#usage)
+- [CI/CD Integration](#cicd-integration)
 - [Plugin System](#plugin-system)
 - [Extension System](#extension-system)
 - [Monorepo / Multi-Module Support](#monorepo--multi-module-support)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [AI Assistance](#ai-assistance)
 - [License](#license)
@@ -79,9 +95,23 @@ sley bump patch
 - Works standalone or in CI - `--strict` for strict mode
 - Configurable via flags, env vars, or `.sley.yaml`
 
+## Prerequisites
+
+- **Required**: Git (for auto-initialization and tag-manager plugin)
+- **Optional**: Go 1.25+ (only required if installing via `go install`)
+- **Recommended**: Familiarity with [semantic versioning](https://semver.org/)
+
 ## Why .version?
 
-Most projects - especially CLIs, scripts, and internal tools - need a clean way to manage versioning outside of `go.mod` or `package.json`.
+`sley` was born from patterns that kept repeating across my projects:
+
+**It started with Go**: Using `//go:embed .version` for version info - no build flags, no magic. This became the default approach for every Go project.
+
+**Then frontend projects**: The same pattern worked for SvelteKit, and other frontend stacks with a Vite plugin to read from `.version`. One file, same workflow, any stack.
+
+**Then multi-stack projects**: With a SvelteKit frontend, Go gateway, and Python/Rust services in one repo, the need became clear: version each component individually, but also bump them all at once when needed.
+
+`sley` solves all of these. The plugin system (audit-log, version-validator, release-gate) came later to support organizational requirements like audit trails and policy enforcement.
 
 ### What it is
 
@@ -95,12 +125,22 @@ Most projects - especially CLIs, scripts, and internal tools - need a clean way 
 
 - **Not a replacement for git tags** - use the `tag-manager` plugin to sync both
 - **Not a package manager** - it doesn't publish or distribute anything
-- **Not a changelog tool** - use the `changelog-generator` plugin for that
+- **Not a standalone changelog tool** - changelog generation is available via the built-in `changelog-generator` plugin
 - **Not a build system** - it just manages the version string
 
 The `.version` file complements your existing tools. Pair it with `git tag` for releases, inject it into binaries at build time, or sync it across `package.json`, `Cargo.toml`, and other files using the [`dependency-check` plugin](#plugin-system).
 
 ## Installation
+
+### Choose Your Installation Method
+
+| If you...                           | Use...                | Jump to...                                          |
+| ----------------------------------- | --------------------- | --------------------------------------------------- |
+| Use macOS/Linux with Homebrew       | Homebrew              | [Option 1](#option-1-homebrew-macoslinux)           |
+| Want latest version system-wide     | `go install` (global) | [Option 2](#option-2-install-via-go-install-global) |
+| Need local project-specific install | `go install` (tool)   | [Option 3](#option-3-install-via-go-install-tool)   |
+| Don't have Go installed             | Prebuilt binary       | [Option 4](#option-4-prebuilt-binaries)             |
+| Want to contribute or customize     | Build from source     | [Option 5](#option-5-clone-and-build-manually)      |
 
 ### Option 1: Homebrew (macOS/Linux)
 
@@ -452,6 +492,28 @@ sley validate
 # => Error: invalid version format: ...
 ```
 
+**Rolling back a version change**
+
+If you need to undo a version bump:
+
+```bash
+# Manual method - set back to previous version
+sley set 1.2.3
+
+# Git method (if changes were committed)
+git revert HEAD
+# Or reset if not pushed yet
+git reset --hard HEAD^
+
+# If using tag-manager plugin, also delete the tag
+git tag -d v1.2.4
+# If tag was pushed to remote
+git push origin :refs/tags/v1.2.4
+```
+
+> [!NOTE]
+> Automated rollback is not built into sley. Always track version changes in git for easy reversion.
+
 **Initialize .version file**
 
 ```bash
@@ -520,9 +582,92 @@ Next steps:
 
 The init command automatically detects your project type (Git, Node.js, Go, Rust, Python) and suggests relevant plugins.
 
+## CI/CD Integration
+
+`sley` works seamlessly in CI/CD environments with the `--strict` flag for strict mode and auto-detection of CI environments.
+
+### GitHub Actions
+
+```yaml
+name: Version Bump
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Bump type"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install sley
+        run: |
+          curl -L https://github.com/indaco/sley/releases/latest/download/sley-linux-amd64 -o sley
+          chmod +x sley
+          sudo mv sley /usr/local/bin/
+
+      - name: Bump version
+        run: sley bump ${{ inputs.bump_type }} --strict
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .version
+          git commit -m "chore: bump version to $(sley show)"
+          git push
+```
+
+### GitLab CI
+
+```yaml
+version:bump:
+  stage: deploy
+  image: golang:1.25
+  only:
+    - main
+  script:
+    - go install github.com/indaco/sley/cmd/sley@latest
+    - sley bump patch --strict
+    - git config user.name "GitLab CI"
+    - git config user.email "ci@gitlab.com"
+    - git add .version
+    - git commit -m "chore: bump version to $(sley show)"
+    - git push https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:${CI_COMMIT_BRANCH}
+```
+
+### Docker Example
+
+Inject version into Docker image builds:
+
+```dockerfile
+FROM alpine:latest
+ARG VERSION
+LABEL version="${VERSION}"
+COPY . /app
+```
+
+```bash
+# Build with version from sley
+docker build --build-arg VERSION=$(sley show) -t myapp:$(sley show) .
+```
+
 ## Plugin System
 
 `sley` includes built-in plugins that provide deep integration with version bump logic. Unlike extensions (external scripts), plugins are compiled into the binary for native performance.
+
+> [!NOTE]
+> You don't need a `.sley.yaml` file to use sley! The tool works out-of-the-box with `commit-parser` enabled. Create a config only when you need to customize behavior.
 
 ### Available Plugins
 
@@ -596,6 +741,9 @@ For detailed documentation on hooks, JSON interface, and creating extensions, se
 
 `sley` supports managing multiple `.version` files across a monorepo. When multiple modules are detected, the CLI automatically enables multi-module mode.
 
+> [!TIP]
+> Working with a monorepo? If your project has multiple services/packages with separate versions, this section shows you how to manage them all at once.
+
 ```bash
 # List discovered modules
 sley modules list
@@ -619,6 +767,79 @@ sley bump patch --pattern "services/*"
 For CI/CD, use `--non-interactive` or set `CI=true` to disable prompts.
 
 For detailed documentation on module discovery, configuration, and patterns, see [docs/MONOREPO.md](docs/MONOREPO.md).
+
+## Troubleshooting
+
+### "Error: .version file not found"
+
+The `.version` file does not exist in the expected location.
+
+**Solutions**:
+
+- Run `sley init` to create the file
+- Use the `--path` flag to specify a custom location: `sley show --path ./custom/.version`
+- Set the `SLEY_PATH` environment variable: `export SLEY_PATH=./custom/.version`
+- Check your `.sley.yaml` for the configured path
+
+### "Error: invalid version format"
+
+The `.version` file contains content that is not a valid SemVer version.
+
+**Solutions**:
+
+- Run `sley doctor` to validate and see detailed error information
+- Ensure the file contains only a valid SemVer version (e.g., `1.2.3`, `2.0.0-beta.1`)
+- Remove any extra whitespace, newlines, or comments
+- Use `sley set 1.0.0` to reset to a valid version
+
+### Plugin-specific errors
+
+If you encounter errors related to plugins (e.g., tag-manager, changelog-generator):
+
+**Solutions**:
+
+- Run `sley doctor` to validate your configuration
+- Check the individual plugin documentation in [docs/PLUGINS.md](docs/PLUGINS.md)
+- Verify your `.sley.yaml` configuration syntax
+- Try disabling the plugin temporarily to isolate the issue
+
+### "Error: git repository not found"
+
+The tag-manager plugin or auto-initialization requires a git repository.
+
+**Solutions**:
+
+- Initialize a git repository: `git init`
+- Ensure you're running sley from within a git repository
+- Disable the tag-manager plugin if you don't need git integration
+
+### Module not detected in monorepo
+
+A `.version` file exists but is not being discovered in multi-module mode.
+
+**Solutions**:
+
+- Check `.sleyignore` for exclude patterns that might match your module
+- Verify the file is named exactly `.version` (not `version` or `.version.txt`)
+- Run `sley modules list` to see discovered modules
+- Check workspace configuration in `.sley.yaml`
+
+### Permission denied errors
+
+Unable to read or write the `.version` file.
+
+**Solutions**:
+
+- Ensure the file has appropriate permissions: `chmod 644 .version`
+- Check directory permissions
+- Run with appropriate user permissions
+
+### Getting more help
+
+- Run `sley doctor` for detailed diagnostics
+- Check individual plugin documentation for plugin-specific issues
+- Review your `.sley.yaml` configuration
+- See the [Contributing Guide](CONTRIBUTING.md) for reporting issues
 
 ## Contributing
 

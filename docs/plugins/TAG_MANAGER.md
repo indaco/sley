@@ -70,14 +70,11 @@ Once enabled, the plugin works automatically:
 
 ```bash
 sley bump patch
-# Version bumped from 1.2.3 to 1.2.4
-# Created tag: v1.2.4
+# => 1.2.4 (tag: v1.2.4)
 
 # With push: true
 sley bump minor
-# Version bumped from 1.2.4 to 1.3.0
-# Created tag: v1.3.0
-# Pushed tag: v1.3.0
+# => 1.3.0 (tag: v1.3.0, pushed)
 ```
 
 ## Tag Validation (Fail-Fast)

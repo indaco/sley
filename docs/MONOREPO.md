@@ -2,6 +2,9 @@
 
 Manage multiple `.version` files across a monorepo or multi-module project.
 
+> [!NOTE]
+> **Terminology**: This documentation uses "monorepo" and "multi-module" interchangeably. A **monorepo** is a repository containing multiple projects/services. A **module** in sley refers to any directory with its own `.version` file. The `workspace` term appears only in configuration contexts (`.sley.yaml`).
+
 ## Overview
 
 When multiple services, packages, or modules exist in a single repository, each with its own `.version` file, `sley` can detect and operate on all of them automatically.
@@ -42,11 +45,11 @@ sley modules list
 ## Detection Hierarchy
 
 ```
-1. --path flag provided     -> Single-module mode (explicit path)
-2. SLEY_PATH env set        -> Single-module mode (env path)
-3. .version in current dir  -> Single-module mode (current dir)
-4. Multiple .version found  -> Multi-module mode (discovery)
-5. No .version found        -> Error
+1. --path flag provided       -> Single-module mode (explicit path)
+2. SLEY_PATH env set          -> Single-module mode (env path)
+3. .version in current dir    -> Single-module mode (current dir)
+4. Multiple .version found    -> Multi-module mode (discovery)
+5. No .version file found     -> Error
 ```
 
 ## Module Discovery
@@ -215,4 +218,4 @@ sley modules discover          # Test discovery settings
 ## See Also
 
 - [README.md](../README.md) - Main documentation
-- [Plugin System](./PLUGINS.md) - Built-in plugins
+- [Plugin System](PLUGINS.md) - Built-in plugins

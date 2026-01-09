@@ -84,6 +84,24 @@ sley bump patch
 If any pre-bump validation step fails (1-4), the bump is aborted and no changes are made.
 Post-bump actions (6-9) are non-blocking - failures are logged but don't fail the bump.
 
+## When to Use Plugins vs Extensions
+
+### Use Plugins When
+
+- **Performance matters**: Plugins execute in <1ms with native Go performance
+- **Feature is widely applicable**: Common versioning needs across many projects
+- **Deep integration needed**: Requires tight coupling with bump logic or validation
+- **Built-in reliability required**: No external dependencies or installation steps
+- **Examples**: Git tagging, conventional commit parsing, version validation, file syncing
+
+### Use Extensions When
+
+- **Custom to your workflow**: Organization-specific automation or processes
+- **Requires external tools**: Need to call AWS CLI, curl, custom scripts, etc.
+- **Prototyping new features**: Testing ideas before proposing as built-in plugins
+- **Language-specific needs**: Python/Node.js/Ruby tooling integration
+- **Examples**: Custom notification systems, deployment triggers, proprietary tool integration
+
 ## Plugin vs Extension Comparison
 
 | Feature           | Plugins                              | Extensions                      |
@@ -93,6 +111,9 @@ Post-bump actions (6-9) are non-blocking - failures are logged but don't fail th
 | **Installation**  | None required                        | `sley extension install`        |
 | **Configuration** | `.sley.yaml` plugins section         | `.sley.yaml` extensions section |
 | **Use Case**      | Core version logic, validation, sync | Hook-based automation           |
+
+> [!NOTE]
+> Most users will only need plugins. Extensions are for advanced customization and organization-specific workflows.
 
 ## Common Workflow Patterns
 
@@ -126,8 +147,8 @@ sley bump auto
 
 ## See Also
 
-- [Extension System](./EXTENSIONS.md) - External hook-based scripts
-- [Monorepo Support](./MONOREPO.md) - Multi-module workflows
+- [Extension System](EXTENSIONS.md) - External hook-based scripts
+- [Monorepo Support](MONOREPO.md) - Multi-module workflows
 
 ### Individual Plugin Documentation
 

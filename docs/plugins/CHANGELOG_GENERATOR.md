@@ -29,6 +29,20 @@ Built-in, **disabled by default**
 - Configurable exclude patterns for filtering commits
 - Optional icons/emojis per commit group (grouped format only)
 
+## Why Another Changelog Generator?
+
+Excellent standalone tools like [changie](https://changie.dev/) and [git-cliff](https://git-cliff.org/) already exist. The changelog-generator plugin was built into sley for a simpler reason: **convenience for projects already using sley**.
+
+When you're using sley for version management, having changelog generation as a built-in plugin means:
+
+- **One tool, one workflow**: `sley bump patch` handles version update, changelog, and tag in sequence
+- **Shared configuration**: Everything lives in `.sley.yaml`
+- **Plugin coordination**: Works with `commit-parser` and `tag-manager` in a defined execution order
+
+For teams using versioned output mode, the generated `.changes/vX.Y.Z.md` files remain compatible with changie's merge workflow.
+
+This plugin isn't trying to match the flexibility of dedicated changelog tools - it's providing a good-enough solution for projects that want everything in one place.
+
 ## How It Works
 
 1. After a successful version bump, retrieves commits since the previous version
@@ -43,8 +57,8 @@ Once enabled, the plugin works automatically with all bump commands:
 
 ```bash
 sley bump patch
-# Output: Version bumped from 1.2.3 to 1.2.4
-# Creates: .changes/v1.2.4.md
+# => Version bumped from 1.2.3 to 1.2.4
+# => Creates: .changes/v1.2.4.md
 
 sley bump auto
 # Analyzes commits, bumps version, generates changelog

@@ -2,6 +2,27 @@
 
 Extensions are executable scripts that run at specific hook points during version management operations. They receive JSON input on stdin and return JSON output on stdout.
 
+## When to Use Extensions vs Plugins
+
+### Use Extensions When
+
+- **Custom to your workflow**: Organization-specific automation or processes
+- **Requires external tools**: Need to call AWS CLI, curl, custom scripts, etc.
+- **Prototyping new features**: Testing ideas before proposing as built-in plugins
+- **Language-specific needs**: Python/Node.js/Ruby tooling integration
+- **Examples**: Custom notification systems, deployment triggers, proprietary tool integration
+
+### Use Plugins When
+
+- **Performance matters**: Plugins execute in <1ms with native Go performance
+- **Feature is widely applicable**: Common versioning needs across many projects
+- **Deep integration needed**: Requires tight coupling with bump logic or validation
+- **Built-in reliability required**: No external dependencies or installation steps
+- **Examples**: Git tagging, conventional commit parsing, version validation, file syncing
+
+> [!NOTE]
+> Most users will only need plugins (see [PLUGINS.md](PLUGINS.md)). Extensions are for advanced customization when built-in plugins don't meet your specific needs.
+
 ## Hook Points
 
 | Hook          | When                    | Use Cases                                      |
@@ -184,5 +205,5 @@ If an extension fails (`success: false`), the bump operation is aborted and subs
 
 ## See Also
 
-- [Plugin System](./PLUGINS.md) - Built-in plugins (compiled into CLI)
+- [Plugin System](PLUGINS.md) - Built-in plugins (compiled into CLI)
 - [Example Extensions](../contrib/extensions/) - Reference implementations
