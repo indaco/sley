@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# devbox-init.sh — one-time setup for local dev environments
+# devbox-init.sh  -  one-time setup for local dev environments
 set -eu
 
 # -------- Config --------
@@ -67,10 +67,10 @@ if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       log_warning 'Failed to install prek hooks'
     fi
   else
-    log_warning 'prek not installed — run: pip install prek'
+    log_warning 'prek not installed  -  run: pip install prek'
   fi
 else
-  log_warning 'not a git repository — skipping hooks installation'
+  log_warning 'not a git repository  -  skipping hooks installation'
 fi
 
 log_default ""
