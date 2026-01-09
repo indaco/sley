@@ -296,8 +296,9 @@ func (g *Generator) writeNewContributorEntry(sb *strings.Builder, nc *NewContrib
 // getDefaultNewContributorFormat returns the default template based on remote availability.
 func (g *Generator) getDefaultNewContributorFormat(remote *RemoteInfo) string {
 	if remote != nil {
-		// With remote info, we can link to users and PRs
-		return "* [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution{{if .PRNumber}} in [#{{.PRNumber}}](https://{{.Host}}/" + remote.Owner + "/" + remote.Repo + "/pull/{{.PRNumber}}){{else}}{{if .CommitHash}} in {{.CommitHash}}{{end}}{{end}}"
+		// With remote info, we can link to users, PRs, and commits
+		baseURL := "https://{{.Host}}/" + remote.Owner + "/" + remote.Repo
+		return "* [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution{{if .PRNumber}} in [#{{.PRNumber}}](" + baseURL + "/pull/{{.PRNumber}}){{else}}{{if .CommitHash}} in [{{.CommitHash}}](" + baseURL + "/commit/{{.CommitHash}}){{end}}{{end}}"
 	}
 	// Without remote info, simpler format
 	return "* @{{.Username}} made their first contribution{{if .PRNumber}} in #{{.PRNumber}}{{else}}{{if .CommitHash}} in {{.CommitHash}}{{end}}{{end}}"
@@ -305,7 +306,8 @@ func (g *Generator) getDefaultNewContributorFormat(remote *RemoteInfo) string {
 
 // writeNewContributorFallback writes a simple entry when template fails.
 func (g *Generator) writeNewContributorFallback(sb *strings.Builder, nc *NewContributor, remote *RemoteInfo) {
-	if nc.PRNumber != "" {
+	switch {
+	case nc.PRNumber != "":
 		if remote != nil {
 			prURL := buildPRURL(remote, nc.PRNumber)
 			fmt.Fprintf(sb, "* [@%s](https://%s/%s) made their first contribution in [#%s](%s)\n",
@@ -313,7 +315,15 @@ func (g *Generator) writeNewContributorFallback(sb *strings.Builder, nc *NewCont
 		} else {
 			fmt.Fprintf(sb, "* @%s made their first contribution in #%s\n", nc.Username, nc.PRNumber)
 		}
-	} else {
+	case nc.FirstCommit.ShortHash != "":
+		if remote != nil && nc.Host != "" {
+			commitURL := buildCommitURL(remote, nc.FirstCommit.ShortHash)
+			fmt.Fprintf(sb, "* [@%s](https://%s/%s) made their first contribution in [%s](%s)\n",
+				nc.Username, nc.Host, nc.Username, nc.FirstCommit.ShortHash, commitURL)
+		} else {
+			fmt.Fprintf(sb, "* @%s made their first contribution in %s\n", nc.Username, nc.FirstCommit.ShortHash)
+		}
+	default:
 		if remote != nil && nc.Host != "" {
 			fmt.Fprintf(sb, "* [@%s](https://%s/%s) made their first contribution\n",
 				nc.Username, nc.Host, nc.Username)
