@@ -625,7 +625,7 @@ See the [Contributing Guide](/CONTRIBUTING.md) for setting up the development to
 
 ## AI Assistance
 
-Built by humans, with some help from AI. Starting from v0.5.0, [Claude Code](https://claude.ai/code) assisted with test generation, documentation scaffolding, code review, and tedious refactoring (like renaming from "semver" to "sley"). The project logo was also AI-generated under the maintainer's direction. All output was reviewed, reworked and approved by the maintainer.
+Built by humans, with some help from AI. After the v0.5.0 release, [Claude Code](https://claude.ai/code) assisted with test generation, documentation scaffolding, code review, and tedious refactoring (like renaming from "semver" to "sley"). The project logo was also AI-generated under the maintainer's direction. All output was reviewed, reworked and approved by the maintainer.
 
 ## License
 
