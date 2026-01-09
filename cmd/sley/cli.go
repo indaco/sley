@@ -33,10 +33,11 @@ func newCLI(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 		EnableShellCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:    "path",
-				Aliases: []string{"p"},
-				Usage:   "Path to .version file",
-				Value:   cfg.Path,
+				Name:        "path",
+				Aliases:     []string{"p"},
+				Usage:       "Path to .version file",
+				Value:       cfg.Path,
+				DefaultText: ".version",
 			},
 			&cli.BoolFlag{
 				Name:    "strict",
