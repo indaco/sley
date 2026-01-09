@@ -94,105 +94,34 @@ Post-bump actions (6-9) are non-blocking - failures are logged but don't fail th
 | **Configuration** | `.sley.yaml` plugins section         | `.sley.yaml` extensions section |
 | **Use Case**      | Core version logic, validation, sync | Hook-based automation           |
 
-## Plugins + Extensions: Powerful Combinations
+## Common Workflow Patterns
 
-Plugins and extensions work together to create automated version management workflows.
+See [Full Configuration](./plugins/examples/full-config.yaml) for complete examples of all plugins working together.
 
-### Pattern 1: Validation + Auto-Bump + Changelog
-
-```yaml
-# .sley.yaml
-plugins:
-  commit-parser: true # Analyze commits for bump type
-  changelog-generator:
-    enabled: true
-    mode: "versioned"
-    format: "grouped" # or "keepachangelog" for Keep a Changelog spec
-    repository:
-      auto-detect: true
-```
-
-Workflow:
+### Auto-Bump + Changelog
 
 ```bash
 sley bump auto
-# 1. commit-parser plugin: Analyzes commits -> determines "minor" bump
-# 2. Version bumped: 1.2.3 -> 1.3.0
-# 3. changelog-generator: Creates .changes/v1.3.0.md
+# commit-parser analyzes commits -> determines bump type
+# changelog-generator creates versioned changelog entry
 ```
 
-### Pattern 2: Auto-Bump + Tag + Push
-
-```yaml
-plugins:
-  commit-parser: true
-  tag-manager:
-    enabled: true
-    prefix: "v"
-    annotate: true
-    push: true
-```
-
-Workflow:
+### Auto-Bump + Tag + Push
 
 ```bash
 sley bump auto
-# 1. commit-parser analyzes: feat commits -> minor bump
-# 2. tag-manager validates: v1.3.0 doesn't exist
-# 3. Version: 1.2.3 -> 1.3.0
-# 4. tag-manager creates tag: v1.3.0
-# 5. tag-manager pushes tag to remote
+# commit-parser analyzes commits -> bump type
+# tag-manager validates tag doesn't exist
+# Version updated -> tag created and pushed
 ```
 
-### Pattern 3: Full CI/CD Automation
-
-```yaml
-plugins:
-  commit-parser: true
-  version-validator:
-    enabled: true
-    rules:
-      - type: "branch-constraint"
-        branch: "release/*"
-        allowed: ["patch"]
-      - type: "major-version-max"
-        value: 10
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: "package.json"
-        field: "version"
-        format: "json"
-  changelog-generator:
-    enabled: true
-    mode: "both"
-    format: "keepachangelog" # Keep a Changelog specification format
-    repository:
-      auto-detect: true
-  tag-manager:
-    enabled: true
-    prefix: "v"
-    push: true
-```
-
-CI Workflow:
+### Full CI/CD Pipeline
 
 ```bash
 sley bump auto
-# Pre-bump validation:
-#   1. version-validator: Checks branch constraints and version limits
-#   2. dependency-check: Validates file consistency
-#   3. tag-manager: Validates tag doesn't exist
-#
-# Bump operation:
-#   4. commit-parser determines: feat commits -> minor
-#   5. Version: 1.2.3 -> 1.3.0
-#
-# Post-bump actions:
-#   6. dependency-check syncs package.json
-#   7. changelog-generator creates .changes/v1.3.0.md and updates CHANGELOG.md
-#   8. tag-manager creates and pushes tag v1.3.0
+# Pre-bump: version-validator, dependency-check, tag-manager validation
+# Bump: commit-parser determines type, version updated
+# Post-bump: files synced, changelog generated, tag created
 ```
 
 ## See Also
