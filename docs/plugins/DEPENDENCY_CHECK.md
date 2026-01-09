@@ -22,17 +22,16 @@ Built-in, **disabled by default**
 - Supports JSON, YAML, TOML, raw text, and regex patterns
 - Handles nested fields with dot notation
 - Normalizes version formats (e.g., `1.2.3` matches `v1.2.3`)
-- Provides detailed inconsistency reports
 
 ## Configuration
 
-Add the plugin configuration to your `.sley.yaml`:
+Enable and configure in `.sley.yaml`. See [dependency-check.yaml](./examples/dependency-check.yaml) for complete examples.
 
 ```yaml
 plugins:
   dependency-check:
     enabled: true
-    auto-sync: true # Automatically update files during bumps
+    auto-sync: true
     files:
       - path: package.json
         field: version
@@ -42,207 +41,77 @@ plugins:
         format: yaml
 ```
 
-### Configuration Fields
+### Configuration Options
 
-- `enabled` (bool): Enable/disable the plugin
-- `auto-sync` (bool): Automatically sync versions after bumps
-- `files` (array): List of files to check/sync
+| Option      | Type  | Default | Description                            |
+| ----------- | ----- | ------- | -------------------------------------- |
+| `enabled`   | bool  | false   | Enable/disable the plugin              |
+| `auto-sync` | bool  | false   | Automatically sync versions after bump |
+| `files`     | array | []      | List of files to check/sync            |
 
 ### File Configuration
 
-Each file entry supports:
-
-- `path` (string, required): File path relative to repository root
-- `format` (string, required): File format (`json`, `yaml`, `toml`, `raw`, `regex`)
-- `field` (string, optional): Dot-notation path to version field (for JSON/YAML/TOML)
-- `pattern` (string, optional): Regex pattern with capturing group (for `regex` format)
+| Field     | Type   | Required | Description                                           |
+| --------- | ------ | -------- | ----------------------------------------------------- |
+| `path`    | string | yes      | File path relative to repository root                 |
+| `format`  | string | yes      | File format: `json`, `yaml`, `toml`, `raw`, `regex`   |
+| `field`   | string | no       | Dot-notation path to version field (JSON/YAML/TOML)   |
+| `pattern` | string | no       | Regex pattern with capturing group (for regex format) |
 
 ## Supported Formats
 
-### JSON
+| Format  | Field Required | Pattern Required | Example Use Case                   |
+| ------- | -------------- | ---------------- | ---------------------------------- |
+| `json`  | yes            | no               | `package.json`, `composer.json`    |
+| `yaml`  | yes            | no               | `Chart.yaml`, `pubspec.yaml`       |
+| `toml`  | yes            | no               | `Cargo.toml`, `pyproject.toml`     |
+| `raw`   | no             | no               | `VERSION` file (entire content)    |
+| `regex` | no             | yes              | Source code constants, build files |
 
-Reads and writes JSON files with support for nested fields.
+### Format Examples
 
 ```yaml
 files:
+  # JSON with nested field
   - path: package.json
     field: version
     format: json
 
-  # Nested field example
-  - path: composer.json
-    field: extra.version
-    format: json
-```
-
-**Example package.json:**
-
-```json
-{
-  "name": "my-app",
-  "version": "1.2.3"
-}
-```
-
-### YAML
-
-Reads and writes YAML files with nested field support.
-
-```yaml
-files:
+  # YAML
   - path: Chart.yaml
     field: version
     format: yaml
 
-  # Nested field example
-  - path: config.yaml
-    field: app.version
-    format: yaml
-```
-
-**Example Chart.yaml:**
-
-```yaml
-apiVersion: v2
-name: my-chart
-version: 1.2.3
-```
-
-### TOML
-
-Reads and writes TOML files with nested section support.
-
-```yaml
-files:
+  # TOML with nested section
   - path: pyproject.toml
     field: tool.poetry.version
     format: toml
 
-  - path: Cargo.toml
-    field: package.version
-    format: toml
-```
-
-**Example pyproject.toml:**
-
-```toml
-[tool.poetry]
-name = "my-package"
-version = "1.2.3"
-```
-
-### Raw
-
-Reads the entire file contents as the version string.
-
-```yaml
-files:
+  # Raw file (entire content is version)
   - path: VERSION
     format: raw
 
-  - path: version.txt
-    format: raw
-```
-
-**Example VERSION:**
-
-```
-1.2.3
-```
-
-### Regex
-
-Uses a regular expression pattern with a capturing group to extract and replace the version.
-
-```yaml
-files:
+  # Regex pattern (must have one capturing group)
   - path: src/version.go
     format: regex
     pattern: 'const Version = "(.*?)"'
-
-  - path: CMakeLists.txt
-    format: regex
-    pattern: 'project\(.*? VERSION (.*?)\)'
-```
-
-**Example version.go:**
-
-```go
-package version
-
-const Version = "1.2.3"
-```
-
-The regex pattern must include exactly one capturing group `(.*?)` that matches the version string.
-
-## Nested Field Syntax
-
-For JSON, YAML, and TOML formats, use dot notation to access nested fields:
-
-```yaml
-files:
-  - path: pyproject.toml
-    field: tool.poetry.version
-    format: toml
-```
-
-This accesses:
-
-```toml
-[tool.poetry]
-version = "1.2.3"
-```
-
-Deeply nested fields are supported:
-
-```yaml
-field: metadata.project.info.version
 ```
 
 ## Behavior
 
 ### Validation (Before Bump)
 
-When you run a bump command, the plugin validates that all configured files match the new version:
-
-```bash
-sley bump patch
-```
-
-If inconsistencies are detected:
-
-```
-Error: version inconsistencies detected:
-  - package.json: expected 1.2.4, found 1.2.3 (format: json)
-  - Chart.yaml: expected 1.2.4, found 1.2.2 (format: yaml)
-
-Run with auto-sync enabled to fix automatically, or update files manually.
-```
+The plugin validates that all configured files can be updated. If inconsistencies or errors are detected, the bump is aborted.
 
 ### Auto-Sync (After Bump)
 
-When `auto-sync: true` is enabled, the plugin automatically updates all configured files after the `.version` file is bumped:
+With `auto-sync: true`, files are automatically updated after the `.version` file is bumped:
 
 ```bash
 sley bump patch
+# Version bumped from 1.2.3 to 1.2.4
+# Synced version to 3 dependency file(s)
 ```
-
-Output:
-
-```
-Version bumped from 1.2.3 to 1.2.4
-Synced version to 3 dependency file(s)
-```
-
-### Manual Validation
-
-You can check consistency without bumping:
-
-```bash
-sley show
-```
-
-The plugin runs silently during show operations and only reports errors if inconsistencies exist.
 
 ## Version Normalization
 
@@ -251,11 +120,7 @@ The plugin normalizes version strings for comparison:
 - `1.2.3` matches `v1.2.3`
 - `2.0.0-alpha` matches `v2.0.0-alpha`
 
-This prevents false positives when some files use the `v` prefix and others don't.
-
-## Examples
-
-### Node.js Project
+## Integration with Other Plugins
 
 ```yaml
 plugins:
@@ -266,218 +131,40 @@ plugins:
       - path: package.json
         field: version
         format: json
-      - path: package-lock.json
-        field: version
-        format: json
-```
-
-### Python Project
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: pyproject.toml
-        field: tool.poetry.version
-        format: toml
-      - path: setup.py
-        format: regex
-        pattern: 'version="(.*?)"'
-```
-
-### Rust Project
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: Cargo.toml
-        field: package.version
-        format: toml
-```
-
-### Kubernetes Helm Chart
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: Chart.yaml
-        field: version
-        format: yaml
-      - path: Chart.yaml
-        field: appVersion
-        format: yaml
-```
-
-### Multi-Language Monorepo
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      # Frontend
-      - path: frontend/package.json
-        field: version
-        format: json
-
-      # Backend
-      - path: backend/Cargo.toml
-        field: package.version
-        format: toml
-
-      # Infrastructure
-      - path: infrastructure/Chart.yaml
-        field: version
-        format: yaml
-
-      # Build metadata
-      - path: VERSION
-        format: raw
-
-      # Source code constant
-      - path: backend/src/version.rs
-        format: regex
-        pattern: 'pub const VERSION: &str = "(.*?)";'
-```
-
-## Workflow Integration
-
-### With Version Validator
-
-```yaml
-plugins:
-  version-validator:
-    enabled: true
-    rules:
-      - type: pre-release-format
-        pattern: '^(alpha|beta|rc)\.\d+$'
-
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: package.json
-        field: version
-        format: json
-```
-
-Execution order during bump:
-
-1. Version validator checks new version
-2. Dependency check validates consistency
-3. `.version` file is updated
-4. Dependency files are synced (if auto-sync enabled)
-
-### With Tag Manager
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: package.json
-        field: version
-        format: json
-
   tag-manager:
     enabled: true
-    auto-create: true
-    prefix: v
+    prefix: "v"
 ```
 
-Execution order during bump:
-
-1. Dependency check validates consistency
-2. `.version` file is updated
-3. Dependency files are synced
-4. Git tag is created
+Flow: dependency-check validates -> version updated -> files synced -> tag created
 
 ## Error Handling
 
-### File Not Found
-
-If a configured file doesn't exist, the plugin reports an error:
-
-```
-Error: dependency check failed: failed to read version from package.json: failed to read file: open package.json: no such file or directory
-```
-
-### Invalid Format
-
-If a file cannot be parsed:
-
-```
-Error: dependency check failed: failed to read version from package.json: failed to parse JSON: invalid character '}' looking for beginning of object key string
-```
-
-### Pattern Mismatch
-
-For regex format, if the pattern doesn't match:
-
-```
-Error: dependency check failed: failed to read version from version.go: no version match found (pattern must have capturing group)
-```
+| Error Type       | Behavior                                       |
+| ---------------- | ---------------------------------------------- |
+| File not found   | Bump aborted with error                        |
+| Invalid format   | Bump aborted with parse error                  |
+| Pattern mismatch | Bump aborted (regex must have capturing group) |
 
 ## Best Practices
 
-1. **Start with validation only**: Set `auto-sync: false` initially to verify the plugin detects all files correctly
-2. **Test regex patterns**: Use a regex tester to validate your patterns before adding them
-3. **Version file first**: Always update `.version` file first, then let auto-sync handle other files
-4. **Commit atomically**: When using auto-sync, commit all changed files together
-5. **CI validation**: Add a CI check that runs `sley show` to catch inconsistencies
+1. **Start with validation only** - Set `auto-sync: false` initially
+2. **Test regex patterns** - Validate patterns before adding
+3. **Commit atomically** - Commit all changed files together
+4. **CI validation** - Add `sley show` to CI to catch inconsistencies
 
 ## Troubleshooting
 
-### Plugin Not Running
-
-Check that the plugin is enabled in `.sley.yaml`:
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-```
-
-### Files Not Syncing
-
-Verify `auto-sync: true` is set:
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-```
-
-### Regex Pattern Not Matching
-
-Test your pattern with a simpler version:
-
-```yaml
-# Instead of complex pattern
-pattern: 'project\(.*? VERSION (.*?)\)'
-
-# Try simpler pattern first
-pattern: 'VERSION (.*?)'
-```
-
-Ensure your pattern has exactly one capturing group `(.*?)`.
+| Issue              | Solution                                              |
+| ------------------ | ----------------------------------------------------- |
+| Plugin not running | Verify `enabled: true` in configuration               |
+| Files not syncing  | Check `auto-sync: true` is set                        |
+| Regex not matching | Ensure pattern has exactly one capturing group `(.*)` |
 
 ## Limitations
 
 - Regex patterns must have exactly one capturing group
-- File modifications use basic formatting (JSON indented with 2 spaces)
-- Large files may have performance impact
+- File modifications use basic formatting (JSON: 2-space indent)
 - Binary files are not supported
 
 ## See Also

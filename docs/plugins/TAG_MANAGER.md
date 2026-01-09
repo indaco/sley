@@ -13,9 +13,9 @@ The tag manager plugin automatically creates and manages git tags synchronized w
 
 ## Status
 
-Built-in, **disabled by default** (when running without configuration)
+Built-in, **disabled by default**
 
-> **Note**: While tag-manager is disabled by default when running sley without a config file, it is included in the recommended starting configuration created by `sley init --yes`. This reflects the common workflow of versioning alongside git tagging.
+> **Note**: While disabled by default, tag-manager is included in the recommended configuration created by `sley init --yes`.
 
 ## Features
 
@@ -24,12 +24,11 @@ Built-in, **disabled by default** (when running without configuration)
 - Configurable tag prefix (`v`, `release-`, or custom)
 - Support for annotated and lightweight tags
 - Optional automatic push to remote repository
-- Fail-fast behavior prevents version file updates when tags can't be created
 
 ## How It Works
 
-1. Before a version bump, validates that the target tag doesn't already exist (fail-fast)
-2. After a successful bump, creates a git tag for the new version
+1. Before bump: validates that the target tag doesn't already exist (fail-fast)
+2. After bump: creates a git tag for the new version
 3. Optionally pushes the tag to the remote repository
 
 ## Configuration
@@ -39,11 +38,11 @@ Enable and configure in `.sley.yaml`:
 ```yaml
 plugins:
   tag-manager:
-    enabled: true # Enable the plugin (required)
-    auto-create: true # Create tags automatically after bumps (default: true)
-    prefix: "v" # Tag prefix (default: "v")
-    annotate: true # Create annotated tags with message (default: true)
-    push: false # Push tags to remote after creation (default: false)
+    enabled: true
+    auto-create: true
+    prefix: "v"
+    annotate: true
+    push: false
 ```
 
 ### Configuration Options
@@ -67,33 +66,18 @@ plugins:
 
 ## Usage
 
-Once enabled, the plugin works automatically with all bump commands.
-
-### Basic Usage
+Once enabled, the plugin works automatically:
 
 ```bash
-# Bump patch version and create tag
 sley bump patch
-# Output: Version bumped from 1.2.3 to 1.2.4
-# Output: Created tag: v1.2.4
-```
+# Version bumped from 1.2.3 to 1.2.4
+# Created tag: v1.2.4
 
-### With Push Enabled
-
-```bash
-# With push: true in config
+# With push: true
 sley bump minor
-# Output: Version bumped from 1.2.4 to 1.3.0
-# Output: Created tag: v1.3.0
-# Output: Pushed tag: v1.3.0
-```
-
-### With Pre-release
-
-```bash
-sley bump minor --pre alpha.1
-# Output: Version bumped from 1.2.3 to 1.3.0-alpha.1
-# Output: Created tag: v1.3.0-alpha.1
+# Version bumped from 1.2.4 to 1.3.0
+# Created tag: v1.3.0
+# Pushed tag: v1.3.0
 ```
 
 ## Tag Validation (Fail-Fast)
@@ -107,105 +91,19 @@ sley bump minor
 # Version file remains unchanged
 ```
 
-This fail-fast behavior prevents version file updates when the corresponding tag cannot be created.
-
 ## Annotated vs Lightweight Tags
 
-### Annotated Tags (Default)
+**Annotated tags** (default, `annotate: true`):
 
-With `annotate: true`:
+- Include author, date, message, and optional GPG signature
+- Recommended for releases
 
-```bash
-git tag -a v1.2.3 -m "Release 1.2.3 (patch bump)"
-```
+**Lightweight tags** (`annotate: false`):
 
-Annotated tags include:
-
-- Author name and email
-- Creation date
-- Tag message
-- GPG signature (if configured)
-
-### Lightweight Tags
-
-With `annotate: false`:
-
-```bash
-git tag v1.2.3
-```
-
-Lightweight tags are simple pointers to a commit without additional metadata.
-
-**Recommendation**: Use annotated tags for releases. They provide better audit trails and are recommended by Git best practices.
-
-## Common Configurations
-
-### Release Workflow (CI/CD)
-
-```yaml
-plugins:
-  tag-manager:
-    enabled: true
-    prefix: "v"
-    annotate: true
-    push: true # Automatically push to remote
-```
-
-### Development Workflow
-
-```yaml
-plugins:
-  tag-manager:
-    enabled: true
-    prefix: "v"
-    annotate: true
-    push: false # Manual push control
-```
-
-### Custom Prefix
-
-```yaml
-plugins:
-  tag-manager:
-    enabled: true
-    prefix: "release-" # Tags: release-1.2.3
-    annotate: true
-```
-
-### No Prefix
-
-```yaml
-plugins:
-  tag-manager:
-    enabled: true
-    prefix: "" # Tags: 1.2.3
-    annotate: true
-```
+- Simple pointers to a commit
+- No additional metadata
 
 ## Integration with Other Plugins
-
-### With Version Validator
-
-```yaml
-plugins:
-  version-validator:
-    enabled: true
-    rules:
-      - type: "major-version-max"
-        value: 10
-  tag-manager:
-    enabled: true
-    prefix: "v"
-```
-
-Execution flow:
-
-1. `version-validator` checks version policy
-2. `tag-manager` validates tag doesn't exist
-3. Version file updated
-4. `tag-manager` creates tag
-
-### With Commit Parser
 
 ```yaml
 plugins:
@@ -216,115 +114,30 @@ plugins:
     push: true
 ```
 
-Workflow:
-
-```bash
-sley bump auto
-# 1. commit-parser analyzes: feat commits -> minor bump
-# 2. tag-manager validates: v1.3.0 doesn't exist
-# 3. Version: 1.2.3 -> 1.3.0
-# 4. tag-manager creates tag: v1.3.0
-# 5. tag-manager pushes tag to remote
-```
-
-### With Dependency Check
-
-```yaml
-plugins:
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: "package.json"
-        field: "version"
-        format: "json"
-  tag-manager:
-    enabled: true
-    prefix: "v"
-```
-
-Execution order:
-
-1. `dependency-check` validates file consistency
-2. Version file updated
-3. `dependency-check` syncs package.json
-4. `tag-manager` creates tag
+Flow: commit-parser analyzes -> tag-manager validates -> version updated -> tag created and pushed
 
 ## Error Handling
 
-### Tag Already Exists
-
-```bash
-sley bump patch
-# Error: tag v1.2.4 already exists
-```
-
-**Solution**: Delete the existing tag or bump to a different version.
-
-### Git Not Available
-
-```bash
-sley bump patch
-# Error: git command failed: exec: "git": executable file not found
-```
-
-**Solution**: Ensure git is installed and in PATH.
-
-### Push Failed
-
-```bash
-sley bump patch
-# Output: Created tag: v1.2.4
-# Error: failed to push tag: remote rejected
-```
-
-**Solution**: Check remote permissions and network connectivity.
+| Error Type         | Behavior                                  |
+| ------------------ | ----------------------------------------- |
+| Tag already exists | Bump aborted, version file unchanged      |
+| Git not available  | Error: executable not found               |
+| Push failed        | Tag created locally, push error displayed |
 
 ## Best Practices
 
-1. **Use annotated tags**: They provide better metadata for releases
-2. **Consistent prefix**: Choose a prefix and stick with it (`v` is most common)
-3. **CI/CD push**: Enable `push: true` only in CI/CD pipelines
-4. **Local development**: Keep `push: false` for local work
-5. **Version validator first**: Combine with version-validator to prevent invalid tags
+1. **Use annotated tags** - Better metadata for releases
+2. **Consistent prefix** - Choose one and stick with it (`v` is most common)
+3. **CI/CD push** - Enable `push: true` only in CI/CD pipelines
+4. **Local development** - Keep `push: false` for local work
 
 ## Troubleshooting
 
-### Tags Not Being Created
-
-1. Verify plugin is enabled:
-
-   ```yaml
-   plugins:
-     tag-manager:
-       enabled: true
-   ```
-
-2. Check `auto-create` is true (default)
-
-3. Verify you're in a git repository:
-   ```bash
-   git status
-   ```
-
-### Tags Not Pushing
-
-1. Check `push: true` is set
-2. Verify remote is configured:
-   ```bash
-   git remote -v
-   ```
-3. Check authentication/permissions
-
-### Wrong Tag Format
-
-Verify your prefix configuration:
-
-```yaml
-plugins:
-  tag-manager:
-    prefix: "v" # Results in v1.2.3
-```
+| Issue            | Solution                                              |
+| ---------------- | ----------------------------------------------------- |
+| Tags not created | Verify `enabled: true` and you're in a git repository |
+| Tags not pushing | Check `push: true` and remote configuration           |
+| Wrong tag format | Verify `prefix` configuration                         |
 
 ## See Also
 

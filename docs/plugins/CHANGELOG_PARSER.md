@@ -1,6 +1,6 @@
 # Changelog Parser Plugin
 
-The `changelogparser` plugin parses CHANGELOG.md files in [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format to automatically infer version bump types and validate changelog completeness.
+The changelog parser plugin parses CHANGELOG.md files in [Keep a Changelog](https://keepachangelog.com) format to automatically infer version bump types and validate changelog completeness.
 
 ## Plugin Metadata
 
@@ -10,6 +10,10 @@ The `changelogparser` plugin parses CHANGELOG.md files in [Keep a Changelog](htt
 | Version     | v0.1.0                             |
 | Type        | `changelog-parser`                 |
 | Description | Infers bump type from CHANGELOG.md |
+
+## Status
+
+Built-in, **disabled by default**
 
 ## Features
 
@@ -21,8 +25,6 @@ The `changelogparser` plugin parses CHANGELOG.md files in [Keep a Changelog](htt
 
 ## Bump Type Inference Rules
 
-The plugin analyzes subsections in the Unreleased section and determines the bump type based on the following priority:
-
 | Changelog Section | Bump Type | Rationale                      |
 | ----------------- | --------- | ------------------------------ |
 | Removed           | major     | Breaking change (removal)      |
@@ -32,15 +34,11 @@ The plugin analyzes subsections in the Unreleased section and determines the bum
 | Security          | patch     | Security fix                   |
 | Deprecated        | patch     | Deprecation notice             |
 
-### Priority Order
-
-1. **Major**: Removed or Changed sections take highest priority
-2. **Minor**: Added section if no major changes
-3. **Patch**: Fixed, Security, or Deprecated if no major/minor changes
+Priority: major (Removed/Changed) > minor (Added) > patch (Fixed/Security/Deprecated)
 
 ## Configuration
 
-Add the following to your `.sley.yaml` file:
+Enable and configure in `.sley.yaml`. See [changelog-parser.yaml](./examples/changelog-parser.yaml) for complete examples.
 
 ```yaml
 plugins:
@@ -54,44 +52,29 @@ plugins:
 
 ### Configuration Options
 
-- `enabled` (bool): Controls whether the plugin is active (default: false)
-- `path` (string): Path to the changelog file (default: "CHANGELOG.md")
-- `require-unreleased-section` (bool): Enforce presence of Unreleased section (default: true)
-- `infer-bump-type` (bool): Enable automatic bump type inference (default: true)
-- `priority` (string): Which parser takes precedence - "changelog" or "commits" (default: "changelog")
+| Option                       | Type   | Default        | Description                                             |
+| ---------------------------- | ------ | -------------- | ------------------------------------------------------- |
+| `enabled`                    | bool   | false          | Enable/disable the plugin                               |
+| `path`                       | string | `CHANGELOG.md` | Path to the changelog file                              |
+| `require-unreleased-section` | bool   | true           | Enforce presence of Unreleased section                  |
+| `infer-bump-type`            | bool   | true           | Enable automatic bump type inference                    |
+| `priority`                   | string | `changelog`    | Which parser takes precedence: "changelog" or "commits" |
 
 ## Usage with `bump auto`
 
-When enabled with `priority: "changelog"`, the plugin will:
-
-1. Parse the CHANGELOG.md file
-2. Extract the `## [Unreleased]` section
-3. Analyze subsections (Added, Changed, Fixed, etc.)
-4. Infer the appropriate bump type (major, minor, or patch)
-5. Fall back to commit parser if changelog has no entries
-
-### Example Workflow
-
 ```bash
-# 1. Edit your CHANGELOG.md
-$ cat CHANGELOG.md
-# Changelog
+# Edit your CHANGELOG.md
+cat CHANGELOG.md
+# ## [Unreleased]
+# ### Added
+# - New feature X
+# ### Fixed
+# - Bug fix Y
 
-## [Unreleased]
-
-### Added
-- New feature X
-
-### Fixed
-- Bug fix Y
-
-# 2. Run bump auto - it will detect "minor" from "Added" section
-$ sley bump auto
-Inferred from changelog: minor
-Bumped version from 1.2.3 to 1.3.0
-
-# 3. The changelog takes precedence over commits
-# Even if commits suggest "patch", "Added" section forces "minor"
+# Run bump auto - detects "minor" from "Added" section
+sley bump auto
+# Inferred from changelog: minor
+# Bumped version from 1.2.3 to 1.3.0
 ```
 
 ## Integration with Other Plugins
@@ -113,8 +96,6 @@ plugins:
 
 ### With Tag Manager
 
-Combine with tag manager for automatic git tag creation:
-
 ```yaml
 plugins:
   changelog-parser:
@@ -123,27 +104,6 @@ plugins:
     enabled: true
     auto-create: true
 ```
-
-### With Version Validator
-
-Ensure changelog entries exist before bumping:
-
-```yaml
-plugins:
-  changelog-parser:
-    enabled: true
-    require-unreleased-section: true
-  version-validator:
-    enabled: true
-```
-
-## Validation
-
-The plugin can validate changelog completeness before version bumps:
-
-- Checks that `## [Unreleased]` section exists
-- Ensures the section has at least one entry
-- Fails fast if validation is enabled and requirements aren't met
 
 ## Keep a Changelog Format
 
@@ -166,18 +126,6 @@ The plugin expects standard Keep a Changelog format:
 
 - Bug fix description
 
-### Security
-
-- Security fix description
-
-### Deprecated
-
-- Deprecation notice
-
-### Removed
-
-- Removed feature description
-
 ## [1.2.3] - 2024-01-15
 
 ### Added
@@ -196,86 +144,33 @@ The plugin expects standard Keep a Changelog format:
 
 All subsection headers are case-insensitive.
 
+## Comparison with Commit Parser
+
+| Feature            | Changelog Parser | Commit Parser        |
+| ------------------ | ---------------- | -------------------- |
+| Input source       | CHANGELOG.md     | Git commit messages  |
+| Format requirement | Keep a Changelog | Conventional Commits |
+| Manual control     | High             | Low                  |
+| Automation level   | Semi-automatic   | Fully automatic      |
+| Best for           | Release planning | CI/CD workflows      |
+
+## Best Practices
+
+1. **Keep Unreleased Section Updated** - Update as you develop
+2. **Use Clear Subsections** - Categorize changes appropriately
+3. **Combine with Commits** - Use "commits" priority for CI, "changelog" for manual releases
+4. **Validate Before Release** - Enable `require-unreleased-section`
+
+## Troubleshooting
+
+| Issue                     | Solution                                                      |
+| ------------------------- | ------------------------------------------------------------- |
+| Plugin not inferring type | Check `enabled: true`, `infer-bump-type: true`, `priority`    |
+| Validation errors         | Verify `## [Unreleased]` exists with `###` subsections        |
+| Priority conflicts        | Ensure plugin is in `.sley.yaml` and check `priority` setting |
+
 ## See Also
 
 - [Example Configuration](./examples/changelog-parser.yaml) - Complete changelog-parser setup
 - [Full Plugin Configuration](./examples/full-config.yaml) - All plugins working together
-- [Example CHANGELOG.md](./examples/CHANGELOG-example.md) - Sample changelog file format
-
-## Testing
-
-The plugin includes comprehensive test coverage (99.0%):
-
-- Parser tests for various changelog formats
-- Inference logic tests for all bump types
-- Integration tests with bump auto command
-- Error handling and edge case tests
-
-Run tests:
-
-```bash
-go test ./internal/plugins/changelogparser/...
-```
-
-## Implementation Details
-
-### File Structure
-
-```
-internal/plugins/changelogparser/
-├── parser.go          # Changelog file parsing logic
-├── parser_test.go     # Parser unit tests
-├── plugin.go          # Plugin implementation
-├── plugin_test.go     # Plugin unit tests
-└── registry.go        # Singleton registry pattern
-```
-
-### Key Components
-
-1. **changelogFileParser**: Parses CHANGELOG.md files
-2. **UnreleasedSection**: Represents parsed Unreleased section
-3. **ChangelogParserPlugin**: Plugin implementation with configuration
-4. **Registry**: Singleton pattern for plugin registration
-
-### Function Variables for Testability
-
-The implementation uses function variables (like `openFileFn`) to enable dependency injection during testing, following the patterns established in other plugins.
-
-## Comparison with Commit Parser
-
-| Feature                | Changelog Parser | Commit Parser        |
-| ---------------------- | ---------------- | -------------------- |
-| Input source           | CHANGELOG.md     | Git commit messages  |
-| Format requirement     | Keep a Changelog | Conventional Commits |
-| Explicit documentation | Yes              | No                   |
-| Manual control         | High             | Low                  |
-| Automation level       | Semi-automatic   | Fully automatic      |
-| Best for               | Release planning | CI/CD workflows      |
-
-## Best Practices
-
-1. **Keep Unreleased Section Updated**: Update the Unreleased section as you develop
-2. **Use Clear Subsections**: Categorize changes appropriately (Added, Fixed, etc.)
-3. **Combine with Commits**: Use "commits" priority for automated CI, "changelog" for manual releases
-4. **Validate Before Release**: Enable `require-unreleased-section` to prevent empty releases
-5. **Document Breaking Changes**: Use "Changed" or "Removed" for breaking changes
-
-## Troubleshooting
-
-### Plugin Not Inferring Bump Type
-
-- Check that `enabled: true` and `infer-bump-type: true`
-- Verify `priority: "changelog"` if you want it to override commits
-- Ensure Unreleased section has properly formatted subsections
-
-### Validation Errors
-
-- Verify `## [Unreleased]` section exists
-- Check that subsections use `###` headers
-- Ensure entries start with `- ` (dash and space)
-
-### Priority Conflicts
-
-- If commits override changelog, check `priority` setting
-- Ensure plugin is registered in `.sley.yaml`
-- Verify no conflicts with custom inference logic
+- [Commit Parser](./COMMIT_PARSER.md) - Alternative: infer bump from git commits
