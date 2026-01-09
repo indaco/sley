@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/indaco/sley/internal/apperrors"
 	"github.com/indaco/sley/internal/config"
@@ -127,38 +129,60 @@ func WithDefaultAll() ExecutionOption {
 // The cfg parameter provides workspace configuration.
 // Optional ExecutionOption can be passed to modify behavior (e.g., WithDefaultAll).
 func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, opts ...ExecutionOption) (*ExecutionContext, error) {
+	options := applyExecutionOptions(opts)
+
+	// Check for explicit single-module mode
+	if execCtx := getSingleModuleFromFlags(cmd, cfg); execCtx != nil {
+		return execCtx, nil
+	}
+
+	// Check for explicit multi-module flags
+	if hasMultiModuleFlags(cmd) {
+		return getMultiModuleContext(ctx, cmd, cfg, options, true)
+	}
+
+	// Auto-detect workspace context
+	return detectAndBuildContext(ctx, cmd, cfg, options)
+}
+
+// applyExecutionOptions applies option functions to create execution options.
+func applyExecutionOptions(opts []ExecutionOption) *executionOptions {
 	options := &executionOptions{}
 	for _, opt := range opts {
 		opt(options)
 	}
-	// Check if --path flag is provided
+	return options
+}
+
+// getSingleModuleFromFlags checks if explicit single-module mode is requested.
+func getSingleModuleFromFlags(cmd *cli.Command, cfg *config.Config) *ExecutionContext {
 	if cmd.IsSet("path") {
-		path := cmd.String("path")
 		return &ExecutionContext{
 			Mode: SingleModuleMode,
-			Path: path,
-		}, nil
+			Path: cmd.String("path"),
+		}
 	}
 
-	// Check if .sley.yaml has an explicit path configured (not default ".version")
-	// This takes precedence over multi-module detection
 	if cfg != nil && cfg.Path != "" && cfg.Path != ".version" {
 		return &ExecutionContext{
 			Mode: SingleModuleMode,
 			Path: cfg.Path,
-		}, nil
+		}
 	}
 
-	// Check for multi-module flags
-	hasAll := cmd.Bool("all")
-	hasModule := cmd.IsSet("module")
+	return nil
+}
 
-	// If explicit multi-module flags are set, detect modules
-	if hasAll || hasModule {
-		return getMultiModuleContext(ctx, cmd, cfg, options, true)
-	}
+// hasMultiModuleFlags checks if any multi-module flags are set.
+func hasMultiModuleFlags(cmd *cli.Command) bool {
+	return cmd.Bool("all") ||
+		cmd.IsSet("module") ||
+		len(cmd.StringSlice("modules")) > 0 ||
+		cmd.IsSet("pattern")
+}
 
-	// Detect workspace context
+// detectAndBuildContext auto-detects workspace mode and builds context.
+func detectAndBuildContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, options *executionOptions) (*ExecutionContext, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
@@ -171,38 +195,59 @@ func GetExecutionContext(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 		return nil, fmt.Errorf("failed to detect workspace context: %w", err)
 	}
 
-	// Handle different detection modes
+	return handleDetectedMode(ctx, cmd, cfg, options, detectedCtx)
+}
+
+// handleDetectedMode builds execution context based on detected workspace mode.
+func handleDetectedMode(ctx context.Context, cmd *cli.Command, cfg *config.Config, options *executionOptions, detectedCtx *workspace.Context) (*ExecutionContext, error) {
 	switch detectedCtx.Mode {
 	case workspace.SingleModule:
-		// Single module found, use it
 		return &ExecutionContext{
 			Mode: SingleModuleMode,
 			Path: detectedCtx.Path,
 		}, nil
 
 	case workspace.MultiModule:
-		// Multiple modules found, determine if we should prompt
 		return getMultiModuleContext(ctx, cmd, cfg, options, false)
 
 	case workspace.NoModules:
-		// No modules found, fall back to default path
-		path := cmd.String("path")
-		if path == "" {
-			path = cfg.Path
-		}
-		return &ExecutionContext{
-			Mode: SingleModuleMode,
-			Path: path,
-		}, nil
+		return buildNoModulesContext(cmd, cfg), nil
 
 	default:
 		return nil, fmt.Errorf("unexpected detection mode: %v", detectedCtx.Mode)
 	}
 }
 
+// buildNoModulesContext creates context when no modules are found.
+func buildNoModulesContext(cmd *cli.Command, cfg *config.Config) *ExecutionContext {
+	path := cmd.String("path")
+	if path == "" {
+		path = cfg.Path
+	}
+	return &ExecutionContext{
+		Mode: SingleModuleMode,
+		Path: path,
+	}
+}
+
 // getMultiModuleContext handles multi-module execution context setup.
 // It discovers modules, filters based on flags, and optionally shows TUI.
-func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, options *executionOptions, skipDetection bool) (*ExecutionContext, error) {
+func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Config, options *executionOptions, _ bool) (*ExecutionContext, error) {
+	modules, err := discoverModules(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	modules, err = applyModuleFilters(cmd, modules)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildMultiModuleContext(cmd, options, modules)
+}
+
+// discoverModules finds all modules in the workspace.
+func discoverModules(ctx context.Context, cfg *config.Config) ([]*workspace.Module, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get working directory: %w", err)
@@ -211,7 +256,6 @@ func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Co
 	fs := core.NewOSFileSystem()
 	detector := workspace.NewDetector(fs, cfg)
 
-	// Discover modules
 	modules, err := detector.DiscoverModules(ctx, cwd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover modules: %w", err)
@@ -221,48 +265,85 @@ func getMultiModuleContext(ctx context.Context, cmd *cli.Command, cfg *config.Co
 		return nil, fmt.Errorf("no modules found in workspace")
 	}
 
-	// Filter modules based on --module flag
+	return modules, nil
+}
+
+// applyModuleFilters applies --module, --modules, and --pattern filters.
+func applyModuleFilters(cmd *cli.Command, modules []*workspace.Module) ([]*workspace.Module, error) {
+	var err error
+
 	if cmd.IsSet("module") {
-		moduleName := cmd.String("module")
-		modules = filterModulesByName(modules, moduleName)
+		modules = filterModulesByName(modules, cmd.String("module"))
 		if len(modules) == 0 {
-			return nil, fmt.Errorf("module %q not found", moduleName)
+			return nil, fmt.Errorf("module %q not found", cmd.String("module"))
 		}
 	}
 
-	// Check if we should skip TUI prompt
-	// Skip prompting for read-only commands (defaultToAll) or when explicit flags are set
-	shouldPrompt := tui.IsInteractive() && !cmd.Bool("yes") && !cmd.Bool("non-interactive") && !cmd.Bool("all") && !options.defaultToAll
+	if names := cmd.StringSlice("modules"); len(names) > 0 {
+		modules = filterModulesByNames(modules, names)
+		if len(modules) == 0 {
+			return nil, fmt.Errorf("no modules found matching names: %v", names)
+		}
+	}
 
-	if shouldPrompt {
-		// Show TUI module selection
-		prompter := tui.NewModulePrompt(modules)
-		selection, err := prompter.PromptModuleSelection(modules)
+	if cmd.IsSet("pattern") {
+		pattern := cmd.String("pattern")
+		modules, err = filterModulesByPattern(modules, pattern)
 		if err != nil {
-			return nil, fmt.Errorf("module selection failed: %w", err)
+			return nil, fmt.Errorf("invalid pattern %q: %w", pattern, err)
 		}
-
-		if selection.Canceled {
-			return nil, fmt.Errorf("operation canceled by user")
+		if len(modules) == 0 {
+			return nil, fmt.Errorf("no modules found matching pattern: %s", pattern)
 		}
+	}
 
-		// Filter modules based on selection
-		if !selection.All {
-			modules = filterModulesBySelection(modules, selection.Modules)
-		}
+	return modules, nil
+}
 
+// buildMultiModuleContext creates the execution context, optionally showing TUI.
+func buildMultiModuleContext(cmd *cli.Command, options *executionOptions, modules []*workspace.Module) (*ExecutionContext, error) {
+	if !shouldShowTUIPrompt(cmd, options) {
 		return &ExecutionContext{
 			Mode:      MultiModuleMode,
 			Modules:   modules,
-			Selection: selection,
+			Selection: tui.AllModules(),
 		}, nil
 	}
 
-	// Non-interactive or --all flag: select all modules
+	return promptForModuleSelection(modules)
+}
+
+// shouldShowTUIPrompt determines if interactive module selection should be shown.
+func shouldShowTUIPrompt(cmd *cli.Command, options *executionOptions) bool {
+	if !tui.IsInteractive() {
+		return false
+	}
+	if cmd.Bool("yes") || cmd.Bool("non-interactive") || cmd.Bool("all") {
+		return false
+	}
+	return !options.defaultToAll
+}
+
+// promptForModuleSelection shows the TUI and returns the selected modules.
+func promptForModuleSelection(modules []*workspace.Module) (*ExecutionContext, error) {
+	prompter := tui.NewModulePrompt(modules)
+	selection, err := prompter.PromptModuleSelection(modules)
+	if err != nil {
+		return nil, fmt.Errorf("module selection failed: %w", err)
+	}
+
+	if selection.Canceled {
+		return nil, fmt.Errorf("operation canceled by user")
+	}
+
+	if !selection.All {
+		modules = filterModulesBySelection(modules, selection.Modules)
+	}
+
 	return &ExecutionContext{
 		Mode:      MultiModuleMode,
 		Modules:   modules,
-		Selection: tui.AllModules(),
+		Selection: selection,
 	}, nil
 }
 
@@ -292,4 +373,68 @@ func filterModulesBySelection(modules []*workspace.Module, selected []string) []
 		}
 	}
 	return filtered
+}
+
+// filterModulesByNames filters modules to include those matching any of the given names.
+// Names can be provided as a slice (from --modules flag).
+func filterModulesByNames(modules []*workspace.Module, names []string) []*workspace.Module {
+	if len(names) == 0 {
+		return modules
+	}
+
+	// Build a set of names for O(1) lookup
+	nameSet := make(map[string]bool)
+	for _, name := range names {
+		// Handle comma-separated values within a single argument
+		for n := range strings.SplitSeq(name, ",") {
+			n = strings.TrimSpace(n)
+			if n != "" {
+				nameSet[n] = true
+			}
+		}
+	}
+
+	var filtered []*workspace.Module
+	for _, mod := range modules {
+		if nameSet[mod.Name] {
+			filtered = append(filtered, mod)
+		}
+	}
+	return filtered
+}
+
+// filterModulesByPattern filters modules whose paths match the given glob pattern.
+// The pattern is matched against the module's directory path relative to the workspace root.
+// Examples: "services/*", "packages/shared", "**/api"
+func filterModulesByPattern(modules []*workspace.Module, pattern string) ([]*workspace.Module, error) {
+	if pattern == "" {
+		return modules, nil
+	}
+
+	var filtered []*workspace.Module
+	for _, mod := range modules {
+		// Get the directory containing the .version file
+		dir := filepath.Dir(mod.Path)
+
+		// Try matching against the directory path
+		matched, err := filepath.Match(pattern, dir)
+		if err != nil {
+			return nil, err
+		}
+
+		// Also try matching against just the module name for simple patterns
+		if !matched {
+			matched, _ = filepath.Match(pattern, mod.Name)
+		}
+
+		// Also try matching against the full path
+		if !matched {
+			matched, _ = filepath.Match(pattern, mod.Path)
+		}
+
+		if matched {
+			filtered = append(filtered, mod)
+		}
+	}
+	return filtered, nil
 }

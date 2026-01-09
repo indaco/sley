@@ -611,6 +611,9 @@ sley bump patch --module api
 
 # Bump multiple modules
 sley bump patch --modules api,web
+
+# Bump modules matching pattern
+sley bump patch --pattern "services/*"
 ```
 
 For CI/CD, use `--non-interactive` or set `CI=true` to disable prompts.
