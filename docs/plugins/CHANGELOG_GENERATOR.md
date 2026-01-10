@@ -113,6 +113,7 @@ plugins:
 | `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format)  |
 | `use-default-icons`        | bool   | false            | Enable predefined icons for all groups and contributors               |
 | `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)      |
+| `breaking-changes-icon`    | string | (empty)          | Custom icon for Breaking Changes section (github/keepachangelog)      |
 | `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                 |
 | `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                   |
 | `contributors`             | object | enabled          | Contributors section configuration                                    |
@@ -207,6 +208,8 @@ Follows the GitHub release style with inline contributor attribution per commit.
 Key features:
 
 - Breaking changes highlighted in "⚠️ Breaking Changes" section (appears first when present)
+  - Default icon is ⚠️ (when `use-default-icons: true`)
+  - Customize with `breaking-changes-icon: "💥"` or any emoji/icon
 - Regular changes listed in "What's Changed" section
 - Inline contributor attribution (`by @username`)
 - Inline PR references (`in #123`)

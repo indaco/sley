@@ -489,3 +489,62 @@ func TestDefaultContributorIcon(t *testing.T) {
 		t.Error("DefaultContributorIcon should not be empty")
 	}
 }
+
+func TestDefaultBreakingChangesIcon(t *testing.T) {
+	// Verify default breaking changes icon is set
+	if DefaultBreakingChangesIcon == "" {
+		t.Error("DefaultBreakingChangesIcon should not be empty")
+	}
+}
+
+func TestFromConfigStruct_BreakingChangesIcon(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    *config.ChangelogGeneratorConfig
+		wantIcon string
+	}{
+		{
+			name: "explicit icon overrides default",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:             true,
+				UseDefaultIcons:     true,
+				BreakingChangesIcon: "custom-warning",
+			},
+			wantIcon: "custom-warning",
+		},
+		{
+			name: "UseDefaultIcons applies default icon",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:         true,
+				UseDefaultIcons: true,
+			},
+			wantIcon: DefaultBreakingChangesIcon,
+		},
+		{
+			name: "no UseDefaultIcons and no explicit icon results in empty",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:         true,
+				UseDefaultIcons: false,
+			},
+			wantIcon: "",
+		},
+		{
+			name: "explicit icon without UseDefaultIcons",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:             true,
+				UseDefaultIcons:     false,
+				BreakingChangesIcon: "explicit-icon",
+			},
+			wantIcon: "explicit-icon",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := FromConfigStruct(tt.input)
+			if cfg.BreakingChangesIcon != tt.wantIcon {
+				t.Errorf("BreakingChangesIcon = %q, want %q", cfg.BreakingChangesIcon, tt.wantIcon)
+			}
+		})
+	}
+}

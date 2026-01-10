@@ -411,3 +411,292 @@ func TestGroupedFormatter_WithoutRemote(t *testing.T) {
 		t.Error("should not contain URLs without remote")
 	}
 }
+
+func TestGroupedFormatter_BreakingChangesOnly(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "abc123", ShortHash: "abc123", Subject: "feat(api)!: breaking API change"},
+					Type:        "feat",
+					Scope:       "api",
+					Description: "breaking API change",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+				GroupOrder: 0,
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Breaking change should appear in dedicated section with icon
+	if !strings.Contains(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes") {
+		t.Error("expected Breaking Changes section header with icon")
+	}
+
+	// Breaking change commit should be included
+	if !strings.Contains(result, "**api:** breaking API change") {
+		t.Error("expected breaking change entry with scope")
+	}
+
+	// Should NOT have the original group label section when only breaking changes exist
+	if strings.Contains(result, "### Enhancements") {
+		t.Error("should not have empty 'Enhancements' section when only breaking changes exist")
+	}
+}
+
+func TestGroupedFormatter_MixedBreakingAndRegular(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
+	formatter := &GroupedFormatter{config: cfg}
+
+	remote := &RemoteInfo{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "break1", ShortHash: "break1", Subject: "feat(api)!: Remove deprecated endpoints"},
+					Type:        "feat",
+					Scope:       "api",
+					Description: "Remove deprecated endpoints",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+				GroupIcon:  "rocket",
+				GroupOrder: 0,
+			},
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "feat1", ShortHash: "feat1", Subject: "feat(core): Add new caching layer"},
+					Type:        "feat",
+					Scope:       "core",
+					Description: "Add new caching layer",
+					Breaking:    false,
+				},
+				GroupLabel: "Enhancements",
+				GroupIcon:  "rocket",
+				GroupOrder: 0,
+			},
+		},
+		"Fixes": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "fix1", ShortHash: "fix1", Subject: "fix: Fix memory leak"},
+					Type:        "fix",
+					Description: "Fix memory leak",
+					Breaking:    false,
+				},
+				GroupLabel: "Fixes",
+				GroupIcon:  "bug",
+				GroupOrder: 1,
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements", "Fixes"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, remote)
+
+	// Breaking Changes section should exist
+	if !strings.Contains(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes") {
+		t.Error("expected Breaking Changes section header")
+	}
+
+	// Regular sections should exist
+	if !strings.Contains(result, "### rocket Enhancements") {
+		t.Error("expected Enhancements section")
+	}
+	if !strings.Contains(result, "### bug Fixes") {
+		t.Error("expected Fixes section")
+	}
+
+	// Breaking change should be in Breaking Changes section
+	if !strings.Contains(result, "Remove deprecated endpoints") {
+		t.Error("expected breaking change entry")
+	}
+
+	// Regular changes should be in their sections
+	if !strings.Contains(result, "Add new caching layer") {
+		t.Error("expected regular enhancement entry")
+	}
+	if !strings.Contains(result, "Fix memory leak") {
+		t.Error("expected fix entry")
+	}
+
+	// Breaking Changes should appear before other sections
+	breakingIdx := strings.Index(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes")
+	enhancementsIdx := strings.Index(result, "### rocket Enhancements")
+	fixesIdx := strings.Index(result, "### bug Fixes")
+
+	if breakingIdx > enhancementsIdx {
+		t.Error("Breaking Changes section should appear before Enhancements")
+	}
+	if breakingIdx > fixesIdx {
+		t.Error("Breaking Changes section should appear before Fixes")
+	}
+}
+
+func TestGroupedFormatter_CustomBreakingChangesIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = "CUSTOM"
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "abc123", ShortHash: "abc123", Subject: "feat!: breaking change"},
+					Type:        "feat",
+					Description: "breaking change",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Should use custom icon
+	if !strings.Contains(result, "### CUSTOM Breaking Changes") {
+		t.Error("expected custom breaking changes icon in header")
+	}
+}
+
+func TestGroupedFormatter_NoBreakingChangesIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = "" // No icon
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "abc123", ShortHash: "abc123", Subject: "feat!: breaking change"},
+					Type:        "feat",
+					Description: "breaking change",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Header should be plain "Breaking Changes" without icon
+	if !strings.Contains(result, "### Breaking Changes\n") {
+		t.Error("expected plain 'Breaking Changes' header without icon")
+	}
+	// Should not have a space before "Breaking"
+	if strings.Contains(result, "###  Breaking") {
+		t.Error("should not have extra space before 'Breaking'")
+	}
+}
+
+func TestGroupedFormatter_BreakingChangesExcludedFromRegularGroups(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "break1", ShortHash: "break1", Subject: "feat!: breaking feature"},
+					Type:        "feat",
+					Description: "breaking feature",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Breaking change should appear in Breaking Changes section
+	if !strings.Contains(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes") {
+		t.Error("expected Breaking Changes section")
+	}
+	if !strings.Contains(result, "breaking feature") {
+		t.Error("expected breaking feature entry")
+	}
+
+	// The Enhancements section should NOT appear (no regular commits)
+	if strings.Contains(result, "### Enhancements") {
+		t.Error("empty Enhancements section should not appear when all commits are breaking")
+	}
+}
+
+func TestGroupedFormatter_MultipleBreakingChanges(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
+	formatter := &GroupedFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Enhancements": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "break1", ShortHash: "break1", Subject: "feat(api)!: Remove deprecated endpoints"},
+					Type:        "feat",
+					Scope:       "api",
+					Description: "Remove deprecated endpoints",
+					Breaking:    true,
+				},
+				GroupLabel: "Enhancements",
+			},
+		},
+		"Fixes": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo:  CommitInfo{Hash: "break2", ShortHash: "break2", Subject: "fix!: Change error response format"},
+					Type:        "fix",
+					Description: "Change error response format",
+					Breaking:    true,
+				},
+				GroupLabel: "Fixes",
+			},
+		},
+	}
+	sortedKeys := []string{"Enhancements", "Fixes"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Both breaking changes should appear in the Breaking Changes section
+	if !strings.Contains(result, "Remove deprecated endpoints") {
+		t.Error("expected first breaking change entry")
+	}
+	if !strings.Contains(result, "Change error response format") {
+		t.Error("expected second breaking change entry")
+	}
+
+	// There should only be ONE Breaking Changes section header
+	count := strings.Count(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes")
+	if count != 1 {
+		t.Errorf("expected exactly one Breaking Changes header, got %d", count)
+	}
+
+	// Neither Enhancements nor Fixes sections should appear (all are breaking)
+	if strings.Contains(result, "### Enhancements") {
+		t.Error("empty Enhancements section should not appear")
+	}
+	if strings.Contains(result, "### Fixes") {
+		t.Error("empty Fixes section should not appear")
+	}
+}

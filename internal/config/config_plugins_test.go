@@ -420,3 +420,78 @@ plugins:
 		})
 	}
 }
+
+/* ------------------------------------------------------------------------- */
+/* BREAKING CHANGES ICON CONFIG TESTS                                        */
+/* ------------------------------------------------------------------------- */
+
+func TestChangelogGeneratorConfig_BreakingChangesIcon(t *testing.T) {
+	tests := []struct {
+		name      string
+		yamlInput string
+		wantIcon  string
+	}{
+		{
+			name: "breaking-changes-icon with custom value",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    breaking-changes-icon: "BOOM"
+`,
+			wantIcon: "BOOM",
+		},
+		{
+			name: "breaking-changes-icon omitted",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+`,
+			wantIcon: "",
+		},
+		{
+			name: "breaking-changes-icon with emoji",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    breaking-changes-icon: "💥"
+`,
+			wantIcon: "💥",
+		},
+		{
+			name: "breaking-changes-icon with other options",
+			yamlInput: `path: .version
+plugins:
+  changelog-generator:
+    enabled: true
+    format: github
+    use-default-icons: false
+    breaking-changes-icon: "WARNING"
+`,
+			wantIcon: "WARNING",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
+			runInTempDir(t, tmpPath, func() {
+				cfg, err := LoadConfigFn()
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+
+				if cfg.Plugins == nil || cfg.Plugins.ChangelogGenerator == nil {
+					t.Fatal("expected changelog-generator plugin config")
+				}
+
+				if cfg.Plugins.ChangelogGenerator.BreakingChangesIcon != tt.wantIcon {
+					t.Errorf("expected breaking-changes-icon %q, got %q",
+						tt.wantIcon, cfg.Plugins.ChangelogGenerator.BreakingChangesIcon)
+				}
+			})
+		})
+	}
+}

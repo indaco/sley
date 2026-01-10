@@ -27,9 +27,34 @@ func (f *GroupedFormatter) FormatChangelog(
 	date := time.Now().Format("2006-01-02")
 	sb.WriteString(fmt.Sprintf("## %s - %s\n\n", version, date))
 
-	// Grouped commits
+	// Separate breaking changes from regular changes
+	var breakingChanges []*GroupedCommit
+	regularGrouped := make(map[string][]*GroupedCommit)
+
 	for _, label := range sortedKeys {
 		commits := grouped[label]
+		for _, c := range commits {
+			if c.Breaking {
+				breakingChanges = append(breakingChanges, c)
+			} else {
+				regularGrouped[label] = append(regularGrouped[label], c)
+			}
+		}
+	}
+
+	// Write breaking changes section first if there are any
+	if len(breakingChanges) > 0 {
+		sb.WriteString(f.formatBreakingChangesHeader())
+		for _, c := range breakingChanges {
+			entry := formatCommitEntry(c, remote)
+			sb.WriteString(entry)
+		}
+		sb.WriteString("\n")
+	}
+
+	// Grouped commits (regular, non-breaking)
+	for _, label := range sortedKeys {
+		commits := regularGrouped[label]
 		if len(commits) == 0 {
 			continue
 		}
@@ -51,6 +76,15 @@ func (f *GroupedFormatter) FormatChangelog(
 	}
 
 	return sb.String()
+}
+
+// formatBreakingChangesHeader returns the breaking changes section header.
+// If a custom icon is configured, it is used; otherwise just "Breaking Changes" is shown.
+func (f *GroupedFormatter) formatBreakingChangesHeader() string {
+	if f.config.BreakingChangesIcon != "" {
+		return fmt.Sprintf("### %s Breaking Changes\n\n", f.config.BreakingChangesIcon)
+	}
+	return "### Breaking Changes\n\n"
 }
 
 // buildCompareURL generates a compare URL for the provider.

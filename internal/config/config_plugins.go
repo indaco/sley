@@ -182,6 +182,11 @@ type ChangelogGeneratorConfig struct {
 	// Performance, Styling, Tests, Chores, CI, Build, Reverts.
 	GroupIcons map[string]string `yaml:"group-icons,omitempty"`
 
+	// BreakingChangesIcon is the icon/emoji for the breaking changes section header.
+	// Used by formatters with a dedicated breaking changes section (e.g., GitHub format).
+	// When UseDefaultIcons is true and this is empty, the default icon is used.
+	BreakingChangesIcon string `yaml:"breaking-changes-icon,omitempty"`
+
 	// Contributors configures the contributors section.
 	Contributors *ContributorsConfig `yaml:"contributors,omitempty"`
 }

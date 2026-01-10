@@ -57,6 +57,8 @@ plugins:
     #   CI: "🤖"
     #   Build: "📦"
     #   Reverts: "◀️"
+    #
+    # breaking-changes-icon: "💥"  # Override the Breaking Changes icon (github/keepachangelog formats)
 
     # =========================================================================
     # OPTION 3: Full custom groups (uncomment to use instead)
@@ -121,7 +123,7 @@ plugins:
       # icon: ""  # Optional icon before "Contributors" header
 
       # New Contributors section - detects first-time contributors
-      show-new-contributors: true  # Enable "New Contributors" section (default: true)
+      show-new-contributors: true # Enable "New Contributors" section (default: true)
       # new-contributors-format: ""  # Custom format for new contributor entries
       # new-contributors-icon: ""  # Optional icon before "New Contributors" header
       # Available variables: {{.Name}}, {{.Username}}, {{.Host}}, {{.PRNumber}}, {{.CommitHash}}

@@ -24,6 +24,9 @@ const DefaultContributorIcon = "\u2764\uFE0F" // red heart ❤️
 // DefaultNewContributorsIcon is the default icon for the new contributors section.
 const DefaultNewContributorsIcon = "\U0001F389" // party popper 🎉
 
+// DefaultBreakingChangesIcon is the default icon for the breaking changes section.
+const DefaultBreakingChangesIcon = "\u26A0\uFE0F" // warning sign ⚠️
+
 // Config holds the internal configuration for the changelog generator plugin.
 type Config struct {
 	// Enabled controls whether the plugin is active.
@@ -66,6 +69,10 @@ type Config struct {
 
 	// GroupIcons maps default group labels to icons (used when Groups is empty).
 	GroupIcons map[string]string
+
+	// BreakingChangesIcon is the icon for the breaking changes section header.
+	// This is used by formatters that have a dedicated breaking changes section.
+	BreakingChangesIcon string
 
 	// Contributors configures the contributors section.
 	Contributors *ContributorsConfig
@@ -177,9 +184,22 @@ func FromConfigStruct(cfg *config.ChangelogGeneratorConfig) *Config {
 		result.ExcludePatterns = DefaultExcludePatterns()
 	}
 
+	result.BreakingChangesIcon = convertBreakingChangesIcon(cfg)
 	result.Contributors = convertContributorsConfig(cfg)
 
 	return result
+}
+
+// convertBreakingChangesIcon returns the breaking changes icon based on configuration.
+// Priority: user-defined icon > default icon (when UseDefaultIcons is true) > empty string.
+func convertBreakingChangesIcon(cfg *config.ChangelogGeneratorConfig) string {
+	if cfg.BreakingChangesIcon != "" {
+		return cfg.BreakingChangesIcon
+	}
+	if cfg.UseDefaultIcons {
+		return DefaultBreakingChangesIcon
+	}
+	return ""
 }
 
 // convertRepositoryConfig converts repository configuration.

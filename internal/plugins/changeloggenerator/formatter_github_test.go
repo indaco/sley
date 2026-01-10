@@ -468,6 +468,7 @@ func TestGitHubFormatter_CodebergNoreplyEmail(t *testing.T) {
 
 func TestGitHubFormatter_BreakingChange(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GitHubFormatter{config: cfg}
 
 	grouped := map[string][]*GroupedCommit{
@@ -513,6 +514,7 @@ func TestGitHubFormatter_BreakingChange(t *testing.T) {
 
 func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GitHubFormatter{config: cfg}
 
 	grouped := map[string][]*GroupedCommit{
@@ -677,5 +679,118 @@ func TestGitHubFormatter_EmptyGroups(t *testing.T) {
 	// No bullet entries
 	if strings.Contains(result, "* ") {
 		t.Error("should not have bullet entries for empty groups")
+	}
+}
+
+func TestGitHubFormatter_CustomBreakingChangesIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = "CUSTOM"
+	formatter := &GitHubFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Breaking": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo: CommitInfo{
+						Hash:        "abc123",
+						ShortHash:   "abc123",
+						Subject:     "feat!: breaking change",
+						Author:      "Dev",
+						AuthorEmail: "dev@users.noreply.github.com",
+					},
+					Type:        "feat",
+					Description: "breaking change",
+					Breaking:    true,
+					PRNumber:    "999",
+				},
+				GroupLabel: "Breaking",
+			},
+		},
+	}
+	sortedKeys := []string{"Breaking"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Custom icon should appear in header
+	if !strings.Contains(result, "### CUSTOM Breaking Changes") {
+		t.Error("expected custom breaking changes icon in header")
+	}
+	// Default icon should NOT appear
+	if strings.Contains(result, "⚠️") {
+		t.Error("should not have default icon when custom icon is set")
+	}
+}
+
+func TestGitHubFormatter_DefaultBreakingChangesIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
+	formatter := &GitHubFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Breaking": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo: CommitInfo{
+						Hash:        "abc123",
+						ShortHash:   "abc123",
+						Subject:     "feat!: breaking change",
+						Author:      "Dev",
+						AuthorEmail: "dev@users.noreply.github.com",
+					},
+					Type:        "feat",
+					Description: "breaking change",
+					Breaking:    true,
+					PRNumber:    "999",
+				},
+				GroupLabel: "Breaking",
+			},
+		},
+	}
+	sortedKeys := []string{"Breaking"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Default icon (warning sign) should appear in header
+	if !strings.Contains(result, "### "+DefaultBreakingChangesIcon+" Breaking Changes") {
+		t.Errorf("expected default breaking changes icon in header, got: %s", result)
+	}
+}
+
+func TestGitHubFormatter_NoBreakingChangesIcon(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.BreakingChangesIcon = "" // No icon
+	formatter := &GitHubFormatter{config: cfg}
+
+	grouped := map[string][]*GroupedCommit{
+		"Breaking": {
+			{
+				ParsedCommit: &ParsedCommit{
+					CommitInfo: CommitInfo{
+						Hash:        "abc123",
+						ShortHash:   "abc123",
+						Subject:     "feat!: breaking change",
+						Author:      "Dev",
+						AuthorEmail: "dev@users.noreply.github.com",
+					},
+					Type:        "feat",
+					Description: "breaking change",
+					Breaking:    true,
+					PRNumber:    "999",
+				},
+				GroupLabel: "Breaking",
+			},
+		},
+	}
+	sortedKeys := []string{"Breaking"}
+
+	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
+
+	// Header should be plain "Breaking Changes" without icon
+	if !strings.Contains(result, "### Breaking Changes\n") {
+		t.Error("expected plain 'Breaking Changes' header without icon")
+	}
+	// No icon should appear
+	if strings.Contains(result, "⚠️") {
+		t.Error("should not have default icon when icon is empty")
 	}
 }

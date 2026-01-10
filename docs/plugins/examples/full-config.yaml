@@ -94,6 +94,7 @@ plugins:
     # group-icons:             # Or: add icons to specific default groups
     #   Enhancements: "🚀"
     #   Fixes: "🩹"
+    # breaking-changes-icon: "💥"  # Custom icon for Breaking Changes section (only applies to github and keepachangelog formats)
     groups:
       - pattern: "^feat"
         label: "New Features"

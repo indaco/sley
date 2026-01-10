@@ -47,7 +47,7 @@ func (f *GitHubFormatter) FormatChangelog(
 
 	// Write breaking changes section first if there are any
 	if len(breakingChanges) > 0 {
-		sb.WriteString("### ⚠️ Breaking Changes\n\n")
+		sb.WriteString(f.formatBreakingChangesHeader())
 		for _, c := range breakingChanges {
 			entry := formatGitHubCommitEntry(c, remote)
 			sb.WriteString(entry)
@@ -103,4 +103,13 @@ func formatGitHubCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
 
 	sb.WriteString("\n")
 	return sb.String()
+}
+
+// formatBreakingChangesHeader returns the breaking changes section header.
+// If a custom icon is configured, it is used; otherwise just "Breaking Changes" is shown.
+func (f *GitHubFormatter) formatBreakingChangesHeader() string {
+	if f.config.BreakingChangesIcon != "" {
+		return fmt.Sprintf("### %s Breaking Changes\n\n", f.config.BreakingChangesIcon)
+	}
+	return "### Breaking Changes\n\n"
 }
