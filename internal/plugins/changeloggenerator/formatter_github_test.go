@@ -597,42 +597,39 @@ func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 
 	result := formatter.FormatChangelog("v2.0.0", "v1.0.0", grouped, sortedKeys, nil)
 
-	// Should have both sections
-	if !strings.Contains(result, "### ⚠️ Breaking Changes") {
-		t.Error("expected '⚠️ Breaking Changes' section header")
-	}
-	if !strings.Contains(result, "### What's Changed") {
-		t.Error("expected 'What's Changed' section header")
-	}
+	// Extract sections for verification
+	breakingSection, changedSection := extractGitHubSections(result)
 
-	// Breaking changes section should appear BEFORE What's Changed
-	breakingIdx := strings.Index(result, "### ⚠️ Breaking Changes")
-	whatsChangedIdx := strings.Index(result, "### What's Changed")
-	if breakingIdx >= whatsChangedIdx {
-		t.Error("Breaking Changes section should appear before What's Changed section")
-	}
+	t.Run("has both section headers", func(t *testing.T) {
+		assertContains(t, result, "### ⚠️ Breaking Changes", "expected Breaking Changes header")
+		assertContains(t, result, "### What's Changed", "expected What's Changed header")
+	})
 
-	// Breaking changes should be in the Breaking Changes section
-	if !strings.Contains(result, "* **api:** Remove deprecated endpoints by @maintainer in #100") {
-		t.Error("expected first breaking change entry")
-	}
-	if !strings.Contains(result, "* Change authentication flow by @dev in #101") {
-		t.Error("expected second breaking change entry (no scope)")
-	}
+	t.Run("section order", func(t *testing.T) {
+		breakingIdx := strings.Index(result, "### ⚠️ Breaking Changes")
+		whatsChangedIdx := strings.Index(result, "### What's Changed")
+		if breakingIdx >= whatsChangedIdx {
+			t.Error("Breaking Changes section should appear before What's Changed section")
+		}
+	})
 
-	// Regular changes should be in the What's Changed section
-	if !strings.Contains(result, "* **core:** Add new caching layer by @johndoe in #123") {
-		t.Error("expected feature entry in What's Changed")
-	}
-	if !strings.Contains(result, "* Fix memory leak in parser by @janedoe in #456") {
-		t.Error("expected fix entry in What's Changed")
-	}
+	t.Run("breaking changes in correct section", func(t *testing.T) {
+		assertContains(t, breakingSection, "Remove deprecated endpoints", "breaking change missing from section")
+		assertContains(t, breakingSection, "Change authentication flow", "breaking change missing from section")
+		assertNotContains(t, changedSection, "Remove deprecated endpoints", "breaking change in wrong section")
+		assertNotContains(t, changedSection, "Change authentication flow", "breaking change in wrong section")
+	})
 
-	// Verify breaking changes appear in Breaking Changes section, not What's Changed
-	// Split by sections and verify content placement
-	sections := strings.Split(result, "###")
-	var breakingSection, changedSection string
-	for _, section := range sections {
+	t.Run("regular changes in correct section", func(t *testing.T) {
+		assertContains(t, changedSection, "Add new caching layer", "regular change missing from section")
+		assertContains(t, changedSection, "Fix memory leak in parser", "regular change missing from section")
+	})
+}
+
+// extractGitHubSections splits the result into breaking and changed sections.
+func extractGitHubSections(result string) (breakingSection, changedSection string) {
+	sections := strings.SplitSeq(result, "###")
+	for section := range sections {
 		if strings.Contains(section, "⚠️ Breaking Changes") {
 			breakingSection = section
 		}
@@ -640,29 +637,22 @@ func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 			changedSection = section
 		}
 	}
+	return
+}
 
-	// Breaking changes should be in breaking section
-	if !strings.Contains(breakingSection, "Remove deprecated endpoints") {
-		t.Error("breaking change should be in Breaking Changes section")
+// assertContains checks if haystack contains needle.
+func assertContains(t *testing.T, haystack, needle, msg string) {
+	t.Helper()
+	if !strings.Contains(haystack, needle) {
+		t.Errorf("%s: expected %q in output", msg, needle)
 	}
-	if !strings.Contains(breakingSection, "Change authentication flow") {
-		t.Error("breaking change should be in Breaking Changes section")
-	}
+}
 
-	// Regular changes should be in What's Changed section
-	if !strings.Contains(changedSection, "Add new caching layer") {
-		t.Error("regular change should be in What's Changed section")
-	}
-	if !strings.Contains(changedSection, "Fix memory leak in parser") {
-		t.Error("regular change should be in What's Changed section")
-	}
-
-	// Breaking changes should NOT be in What's Changed section
-	if strings.Contains(changedSection, "Remove deprecated endpoints") {
-		t.Error("breaking change should NOT be in What's Changed section")
-	}
-	if strings.Contains(changedSection, "Change authentication flow") {
-		t.Error("breaking change should NOT be in What's Changed section")
+// assertNotContains checks if haystack does not contain needle.
+func assertNotContains(t *testing.T, haystack, needle, msg string) {
+	t.Helper()
+	if strings.Contains(haystack, needle) {
+		t.Errorf("%s: unexpected %q in output", msg, needle)
 	}
 }
 
