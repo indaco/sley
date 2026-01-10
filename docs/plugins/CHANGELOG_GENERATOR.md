@@ -18,7 +18,7 @@ Built-in, **disabled by default**
 ## Features
 
 - Automatic changelog generation from conventional commits
-- Multiple changelog formats: grouped (default), Keep a Changelog, or GitHub
+- Multiple changelog formats: grouped (default), Keep a Changelog, GitHub, or minimal
 - Multiple output modes: versioned files, unified CHANGELOG.md, or both
 - Commit grouping by type (feat, fix, docs, etc.) with customizable labels
 - GitHub, GitLab, Codeberg, Bitbucket, and custom git hosting support
@@ -51,7 +51,7 @@ This plugin isn't trying to match the flexibility of dedicated changelog tools -
 
 ## PR Links in Changelog
 
-The changelog is generated from **commit messages**I. For PR numbers to appear in the changelog, they must be present in the commit message itself (format: `#123` or `(#123)`).
+The changelog is generated from **commit messages**. For PR numbers to appear in the changelog, they must be present in the commit message itself (format: `#123` or `(#123)`).
 
 **Option 1: Use Squash and Merge (Recommended)**
 
@@ -101,21 +101,21 @@ plugins:
 
 ### Configuration Options
 
-| Option                     | Type   | Default          | Description                                                          |
-| -------------------------- | ------ | ---------------- | -------------------------------------------------------------------- |
-| `enabled`                  | bool   | false            | Enable/disable the plugin                                            |
-| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                             |
-| `format`                   | string | `"grouped"`      | Changelog format: "grouped", "keepachangelog", or "github"           |
-| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                              |
-| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                       |
-| `header-template`          | string | (built-in)       | Path to custom header template                                       |
-| `repository`               | object | auto-detect      | Git repository configuration for links                               |
-| `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format) |
-| `use-default-icons`        | bool   | false            | Enable predefined icons for all groups and contributors              |
-| `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)     |
-| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                |
-| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                  |
-| `contributors`             | object | enabled          | Contributors section configuration                                   |
+| Option                     | Type   | Default          | Description                                                           |
+| -------------------------- | ------ | ---------------- | --------------------------------------------------------------------- |
+| `enabled`                  | bool   | false            | Enable/disable the plugin                                             |
+| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                              |
+| `format`                   | string | `"grouped"`      | Changelog format: "grouped", "keepachangelog", "github", or "minimal" |
+| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                               |
+| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                        |
+| `header-template`          | string | (built-in)       | Path to custom header template                                        |
+| `repository`               | object | auto-detect      | Git repository configuration for links                                |
+| `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format)  |
+| `use-default-icons`        | bool   | false            | Enable predefined icons for all groups and contributors               |
+| `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)      |
+| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                 |
+| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                   |
+| `contributors`             | object | enabled          | Contributors section configuration                                    |
 
 ### Output Modes
 
@@ -211,6 +211,30 @@ Key features:
 - Inline contributor attribution (`by @username`)
 - Inline PR references (`in #123`)
 - Automatic username extraction from git author email (supports GitHub, GitLab, Codeberg noreply formats)
+- Custom group configuration is ignored
+
+#### Format: `minimal`
+
+A condensed changelog style using short type abbreviations with minimal formatting. Useful for embedding in release notes, CI outputs, or when verbosity is undesirable.
+
+```markdown
+## v1.2.0
+
+- [Feat] Add new caching layer
+- [Feat] Implement user settings
+- [Fix] Memory leak in parser
+- [Docs] Update API documentation
+- [Breaking] Remove deprecated API
+- [Chore] Update dependencies
+```
+
+Key features:
+
+- Version header without date
+- Abbreviated type prefixes: `[Feat]`, `[Fix]`, `[Docs]`, `[Perf]`, `[Refactor]`, `[Style]`, `[Test]`, `[Chore]`, `[CI]`, `[Build]`, `[Revert]`
+- Breaking changes use `[Breaking]` prefix (overrides type)
+- Flat list (no grouping by type)
+- No links, author attribution, or PR references
 - Custom group configuration is ignored
 
 ### Groups Configuration

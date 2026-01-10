@@ -29,6 +29,11 @@ func TestNewFormatter(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:    "minimal format",
+			format:  "minimal",
+			wantErr: false,
+		},
+		{
 			name:    "unknown format",
 			format:  "invalid",
 			wantErr: true,

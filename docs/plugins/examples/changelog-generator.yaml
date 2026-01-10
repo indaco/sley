@@ -13,6 +13,7 @@ plugins:
     # - "grouped": Groups commits by type with custom labels and optional icons
     # - "keepachangelog": Keep a Changelog spec with standard sections
     # - "github": GitHub release style with inline contributor attribution
+    # - "minimal": Condensed format with abbreviated type prefixes (no links/authors)
     format: "grouped"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"

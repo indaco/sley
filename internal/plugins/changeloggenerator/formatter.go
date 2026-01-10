@@ -27,7 +27,9 @@ func NewFormatter(format string, config *Config) (Formatter, error) {
 		return &KeepAChangelogFormatter{config: config}, nil
 	case "github":
 		return &GitHubFormatter{config: config}, nil
+	case "minimal":
+		return &MinimalFormatter{config: config}, nil
 	default:
-		return nil, fmt.Errorf("unknown changelog format: %s (supported: grouped, keepachangelog, github)", format)
+		return nil, fmt.Errorf("unknown changelog format: %s (supported: grouped, keepachangelog, github, minimal)", format)
 	}
 }

@@ -46,17 +46,29 @@ plugins:
     enabled: true
     auto-sync: true
     files:
+      # JSON format
       - path: package.json
         field: version
         format: json
 
+      # YAML format
       - path: Chart.yaml
         field: version
         format: yaml
 
+      # TOML format with nested field
       - path: pyproject.toml
         field: tool.poetry.version
         format: toml
+
+      # Raw format (entire file content is the version)
+      - path: VERSION
+        format: raw
+
+      # Regex format (pattern with capturing group)
+      - path: src/version.go
+        format: regex
+        pattern: 'const Version = "(.*?)"'
 
   # Changelog Parser - Infers bump type from CHANGELOG.md
   changelog-parser:
@@ -70,33 +82,56 @@ plugins:
   changelog-generator:
     enabled: true
     mode: "both" # "versioned", "unified", or "both"
-    format: "grouped" # or "keepachangelog" for Keep a Changelog spec
+    # Formats: "grouped", "keepachangelog", "github", "minimal"
+    format: "grouped"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
+    # header-template: ".changes/header.md"  # Custom header for unified changelog
     repository:
       auto-detect: true
+    # Icon options (choose one approach):
+    # use-default-icons: true  # Simplest: apply predefined icons to all groups
+    # group-icons:             # Or: add icons to specific default groups
+    #   Enhancements: "🚀"
+    #   Fixes: "🩹"
     groups:
       - pattern: "^feat"
         label: "New Features"
+        icon: "🚀"
       - pattern: "^fix"
         label: "Bug Fixes"
+        icon: "🐛"
       - pattern: "^perf"
         label: "Performance"
+        icon: "⚡"
       - pattern: "^refactor"
         label: "Refactoring"
+        icon: "💅"
       - pattern: "^docs?"
         label: "Documentation"
+        icon: "📖"
       - pattern: "^test"
         label: "Tests"
+        icon: "✅"
       - pattern: "^ci|^build"
         label: "CI/Build"
+        icon: "🤖"
       - pattern: "^chore"
         label: "Maintenance"
+        icon: "🏡"
     exclude-patterns:
       - "^Merge"
       - "^WIP"
+      - "^fixup!"
+      - "^squash!"
+    include-non-conventional: false # Include non-conventional commits in "Other Changes"
     contributors:
       enabled: true
+      # format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+      # icon: "❤️"
+      show-new-contributors: true
+      # new-contributors-format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution"
+      # new-contributors-icon: "🎉"
 
   # Tag Manager - Automatically creates git tags
   tag-manager:
