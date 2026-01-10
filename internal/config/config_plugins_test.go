@@ -109,9 +109,118 @@ func TestTagManagerConfig_GetPrefix(t *testing.T) {
 	}
 }
 
+func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *TagManagerConfig
+		expected bool
+	}{
+		{
+			name:     "nil TagPrereleases - defaults to true",
+			config:   &TagManagerConfig{TagPrereleases: nil},
+			expected: true,
+		},
+		{
+			name:     "explicit true",
+			config:   &TagManagerConfig{TagPrereleases: boolPtr(true)},
+			expected: true,
+		},
+		{
+			name:     "explicit false",
+			config:   &TagManagerConfig{TagPrereleases: boolPtr(false)},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.GetTagPrereleases()
+			if result != tt.expected {
+				t.Errorf("GetTagPrereleases() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
 // boolPtr is a helper to create a pointer to a bool value
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+/* ------------------------------------------------------------------------- */
+/* TAG MANAGER TAG-PRERELEASES CONFIG YAML LOADING                          */
+/* ------------------------------------------------------------------------- */
+
+func TestTagManagerConfig_TagPrereleases_YAMLLoading(t *testing.T) {
+	tests := []struct {
+		name      string
+		yamlInput string
+		wantValue bool
+	}{
+		{
+			name: "tag-prereleases explicitly true",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    tag-prereleases: true
+`,
+			wantValue: true,
+		},
+		{
+			name: "tag-prereleases explicitly false",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    tag-prereleases: false
+`,
+			wantValue: false,
+		},
+		{
+			name: "tag-prereleases omitted (defaults to true)",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+`,
+			wantValue: true,
+		},
+		{
+			name: "tag-prereleases with other options",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    prefix: "v"
+    annotate: true
+    push: false
+    tag-prereleases: false
+`,
+			wantValue: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
+			runInTempDir(t, tmpPath, func() {
+				cfg, err := LoadConfigFn()
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+
+				if cfg.Plugins == nil || cfg.Plugins.TagManager == nil {
+					t.Fatal("expected tag-manager plugin config")
+				}
+
+				got := cfg.Plugins.TagManager.GetTagPrereleases()
+				if got != tt.wantValue {
+					t.Errorf("GetTagPrereleases() = %v, want %v", got, tt.wantValue)
+				}
+			})
+		})
+	}
 }
 
 /* ------------------------------------------------------------------------- */

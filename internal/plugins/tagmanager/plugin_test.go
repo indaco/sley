@@ -542,3 +542,130 @@ func TestTagManagerPlugin_NilConfig(t *testing.T) {
 		t.Errorf("FormatTagName() with nil config = %q, want %q", got, "v1.0.0")
 	}
 }
+
+func TestDefaultConfig_TagPrereleases(t *testing.T) {
+	cfg := DefaultConfig()
+
+	if cfg.TagPrereleases != true {
+		t.Errorf("DefaultConfig().TagPrereleases = %v, want true", cfg.TagPrereleases)
+	}
+}
+
+func TestTagManagerPlugin_ShouldCreateTag(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		version semver.SemVersion
+		want    bool
+	}{
+		{
+			name: "stable version with plugin enabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0,
+			},
+			want: true,
+		},
+		{
+			name: "stable version with plugin disabled",
+			cfg:  &Config{Enabled: false, AutoCreate: true, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0,
+			},
+			want: false,
+		},
+		{
+			name: "stable version with auto-create disabled",
+			cfg:  &Config{Enabled: true, AutoCreate: false, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0,
+			},
+			want: false,
+		},
+		{
+			name: "pre-release with TagPrereleases enabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1",
+			},
+			want: true,
+		},
+		{
+			name: "pre-release with TagPrereleases disabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: false},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1",
+			},
+			want: false,
+		},
+		{
+			name: "rc pre-release with TagPrereleases disabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: false},
+			version: semver.SemVersion{
+				Major: 2, Minor: 0, Patch: 0, PreRelease: "rc.1",
+			},
+			want: false,
+		},
+		{
+			name: "beta pre-release with TagPrereleases enabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 2, Patch: 3, PreRelease: "beta.2",
+			},
+			want: true,
+		},
+		{
+			name: "stable version after pre-release disabled setting",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: false},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0,
+			},
+			want: true,
+		},
+		{
+			name: "patch version with TagPrereleases disabled",
+			cfg:  &Config{Enabled: true, AutoCreate: true, TagPrereleases: false},
+			version: semver.SemVersion{
+				Major: 1, Minor: 2, Patch: 5,
+			},
+			want: true,
+		},
+		{
+			name: "plugin disabled with pre-release",
+			cfg:  &Config{Enabled: false, AutoCreate: true, TagPrereleases: true},
+			version: semver.SemVersion{
+				Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1",
+			},
+			want: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tm := NewTagManager(tt.cfg)
+			if got := tm.ShouldCreateTag(tt.version); got != tt.want {
+				t.Errorf("ShouldCreateTag() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
+	// With default config (TagPrereleases: true), pre-releases should be tagged
+	// Note: Default config has Enabled: false, so we need to enable it
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	tm := NewTagManager(cfg)
+
+	// Pre-release should be tagged with default config
+	preRelease := semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1"}
+	if got := tm.ShouldCreateTag(preRelease); got != true {
+		t.Errorf("ShouldCreateTag(preRelease) with default config = %v, want true", got)
+	}
+
+	// Stable release should also be tagged
+	stable := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
+	if got := tm.ShouldCreateTag(stable); got != true {
+		t.Errorf("ShouldCreateTag(stable) with default config = %v, want true", got)
+	}
+}

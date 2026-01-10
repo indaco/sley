@@ -142,6 +142,7 @@ plugins:
     prefix: v
     annotate: true
     push: false # Set to true for CI/CD pipelines
+    tag-prereleases: true # Set to false to skip tagging pre-release versions
 
   # Audit Log - Records version changes with metadata
   audit-log:

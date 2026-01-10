@@ -44,16 +44,22 @@ type Config struct {
 
 	// Push automatically pushes tags to remote after creation.
 	Push bool
+
+	// TagPrereleases controls whether tags are created for pre-release versions.
+	// When false, tags are only created for stable releases (major/minor/patch).
+	// Default: true (for backward compatibility).
+	TagPrereleases bool
 }
 
 // DefaultConfig returns the default tag manager configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Enabled:    false,
-		AutoCreate: true,
-		Prefix:     "v",
-		Annotate:   true,
-		Push:       false,
+		Enabled:        false,
+		AutoCreate:     true,
+		Prefix:         "v",
+		Annotate:       true,
+		Push:           false,
+		TagPrereleases: true,
 	}
 }
 
@@ -169,4 +175,22 @@ func (p *TagManagerPlugin) IsEnabled() bool {
 // GetConfig returns the plugin configuration.
 func (p *TagManagerPlugin) GetConfig() *Config {
 	return p.config
+}
+
+// ShouldCreateTag determines if a tag should be created for the given version.
+// Returns true if tagging is enabled and either:
+// - The version is a stable release (no pre-release), or
+// - The version is a pre-release and TagPrereleases is true.
+func (p *TagManagerPlugin) ShouldCreateTag(version semver.SemVersion) bool {
+	if !p.IsEnabled() {
+		return false
+	}
+
+	// If it's a pre-release version, check if pre-release tagging is enabled
+	if version.PreRelease != "" {
+		return p.config.TagPrereleases
+	}
+
+	// Stable releases are always tagged when the plugin is enabled
+	return true
 }
