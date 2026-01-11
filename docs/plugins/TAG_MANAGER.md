@@ -7,8 +7,7 @@ The tag manager plugin automatically creates and manages git tags synchronized w
 | Field       | Value                                            |
 | ----------- | ------------------------------------------------ |
 | Name        | `tag-manager`                                    |
-| Version     | v0.1.0                                           |
-| Type        | `tag-manager`                                    |
+| Type        | `automation`                                     |
 | Description | Manages git tags synchronized with version bumps |
 
 ## Status

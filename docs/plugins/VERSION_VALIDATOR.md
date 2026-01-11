@@ -7,8 +7,7 @@ The version validator plugin enforces versioning policies and constraints beyond
 | Field       | Value                                        |
 | ----------- | -------------------------------------------- |
 | Name        | `version-validator`                          |
-| Version     | v0.1.0                                       |
-| Type        | `version-validator`                          |
+| Type        | `validator`                                  |
 | Description | Enforces versioning policies and constraints |
 
 ## Status
@@ -126,10 +125,10 @@ You can disable individual rules using the `enabled` field:
 rules:
   - type: "pre-release-format"
     pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-    enabled: false  # Temporarily disable this rule
+    enabled: false # Temporarily disable this rule
   - type: "major-version-max"
     value: 10
-    enabled: true   # This rule is active
+    enabled: true # This rule is active
 ```
 
 ## Integration with Other Plugins

@@ -7,8 +7,7 @@ The release gate plugin enforces quality gates before allowing version bumps. It
 | Field       | Value                                     |
 | ----------- | ----------------------------------------- |
 | Name        | `release-gate`                            |
-| Version     | v0.1.0                                    |
-| Type        | `release-gate`                            |
+| Type        | `gate`                                    |
 | Description | Pre-bump validation for release readiness |
 
 ## Status

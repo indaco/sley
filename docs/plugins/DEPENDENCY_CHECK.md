@@ -7,8 +7,7 @@ The dependency check plugin validates and synchronizes version numbers across mu
 | Field       | Value                                |
 | ----------- | ------------------------------------ |
 | Name        | `dependency-check`                   |
-| Version     | v0.1.0                               |
-| Type        | `dependency-check`                   |
+| Type        | `sync`                               |
 | Description | Syncs version across dependent files |
 
 ## Status

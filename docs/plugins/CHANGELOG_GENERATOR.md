@@ -7,8 +7,7 @@ The changelog generator plugin automatically generates changelog entries from co
 | Field       | Value                                |
 | ----------- | ------------------------------------ |
 | Name        | `changelog-generator`                |
-| Version     | v0.1.0                               |
-| Type        | `changelog-generator`                |
+| Type        | `generator`                          |
 | Description | Generates changelog from git commits |
 
 ## Status

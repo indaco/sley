@@ -7,8 +7,7 @@ The audit log plugin records all version changes to a persistent log file with m
 | Field       | Value                                   |
 | ----------- | --------------------------------------- |
 | Name        | `audit-log`                             |
-| Version     | v0.1.0                                  |
-| Type        | `audit-log`                             |
+| Type        | `logger`                                |
 | Description | Records version history for audit trail |
 
 ## Status

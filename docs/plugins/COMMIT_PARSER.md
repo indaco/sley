@@ -7,8 +7,7 @@ The commit parser plugin analyzes git commit messages following the Conventional
 | Field       | Value                                          |
 | ----------- | ---------------------------------------------- |
 | Name        | `commit-parser`                                |
-| Version     | v0.1.0                                         |
-| Type        | `commit-parser`                                |
+| Type        | `analyzer`                                     |
 | Description | Parses conventional commits to infer bump type |
 
 ## Status

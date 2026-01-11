@@ -7,8 +7,7 @@ The changelog parser plugin parses CHANGELOG.md files in [Keep a Changelog](http
 | Field       | Value                              |
 | ----------- | ---------------------------------- |
 | Name        | `changelog-parser`                 |
-| Version     | v0.1.0                             |
-| Type        | `changelog-parser`                 |
+| Type        | `analyzer`                         |
 | Description | Infers bump type from CHANGELOG.md |
 
 ## Status
