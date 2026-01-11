@@ -43,11 +43,12 @@ func registerCommitParser(plugins *config.PluginConfig, registry *PluginRegistry
 func registerTagManager(plugins *config.PluginConfig, registry *PluginRegistry) {
 	if plugins.TagManager != nil && plugins.TagManager.Enabled {
 		tmCfg := &tagmanager.Config{
-			Enabled:    true,
-			AutoCreate: plugins.TagManager.GetAutoCreate(),
-			Prefix:     plugins.TagManager.GetPrefix(),
-			Annotate:   plugins.TagManager.GetAnnotate(),
-			Push:       plugins.TagManager.Push,
+			Enabled:        true,
+			AutoCreate:     plugins.TagManager.GetAutoCreate(),
+			Prefix:         plugins.TagManager.GetPrefix(),
+			Annotate:       plugins.TagManager.GetAnnotate(),
+			Push:           plugins.TagManager.Push,
+			TagPrereleases: plugins.TagManager.GetTagPrereleases(),
 		}
 		plugin := tagmanager.NewTagManager(tmCfg)
 		if err := registry.RegisterTagManager(plugin); err != nil {

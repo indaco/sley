@@ -28,6 +28,11 @@ type TagManagerConfig struct {
 
 	// Push automatically pushes tags to remote after creation.
 	Push bool `yaml:"push,omitempty"`
+
+	// TagPrereleases controls whether tags are created for pre-release versions.
+	// When false, tags are only created for stable releases (major/minor/patch).
+	// Default: true.
+	TagPrereleases *bool `yaml:"tag-prereleases,omitempty"`
 }
 
 // GetAutoCreate returns the auto-create setting with default true.
@@ -52,6 +57,14 @@ func (c *TagManagerConfig) GetPrefix() string {
 		return "v"
 	}
 	return c.Prefix
+}
+
+// GetTagPrereleases returns the tag-prereleases setting with default true.
+func (c *TagManagerConfig) GetTagPrereleases() bool {
+	if c.TagPrereleases == nil {
+		return true
+	}
+	return *c.TagPrereleases
 }
 
 // VersionValidatorConfig holds configuration for the version validator plugin.

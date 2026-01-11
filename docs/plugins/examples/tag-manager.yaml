@@ -1,0 +1,123 @@
+# Tag Manager Plugin Configuration Example
+# =========================================
+#
+# The tag-manager plugin automatically creates and manages git tags synchronized
+# with version bumps. It validates tag availability before bumping and creates
+# tags after successful version updates.
+#
+# See: docs/plugins/TAG_MANAGER.md for full documentation
+
+# Basic configuration - default settings
+# ---------------------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+
+# Standard configuration - common settings
+# -----------------------------------------
+plugins:
+  tag-manager:
+    enabled: true
+
+    # Automatically create tags after version bumps (default: true)
+    auto-create: true
+
+    # Prefix for tag names (default: "v")
+    # Examples: "v" → v1.2.3, "release-" → release-1.2.3, "" → 1.2.3
+    prefix: "v"
+
+    # Create annotated tags with metadata (default: true)
+    # Annotated tags include author, date, message, and optional GPG signature
+    # Set to false for lightweight tags (simple pointers to commits)
+    annotate: true
+
+    # Push tags to remote repository after creation (default: false)
+    # Set to true for CI/CD pipelines to automatically push tags
+    # Keep false for local development to avoid accidental pushes
+    push: false
+
+    # Create tags for pre-release versions (default: true)
+    # When true: All versions are tagged (1.0.0-alpha.1, 1.0.0, etc.)
+    # When false: Only stable releases are tagged (1.0.0), pre-releases are skipped
+    tag-prereleases: true
+
+# CI/CD configuration - auto-push tags
+# -------------------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+#     auto-create: true
+#     prefix: "v"
+#     annotate: true
+#     push: true  # Enable auto-push for CI/CD
+#     tag-prereleases: true
+
+# Production-only tagging - skip pre-releases
+# --------------------------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+#     auto-create: true
+#     prefix: "v"
+#     annotate: true
+#     push: true
+#     tag-prereleases: false  # Only tag stable releases
+
+# Custom prefix configuration
+# ----------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+#     prefix: "release-"  # Creates tags like release-1.2.3
+
+# No prefix configuration
+# ------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+#     prefix: ""  # Creates tags like 1.2.3 (no prefix)
+
+# Lightweight tags configuration
+# -------------------------------
+# plugins:
+#   tag-manager:
+#     enabled: true
+#     annotate: false  # Create lightweight tags instead of annotated
+
+# Integration with other plugins
+# -------------------------------
+# plugins:
+#   # Analyze commits and determine bump type
+#   commit-parser: true
+#
+#   # Generate changelog from commits
+#   changelog-generator:
+#     enabled: true
+#     mode: "both"
+#     format: "github"
+#
+#   # Create and push tags
+#   tag-manager:
+#     enabled: true
+#     prefix: "v"
+#     push: true
+#     tag-prereleases: true
+#
+# Flow: commit-parser analyzes → version updated → changelog generated → tag created and pushed
+
+# Use cases:
+# ----------
+# - Automatic tag creation after version bumps
+# - CI/CD pipeline integration with auto-push
+# - Production-only tagging (skip pre-releases)
+# - Custom tag naming conventions
+# - Integration with changelog generation
+
+# Best practices:
+# ---------------
+# - Use annotated tags for better metadata
+# - Keep push: false for local development
+# - Enable push: true only in CI/CD pipelines
+# - Use consistent prefix across your project
+# - Set tag-prereleases: false if you only want tags for stable releases
+# - Set tag-prereleases: true if you need to track all version changes
