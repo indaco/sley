@@ -1,141 +1,24 @@
+# Changelog Generator Plugin Example
+# See: docs/plugins/CHANGELOG_GENERATOR.md
+
 path: .version
 
 plugins:
-  # Changelog Generator - Creates changelog entries from conventional commits
   changelog-generator:
     enabled: true
-    # Output modes:
-    # - "versioned": Creates .changes/v{version}.md files (changie-style)
-    # - "unified": Appends to CHANGELOG.md
-    # - "both": Creates both versioned files and updates CHANGELOG.md
-    mode: "versioned"
-    # Formats:
-    # - "grouped": Groups commits by type with custom labels and optional icons
-    # - "keepachangelog": Keep a Changelog spec with standard sections
-    # - "github": GitHub release style with inline contributor attribution
-    # - "minimal": Condensed format with abbreviated type prefixes (no links/authors)
-    format: "grouped"
+    mode: "versioned" # "versioned", "unified", or "both"
+    format: "grouped" # "grouped", "keepachangelog", "github", or "minimal"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
-    # Custom header template (optional)
-    # header-template: ".changes/header.md"
-
-    # Repository configuration for commit/compare links
     repository:
-      # Auto-detect from git remote (recommended)
       auto-detect: true
-      # Or specify manually:
-      # provider: "github"  # github, gitlab, codeberg, gitea, bitbucket, sourcehut, custom
-      # host: "github.com"
-      # owner: "myorg"
-      # repo: "myproject"
-
-    # =========================================================================
-    # OPTION 1: Use default icons (SIMPLEST - RECOMMENDED)
-    # =========================================================================
-    # Enable use-default-icons to automatically apply predefined icons to all
-    # groups and contributors. This is the simplest way to get styled changelogs.
     use-default-icons: true
-
-    # =========================================================================
-    # OPTION 2: Add icons to default groups (uncomment to use instead)
-    # =========================================================================
-    # Use group-icons to manually add icons while keeping default patterns and
-    # labels. Keys must match default labels exactly: Enhancements, Fixes,
-    # Refactors, Documentation, Performance, Styling, Tests, Chores, CI, Build,
-    # Reverts. Consider using use-default-icons: true instead for simplicity.
-    #
-    # group-icons:
-    #   Enhancements: "🚀"
-    #   Fixes: "🩹"
-    #   Refactors: "💅"
-    #   Documentation: "📖"
-    #   Performance: "⚡"
-    #   Styling: "🎨"
-    #   Tests: "✅"
-    #   Chores: "🏡"
-    #   CI: "🤖"
-    #   Build: "📦"
-    #   Reverts: "◀️"
-    #
-    # breaking-changes-icon: "💥"  # Override the Breaking Changes icon (github/keepachangelog formats)
-
-    # =========================================================================
-    # OPTION 3: Full custom groups (uncomment to use instead)
-    # =========================================================================
-    # Use groups for complete control over patterns, labels, icons, and order.
-    # When groups is specified, group-icons is ignored.
-    #
-    # groups:
-    #   - pattern: "^feat"
-    #     label: "New Features"
-    #     icon: "🚀"
-    #
-    #   - pattern: "^fix"
-    #     label: "Bug Fixes"
-    #     icon: "🐛"
-    #
-    #   - pattern: "^perf"
-    #     label: "Performance Improvements"
-    #     icon: "⚡"
-    #
-    #   - pattern: "^refactor"
-    #     label: "Code Refactoring"
-    #     icon: "💅"
-    #
-    #   - pattern: "^docs?"
-    #     label: "Documentation"
-    #     icon: "📖"
-    #
-    #   - pattern: "^test"
-    #     label: "Tests"
-    #     icon: "✅"
-    #
-    #   - pattern: "^ci"
-    #     label: "CI/CD"
-    #     icon: "🤖"
-    #
-    #   - pattern: "^build"
-    #     label: "Build System"
-    #     icon: "📦"
-    #
-    #   - pattern: "^chore"
-    #     label: "Maintenance"
-    #     icon: "🏡"
-
-    # Exclude patterns - commits matching these are filtered out
     exclude-patterns:
       - "^Merge"
       - "^WIP"
-      - "^wip"
       - "^fixup!"
       - "^squash!"
-
-    # Include non-conventional commits in "Other Changes" section
-    # When false (default), non-conventional commits are skipped with a warning
     include-non-conventional: false
-
-    # Contributors section
     contributors:
       enabled: true
-      # Custom format template (optional)
-      # format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
-      # icon: ""  # Optional icon before "Contributors" header
-
-      # New Contributors section - detects first-time contributors
-      show-new-contributors: true # Enable "New Contributors" section (default: true)
-      # new-contributors-format: ""  # Custom format for new contributor entries
-      # new-contributors-icon: ""  # Optional icon before "New Contributors" header
-      # Available variables: {{.Name}}, {{.Username}}, {{.Host}}, {{.PRNumber}}, {{.CommitHash}}
-
-  # Commit parser works well with changelog generator
-  # It determines bump type, generator creates the changelog
-  commit-parser: true
-
-  # Tag manager can create tags after changelog is generated
-  tag-manager:
-    enabled: true
-    auto-create: true
-    prefix: "v"
-    annotate: true
-    push: false
+      show-new-contributors: true

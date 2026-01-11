@@ -1,138 +1,22 @@
-# Version Validator Plugin Configuration Example
-# ===============================================
-#
-# The version-validator plugin enforces versioning policies and constraints
-# beyond basic SemVer syntax validation. It validates version bumps against
-# configurable rules before the version file is updated.
-#
-# See: docs/plugins/VERSION_VALIDATOR.md for full documentation
+# Version Validator Plugin Example
+# See: docs/plugins/VERSION_VALIDATOR.md
 
 path: .version
 
-# Basic configuration - pre-release format only
-# ----------------------------------------------
-# plugins:
-#   version-validator:
-#     enabled: true
-#     rules:
-#       - type: "pre-release-format"
-#         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-
-# Standard configuration - multiple rules
-# ----------------------------------------
 plugins:
   version-validator:
     enabled: true
     rules:
-      # Enforce standard pre-release labels
-      # Allows: alpha, alpha.1, beta, beta.2, rc, rc.1
-      # Rejects: preview, snapshot, dev
       - type: "pre-release-format"
         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-        # enabled: false  # Optionally disable individual rules
 
-      # Limit major version to prevent runaway versioning
       - type: "major-version-max"
         value: 10
 
-      # Branch-based constraints for release workflow
-      # Release branches: patch only
       - type: "branch-constraint"
         branch: "release/*"
         allowed: ["patch"]
 
-      # Main branch: no major bumps (use release branches)
       - type: "branch-constraint"
         branch: "main"
         allowed: ["minor", "patch"]
-
-# Available Rule Types
-# --------------------
-#
-# | Rule Type                    | Description                               |
-# |------------------------------|-------------------------------------------|
-# | pre-release-format           | Validates pre-release label matches regex |
-# | major-version-max            | Limits maximum major version number       |
-# | minor-version-max            | Limits maximum minor version number       |
-# | patch-version-max            | Limits maximum patch version number       |
-# | require-pre-release-for-0x   | Requires pre-release label for 0.x        |
-# | branch-constraint            | Restricts bump types on branches          |
-# | no-major-bump                | Disallows major version bumps             |
-# | no-minor-bump                | Disallows minor version bumps             |
-# | no-patch-bump                | Disallows patch version bumps             |
-
-# Strict configuration - production environment
-# ---------------------------------------------
-# plugins:
-#   version-validator:
-#     enabled: true
-#     rules:
-#       # Only standard pre-release labels
-#       - type: "pre-release-format"
-#         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-#
-#       # Version limits
-#       - type: "major-version-max"
-#         value: 10
-#       - type: "minor-version-max"
-#         value: 99
-#
-#       # Main branch: minor and patch only
-#       - type: "branch-constraint"
-#         branch: "main"
-#         allowed: ["minor", "patch"]
-#
-#       # Release branches: patch only
-#       - type: "branch-constraint"
-#         branch: "release/*"
-#         allowed: ["patch"]
-#
-#       # Hotfix branches: patch only
-#       - type: "branch-constraint"
-#         branch: "hotfix/*"
-#         allowed: ["patch"]
-
-# Maintenance mode - freeze major versions
-# ----------------------------------------
-# plugins:
-#   version-validator:
-#     enabled: true
-#     rules:
-#       - type: "no-major-bump"
-#         enabled: true
-
-# Development mode - require pre-release for 0.x
-# -----------------------------------------------
-# plugins:
-#   version-validator:
-#     enabled: true
-#     rules:
-#       - type: "require-pre-release-for-0x"
-#         enabled: true
-
-# Integration with other plugins
-# ------------------------------
-# plugins:
-#   version-validator:
-#     enabled: true
-#     rules:
-#       - type: "major-version-max"
-#         value: 10
-#   dependency-check:
-#     enabled: true
-#   tag-manager:
-#     enabled: true
-#
-# Flow: version-validator checks -> dependency-check validates ->
-#       version updated -> files synced -> tag created
-
-# Example error messages
-# ----------------------
-# $ sley bump minor --pre preview
-# Error: pre-release label "preview" does not match required pattern
-#
-# $ sley bump major  (at version 10.0.0)
-# Error: major version 11 exceeds maximum allowed value 10
-#
-# $ sley bump major  (on main branch)
-# Error: bump type "major" is not allowed on branch "main"

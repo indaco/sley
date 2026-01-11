@@ -1,44 +1,15 @@
+# Changelog Parser Plugin Example
+# See: docs/plugins/CHANGELOG_PARSER.md
+
 path: .version
 
 plugins:
-  # Enable changelog parser for automatic bump type inference
   changelog-parser:
     enabled: true
     path: "CHANGELOG.md"
     require-unreleased-section: true
     infer-bump-type: true
-    # Priority determines which parser takes precedence
-    # "changelog" = changelog parser takes priority over commit parser
-    # "commits" = commit parser takes priority over changelog parser
-    priority: "changelog"
+    priority: "changelog" # "changelog" or "commits"
 
-  # Commit parser can work alongside changelog parser
-  # When priority is "changelog", commits are used as fallback
+  # Commit parser as fallback when priority is "changelog"
   commit-parser: true
-
-  # Tag manager to auto-create git tags on bump
-  tag-manager:
-    enabled: true
-    auto-create: true
-    prefix: "v"
-    annotate: true
-    push: false
-
-  # Version validator to enforce policies
-  version-validator:
-    enabled: true
-    rules:
-      - type: "pre-release-format"
-        pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-
-  # Dependency checker to keep versions in sync
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: "package.json"
-        field: "version"
-        format: "json"
-      - path: "Chart.yaml"
-        field: "version"
-        format: "yaml"

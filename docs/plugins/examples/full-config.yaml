@@ -1,150 +1,97 @@
-# Full plugin configuration example
-# This demonstrates all available plugins working together
+# Full Plugin Configuration Example
+# All plugins working together
 
 path: .version
 
 plugins:
-  # Commit Parser - Analyzes conventional commits to determine bump type
-  # Enabled by default
+  # Commit Parser (enabled by default)
   commit-parser: true
 
-  # Release Gate - Pre-bump validation and quality gates
+  # Release Gate
   release-gate:
     enabled: true
     require-clean-worktree: true
     blocked-on-wip-commits: true
-    require-ci-pass: false  # Set to true to require passing CI checks before bumps
+    require-ci-pass: false
     allowed-branches:
       - "main"
       - "release/*"
     blocked-branches:
       - "experimental/*"
 
-  # Version Validator - Enforces versioning policies
+  # Version Validator
   version-validator:
     enabled: true
     rules:
-      # Only allow standard pre-release labels
       - type: pre-release-format
         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
-
-      # Limit major version growth
       - type: major-version-max
         value: 10
-
-      # Release branches: patch only
       - type: branch-constraint
         branch: "release/*"
         allowed: ["patch"]
-
-      # Main branch: no major bumps
       - type: branch-constraint
         branch: "main"
         allowed: ["minor", "patch"]
 
-  # Dependency Check - Validates and syncs versions across files
+  # Dependency Check
   dependency-check:
     enabled: true
     auto-sync: true
     files:
-      # JSON format
       - path: package.json
         field: version
         format: json
-
-      # YAML format
       - path: Chart.yaml
         field: version
         format: yaml
-
-      # TOML format with nested field
       - path: pyproject.toml
         field: tool.poetry.version
         format: toml
-
-      # Raw format (entire file content is the version)
       - path: VERSION
         format: raw
-
-      # Regex format (pattern with capturing group)
       - path: src/version.go
         format: regex
         pattern: 'const Version = "(.*?)"'
 
-  # Changelog Parser - Infers bump type from CHANGELOG.md
+  # Changelog Parser
   changelog-parser:
     enabled: true
     path: CHANGELOG.md
     require-unreleased-section: true
     infer-bump-type: true
-    priority: commits # "changelog" to prefer changelog over commits
+    priority: commits
 
-  # Changelog Generator - Creates changelog entries from conventional commits
+  # Changelog Generator
   changelog-generator:
     enabled: true
-    mode: "both" # "versioned", "unified", or "both"
-    # Formats: "grouped", "keepachangelog", "github", "minimal"
+    mode: "both"
     format: "grouped"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
-    # header-template: ".changes/header.md"  # Custom header for unified changelog
     repository:
       auto-detect: true
-    # Icon options (choose one approach):
-    # use-default-icons: true  # Simplest: apply predefined icons to all groups
-    # group-icons:             # Or: add icons to specific default groups
-    #   Enhancements: "🚀"
-    #   Fixes: "🩹"
-    # breaking-changes-icon: "💥"  # Custom icon for Breaking Changes section (only applies to github and keepachangelog formats)
-    groups:
-      - pattern: "^feat"
-        label: "New Features"
-        icon: "🚀"
-      - pattern: "^fix"
-        label: "Bug Fixes"
-        icon: "🐛"
-      - pattern: "^perf"
-        label: "Performance"
-        icon: "⚡"
-      - pattern: "^refactor"
-        label: "Refactoring"
-        icon: "💅"
-      - pattern: "^docs?"
-        label: "Documentation"
-        icon: "📖"
-      - pattern: "^test"
-        label: "Tests"
-        icon: "✅"
-      - pattern: "^ci|^build"
-        label: "CI/Build"
-        icon: "🤖"
-      - pattern: "^chore"
-        label: "Maintenance"
-        icon: "🏡"
+    use-default-icons: true
     exclude-patterns:
       - "^Merge"
       - "^WIP"
       - "^fixup!"
       - "^squash!"
-    include-non-conventional: false # Include non-conventional commits in "Other Changes"
+    include-non-conventional: false
     contributors:
       enabled: true
-      # format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
-      # icon: "❤️"
       show-new-contributors: true
-      # new-contributors-format: "- [@{{.Username}}](https://{{.Host}}/{{.Username}}) made their first contribution"
-      # new-contributors-icon: "🎉"
 
-  # Tag Manager - Automatically creates git tags
+  # Tag Manager
   tag-manager:
     enabled: true
     auto-create: true
     prefix: v
     annotate: true
-    push: false # Set to true for CI/CD pipelines
-    tag-prereleases: true # Set to false to skip tagging pre-release versions
+    push: false
+    tag-prereleases: true
 
-  # Audit Log - Records version changes with metadata
+  # Audit Log
   audit-log:
     enabled: true
     path: ".version-history.json"
