@@ -1,92 +1,14 @@
-# Audit Log Plugin Configuration Example
-# =======================================
-#
-# The audit-log plugin records all version changes to a log file with metadata.
-# This provides a complete history of version bumps including author, timestamp,
-# commit SHA, and branch information.
-#
-# See: docs/plugins/AUDIT_LOG.md for full documentation
+# Audit Log Plugin Example
+# See: docs/plugins/AUDIT_LOG.md
 
-# Basic configuration - JSON format
-# ---------------------------------
-# plugins:
-#   audit-log:
-#     enabled: true
+path: .version
 
-# Standard configuration - full metadata
-# --------------------------------------
 plugins:
   audit-log:
     enabled: true
-
-    # Path to the audit log file (relative to project root)
     path: ".version-history.json"
-
-    # Output format: "json" or "yaml"
-    format: "json"
-
-    # Include git author (name and email)
+    format: "json" # or "yaml"
     include-author: true
-
-    # Include ISO 8601 timestamp
     include-timestamp: true
-
-    # Include current commit SHA
     include-commit-sha: true
-
-    # Include current branch name
     include-branch: true
-
-# YAML format configuration
-# -------------------------
-# plugins:
-#   audit-log:
-#     enabled: true
-#     path: ".version-history.yaml"
-#     format: "yaml"
-#     include-author: true
-#     include-timestamp: true
-#     include-commit-sha: true
-#     include-branch: true
-
-# Minimal configuration (timestamp only)
-# --------------------------------------
-# plugins:
-#   audit-log:
-#     enabled: true
-#     path: ".version-history.json"
-#     include-author: false
-#     include-commit-sha: false
-#     include-branch: false
-
-# Example output (.version-history.json):
-# ---------------------------------------
-# {
-#   "entries": [
-#     {
-#       "timestamp": "2026-01-04T12:00:00Z",
-#       "previous_version": "1.2.3",
-#       "new_version": "1.3.0",
-#       "bump_type": "minor",
-#       "author": "John Doe <john@example.com>",
-#       "commit_sha": "abc1234def5678",
-#       "branch": "main"
-#     },
-#     {
-#       "timestamp": "2026-01-03T10:30:00Z",
-#       "previous_version": "1.2.2",
-#       "new_version": "1.2.3",
-#       "bump_type": "patch",
-#       "author": "Jane Smith <jane@example.com>",
-#       "commit_sha": "123abc456def",
-#       "branch": "hotfix/urgent-fix"
-#     }
-#   ]
-# }
-
-# Use cases:
-# ----------
-# - Compliance and auditing requirements
-# - Debugging version history ("who bumped to v2.0.0?")
-# - Release tracking and reporting
-# - CI/CD pipeline integration

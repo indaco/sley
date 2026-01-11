@@ -1,73 +1,33 @@
+# Dependency Check Plugin Example
+# See: docs/plugins/DEPENDENCY_CHECK.md
+
 path: .version
 
 plugins:
-  # Dependency check plugin - validates and syncs version numbers across files
   dependency-check:
     enabled: true
-    auto-sync: true # Automatically update all files during version bumps
+    auto-sync: true
     files:
-      # JSON files
+      # JSON
       - path: package.json
         field: version
         format: json
 
-      - path: package-lock.json
-        field: version
-        format: json
-
-      # Nested JSON field example
-      - path: composer.json
-        field: extra.version
-        format: json
-
-      # YAML files
+      # YAML
       - path: Chart.yaml
         field: version
         format: yaml
 
-      - path: pubspec.yaml
-        field: version
-        format: yaml
-
-      # TOML files
+      # TOML (nested field)
       - path: pyproject.toml
         field: tool.poetry.version
         format: toml
 
-      - path: Cargo.toml
-        field: package.version
-        format: toml
-
-      # Raw version files (entire file content is the version)
+      # Raw (entire file is the version)
       - path: VERSION
         format: raw
 
-      - path: version.txt
-        format: raw
-
-      # Regex pattern matching
+      # Regex (pattern with capturing group)
       - path: src/version.go
         format: regex
         pattern: 'const Version = "(.*?)"'
-
-      - path: CMakeLists.txt
-        format: regex
-        pattern: 'project\(.*? VERSION (.*?)\)'
-
-      - path: build.gradle
-        format: regex
-        pattern: 'version = "(.*?)"'
-
-  # Other plugins work seamlessly with dependency-check
-  tag-manager:
-    enabled: true
-    auto-create: true
-    prefix: v
-    annotate: true
-    push: false
-
-  version-validator:
-    enabled: true
-    rules:
-      - type: pre-release-format
-        pattern: '^(alpha|beta|rc)\.\d+$'
