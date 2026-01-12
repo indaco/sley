@@ -295,6 +295,63 @@ func TestRegisterLocalExtension_DefaultConfigPathUsed_OtherDir(t *testing.T) {
 	}
 }
 
+func TestRegisterLocalExtension_DotExtensionDir(t *testing.T) {
+	content := "path: .version"
+	tmpConfigPath := testutils.WriteTempConfig(t, content)
+	tmpDir := filepath.Dir(tmpConfigPath)
+	tmpExtensionDir := setupextensionDir(t, "mock-extension", "1.0.0")
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+
+	// Change to the directory of the temporary config file
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to change directory to %s: %v", tmpDir, err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+
+	// Register the extension with "." as extension directory
+	// This should install to ./.sley-extensions/, NOT $HOME/.sley-extensions/
+	err = RegisterLocalExtensionFn(tmpExtensionDir, tmpConfigPath, ".")
+	if err != nil {
+		t.Fatalf("expected no error on extension registration, got: %v", err)
+	}
+
+	// Verify extension was installed to current directory, not home
+	expectedPath := filepath.Join(tmpDir, ".sley-extensions", "mock-extension")
+	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+		t.Fatalf("extension should be installed at %s but was not found", expectedPath)
+	}
+
+	// Verify it was NOT installed to home directory
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		t.Fatalf("failed to get user home directory: %v", err)
+	}
+	homePath := filepath.Join(homeDir, ".sley-extensions", "mock-extension")
+	if _, err := os.Stat(homePath); err == nil {
+		// Clean up if it exists (shouldn't happen)
+		_ = os.RemoveAll(homePath)
+		t.Fatalf("extension should NOT be installed at home directory %s", homePath)
+	}
+
+	// Ensure the config file has the extension registered
+	cfg, err := config.LoadConfigFn()
+	if err != nil {
+		t.Fatalf("expected no error loading config, got: %v", err)
+	}
+
+	if len(cfg.Extensions) != 1 {
+		t.Fatalf("expected 1 extension in config, got: %d", len(cfg.Extensions))
+	}
+}
+
 func TestRegisterLocalExtension_UserHomeDirError(t *testing.T) {
 	// Backup and restore the original function
 	originalFn := userHomeDirFn

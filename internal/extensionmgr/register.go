@@ -32,7 +32,7 @@ func registerLocalExtension(localPath, configPath, extensionDirectory string) er
 
 	// 3. Resolve base extension directory
 	baseDir := extensionDirectory
-	if baseDir == "" || baseDir == "." {
+	if baseDir == "" {
 		homeDir, err := userHomeDirFn()
 		if err != nil {
 			return fmt.Errorf("failed to get user home directory: %w", err)
