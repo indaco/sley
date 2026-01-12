@@ -267,10 +267,24 @@ func (v *Validator) validateChangelogGeneratorConfig() {
 	validFormats := map[string]bool{
 		"grouped":        true,
 		"keepachangelog": true,
+		"github":         true,
+		"minimal":        true,
 	}
 	if !validFormats[format] {
 		v.addValidation("Plugin: changelog-generator", false,
-			fmt.Sprintf("Invalid format '%s': must be 'grouped' or 'keepachangelog'", format), false)
+			fmt.Sprintf("Invalid format '%s': must be 'grouped', 'keepachangelog', 'github', or 'minimal'", format), false)
+	}
+
+	// Validate merge-after
+	mergeAfter := cfg.GetMergeAfter()
+	validMergeAfter := map[string]bool{
+		"immediate": true,
+		"manual":    true,
+		"prompt":    true,
+	}
+	if !validMergeAfter[mergeAfter] {
+		v.addValidation("Plugin: changelog-generator", false,
+			fmt.Sprintf("Invalid merge-after '%s': must be 'immediate', 'manual', or 'prompt'", mergeAfter), false)
 	}
 
 	// Validate repository config

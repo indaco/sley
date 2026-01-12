@@ -348,6 +348,292 @@ func TestChangelogGeneratorInterface(t *testing.T) {
 	var _ ChangelogGenerator = (*ChangelogGeneratorPlugin)(nil)
 }
 
+func TestHandleMergeAfter_Immediate(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+
+	// Create versioned changelog files
+	if err := os.MkdirAll(changesDir, 0755); err != nil {
+		t.Fatalf("failed to create changes directory: %v", err)
+	}
+	v1Content := "## v1.0.0\n\n### Features\n\n- Initial release\n"
+	if err := os.WriteFile(filepath.Join(changesDir, "v1.0.0.md"), []byte(v1Content), 0644); err != nil {
+		t.Fatalf("failed to write v1.0.0.md: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.Mode = "versioned"
+	cfg.MergeAfter = "immediate"
+	cfg.ChangesDir = changesDir
+	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Mock GetCommitsWithMetaFn
+	originalFn := GetCommitsWithMetaFn
+	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+		return []CommitInfo{
+			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
+		}, nil
+	}
+	defer func() { GetCommitsWithMetaFn = originalFn }()
+
+	err = plugin.GenerateForVersion("v1.1.0", "v1.0.0", "minor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that CHANGELOG.md was created (merge happened)
+	if _, err := os.Stat(cfg.ChangelogPath); os.IsNotExist(err) {
+		t.Errorf("expected CHANGELOG.md to be created at %s", cfg.ChangelogPath)
+	}
+
+	// Read and verify content
+	content, err := os.ReadFile(cfg.ChangelogPath)
+	if err != nil {
+		t.Fatalf("failed to read CHANGELOG.md: %v", err)
+	}
+
+	// Should contain both versions
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "v1.1.0") {
+		t.Error("expected CHANGELOG.md to contain v1.1.0")
+	}
+	if !strings.Contains(contentStr, "v1.0.0") {
+		t.Error("expected CHANGELOG.md to contain v1.0.0")
+	}
+}
+
+func TestHandleMergeAfter_Manual(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.Mode = "versioned"
+	cfg.MergeAfter = "manual"
+	cfg.ChangesDir = changesDir
+	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Mock GetCommitsWithMetaFn
+	originalFn := GetCommitsWithMetaFn
+	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+		return []CommitInfo{
+			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
+		}, nil
+	}
+	defer func() { GetCommitsWithMetaFn = originalFn }()
+
+	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that versioned file was created
+	versionedPath := filepath.Join(changesDir, "v1.0.0.md")
+	if _, err := os.Stat(versionedPath); os.IsNotExist(err) {
+		t.Errorf("expected versioned file at %s", versionedPath)
+	}
+
+	// Verify that CHANGELOG.md was NOT created (no auto-merge)
+	if _, err := os.Stat(cfg.ChangelogPath); !os.IsNotExist(err) {
+		t.Errorf("expected CHANGELOG.md to NOT be created when merge-after is manual")
+	}
+}
+
+func TestHandleMergeAfter_Prompt_NonInteractive(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.Mode = "versioned"
+	cfg.MergeAfter = "prompt"
+	cfg.ChangesDir = changesDir
+	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Mock GetCommitsWithMetaFn
+	originalCommitsFn := GetCommitsWithMetaFn
+	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+		return []CommitInfo{
+			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
+		}, nil
+	}
+	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
+
+	// Mock IsInteractiveFn to return false (non-interactive environment)
+	originalInteractiveFn := IsInteractiveFn
+	IsInteractiveFn = func() bool { return false }
+	defer func() { IsInteractiveFn = originalInteractiveFn }()
+
+	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that versioned file was created
+	versionedPath := filepath.Join(changesDir, "v1.0.0.md")
+	if _, err := os.Stat(versionedPath); os.IsNotExist(err) {
+		t.Errorf("expected versioned file at %s", versionedPath)
+	}
+
+	// Verify that CHANGELOG.md was NOT created (skipped in non-interactive)
+	if _, err := os.Stat(cfg.ChangelogPath); !os.IsNotExist(err) {
+		t.Errorf("expected CHANGELOG.md to NOT be created in non-interactive environment")
+	}
+}
+
+func TestHandleMergeAfter_Prompt_Interactive_Confirmed(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+
+	// Create a versioned changelog file first
+	if err := os.MkdirAll(changesDir, 0755); err != nil {
+		t.Fatalf("failed to create changes directory: %v", err)
+	}
+	v1Content := "## v0.9.0\n\n### Features\n\n- Previous release\n"
+	if err := os.WriteFile(filepath.Join(changesDir, "v0.9.0.md"), []byte(v1Content), 0644); err != nil {
+		t.Fatalf("failed to write v0.9.0.md: %v", err)
+	}
+
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.Mode = "versioned"
+	cfg.MergeAfter = "prompt"
+	cfg.ChangesDir = changesDir
+	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Mock GetCommitsWithMetaFn
+	originalCommitsFn := GetCommitsWithMetaFn
+	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+		return []CommitInfo{
+			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
+		}, nil
+	}
+	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
+
+	// Mock IsInteractiveFn to return true (interactive environment)
+	originalInteractiveFn := IsInteractiveFn
+	IsInteractiveFn = func() bool { return true }
+	defer func() { IsInteractiveFn = originalInteractiveFn }()
+
+	// Mock ConfirmMergeFn to return true (user confirmed)
+	originalConfirmFn := ConfirmMergeFn
+	ConfirmMergeFn = func(message string) (bool, error) { return true, nil }
+	defer func() { ConfirmMergeFn = originalConfirmFn }()
+
+	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "minor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that CHANGELOG.md was created (user confirmed merge)
+	if _, err := os.Stat(cfg.ChangelogPath); os.IsNotExist(err) {
+		t.Errorf("expected CHANGELOG.md to be created when user confirms")
+	}
+}
+
+func TestHandleMergeAfter_Prompt_Interactive_Declined(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+
+	cfg := DefaultConfig()
+	cfg.Enabled = true
+	cfg.Mode = "versioned"
+	cfg.MergeAfter = "prompt"
+	cfg.ChangesDir = changesDir
+	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+	cfg.Repository = &RepositoryConfig{
+		Provider: "github",
+		Host:     "github.com",
+		Owner:    "testowner",
+		Repo:     "testrepo",
+	}
+
+	plugin, err := NewChangelogGenerator(cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Mock GetCommitsWithMetaFn
+	originalCommitsFn := GetCommitsWithMetaFn
+	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+		return []CommitInfo{
+			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
+		}, nil
+	}
+	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
+
+	// Mock IsInteractiveFn to return true (interactive environment)
+	originalInteractiveFn := IsInteractiveFn
+	IsInteractiveFn = func() bool { return true }
+	defer func() { IsInteractiveFn = originalInteractiveFn }()
+
+	// Mock ConfirmMergeFn to return false (user declined)
+	originalConfirmFn := ConfirmMergeFn
+	ConfirmMergeFn = func(message string) (bool, error) { return false, nil }
+	defer func() { ConfirmMergeFn = originalConfirmFn }()
+
+	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify that versioned file was created
+	versionedPath := filepath.Join(changesDir, "v1.0.0.md")
+	if _, err := os.Stat(versionedPath); os.IsNotExist(err) {
+		t.Errorf("expected versioned file at %s", versionedPath)
+	}
+
+	// Verify that CHANGELOG.md was NOT created (user declined)
+	if _, err := os.Stat(cfg.ChangelogPath); !os.IsNotExist(err) {
+		t.Errorf("expected CHANGELOG.md to NOT be created when user declines")
+	}
+}
+
 func TestWriteChangelog_Versioned(t *testing.T) {
 	tmpDir := t.TempDir()
 

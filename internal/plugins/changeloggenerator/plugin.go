@@ -3,6 +3,8 @@ package changeloggenerator
 import (
 	"fmt"
 	"os"
+
+	"github.com/indaco/sley/internal/tui"
 )
 
 // ChangelogGenerator defines the interface for changelog generation.
@@ -29,6 +31,17 @@ type ChangelogGeneratorPlugin struct {
 
 // Ensure ChangelogGeneratorPlugin implements ChangelogGenerator.
 var _ ChangelogGenerator = (*ChangelogGeneratorPlugin)(nil)
+
+// IsInteractiveFn is a function variable for checking if the environment is interactive.
+// Can be overridden in tests.
+var IsInteractiveFn = tui.IsInteractive
+
+// ConfirmMergeFn is a function variable for prompting user confirmation.
+// Can be overridden in tests.
+var ConfirmMergeFn = func(message string) (bool, error) {
+	prompter := tui.NewModulePrompt(nil)
+	return prompter.ConfirmOperation(message)
+}
 
 // NewChangelogGenerator creates a new changelog generator plugin.
 func NewChangelogGenerator(cfg *Config) (*ChangelogGeneratorPlugin, error) {
@@ -106,7 +119,11 @@ func (p *ChangelogGeneratorPlugin) writeChangelog(version, content string) error
 
 	switch mode {
 	case "versioned":
-		return p.generator.WriteVersionedFile(version, content)
+		if err := p.generator.WriteVersionedFile(version, content); err != nil {
+			return err
+		}
+		// Handle merge-after for versioned mode
+		return p.handleMergeAfter()
 	case "unified":
 		return p.generator.WriteUnifiedChangelog(content)
 	case "both":
@@ -116,5 +133,44 @@ func (p *ChangelogGeneratorPlugin) writeChangelog(version, content string) error
 		return p.generator.WriteUnifiedChangelog(content)
 	default:
 		return fmt.Errorf("unknown mode: %s", mode)
+	}
+}
+
+// handleMergeAfter handles the merge-after behavior for versioned changelog files.
+func (p *ChangelogGeneratorPlugin) handleMergeAfter() error {
+	switch p.config.MergeAfter {
+	case "immediate":
+		if err := p.generator.MergeVersionedFiles(); err != nil {
+			return fmt.Errorf("failed to merge changelog files: %w", err)
+		}
+		fmt.Fprintf(os.Stdout, "Merged versioned changelog files into %s\n", p.config.ChangelogPath)
+		return nil
+
+	case "prompt":
+		// Skip prompt if not in interactive environment
+		if !IsInteractiveFn() {
+			fmt.Fprintf(os.Stdout, "Non-interactive environment detected, skipping changelog merge prompt.\n")
+			return nil
+		}
+		confirmed, err := ConfirmMergeFn(fmt.Sprintf("Merge versioned changelog files into %s?", p.config.ChangelogPath))
+		if err != nil {
+			// Treat prompt errors as declined
+			return nil
+		}
+		if confirmed {
+			if err := p.generator.MergeVersionedFiles(); err != nil {
+				return fmt.Errorf("failed to merge changelog files: %w", err)
+			}
+			fmt.Fprintf(os.Stdout, "Merged versioned changelog files into %s\n", p.config.ChangelogPath)
+		}
+		return nil
+
+	case "manual":
+		// No automatic merge
+		return nil
+
+	default:
+		// Unknown value, treat as manual (no merge)
+		return nil
 	}
 }

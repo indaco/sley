@@ -492,6 +492,25 @@ sley validate
 # => Error: invalid version format: ...
 ```
 
+**Manage changelogs**
+
+While sley isn't a standalone changelog tool, the `changelog-generator` plugin provides full changelog support. This utility command helps you work with versioned changelog files created by the plugin.
+
+> [!NOTE]
+> Requires the `changelog-generator` plugin. See [docs/plugins/CHANGELOG_GENERATOR.md](docs/plugins/CHANGELOG_GENERATOR.md) for configuration options including automatic merging with `merge-after`.
+
+Merge versioned changelog files into a unified `CHANGELOG.md`:
+
+```bash
+sley changelog merge
+
+# Specify custom paths
+sley changelog merge --changes-dir .changes --output CHANGELOG.md
+
+# Use a custom header template
+sley changelog merge --header-template .changes/header.md
+```
+
 **Rolling back a version change**
 
 If you need to undo a version bump:

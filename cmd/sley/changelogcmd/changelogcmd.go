@@ -61,6 +61,29 @@ Examples:
 
 // runMergeCmd executes the merge operation.
 func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
+	// Check if changelog-generator plugin is enabled
+	if !isChangelogGeneratorEnabled(cfg) {
+		printer.PrintWarning("Warning: The changelog-generator plugin is not enabled.")
+		printer.PrintInfo("To enable it, add the following to your .sley.yaml:")
+		fmt.Println("")
+		fmt.Println("  plugins:")
+		fmt.Println("    changelog-generator:")
+		fmt.Println("      enabled: true")
+		fmt.Println("      mode: \"versioned\"")
+		fmt.Println("")
+		printer.PrintInfo("Proceeding with merge using default settings...")
+		fmt.Println("")
+	} else {
+		// Warn if merge-after is set to something other than manual
+		mergeAfter := cfg.Plugins.ChangelogGenerator.GetMergeAfter()
+		if mergeAfter != "manual" {
+			printer.PrintWarning(fmt.Sprintf("Warning: 'merge-after' is set to '%s' in your configuration.", mergeAfter))
+			printer.PrintInfo("Versioned changelog files are already being merged automatically.")
+			printer.PrintInfo("This manual merge command may result in duplicate entries or unexpected behavior.")
+			fmt.Println("")
+		}
+	}
+
 	// Build generator config from flags, falling back to .sley.yaml settings
 	genCfg := buildGeneratorConfig(cmd, cfg)
 
@@ -79,6 +102,20 @@ func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
 		genCfg.ChangesDir, genCfg.ChangelogPath))
 
 	return nil
+}
+
+// isChangelogGeneratorEnabled checks if the changelog-generator plugin is enabled.
+func isChangelogGeneratorEnabled(cfg *config.Config) bool {
+	if cfg == nil {
+		return false
+	}
+	if cfg.Plugins == nil {
+		return false
+	}
+	if cfg.Plugins.ChangelogGenerator == nil {
+		return false
+	}
+	return cfg.Plugins.ChangelogGenerator.Enabled
 }
 
 // buildGeneratorConfig creates a generator config from CLI flags and existing config.

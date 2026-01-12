@@ -48,26 +48,29 @@ This plugin isn't trying to match the flexibility of dedicated changelog tools -
 4. Generates markdown content with links to commits, PRs, and version comparisons
 5. Writes to versioned file (`.changes/vX.Y.Z.md`), unified CHANGELOG.md, or both
 
-## PR Links in Changelog
+## Quick Start
 
-The changelog is generated from **commit messages**. For PR numbers to appear in the changelog, they must be present in the commit message itself (format: `#123` or `(#123)`).
+Get started with changelog generation in three simple steps:
 
-**Option 1: Use Squash and Merge (Recommended)**
+**1. Enable the plugin in `.sley.yaml`:**
 
-GitHub's squash merge automatically appends `(#123)` to the commit message, which the parser will detect.
-
-**Option 2: Include PR Numbers Manually**
-
-Add the PR number to your commit messages:
-
-```
-feat(api): add new endpoint (#123)
-fix: resolve timeout issue (#456)
+```yaml
+plugins:
+  changelog-generator:
+    enabled: true
 ```
 
-**Option 3: Rebase and Merge**
+**2. Bump your version:**
 
-Include the PR number in your original commit messages before merging.
+```bash
+sley bump patch
+```
+
+**3. Find your generated changelog:**
+
+The plugin creates `.changes/v1.2.4.md` (or appends to `CHANGELOG.md` if configured with `mode: "unified"`). The changelog includes grouped commits, contributor attribution, and links to your git hosting provider.
+
+**Next steps:** Customize the format, add icons, configure repository settings, or integrate with other plugins like `tag-manager`. See the Configuration section below for all available options.
 
 ## Usage
 
@@ -100,22 +103,23 @@ plugins:
 
 ### Configuration Options
 
-| Option                     | Type   | Default          | Description                                                           |
-| -------------------------- | ------ | ---------------- | --------------------------------------------------------------------- |
-| `enabled`                  | bool   | false            | Enable/disable the plugin                                             |
-| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                              |
-| `format`                   | string | `"grouped"`      | Changelog format: "grouped", "keepachangelog", "github", or "minimal" |
-| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                               |
-| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                        |
-| `header-template`          | string | (built-in)       | Path to custom header template                                        |
-| `repository`               | object | auto-detect      | Git repository configuration for links                                |
-| `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format)  |
-| `use-default-icons`        | bool   | false            | Enable predefined icons for all groups and contributors               |
-| `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)      |
-| `breaking-changes-icon`    | string | (empty)          | Custom icon for Breaking Changes section (github/keepachangelog)      |
-| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                 |
-| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                   |
-| `contributors`             | object | enabled          | Contributors section configuration                                    |
+| Option                     | Type   | Default          | Description                                                                                             |
+| -------------------------- | ------ | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| `enabled`                  | bool   | false            | Enable/disable the plugin                                                                               |
+| `mode`                     | string | `"versioned"`    | Output mode: versioned, unified, or both                                                                |
+| `format`                   | string | `"grouped"`      | Changelog format: "grouped", "keepachangelog", "github", or "minimal"                                   |
+| `changes-dir`              | string | `".changes"`     | Directory for versioned changelog files                                                                 |
+| `changelog-path`           | string | `"CHANGELOG.md"` | Path to unified changelog file                                                                          |
+| `merge-after`              | string | `"manual"`       | When to merge versioned files: "manual", "immediate", or "prompt" (only applies to `mode: "versioned"`) |
+| `header-template`          | string | (built-in)       | Path to custom header template                                                                          |
+| `repository`               | object | auto-detect      | Git repository configuration for links                                                                  |
+| `groups`                   | array  | (defaults)       | Full custom commit grouping rules (ignored in keepachangelog format)                                    |
+| `use-default-icons`        | bool   | false            | Enable predefined icons for all groups and contributors                                                 |
+| `group-icons`              | map    | (none)           | Add icons to default groups by label (ignored in keepachangelog)                                        |
+| `breaking-changes-icon`    | string | (empty)          | Custom icon for Breaking Changes section (github/keepachangelog)                                        |
+| `exclude-patterns`         | array  | (defaults)       | Regex patterns for commits to exclude                                                                   |
+| `include-non-conventional` | bool   | false            | Include non-conventional commits in "Other Changes"                                                     |
+| `contributors`             | object | enabled          | Contributors section configuration                                                                      |
 
 ### Output Modes
 
@@ -124,6 +128,24 @@ The `mode` option controls where changelog entries are written:
 - **versioned** (default): Creates `.changes/v{version}.md` files for each version
 - **unified**: Appends to a single CHANGELOG.md file (newest first)
 - **both**: Writes to both versioned files and unified changelog
+
+#### Merge After Behavior (Versioned Mode Only)
+
+The `merge-after` option **only applies when `mode: "versioned"`**. It controls when versioned changelog files are merged into a unified `CHANGELOG.md`:
+
+- **manual** (default): No automatic merge. Use the `sley changelog merge` command when ready to consolidate
+- **immediate**: Automatically merge into `CHANGELOG.md` right after generating the versioned file (similar to `mode: "both"`, but keeps versioned file as the source of truth)
+- **prompt**: Ask for confirmation after changelog generation (automatically skips in CI/non-interactive environments)
+
+```yaml
+plugins:
+  changelog-generator:
+    enabled: true
+    mode: "versioned"
+    merge-after: "manual" # Choose: "manual", "immediate", or "prompt"
+```
+
+**Note:** This option is ignored when `mode` is `"unified"` (already writes directly to CHANGELOG.md) or `"both"` (already writes to both). Using `merge-after: "immediate"` effectively gives you the same output as `mode: "both"`, while maintaining the versioned file workflow.
 
 Example versioned output (`.changes/v1.2.0.md`):
 
@@ -185,7 +207,7 @@ Follows the [Keep a Changelog](https://keepachangelog.com) specification with st
 
 #### Format: `github`
 
-Follows the GitHub release style with inline contributor attribution per commit. Breaking changes are highlighted in a separate section at the top.
+Follows the GitHub release style with "What's Changed" section, inline contributor attribution (`by @username`), and PR references (`in #123`). Breaking changes appear in a separate section at the top. Custom group configuration is ignored.
 
 ```markdown
 ## v2.0.0 - 2024-01-15
@@ -193,51 +215,26 @@ Follows the GitHub release style with inline contributor attribution per commit.
 ### ⚠️ Breaking Changes
 
 - **api:** Remove deprecated endpoints by @maintainer in #100
-- Change authentication flow by @dev in #101
 
 ### What's Changed
 
 - **core:** Add new caching layer by @johndoe in #123
 - Fix memory leak in parser by @janedoe in #456
-- **api:** Update rate limiting by @contributor
 
 **Full Changelog:** [v1.0.0...v2.0.0](https://github.com/owner/repo/compare/v1.0.0...v2.0.0)
 ```
 
-Key features:
-
-- Breaking changes highlighted in "⚠️ Breaking Changes" section (appears first when present)
-  - Default icon is ⚠️ (when `use-default-icons: true`)
-  - Customize with `breaking-changes-icon: "💥"` or any emoji/icon
-- Regular changes listed in "What's Changed" section
-- Inline contributor attribution (`by @username`)
-- Inline PR references (`in #123`)
-- Automatic username extraction from git author email (supports GitHub, GitLab, Codeberg noreply formats)
-- Custom group configuration is ignored
-
 #### Format: `minimal`
 
-A condensed changelog style using short type abbreviations with minimal formatting. Useful for embedding in release notes, CI outputs, or when verbosity is undesirable.
+A condensed format with abbreviated type prefixes (`[Feat]`, `[Fix]`, etc.) and no links, dates, or attribution. Useful for release notes or CI outputs. Custom group configuration is ignored.
 
 ```markdown
 ## v1.2.0
 
 - [Feat] Add new caching layer
-- [Feat] Implement user settings
 - [Fix] Memory leak in parser
-- [Docs] Update API documentation
 - [Breaking] Remove deprecated API
-- [Chore] Update dependencies
 ```
-
-Key features:
-
-- Version header without date
-- Abbreviated type prefixes: `[Feat]`, `[Fix]`, `[Docs]`, `[Perf]`, `[Refactor]`, `[Style]`, `[Test]`, `[Chore]`, `[CI]`, `[Build]`, `[Revert]`
-- Breaking changes use `[Breaking]` prefix (overrides type)
-- Flat list (no grouping by type)
-- No links, author attribution, or PR references
-- Custom group configuration is ignored
 
 ### Groups Configuration
 
@@ -347,6 +344,27 @@ sley changelog merge --header-template .changes/header.md
 | `--changes-dir`     | `.changes`     | Directory containing versioned files |
 | `--output`          | `CHANGELOG.md` | Output path for unified changelog    |
 | `--header-template` | (built-in)     | Path to custom header template file  |
+
+### PR Links in Changelog
+
+The changelog is generated from **commit messages**. For PR numbers to appear in the changelog, they must be present in the commit message itself (format: `#123` or `(#123)`).
+
+**Option 1: Use Squash and Merge (Recommended)**
+
+GitHub's squash merge automatically appends `(#123)` to the commit message, which the parser will detect.
+
+**Option 2: Include PR Numbers Manually**
+
+Add the PR number to your commit messages:
+
+```
+feat(api): add new endpoint (#123)
+fix: resolve timeout issue (#456)
+```
+
+**Option 3: Rebase and Merge**
+
+Include the PR number in your original commit messages before merging.
 
 ### Changie Integration
 

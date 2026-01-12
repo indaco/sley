@@ -381,3 +381,194 @@ func TestBuildGeneratorConfig_DefaultValues(t *testing.T) {
 		t.Errorf("expected ChangelogPath to be 'CHANGELOG.md', got %s", genCfg.ChangelogPath)
 	}
 }
+
+/* ------------------------------------------------------------------------- */
+/* CHANGELOG MERGE COMMAND - PLUGIN WARNINGS                                 */
+/* ------------------------------------------------------------------------- */
+
+func TestChangelogMergeCmd_WarningWhenPluginDisabled(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
+
+	// Create versioned changelog files
+	createVersionedChangelogFiles(t, changesDir)
+
+	// Config without changelog-generator enabled
+	cfg := &config.Config{Path: tmpDir}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{
+			"sley", "changelog", "merge",
+			"--changes-dir", changesDir,
+			"--output", outputPath,
+		}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("failed to capture stdout: %v", err)
+	}
+
+	// Should show warning about plugin not being enabled
+	expectedWarning := "changelog-generator plugin is not enabled"
+	if !strings.Contains(output, expectedWarning) {
+		t.Errorf("expected output to contain warning %q, got:\n%s", expectedWarning, output)
+	}
+
+	// Should still succeed with merge
+	expectedMsg := "Successfully merged changelog files"
+	if !strings.Contains(output, expectedMsg) {
+		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
+	}
+}
+
+func TestChangelogMergeCmd_WarningWhenMergeAfterImmediate(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
+
+	// Create versioned changelog files
+	createVersionedChangelogFiles(t, changesDir)
+
+	// Config with merge-after set to immediate
+	cfg := &config.Config{
+		Path: tmpDir,
+		Plugins: &config.PluginConfig{
+			ChangelogGenerator: &config.ChangelogGeneratorConfig{
+				Enabled:       true,
+				ChangesDir:    changesDir,
+				ChangelogPath: outputPath,
+				MergeAfter:    "immediate",
+			},
+		},
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{
+			"sley", "changelog", "merge",
+		}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("failed to capture stdout: %v", err)
+	}
+
+	// Should show warning about merge-after being set
+	expectedWarning := "'merge-after' is set to 'immediate'"
+	if !strings.Contains(output, expectedWarning) {
+		t.Errorf("expected output to contain warning %q, got:\n%s", expectedWarning, output)
+	}
+
+	// Should still succeed with merge
+	expectedMsg := "Successfully merged changelog files"
+	if !strings.Contains(output, expectedMsg) {
+		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
+	}
+}
+
+func TestChangelogMergeCmd_NoWarningWhenMergeAfterManual(t *testing.T) {
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
+
+	// Create versioned changelog files
+	createVersionedChangelogFiles(t, changesDir)
+
+	// Config with merge-after set to manual (default)
+	cfg := &config.Config{
+		Path: tmpDir,
+		Plugins: &config.PluginConfig{
+			ChangelogGenerator: &config.ChangelogGeneratorConfig{
+				Enabled:       true,
+				ChangesDir:    changesDir,
+				ChangelogPath: outputPath,
+				MergeAfter:    "manual",
+			},
+		},
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{
+			"sley", "changelog", "merge",
+		}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("failed to capture stdout: %v", err)
+	}
+
+	// Should NOT show merge-after warning
+	unexpectedWarning := "'merge-after' is set to"
+	if strings.Contains(output, unexpectedWarning) {
+		t.Errorf("expected output to NOT contain warning %q, got:\n%s", unexpectedWarning, output)
+	}
+
+	// Should NOT show plugin disabled warning
+	unexpectedWarning2 := "plugin is not enabled"
+	if strings.Contains(output, unexpectedWarning2) {
+		t.Errorf("expected output to NOT contain warning %q, got:\n%s", unexpectedWarning2, output)
+	}
+
+	// Should still succeed with merge
+	expectedMsg := "Successfully merged changelog files"
+	if !strings.Contains(output, expectedMsg) {
+		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
+	}
+}
+
+func TestIsChangelogGeneratorEnabled(t *testing.T) {
+	tests := []struct {
+		name     string
+		cfg      *config.Config
+		expected bool
+	}{
+		{
+			name:     "nil config",
+			cfg:      nil,
+			expected: false,
+		},
+		{
+			name:     "nil plugins",
+			cfg:      &config.Config{},
+			expected: false,
+		},
+		{
+			name: "nil changelog generator",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{},
+			},
+			expected: false,
+		},
+		{
+			name: "disabled changelog generator",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					ChangelogGenerator: &config.ChangelogGeneratorConfig{
+						Enabled: false,
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "enabled changelog generator",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					ChangelogGenerator: &config.ChangelogGeneratorConfig{
+						Enabled: true,
+					},
+				},
+			},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isChangelogGeneratorEnabled(tt.cfg)
+			if result != tt.expected {
+				t.Errorf("isChangelogGeneratorEnabled() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}

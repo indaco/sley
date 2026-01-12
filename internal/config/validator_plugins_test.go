@@ -866,3 +866,97 @@ func TestValidator_ValidateChangelogGeneratorCustomProvider(t *testing.T) {
 		})
 	}
 }
+
+func TestValidator_ValidateChangelogGeneratorMergeAfter(t *testing.T) {
+	tests := []struct {
+		name      string
+		config    *Config
+		wantError bool
+	}{
+		{
+			name: "valid merge-after immediate",
+			config: &Config{
+				Plugins: &PluginConfig{
+					ChangelogGenerator: &ChangelogGeneratorConfig{
+						Enabled:    true,
+						MergeAfter: "immediate",
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "valid merge-after manual",
+			config: &Config{
+				Plugins: &PluginConfig{
+					ChangelogGenerator: &ChangelogGeneratorConfig{
+						Enabled:    true,
+						MergeAfter: "manual",
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "valid merge-after prompt",
+			config: &Config{
+				Plugins: &PluginConfig{
+					ChangelogGenerator: &ChangelogGeneratorConfig{
+						Enabled:    true,
+						MergeAfter: "prompt",
+					},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "invalid merge-after value",
+			config: &Config{
+				Plugins: &PluginConfig{
+					ChangelogGenerator: &ChangelogGeneratorConfig{
+						Enabled:    true,
+						MergeAfter: "invalid",
+					},
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "empty merge-after uses default manual",
+			config: &Config{
+				Plugins: &PluginConfig{
+					ChangelogGenerator: &ChangelogGeneratorConfig{
+						Enabled:    true,
+						MergeAfter: "",
+					},
+				},
+			},
+			wantError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			fs := core.NewMockFileSystem()
+			validator := NewValidator(fs, tt.config, "", ".")
+
+			results, err := validator.Validate(ctx)
+			if err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+
+			hasError := false
+			for _, r := range results {
+				if r.Category == "Plugin: changelog-generator" && !r.Passed && !r.Warning {
+					hasError = true
+					break
+				}
+			}
+
+			if hasError != tt.wantError {
+				t.Errorf("changelog-generator merge-after validation error = %v, want %v", hasError, tt.wantError)
+			}
+		})
+	}
+}

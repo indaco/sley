@@ -202,6 +202,13 @@ type ChangelogGeneratorConfig struct {
 
 	// Contributors configures the contributors section.
 	Contributors *ContributorsConfig `yaml:"contributors,omitempty"`
+
+	// MergeAfter controls when versioned changelog files are merged into the unified changelog.
+	// Values:
+	// - "immediate" (merge right after generation)
+	// - "manual" (no auto-merge, default)
+	// - "prompt" (interactive confirmation, auto-skips in CI/non-interactive environments).
+	MergeAfter string `yaml:"merge-after,omitempty"`
 }
 
 // GetChangesDir returns the changes directory with default ".changes".
@@ -234,6 +241,14 @@ func (c *ChangelogGeneratorConfig) GetFormat() string {
 		return "grouped"
 	}
 	return c.Format
+}
+
+// GetMergeAfter returns the merge-after setting with default "manual".
+func (c *ChangelogGeneratorConfig) GetMergeAfter() string {
+	if c.MergeAfter == "" {
+		return "manual"
+	}
+	return c.MergeAfter
 }
 
 // RepositoryConfig holds git repository settings for changelog links.

@@ -76,6 +76,11 @@ type Config struct {
 
 	// Contributors configures the contributors section.
 	Contributors *ContributorsConfig
+
+	// MergeAfter controls when versioned changelog files are merged into the unified changelog.
+	// Values: "immediate" (merge right after generation), "manual" (no auto-merge, default),
+	// "prompt" (interactive confirmation, auto-skips in CI/non-interactive environments).
+	MergeAfter string
 }
 
 // RepositoryConfig holds git repository settings for changelog links.
@@ -119,6 +124,7 @@ func DefaultConfig() *Config {
 		Format:        "grouped",
 		ChangesDir:    ".changes",
 		ChangelogPath: "CHANGELOG.md",
+		MergeAfter:    "manual",
 		Repository: &RepositoryConfig{
 			AutoDetect: true,
 		},
@@ -171,6 +177,7 @@ func FromConfigStruct(cfg *config.ChangelogGeneratorConfig) *Config {
 		Format:                 cfg.GetFormat(),
 		ChangesDir:             cfg.GetChangesDir(),
 		ChangelogPath:          cfg.GetChangelogPath(),
+		MergeAfter:             cfg.GetMergeAfter(),
 		HeaderTemplate:         cfg.HeaderTemplate,
 		ExcludePatterns:        cfg.ExcludePatterns,
 		IncludeNonConventional: cfg.IncludeNonConventional,

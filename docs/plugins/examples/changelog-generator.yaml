@@ -10,6 +10,11 @@ plugins:
     format: "grouped" # "grouped", "keepachangelog", "github", or "minimal"
     changes-dir: ".changes"
     changelog-path: "CHANGELOG.md"
+    # merge-after controls when versioned changelog files are merged into CHANGELOG.md
+    # - "manual" (default): No auto-merge, use 'sley changelog merge' command
+    # - "immediate": Merge right after changelog generation
+    # - "prompt": Interactive confirmation (auto-skips in CI/non-interactive environments)
+    merge-after: "manual"
     repository:
       auto-detect: true
     use-default-icons: true

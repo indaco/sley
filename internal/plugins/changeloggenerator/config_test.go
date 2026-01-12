@@ -21,6 +21,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.ChangelogPath != "CHANGELOG.md" {
 		t.Errorf("ChangelogPath = %q, want 'CHANGELOG.md'", cfg.ChangelogPath)
 	}
+	if cfg.MergeAfter != "manual" {
+		t.Errorf("MergeAfter = %q, want 'manual'", cfg.MergeAfter)
+	}
 	if cfg.Repository == nil {
 		t.Fatal("expected Repository to be non-nil")
 	}
@@ -187,6 +190,11 @@ func TestFromConfigStruct_Defaults(t *testing.T) {
 	// Should use default changes dir
 	if cfg.ChangesDir != ".changes" {
 		t.Errorf("ChangesDir = %q, want '.changes' (default)", cfg.ChangesDir)
+	}
+
+	// Should use default merge-after
+	if cfg.MergeAfter != "manual" {
+		t.Errorf("MergeAfter = %q, want 'manual' (default)", cfg.MergeAfter)
 	}
 
 	// Should have default groups
@@ -544,6 +552,55 @@ func TestFromConfigStruct_BreakingChangesIcon(t *testing.T) {
 			cfg := FromConfigStruct(tt.input)
 			if cfg.BreakingChangesIcon != tt.wantIcon {
 				t.Errorf("BreakingChangesIcon = %q, want %q", cfg.BreakingChangesIcon, tt.wantIcon)
+			}
+		})
+	}
+}
+
+func TestFromConfigStruct_MergeAfter(t *testing.T) {
+	tests := []struct {
+		name           string
+		input          *config.ChangelogGeneratorConfig
+		wantMergeAfter string
+	}{
+		{
+			name: "default when not specified",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled: true,
+			},
+			wantMergeAfter: "manual",
+		},
+		{
+			name: "immediate value",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:    true,
+				MergeAfter: "immediate",
+			},
+			wantMergeAfter: "immediate",
+		},
+		{
+			name: "manual value",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:    true,
+				MergeAfter: "manual",
+			},
+			wantMergeAfter: "manual",
+		},
+		{
+			name: "prompt value",
+			input: &config.ChangelogGeneratorConfig{
+				Enabled:    true,
+				MergeAfter: "prompt",
+			},
+			wantMergeAfter: "prompt",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := FromConfigStruct(tt.input)
+			if cfg.MergeAfter != tt.wantMergeAfter {
+				t.Errorf("MergeAfter = %q, want %q", cfg.MergeAfter, tt.wantMergeAfter)
 			}
 		})
 	}
