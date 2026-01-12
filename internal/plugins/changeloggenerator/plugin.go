@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/tui"
 )
 
@@ -102,11 +103,12 @@ func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, 
 
 	// Print warning about skipped non-conventional commits
 	if len(result.SkippedNonConventional) > 0 {
-		fmt.Fprintf(os.Stderr, "\nWarning: %d non-conventional commit(s) skipped:\n", len(result.SkippedNonConventional))
+		fmt.Fprintln(os.Stderr)
+		printer.PrintWarning(fmt.Sprintf("Warning: %d non-conventional commit(s) skipped:", len(result.SkippedNonConventional)))
 		for _, c := range result.SkippedNonConventional {
-			fmt.Fprintf(os.Stderr, "  - %s: %s\n", c.ShortHash, c.Subject)
+			fmt.Fprintf(os.Stderr, "  - %s: %s\n", printer.Faint(c.ShortHash), c.Subject)
 		}
-		fmt.Fprintf(os.Stderr, "Tip: Use conventional commit format (type: description) or set 'include-non-conventional: true' in config.\n\n")
+		fmt.Fprintf(os.Stderr, "%s Use conventional commit format (type: description) or set 'include-non-conventional: true' in config.\n\n", printer.Info("Tip:"))
 	}
 
 	// Write based on mode

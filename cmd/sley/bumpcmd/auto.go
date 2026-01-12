@@ -97,7 +97,7 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 
 	// Handle single-module mode
 	if execCtx.IsSingleModule() {
-		return runSingleModuleAuto(cmd, registry, execCtx.Path, label, meta, since, until, isPreserveMeta, disableInfer)
+		return runSingleModuleAuto(ctx, cmd, cfg, registry, execCtx.Path, label, meta, since, until, isPreserveMeta, disableInfer, isSkipHooks)
 	}
 
 	// Handle multi-module mode
@@ -125,7 +125,7 @@ func determineBumpType(registry *plugins.PluginRegistry, label string, disableIn
 			}
 
 			if inferred != "" {
-				fmt.Fprintf(os.Stderr, "Inferred bump type: %s\n", inferred)
+				printer.PrintInfo(fmt.Sprintf("Inferred bump type: %s", inferred))
 				switch inferred {
 				case "minor":
 					return operations.BumpMinor
@@ -145,7 +145,7 @@ func determineBumpType(registry *plugins.PluginRegistry, label string, disableIn
 }
 
 // runSingleModuleAuto handles the single-module auto bump operation.
-func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, path, label, meta, since, until string, isPreserveMeta, disableInfer bool) error {
+func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, path, label, meta, since, until string, isPreserveMeta, disableInfer, skipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -167,6 +167,11 @@ func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, pat
 		return err
 	}
 
+	// Run pre-bump extension hooks
+	if err := runPreBumpExtensionHooks(ctx, cfg, path, next.String(), current.String(), "auto", skipHooks); err != nil {
+		return err
+	}
+
 	if err := semver.SaveVersion(path, next); err != nil {
 		return fmt.Errorf("failed to save version: %w", err)
 	}
@@ -176,10 +181,18 @@ func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, pat
 		return err
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Bumped version from %s to %s", current.String(), next.String()))
+	// Run post-bump extension hooks
+	if err := runPostBumpExtensionHooks(ctx, cfg, path, current.String(), "auto", skipHooks); err != nil {
+		return err
+	}
 
 	// Create tag after successful bump
-	return createTagAfterBump(registry, next, "auto")
+	if err := createTagAfterBump(registry, next, "auto"); err != nil {
+		return err
+	}
+
+	printer.PrintSuccess(fmt.Sprintf("Bumped version from %s to %s", current.String(), next.String()))
+	return nil
 }
 
 // getNextVersion determines the next semantic version based on the provided label,
@@ -212,7 +225,7 @@ func getNextVersion(
 			}
 
 			if inferred != "" {
-				fmt.Fprintf(os.Stderr, "Inferred bump type: %s\n", inferred)
+				printer.PrintInfo(fmt.Sprintf("Inferred bump type: %s", inferred))
 
 				if current.PreRelease != "" {
 					return promotePreRelease(current, preserveMeta), nil

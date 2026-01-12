@@ -50,7 +50,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, r
 
 	// Handle single-module mode
 	if execCtx.IsSingleModule() {
-		return runSingleModuleRelease(cmd, registry, execCtx.Path, isPreserveMeta)
+		return runSingleModuleRelease(ctx, cmd, cfg, registry, execCtx.Path, isPreserveMeta, isSkipHooks)
 	}
 
 	// Handle multi-module mode
@@ -64,7 +64,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, r
 }
 
 // runSingleModuleRelease handles the single-module release operation.
-func runSingleModuleRelease(cmd *cli.Command, registry *plugins.PluginRegistry, path string, isPreserveMeta bool) error {
+func runSingleModuleRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, path string, isPreserveMeta, skipHooks bool) error {
 	if _, err := clix.FromCommandFn(cmd); err != nil {
 		return err
 	}
@@ -85,12 +85,27 @@ func runSingleModuleRelease(cmd *cli.Command, registry *plugins.PluginRegistry, 
 		return err
 	}
 
+	// Run pre-bump extension hooks
+	if err := runPreBumpExtensionHooks(ctx, cfg, path, newVersion.String(), previousVersion.String(), "release", skipHooks); err != nil {
+		return err
+	}
+
 	if err := semver.SaveVersion(path, newVersion); err != nil {
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
 	// Execute all post-bump actions
 	if err := executePostBumpActions(registry, newVersion, previousVersion, "release"); err != nil {
+		return err
+	}
+
+	// Run post-bump extension hooks
+	if err := runPostBumpExtensionHooks(ctx, cfg, path, previousVersion.String(), "release", skipHooks); err != nil {
+		return err
+	}
+
+	// Create tag after successful bump
+	if err := createTagAfterBump(registry, newVersion, "release"); err != nil {
 		return err
 	}
 

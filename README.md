@@ -398,6 +398,10 @@ sley bump minor --meta ci.123
 
 sley bump major --pre rc.1 --meta build.7
 # => 2.0.0-rc.1+build.7
+
+# Skip pre-release hooks and extensions during bump
+sley bump patch --skip-hooks
+# => 1.2.4 (no hooks executed)
 ```
 
 > [!NOTE]

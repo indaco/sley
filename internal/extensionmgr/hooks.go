@@ -10,6 +10,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/console"
 	"github.com/indaco/sley/internal/extensions"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // HookType represents the different hook points available in the extension system
@@ -73,7 +74,7 @@ func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, i
 		scriptPath := filepath.Join(extCfg.Path, manifest.Entry)
 
 		// Execute the hook
-		fmt.Printf("Running extension hook %q (%s)... ", extCfg.Name, hookType)
+		fmt.Printf("Running extension %s (%s)... ", printer.Info(extCfg.Name), printer.Faint(string(hookType)))
 
 		output, err := r.Executor.Execute(ctx, scriptPath, input)
 		if err != nil {
@@ -84,7 +85,7 @@ func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, i
 		console.PrintSuccess("OK")
 
 		if output.Message != "" {
-			fmt.Printf("  %s\n", output.Message)
+			fmt.Printf("  %s\n", printer.Faint(output.Message))
 		}
 
 		hooksExecuted++

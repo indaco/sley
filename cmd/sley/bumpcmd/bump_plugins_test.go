@@ -377,6 +377,106 @@ func TestRunPostBumpExtensionHooks_WithError(t *testing.T) {
 }
 
 /* ------------------------------------------------------------------------- */
+/* BUMP AUTO EXTENSION HOOKS TESTS                                           */
+/* ------------------------------------------------------------------------- */
+
+func TestBumpAuto_SkipHooksFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0-alpha")
+
+	cfg := &config.Config{Path: versionPath}
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
+
+	// Run with --skip-hooks flag
+	err := appCli.Run(context.Background(), []string{
+		"sley", "bump", "auto", "--skip-hooks",
+	})
+	if err != nil {
+		t.Fatalf("expected no error with --skip-hooks, got: %v", err)
+	}
+
+	got := testutils.ReadTempVersionFile(t, tmpDir)
+	if got != "1.0.0" {
+		t.Errorf("expected version 1.0.0, got %q", got)
+	}
+}
+
+func TestBumpAuto_ExtensionHooksCalledWithLabel(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
+
+	cfg := &config.Config{Path: versionPath}
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
+
+	// Run with --label to ensure extension hooks path is exercised
+	err := appCli.Run(context.Background(), []string{
+		"sley", "bump", "auto", "--label", "patch",
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	got := testutils.ReadTempVersionFile(t, tmpDir)
+	if got != "1.0.1" {
+		t.Errorf("expected version 1.0.1, got %q", got)
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* BUMP RELEASE EXTENSION HOOKS TESTS                                        */
+/* ------------------------------------------------------------------------- */
+
+func TestBumpRelease_SkipHooksFlag(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0-beta.1")
+
+	cfg := &config.Config{Path: versionPath}
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
+
+	// Run with --skip-hooks flag
+	err := appCli.Run(context.Background(), []string{
+		"sley", "bump", "release", "--skip-hooks",
+	})
+	if err != nil {
+		t.Fatalf("expected no error with --skip-hooks, got: %v", err)
+	}
+
+	got := testutils.ReadTempVersionFile(t, tmpDir)
+	if got != "1.0.0" {
+		t.Errorf("expected version 1.0.0, got %q", got)
+	}
+}
+
+func TestBumpRelease_ExtensionHooksCalledOnPromotion(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "2.0.0-rc.1")
+
+	cfg := &config.Config{Path: versionPath}
+	registry := plugins.NewPluginRegistry()
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
+
+	// Run release to promote pre-release
+	err := appCli.Run(context.Background(), []string{
+		"sley", "bump", "release",
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	got := testutils.ReadTempVersionFile(t, tmpDir)
+	if got != "2.0.0" {
+		t.Errorf("expected version 2.0.0, got %q", got)
+	}
+}
+
+/* ------------------------------------------------------------------------- */
 /* SINGLE MODULE BUMP PLUGIN ERROR PATHS                                    */
 /* ------------------------------------------------------------------------- */
 
