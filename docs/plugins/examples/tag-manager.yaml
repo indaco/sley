@@ -11,3 +11,13 @@ plugins:
     annotate: true
     push: false
     tag-prereleases: true
+
+    # GPG Signing (optional)
+    # Requires git to be configured with a GPG signing key
+    sign: false
+    signing-key: "" # Optional: specific GPG key ID (uses git default if empty)
+
+    # Custom Message Template (optional)
+    # Available placeholders: {version}, {tag}, {prefix}, {date},
+    #                         {major}, {minor}, {patch}, {prerelease}, {build}
+    message-template: "Release {version}"

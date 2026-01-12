@@ -1,8 +1,0 @@
-name: git-tagger
-version: 1.0.0
-description: Automatically creates annotated git tags after version bumps
-author: sley
-repository: https://github.com/indaco/sley/tree/main/contrib/extensions/git-tagger
-entry: hook.py
-hooks:
-  - post-bump

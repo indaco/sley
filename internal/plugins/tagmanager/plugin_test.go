@@ -401,6 +401,15 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Push != false {
 		t.Errorf("DefaultConfig().Push = %v, want false", cfg.Push)
 	}
+	if cfg.Sign != false {
+		t.Errorf("DefaultConfig().Sign = %v, want false", cfg.Sign)
+	}
+	if cfg.SigningKey != "" {
+		t.Errorf("DefaultConfig().SigningKey = %q, want empty", cfg.SigningKey)
+	}
+	if cfg.MessageTemplate != "Release {version}" {
+		t.Errorf("DefaultConfig().MessageTemplate = %q, want %q", cfg.MessageTemplate, "Release {version}")
+	}
 }
 
 func TestTagManagerPlugin_GetConfig(t *testing.T) {
@@ -667,5 +676,281 @@ func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
 	stable := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 	if got := tm.ShouldCreateTag(stable); got != true {
 		t.Errorf("ShouldCreateTag(stable) with default config = %v, want true", got)
+	}
+}
+
+func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
+	origTagExists := tagExistsFn
+	origCreateSigned := createSignedTagFn
+	origPushTag := pushTagFn
+
+	defer func() {
+		tagExistsFn = origTagExists
+		createSignedTagFn = origCreateSigned
+		pushTagFn = origPushTag
+	}()
+
+	t.Run("create signed tag without key", func(t *testing.T) {
+		signedCalled := false
+		var capturedMessage string
+		var capturedKeyID string
+
+		tagExistsFn = func(name string) (bool, error) {
+			return false, nil
+		}
+
+		createSignedTagFn = func(name, msg, keyID string) error {
+			signedCalled = true
+			capturedMessage = msg
+			capturedKeyID = keyID
+			return nil
+		}
+
+		cfg := &Config{
+			Enabled:         true,
+			AutoCreate:      true,
+			Prefix:          "v",
+			Sign:            true,
+			MessageTemplate: "Release {version}",
+		}
+		tm := NewTagManager(cfg)
+
+		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
+
+		if err != nil {
+			t.Errorf("CreateTag() error = %v", err)
+		}
+		if !signedCalled {
+			t.Error("CreateTag() should have called createSignedTag")
+		}
+		if capturedMessage != "Release 1.0.0" {
+			t.Errorf("CreateTag() message = %q, want %q", capturedMessage, "Release 1.0.0")
+		}
+		if capturedKeyID != "" {
+			t.Errorf("CreateTag() keyID = %q, want empty", capturedKeyID)
+		}
+	})
+
+	t.Run("create signed tag with key", func(t *testing.T) {
+		signedCalled := false
+		var capturedKeyID string
+
+		tagExistsFn = func(name string) (bool, error) {
+			return false, nil
+		}
+
+		createSignedTagFn = func(name, msg, keyID string) error {
+			signedCalled = true
+			capturedKeyID = keyID
+			return nil
+		}
+
+		cfg := &Config{
+			Enabled:    true,
+			AutoCreate: true,
+			Prefix:     "v",
+			Sign:       true,
+			SigningKey: "ABC123DEF456",
+		}
+		tm := NewTagManager(cfg)
+
+		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
+
+		if err != nil {
+			t.Errorf("CreateTag() error = %v", err)
+		}
+		if !signedCalled {
+			t.Error("CreateTag() should have called createSignedTag")
+		}
+		if capturedKeyID != "ABC123DEF456" {
+			t.Errorf("CreateTag() keyID = %q, want %q", capturedKeyID, "ABC123DEF456")
+		}
+	})
+
+	t.Run("signed tag error", func(t *testing.T) {
+		tagExistsFn = func(name string) (bool, error) {
+			return false, nil
+		}
+
+		createSignedTagFn = func(name, msg, keyID string) error {
+			return errors.New("gpg signing failed")
+		}
+
+		cfg := &Config{
+			Enabled:    true,
+			AutoCreate: true,
+			Prefix:     "v",
+			Sign:       true,
+		}
+		tm := NewTagManager(cfg)
+
+		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
+
+		if err == nil {
+			t.Error("CreateTag() should return error when signing fails")
+		}
+	})
+}
+
+func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
+	origTagExists := tagExistsFn
+	origCreateAnnotated := createAnnotatedTagFn
+
+	defer func() {
+		tagExistsFn = origTagExists
+		createAnnotatedTagFn = origCreateAnnotated
+	}()
+
+	tests := []struct {
+		name            string
+		template        string
+		version         semver.SemVersion
+		expectedMessage string
+	}{
+		{
+			name:            "default template",
+			template:        "Release {version}",
+			version:         semver.SemVersion{Major: 1, Minor: 2, Patch: 3},
+			expectedMessage: "Release 1.2.3",
+		},
+		{
+			name:            "template with tag",
+			template:        "{tag}: Release version {version}",
+			version:         semver.SemVersion{Major: 2, Minor: 0, Patch: 0},
+			expectedMessage: "v2.0.0: Release version 2.0.0",
+		},
+		{
+			name:            "template with prerelease",
+			template:        "Release {version} ({prerelease})",
+			version:         semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1"},
+			expectedMessage: "Release 1.0.0-alpha.1 (alpha.1)",
+		},
+		{
+			name:            "empty template uses default",
+			template:        "",
+			version:         semver.SemVersion{Major: 1, Minor: 0, Patch: 0},
+			expectedMessage: "Release 1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var capturedMessage string
+
+			tagExistsFn = func(name string) (bool, error) {
+				return false, nil
+			}
+
+			createAnnotatedTagFn = func(name, msg string) error {
+				capturedMessage = msg
+				return nil
+			}
+
+			cfg := &Config{
+				Enabled:         true,
+				AutoCreate:      true,
+				Prefix:          "v",
+				Annotate:        true,
+				MessageTemplate: tt.template,
+			}
+			tm := NewTagManager(cfg)
+
+			err := tm.CreateTag(tt.version, "")
+
+			if err != nil {
+				t.Errorf("CreateTag() error = %v", err)
+			}
+			if capturedMessage != tt.expectedMessage {
+				t.Errorf("CreateTag() message = %q, want %q", capturedMessage, tt.expectedMessage)
+			}
+		})
+	}
+}
+
+func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.T) {
+	origTagExists := tagExistsFn
+	origCreateAnnotated := createAnnotatedTagFn
+
+	defer func() {
+		tagExistsFn = origTagExists
+		createAnnotatedTagFn = origCreateAnnotated
+	}()
+
+	var capturedMessage string
+
+	tagExistsFn = func(name string) (bool, error) {
+		return false, nil
+	}
+
+	createAnnotatedTagFn = func(name, msg string) error {
+		capturedMessage = msg
+		return nil
+	}
+
+	cfg := &Config{
+		Enabled:         true,
+		AutoCreate:      true,
+		Prefix:          "v",
+		Annotate:        true,
+		MessageTemplate: "Template message {version}",
+	}
+	tm := NewTagManager(cfg)
+
+	// Explicit message should override template
+	explicitMessage := "Custom explicit message"
+	err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, explicitMessage)
+
+	if err != nil {
+		t.Errorf("CreateTag() error = %v", err)
+	}
+	if capturedMessage != explicitMessage {
+		t.Errorf("CreateTag() message = %q, want %q", capturedMessage, explicitMessage)
+	}
+}
+
+func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		template string
+		version  semver.SemVersion
+		prefix   string
+		want     string
+	}{
+		{
+			name:     "default template",
+			template: "Release {version}",
+			version:  semver.SemVersion{Major: 1, Minor: 2, Patch: 3},
+			prefix:   "v",
+			want:     "Release 1.2.3",
+		},
+		{
+			name:     "complex template",
+			template: "{tag}: {version} released",
+			version:  semver.SemVersion{Major: 2, Minor: 0, Patch: 0},
+			prefix:   "release-",
+			want:     "release-2.0.0: 2.0.0 released",
+		},
+		{
+			name:     "empty template uses default",
+			template: "",
+			version:  semver.SemVersion{Major: 1, Minor: 0, Patch: 0},
+			prefix:   "v",
+			want:     "Release 1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Prefix:          tt.prefix,
+				MessageTemplate: tt.template,
+			}
+			tm := NewTagManager(cfg)
+
+			got := tm.FormatTagMessage(tt.version)
+			if got != tt.want {
+				t.Errorf("FormatTagMessage() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }

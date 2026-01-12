@@ -95,6 +95,75 @@ func TestOSGitTagOperations_CreateLightweightTag(t *testing.T) {
 	})
 }
 
+func TestOSGitTagOperations_CreateSignedTag(t *testing.T) {
+	t.Run("success without key", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			// Verify correct arguments: git tag -s v1.0.0 -m "message"
+			if name != "git" {
+				t.Errorf("expected git command, got %s", name)
+			}
+			if len(args) < 5 || args[0] != "tag" || args[1] != "-s" || args[2] != "v1.0.0" {
+				t.Errorf("unexpected args: %v", args)
+			}
+			// Verify no -u flag (no key specified)
+			for _, arg := range args {
+				if arg == "-u" {
+					t.Error("unexpected -u flag when no key specified")
+				}
+			}
+			return exec.Command("true")
+		})
+
+		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+		if err != nil {
+			t.Errorf("CreateSignedTag() error = %v", err)
+		}
+	})
+
+	t.Run("success with key", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			// Verify correct arguments: git tag -s -u KEYID v1.0.0 -m "message"
+			if name != "git" {
+				t.Errorf("expected git command, got %s", name)
+			}
+			if len(args) < 7 || args[0] != "tag" || args[1] != "-s" || args[2] != "-u" || args[3] != "ABC123" {
+				t.Errorf("unexpected args: %v", args)
+			}
+			return exec.Command("true")
+		})
+
+		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "ABC123")
+		if err != nil {
+			t.Errorf("CreateSignedTag() error = %v", err)
+		}
+	})
+
+	t.Run("error with stderr", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("sh", "-c", "echo 'gpg: signing failed: No secret key' >&2 && exit 1")
+		})
+
+		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+		if err == nil {
+			t.Error("CreateSignedTag() expected error")
+		}
+		if err.Error() == "" {
+			t.Error("expected error message")
+		}
+	})
+
+	t.Run("error without stderr", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("false")
+		})
+
+		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+		if err == nil {
+			t.Error("CreateSignedTag() expected error")
+		}
+	})
+}
+
 func TestOSGitTagOperations_TagExists(t *testing.T) {
 	t.Run("tag exists", func(t *testing.T) {
 		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {

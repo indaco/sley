@@ -90,6 +90,9 @@ plugins:
     annotate: true
     push: false
     tag-prereleases: true
+    sign: false
+    signing-key: ""
+    message-template: "Release {version}"
 
   # Audit Log
   audit-log:

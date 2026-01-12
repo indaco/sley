@@ -54,6 +54,28 @@ func (g *OSGitTagOperations) CreateLightweightTag(name string) error {
 	return nil
 }
 
+func (g *OSGitTagOperations) CreateSignedTag(name, message, keyID string) error {
+	var args []string
+	if keyID != "" {
+		args = []string{"tag", "-s", "-u", keyID, name, "-m", message}
+	} else {
+		args = []string{"tag", "-s", name, "-m", message}
+	}
+
+	cmd := g.execCommand("git", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return fmt.Errorf("%s: %w", stderrMsg, err)
+		}
+		return fmt.Errorf("git tag (signed) failed: %w", err)
+	}
+	return nil
+}
+
 func (g *OSGitTagOperations) TagExists(name string) (bool, error) {
 	cmd := g.execCommand("git", "tag", "-l", name)
 	var stdout bytes.Buffer
@@ -113,6 +135,7 @@ var defaultGitTagOps = NewOSGitTagOperations()
 var (
 	createAnnotatedTagFn   = func(name, message string) error { return defaultGitTagOps.CreateAnnotatedTag(name, message) }
 	createLightweightTagFn = func(name string) error { return defaultGitTagOps.CreateLightweightTag(name) }
+	createSignedTagFn      = func(name, message, keyID string) error { return defaultGitTagOps.CreateSignedTag(name, message, keyID) }
 	tagExistsFn            = func(name string) (bool, error) { return defaultGitTagOps.TagExists(name) }
 	getLatestTagFn         = func() (string, error) { return defaultGitTagOps.GetLatestTag() }
 	pushTagFn              = func(name string) error { return defaultGitTagOps.PushTag(name) }

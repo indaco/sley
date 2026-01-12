@@ -49,17 +49,35 @@ type Config struct {
 	// When false, tags are only created for stable releases (major/minor/patch).
 	// Default: true (for backward compatibility).
 	TagPrereleases bool
+
+	// Sign creates GPG-signed tags using git tag -s.
+	// Requires git to be configured with a GPG signing key.
+	// Default: false.
+	Sign bool
+
+	// SigningKey specifies the GPG key ID to use for signing.
+	// If empty, git uses the default signing key from user.signingkey config.
+	// Only used when Sign is true.
+	SigningKey string
+
+	// MessageTemplate is a template for the tag message.
+	// Supports placeholders: {version}, {tag}, {prefix}, {date}, {major}, {minor}, {patch}, {prerelease}, {build}
+	// Default: "Release {version}" for annotated/signed tags.
+	MessageTemplate string
 }
 
 // DefaultConfig returns the default tag manager configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Enabled:        false,
-		AutoCreate:     true,
-		Prefix:         "v",
-		Annotate:       true,
-		Push:           false,
-		TagPrereleases: true,
+		Enabled:         false,
+		AutoCreate:      true,
+		Prefix:          "v",
+		Annotate:        true,
+		Push:            false,
+		TagPrereleases:  true,
+		Sign:            false,
+		SigningKey:      "",
+		MessageTemplate: "Release {version}",
 	}
 }
 
@@ -103,15 +121,30 @@ func (p *TagManagerPlugin) CreateTag(version semver.SemVersion, message string) 
 		return fmt.Errorf("tag %s already exists", tagName)
 	}
 
-	// Create the tag
-	if p.config.Annotate {
-		if message == "" {
-			message = fmt.Sprintf("Release %s", version.String())
+	// Format the message using template if no explicit message provided
+	if message == "" {
+		template := p.config.MessageTemplate
+		if template == "" {
+			template = "Release {version}"
 		}
+		data := NewTemplateData(version, p.config.Prefix)
+		message = FormatMessage(template, data)
+	}
+
+	// Create the tag based on configuration
+	switch {
+	case p.config.Sign:
+		// GPG-signed tag (implies annotated)
+		if err := createSignedTagFn(tagName, message, p.config.SigningKey); err != nil {
+			return fmt.Errorf("failed to create signed tag: %w", err)
+		}
+	case p.config.Annotate:
+		// Annotated tag (not signed)
 		if err := createAnnotatedTagFn(tagName, message); err != nil {
 			return fmt.Errorf("failed to create annotated tag: %w", err)
 		}
-	} else {
+	default:
+		// Lightweight tag (no message)
 		if err := createLightweightTagFn(tagName); err != nil {
 			return fmt.Errorf("failed to create lightweight tag: %w", err)
 		}
@@ -125,6 +158,16 @@ func (p *TagManagerPlugin) CreateTag(version semver.SemVersion, message string) 
 	}
 
 	return nil
+}
+
+// FormatTagMessage formats a tag message using the configured template.
+func (p *TagManagerPlugin) FormatTagMessage(version semver.SemVersion) string {
+	template := p.config.MessageTemplate
+	if template == "" {
+		template = "Release {version}"
+	}
+	data := NewTemplateData(version, p.config.Prefix)
+	return FormatMessage(template, data)
 }
 
 // TagExists checks if a tag for the given version already exists.

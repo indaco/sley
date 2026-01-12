@@ -33,6 +33,21 @@ type TagManagerConfig struct {
 	// When false, tags are only created for stable releases (major/minor/patch).
 	// Default: true.
 	TagPrereleases *bool `yaml:"tag-prereleases,omitempty"`
+
+	// Sign creates GPG-signed tags using git tag -s.
+	// Requires git to be configured with a GPG signing key.
+	// Default: false.
+	Sign bool `yaml:"sign,omitempty"`
+
+	// SigningKey specifies the GPG key ID to use for signing.
+	// If empty, git uses the default signing key from user.signingkey config.
+	// Only used when Sign is true.
+	SigningKey string `yaml:"signing-key,omitempty"`
+
+	// MessageTemplate is a template for the tag message.
+	// Supports placeholders: {version}, {tag}, {prefix}, {date}, {major}, {minor}, {patch}, {prerelease}, {build}
+	// Default: "Release {version}" for annotated/signed tags.
+	MessageTemplate string `yaml:"message-template,omitempty"`
 }
 
 // GetAutoCreate returns the auto-create setting with default true.
@@ -65,6 +80,24 @@ func (c *TagManagerConfig) GetTagPrereleases() bool {
 		return true
 	}
 	return *c.TagPrereleases
+}
+
+// GetSign returns the sign setting.
+func (c *TagManagerConfig) GetSign() bool {
+	return c.Sign
+}
+
+// GetSigningKey returns the signing key.
+func (c *TagManagerConfig) GetSigningKey() string {
+	return c.SigningKey
+}
+
+// GetMessageTemplate returns the message template with default "Release {version}".
+func (c *TagManagerConfig) GetMessageTemplate() string {
+	if c.MessageTemplate == "" {
+		return "Release {version}"
+	}
+	return c.MessageTemplate
 }
 
 // VersionValidatorConfig holds configuration for the version validator plugin.

@@ -110,6 +110,10 @@ type GitTagOperations interface {
 	// CreateLightweightTag creates a lightweight git tag with the given name.
 	CreateLightweightTag(name string) error
 
+	// CreateSignedTag creates a GPG-signed git tag with the given name, message, and optional key ID.
+	// If keyID is empty, git uses the default signing key from user.signingkey config.
+	CreateSignedTag(name, message, keyID string) error
+
 	// TagExists checks if a git tag with the given name exists.
 	TagExists(name string) (bool, error)
 

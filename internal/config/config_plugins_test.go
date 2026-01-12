@@ -142,6 +142,90 @@ func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
 	}
 }
 
+func TestTagManagerConfig_GetSign(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *TagManagerConfig
+		expected bool
+	}{
+		{
+			name:     "sign false",
+			config:   &TagManagerConfig{Sign: false},
+			expected: false,
+		},
+		{
+			name:     "sign true",
+			config:   &TagManagerConfig{Sign: true},
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.GetSign()
+			if result != tt.expected {
+				t.Errorf("GetSign() = %v, want %v", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTagManagerConfig_GetSigningKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *TagManagerConfig
+		expected string
+	}{
+		{
+			name:     "empty signing key",
+			config:   &TagManagerConfig{SigningKey: ""},
+			expected: "",
+		},
+		{
+			name:     "custom signing key",
+			config:   &TagManagerConfig{SigningKey: "ABC123DEF456"},
+			expected: "ABC123DEF456",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.GetSigningKey()
+			if result != tt.expected {
+				t.Errorf("GetSigningKey() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTagManagerConfig_GetMessageTemplate(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *TagManagerConfig
+		expected string
+	}{
+		{
+			name:     "empty message template - defaults to Release {version}",
+			config:   &TagManagerConfig{MessageTemplate: ""},
+			expected: "Release {version}",
+		},
+		{
+			name:     "custom message template",
+			config:   &TagManagerConfig{MessageTemplate: "{tag}: Release version {version}"},
+			expected: "{tag}: Release version {version}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.config.GetMessageTemplate()
+			if result != tt.expected {
+				t.Errorf("GetMessageTemplate() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
 // boolPtr is a helper to create a pointer to a bool value
 func boolPtr(b bool) *bool {
 	return &b
@@ -217,6 +301,114 @@ plugins:
 				got := cfg.Plugins.TagManager.GetTagPrereleases()
 				if got != tt.wantValue {
 					t.Errorf("GetTagPrereleases() = %v, want %v", got, tt.wantValue)
+				}
+			})
+		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* TAG MANAGER SIGNING AND MESSAGE TEMPLATE YAML LOADING                    */
+/* ------------------------------------------------------------------------- */
+
+func TestTagManagerConfig_SignAndMessageTemplate_YAMLLoading(t *testing.T) {
+	tests := []struct {
+		name            string
+		yamlInput       string
+		wantSign        bool
+		wantSigningKey  string
+		wantMsgTemplate string
+	}{
+		{
+			name: "sign enabled without key",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    sign: true
+`,
+			wantSign:        true,
+			wantSigningKey:  "",
+			wantMsgTemplate: "Release {version}",
+		},
+		{
+			name: "sign enabled with key",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    sign: true
+    signing-key: "ABC123DEF456"
+`,
+			wantSign:        true,
+			wantSigningKey:  "ABC123DEF456",
+			wantMsgTemplate: "Release {version}",
+		},
+		{
+			name: "custom message template",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    message-template: "{tag}: Release version {version} on {date}"
+`,
+			wantSign:        false,
+			wantSigningKey:  "",
+			wantMsgTemplate: "{tag}: Release version {version} on {date}",
+		},
+		{
+			name: "all new options",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+    sign: true
+    signing-key: "MYKEY123"
+    message-template: "Version {version}"
+`,
+			wantSign:        true,
+			wantSigningKey:  "MYKEY123",
+			wantMsgTemplate: "Version {version}",
+		},
+		{
+			name: "sign disabled by default",
+			yamlInput: `path: .version
+plugins:
+  tag-manager:
+    enabled: true
+`,
+			wantSign:        false,
+			wantSigningKey:  "",
+			wantMsgTemplate: "Release {version}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
+			runInTempDir(t, tmpPath, func() {
+				cfg, err := LoadConfigFn()
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+
+				if cfg.Plugins == nil || cfg.Plugins.TagManager == nil {
+					t.Fatal("expected tag-manager plugin config")
+				}
+
+				gotSign := cfg.Plugins.TagManager.GetSign()
+				if gotSign != tt.wantSign {
+					t.Errorf("GetSign() = %v, want %v", gotSign, tt.wantSign)
+				}
+
+				gotSigningKey := cfg.Plugins.TagManager.GetSigningKey()
+				if gotSigningKey != tt.wantSigningKey {
+					t.Errorf("GetSigningKey() = %q, want %q", gotSigningKey, tt.wantSigningKey)
+				}
+
+				gotMsgTemplate := cfg.Plugins.TagManager.GetMessageTemplate()
+				if gotMsgTemplate != tt.wantMsgTemplate {
+					t.Errorf("GetMessageTemplate() = %q, want %q", gotMsgTemplate, tt.wantMsgTemplate)
 				}
 			})
 		})
