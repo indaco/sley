@@ -38,3 +38,6 @@ coverage.txt
 # goreleaser:
 build
 dist/
+
+# Local extensions (not pushed to remote)
+local-extensions/
