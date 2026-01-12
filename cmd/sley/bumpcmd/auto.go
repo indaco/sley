@@ -177,7 +177,9 @@ func runSingleModuleAuto(cmd *cli.Command, registry *plugins.PluginRegistry, pat
 	}
 
 	printer.PrintSuccess(fmt.Sprintf("Bumped version from %s to %s", current.String(), next.String()))
-	return nil
+
+	// Create tag after successful bump
+	return createTagAfterBump(registry, next, "auto")
 }
 
 // getNextVersion determines the next semantic version based on the provided label,
