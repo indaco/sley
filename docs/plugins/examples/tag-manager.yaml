@@ -6,11 +6,14 @@ path: .version
 plugins:
   tag-manager:
     enabled: true
-    auto-create: true
+    # Set to true for automatic tagging during bump
+    # Default is false - use `sley tag create` for manual workflow
+    auto-create: false
     prefix: "v"
     annotate: true
     push: false
-    tag-prereleases: true
+    # Set to true to also create tags for pre-release versions
+    tag-prereleases: false
 
     # GPG Signing (optional)
     # Requires git to be configured with a GPG signing key
