@@ -91,6 +91,21 @@ func containsInvalidTagChars(s string) bool {
 	return false
 }
 
+// validVersionValidatorRuleTypes defines the set of valid rule types for version-validator.
+var validVersionValidatorRuleTypes = map[string]bool{
+	"pre-release-format":         true,
+	"major-version-max":          true,
+	"minor-version-max":          true,
+	"patch-version-max":          true,
+	"require-pre-release-for-0x": true,
+	"branch-constraint":          true,
+	"no-major-bump":              true,
+	"no-minor-bump":              true,
+	"no-patch-bump":              true,
+	"max-prerelease-iterations":  true,
+	"require-even-minor":         true,
+}
+
 // validateVersionValidatorConfig validates the version-validator plugin configuration.
 func (v *Validator) validateVersionValidatorConfig() {
 	if v.cfg.Plugins.VersionValidator == nil || !v.cfg.Plugins.VersionValidator.Enabled {
@@ -99,74 +114,71 @@ func (v *Validator) validateVersionValidatorConfig() {
 
 	cfg := v.cfg.Plugins.VersionValidator
 
-	// Validate rules
 	if len(cfg.Rules) == 0 {
 		v.addValidation("Plugin: version-validator", true,
 			"Version validator enabled but no rules configured", true)
 		return
 	}
 
-	validRuleTypes := map[string]bool{
-		"pre-release-format":         true,
-		"major-version-max":          true,
-		"minor-version-max":          true,
-		"patch-version-max":          true,
-		"require-pre-release-for-0x": true,
-		"branch-constraint":          true,
-		"no-major-bump":              true,
-		"no-minor-bump":              true,
-		"no-patch-bump":              true,
-		"max-prerelease-iterations":  true,
-		"require-even-minor":         true,
-	}
-
 	for i, rule := range cfg.Rules {
-		// Check if rule type is valid
-		if !validRuleTypes[rule.Type] {
-			v.addValidation("Plugin: version-validator", false,
-				fmt.Sprintf("Rule %d: unknown rule type '%s'", i+1, rule.Type), false)
-			continue
-		}
-
-		// Validate pattern for pre-release-format rules
-		if rule.Type == "pre-release-format" && rule.Pattern != "" {
-			if _, err := regexp.Compile(rule.Pattern); err != nil {
-				v.addValidation("Plugin: version-validator", false,
-					fmt.Sprintf("Rule %d: invalid regex pattern: %v", i+1, err), false)
-			}
-		}
-
-		// Validate branch-constraint rules
-		if rule.Type == "branch-constraint" {
-			if rule.Branch == "" {
-				v.addValidation("Plugin: version-validator", false,
-					fmt.Sprintf("Rule %d: branch-constraint requires 'branch' field", i+1), false)
-			}
-			if len(rule.Allowed) == 0 {
-				v.addValidation("Plugin: version-validator", false,
-					fmt.Sprintf("Rule %d: branch-constraint requires 'allowed' field", i+1), false)
-			}
-		}
-
-		// Validate max-prerelease-iterations rules
-		if rule.Type == "max-prerelease-iterations" {
-			if rule.Value <= 0 {
-				v.addValidation("Plugin: version-validator", true,
-					fmt.Sprintf("Rule %d: max-prerelease-iterations has no value set (rule will be skipped)", i+1), true)
-			}
-		}
-
-		// Validate version-max rules
-		if rule.Type == "major-version-max" || rule.Type == "minor-version-max" || rule.Type == "patch-version-max" {
-			if rule.Value <= 0 {
-				v.addValidation("Plugin: version-validator", true,
-					fmt.Sprintf("Rule %d: %s has no value set (rule will be skipped)", i+1, rule.Type), true)
-			}
-		}
+		v.validateVersionValidatorRule(i, rule)
 	}
 
 	v.addValidation("Plugin: version-validator", true,
 		fmt.Sprintf("Configured with %d validation rule(s)", len(cfg.Rules)), false)
+}
+
+// validateVersionValidatorRule validates a single version-validator rule.
+func (v *Validator) validateVersionValidatorRule(idx int, rule ValidationRule) {
+	ruleNum := idx + 1
+
+	if !validVersionValidatorRuleTypes[rule.Type] {
+		v.addValidation("Plugin: version-validator", false,
+			fmt.Sprintf("Rule %d: unknown rule type '%s'", ruleNum, rule.Type), false)
+		return
+	}
+
+	switch rule.Type {
+	case "pre-release-format":
+		v.validatePreReleaseFormatRule(ruleNum, rule)
+	case "branch-constraint":
+		v.validateBranchConstraintRule(ruleNum, rule)
+	case "max-prerelease-iterations":
+		v.validateValueRequiredRule(ruleNum, rule)
+	case "major-version-max", "minor-version-max", "patch-version-max":
+		v.validateValueRequiredRule(ruleNum, rule)
+	}
+}
+
+// validatePreReleaseFormatRule validates a pre-release-format rule.
+func (v *Validator) validatePreReleaseFormatRule(ruleNum int, rule ValidationRule) {
+	if rule.Pattern == "" {
+		return
+	}
+	if _, err := regexp.Compile(rule.Pattern); err != nil {
+		v.addValidation("Plugin: version-validator", false,
+			fmt.Sprintf("Rule %d: invalid regex pattern: %v", ruleNum, err), false)
+	}
+}
+
+// validateBranchConstraintRule validates a branch-constraint rule.
+func (v *Validator) validateBranchConstraintRule(ruleNum int, rule ValidationRule) {
+	if rule.Branch == "" {
+		v.addValidation("Plugin: version-validator", false,
+			fmt.Sprintf("Rule %d: branch-constraint requires 'branch' field", ruleNum), false)
+	}
+	if len(rule.Allowed) == 0 {
+		v.addValidation("Plugin: version-validator", false,
+			fmt.Sprintf("Rule %d: branch-constraint requires 'allowed' field", ruleNum), false)
+	}
+}
+
+// validateValueRequiredRule validates rules that require a positive value.
+func (v *Validator) validateValueRequiredRule(ruleNum int, rule ValidationRule) {
+	if rule.Value <= 0 {
+		v.addValidation("Plugin: version-validator", true,
+			fmt.Sprintf("Rule %d: %s has no value set (rule will be skipped)", ruleNum, rule.Type), true)
+	}
 }
 
 // validateDependencyCheckConfig validates the dependency-check plugin configuration.
