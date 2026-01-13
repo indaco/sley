@@ -21,6 +21,8 @@ Built-in, **disabled by default**
 - Branch-based constraints for release workflows
 - Version number limits (major, minor, patch)
 - Pre-release label format enforcement
+- Pre-release iteration limits
+- Even/odd minor version policies
 - Bump type restrictions
 
 ## How It Works
@@ -49,17 +51,19 @@ plugins:
 
 ## Available Rule Types
 
-| Rule Type                    | Description                                 | Parameters                          |
-| ---------------------------- | ------------------------------------------- | ----------------------------------- |
-| `pre-release-format`         | Validates pre-release label matches regex   | `pattern`: regex                    |
-| `major-version-max`          | Limits maximum major version number         | `value`: int                        |
-| `minor-version-max`          | Limits maximum minor version number         | `value`: int                        |
-| `patch-version-max`          | Limits maximum patch version number         | `value`: int                        |
-| `require-pre-release-for-0x` | Requires pre-release label for 0.x versions | `enabled`: bool                     |
-| `branch-constraint`          | Restricts bump types on specific branches   | `branch`: glob, `allowed`: []string |
-| `no-major-bump`              | Disallows major version bumps               | `enabled`: bool                     |
-| `no-minor-bump`              | Disallows minor version bumps               | `enabled`: bool                     |
-| `no-patch-bump`              | Disallows patch version bumps               | `enabled`: bool                     |
+| Rule Type                    | Description                                      | Parameters                          |
+| ---------------------------- | ------------------------------------------------ | ----------------------------------- |
+| `pre-release-format`         | Validates pre-release label matches regex        | `pattern`: regex                    |
+| `major-version-max`          | Limits maximum major version number              | `value`: int                        |
+| `minor-version-max`          | Limits maximum minor version number              | `value`: int                        |
+| `patch-version-max`          | Limits maximum patch version number              | `value`: int                        |
+| `max-prerelease-iterations`  | Limits pre-release iteration number              | `value`: int                        |
+| `require-pre-release-for-0x` | Requires pre-release label for 0.x versions      | `enabled`: bool                     |
+| `require-even-minor`         | Requires even minor versions for stable releases | `enabled`: bool                     |
+| `branch-constraint`          | Restricts bump types on specific branches        | `branch`: glob, `allowed`: []string |
+| `no-major-bump`              | Disallows major version bumps                    | `enabled`: bool                     |
+| `no-minor-bump`              | Disallows minor version bumps                    | `enabled`: bool                     |
+| `no-patch-bump`              | Disallows patch version bumps                    | `enabled`: bool                     |
 
 ## Rule Examples
 
@@ -87,6 +91,40 @@ rules:
 ```bash
 # At version 10.0.0:
 sley bump major  # Error: major version 11 exceeds maximum 10
+```
+
+### Pre-release Iteration Limits
+
+Limits how many iterations a pre-release can have (e.g., `alpha.1` through `alpha.5`):
+
+```yaml
+rules:
+  - type: "max-prerelease-iterations"
+    value: 5
+```
+
+```bash
+sley bump pre alpha     # Creates alpha.1 - OK
+sley bump pre alpha     # Creates alpha.5 - OK
+sley bump pre alpha     # Creates alpha.6 - Error: exceeds maximum 5
+```
+
+Supports various pre-release formats: `alpha.1`, `beta-2`, `rc3`, etc.
+
+### Even Minor Version Policy
+
+Enforces even minor versions for stable releases (useful for even=stable, odd=development schemes):
+
+```yaml
+rules:
+  - type: "require-even-minor"
+    enabled: true
+```
+
+```bash
+sley set 1.2.0           # OK (even minor, stable)
+sley set 1.3.0-alpha.1   # OK (odd minor, but pre-release)
+sley set 1.3.0           # Error: stable releases must have even minor
 ```
 
 ### Branch Constraints
@@ -158,6 +196,12 @@ Error: pre-release label "preview" does not match required pattern
 
 # Version max
 Error: major version 11 exceeds maximum allowed value 10
+
+# Pre-release iteration
+Error: pre-release iteration 6 exceeds maximum allowed value 5
+
+# Even minor policy
+Error: stable releases must have even minor version numbers (got 1.3.0)
 
 # Branch constraint
 Error: bump type "major" is not allowed on branch "main"

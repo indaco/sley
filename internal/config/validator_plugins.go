@@ -107,9 +107,17 @@ func (v *Validator) validateVersionValidatorConfig() {
 	}
 
 	validRuleTypes := map[string]bool{
-		"pre-release-format": true,
-		"major-version-max":  true,
-		"branch-constraint":  true,
+		"pre-release-format":         true,
+		"major-version-max":          true,
+		"minor-version-max":          true,
+		"patch-version-max":          true,
+		"require-pre-release-for-0x": true,
+		"branch-constraint":          true,
+		"no-major-bump":              true,
+		"no-minor-bump":              true,
+		"no-patch-bump":              true,
+		"max-prerelease-iterations":  true,
+		"require-even-minor":         true,
 	}
 
 	for i, rule := range cfg.Rules {
@@ -137,6 +145,22 @@ func (v *Validator) validateVersionValidatorConfig() {
 			if len(rule.Allowed) == 0 {
 				v.addValidation("Plugin: version-validator", false,
 					fmt.Sprintf("Rule %d: branch-constraint requires 'allowed' field", i+1), false)
+			}
+		}
+
+		// Validate max-prerelease-iterations rules
+		if rule.Type == "max-prerelease-iterations" {
+			if rule.Value <= 0 {
+				v.addValidation("Plugin: version-validator", true,
+					fmt.Sprintf("Rule %d: max-prerelease-iterations has no value set (rule will be skipped)", i+1), true)
+			}
+		}
+
+		// Validate version-max rules
+		if rule.Type == "major-version-max" || rule.Type == "minor-version-max" || rule.Type == "patch-version-max" {
+			if rule.Value <= 0 {
+				v.addValidation("Plugin: version-validator", true,
+					fmt.Sprintf("Rule %d: %s has no value set (rule will be skipped)", i+1, rule.Type), true)
 			}
 		}
 	}
