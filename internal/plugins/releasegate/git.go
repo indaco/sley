@@ -7,18 +7,37 @@ import (
 	"strings"
 )
 
-// Function variables for testability.
-var (
-	isWorktreeCleanFn  = isWorktreeClean
-	getCurrentBranchFn = getCurrentBranch
-	getRecentCommitsFn = getRecentCommits
-	execCommand        = exec.Command
-)
+// GitOperations defines the interface for git operations used by release gate.
+type GitOperations interface {
+	// IsWorktreeClean checks if the git working tree has uncommitted changes.
+	IsWorktreeClean() (bool, error)
 
-// isWorktreeClean checks if the git working tree has uncommitted changes.
+	// GetCurrentBranch retrieves the current git branch name.
+	GetCurrentBranch() (string, error)
+
+	// GetRecentCommits retrieves the last N commit messages.
+	GetRecentCommits(count int) ([]string, error)
+}
+
+// OSGitOperations implements GitOperations using actual git commands.
+type OSGitOperations struct {
+	execCommand func(name string, arg ...string) *exec.Cmd
+}
+
+// NewOSGitOperations creates a new OSGitOperations with the default exec.Command.
+func NewOSGitOperations() *OSGitOperations {
+	return &OSGitOperations{
+		execCommand: exec.Command,
+	}
+}
+
+// Verify OSGitOperations implements GitOperations.
+var _ GitOperations = (*OSGitOperations)(nil)
+
+// IsWorktreeClean checks if the git working tree has uncommitted changes.
 // Returns true if the working tree is clean (no uncommitted changes).
-func isWorktreeClean() (bool, error) {
-	cmd := execCommand("git", "status", "--porcelain")
+func (g *OSGitOperations) IsWorktreeClean() (bool, error) {
+	cmd := g.execCommand("git", "status", "--porcelain")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -36,9 +55,9 @@ func isWorktreeClean() (bool, error) {
 	return output == "", nil
 }
 
-// getCurrentBranch retrieves the current git branch name.
-func getCurrentBranch() (string, error) {
-	cmd := execCommand("git", "rev-parse", "--abbrev-ref", "HEAD")
+// GetCurrentBranch retrieves the current git branch name.
+func (g *OSGitOperations) GetCurrentBranch() (string, error) {
+	cmd := g.execCommand("git", "rev-parse", "--abbrev-ref", "HEAD")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -59,13 +78,13 @@ func getCurrentBranch() (string, error) {
 	return branch, nil
 }
 
-// getRecentCommits retrieves the last N commit messages.
-func getRecentCommits(count int) ([]string, error) {
+// GetRecentCommits retrieves the last N commit messages.
+func (g *OSGitOperations) GetRecentCommits(count int) ([]string, error) {
 	if count <= 0 {
 		count = 10
 	}
 
-	cmd := execCommand("git", "log", fmt.Sprintf("-n%d", count), "--oneline", "--no-decorate")
+	cmd := g.execCommand("git", "log", fmt.Sprintf("-n%d", count), "--oneline", "--no-decorate")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr

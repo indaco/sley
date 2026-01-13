@@ -174,19 +174,16 @@ func TestReleaseGatePlugin_CheckWorktreeClean(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Save original function
-			origFn := isWorktreeCleanFn
-			defer func() { isWorktreeCleanFn = origFn }()
-
-			// Mock the function
-			isWorktreeCleanFn = func() (bool, error) {
-				return tt.clean, tt.gitErr
+			mockOps := &MockGitOperations{
+				IsWorktreeCleanFn: func() (bool, error) {
+					return tt.clean, tt.gitErr
+				},
 			}
 
-			plugin := NewReleaseGate(&Config{
+			plugin := NewReleaseGateWithOps(&Config{
 				Enabled:              true,
 				RequireCleanWorktree: true,
-			})
+			}, mockOps)
 
 			err := plugin.checkWorktreeClean()
 
@@ -274,20 +271,17 @@ func TestReleaseGatePlugin_CheckBranchConstraints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Save original function
-			origFn := getCurrentBranchFn
-			defer func() { getCurrentBranchFn = origFn }()
-
-			// Mock the function
-			getCurrentBranchFn = func() (string, error) {
-				return tt.currentBranch, tt.branchErr
+			mockOps := &MockGitOperations{
+				GetCurrentBranchFn: func() (string, error) {
+					return tt.currentBranch, tt.branchErr
+				},
 			}
 
-			plugin := NewReleaseGate(&Config{
+			plugin := NewReleaseGateWithOps(&Config{
 				Enabled:         true,
 				AllowedBranches: tt.allowedBranches,
 				BlockedBranches: tt.blockedBranches,
-			})
+			}, mockOps)
 
 			err := plugin.checkBranchConstraints()
 
@@ -391,19 +385,16 @@ func TestReleaseGatePlugin_CheckWIPCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Save original function
-			origFn := getRecentCommitsFn
-			defer func() { getRecentCommitsFn = origFn }()
-
-			// Mock the function
-			getRecentCommitsFn = func(count int) ([]string, error) {
-				return tt.commits, tt.commitsErr
+			mockOps := &MockGitOperations{
+				GetRecentCommitsFn: func(count int) ([]string, error) {
+					return tt.commits, tt.commitsErr
+				},
 			}
 
-			plugin := NewReleaseGate(&Config{
+			plugin := NewReleaseGateWithOps(&Config{
 				Enabled:             true,
 				BlockedOnWIPCommits: true,
-			})
+			}, mockOps)
 
 			err := plugin.checkWIPCommits()
 
@@ -489,28 +480,19 @@ func TestReleaseGatePlugin_ValidateRelease_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Save original functions
-			origWorktreeFn := isWorktreeCleanFn
-			origBranchFn := getCurrentBranchFn
-			origCommitsFn := getRecentCommitsFn
-			defer func() {
-				isWorktreeCleanFn = origWorktreeFn
-				getCurrentBranchFn = origBranchFn
-				getRecentCommitsFn = origCommitsFn
-			}()
-
-			// Mock the functions
-			isWorktreeCleanFn = func() (bool, error) {
-				return tt.worktreeClean, tt.worktreeErr
-			}
-			getCurrentBranchFn = func() (string, error) {
-				return tt.currentBranch, tt.branchErr
-			}
-			getRecentCommitsFn = func(count int) ([]string, error) {
-				return tt.commits, tt.commitsErr
+			mockOps := &MockGitOperations{
+				IsWorktreeCleanFn: func() (bool, error) {
+					return tt.worktreeClean, tt.worktreeErr
+				},
+				GetCurrentBranchFn: func() (string, error) {
+					return tt.currentBranch, tt.branchErr
+				},
+				GetRecentCommitsFn: func(count int) ([]string, error) {
+					return tt.commits, tt.commitsErr
+				},
 			}
 
-			plugin := NewReleaseGate(tt.cfg)
+			plugin := NewReleaseGateWithOps(tt.cfg, mockOps)
 			newVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 			prevVersion := semver.SemVersion{Major: 0, Minor: 1, Patch: 0}
 
@@ -643,6 +625,18 @@ func TestRegistry(t *testing.T) {
 			t.Error("Unregister() did not clear the default release gate")
 		}
 	})
+}
+
+func TestNewReleaseGateWithOps_NilGitOps(t *testing.T) {
+	// When gitOps is nil, it should default to OSGitOperations
+	plugin := NewReleaseGateWithOps(nil, nil)
+
+	if plugin == nil {
+		t.Fatal("NewReleaseGateWithOps() returned nil")
+	}
+	if plugin.gitOps == nil {
+		t.Error("NewReleaseGateWithOps() should set default gitOps when nil")
+	}
 }
 
 // containsString checks if s contains substr.

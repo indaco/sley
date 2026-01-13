@@ -18,18 +18,32 @@ type ReleaseGate interface {
 
 // ReleaseGatePlugin implements the ReleaseGate interface.
 type ReleaseGatePlugin struct {
-	cfg *Config
+	cfg    *Config
+	gitOps GitOperations
 }
 
 // Ensure ReleaseGatePlugin implements ReleaseGate.
 var _ ReleaseGate = (*ReleaseGatePlugin)(nil)
 
 // NewReleaseGate creates a new ReleaseGatePlugin instance.
+// Uses the default OSGitOperations for git operations.
 func NewReleaseGate(cfg *Config) *ReleaseGatePlugin {
+	return NewReleaseGateWithOps(cfg, NewOSGitOperations())
+}
+
+// NewReleaseGateWithOps creates a new ReleaseGatePlugin with custom git operations.
+// This constructor enables dependency injection for testing.
+func NewReleaseGateWithOps(cfg *Config, gitOps GitOperations) *ReleaseGatePlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
-	return &ReleaseGatePlugin{cfg: cfg}
+	if gitOps == nil {
+		gitOps = NewOSGitOperations()
+	}
+	return &ReleaseGatePlugin{
+		cfg:    cfg,
+		gitOps: gitOps,
+	}
 }
 
 // Name returns the plugin name.
@@ -91,7 +105,7 @@ func (p *ReleaseGatePlugin) ValidateRelease(newVersion, previousVersion semver.S
 
 // checkWorktreeClean verifies that the git working tree is clean.
 func (p *ReleaseGatePlugin) checkWorktreeClean() error {
-	clean, err := isWorktreeCleanFn()
+	clean, err := p.gitOps.IsWorktreeClean()
 	if err != nil {
 		// If we can't check git status, we should fail safe
 		return fmt.Errorf("release-gate: failed to check git status: %w", err)
@@ -106,7 +120,7 @@ func (p *ReleaseGatePlugin) checkWorktreeClean() error {
 
 // checkBranchConstraints validates that the current branch is allowed for bumps.
 func (p *ReleaseGatePlugin) checkBranchConstraints() error {
-	branch, err := getCurrentBranchFn()
+	branch, err := p.gitOps.GetCurrentBranch()
 	if err != nil {
 		// If we can't get the branch, skip this check
 		return nil
@@ -149,7 +163,7 @@ func (p *ReleaseGatePlugin) checkBranchConstraints() error {
 
 // checkWIPCommits checks if recent commits contain WIP markers.
 func (p *ReleaseGatePlugin) checkWIPCommits() error {
-	commits, err := getRecentCommitsFn(10)
+	commits, err := p.gitOps.GetRecentCommits(10)
 	if err != nil {
 		// If we can't get commits, skip this check
 		return nil
