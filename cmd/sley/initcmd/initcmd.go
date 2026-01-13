@@ -9,6 +9,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
+	"github.com/indaco/sley/internal/tui"
 	"github.com/urfave/cli/v3"
 )
 
@@ -158,7 +159,7 @@ func handleMigration(yesFlag bool) string {
 	}
 
 	// Show detected versions
-	printer.PrintInfo(fmt.Sprintf("Detected %d version source%s:", len(sources), pluralize(len(sources))))
+	printer.PrintInfo(fmt.Sprintf("Detected %d version source%s:", len(sources), tui.Pluralize(len(sources))))
 	fmt.Print(FormatVersionSources(sources))
 
 	// Get best version
@@ -300,7 +301,7 @@ func printSuccessSummary(path string, versionCreated, configCreated bool, plugin
 
 	if configCreated {
 		pluginCount := len(plugins)
-		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s enabled", pluginCount, pluralize(pluginCount)))
+		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s enabled", pluginCount, tui.Pluralize(pluginCount)))
 	}
 
 	// Print next steps
@@ -334,12 +335,4 @@ func isTerminalInteractive() bool {
 		return false
 	}
 	return (fileInfo.Mode() & os.ModeCharDevice) != 0
-}
-
-// pluralize returns "s" if count != 1.
-func pluralize(count int) string {
-	if count == 1 {
-		return ""
-	}
-	return "s"
 }

@@ -19,6 +19,9 @@ linters:
     - unconvert
     - unused
   settings:
+    staticcheck:
+      checks:
+        - "all"
     gocritic:
       enabled-tags:
         - diagnostic

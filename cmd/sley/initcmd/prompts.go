@@ -1,11 +1,10 @@
 package initcmd
 
 import (
-	"errors"
 	"fmt"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/huh"
+	"github.com/indaco/sley/internal/tui"
 )
 
 // PluginOption represents a selectable plugin with metadata.
@@ -73,21 +72,9 @@ func DefaultPluginNames() []string {
 	return defaults
 }
 
-// customKeyMap returns a KeyMap with Esc added as a quit key.
-func customKeyMap() *huh.KeyMap {
-	km := huh.NewDefaultKeyMap()
-	km.Quit = key.NewBinding(
-		key.WithKeys("ctrl+c", "esc"),
-		key.WithHelp("esc", "cancel"),
-	)
-	return km
-}
-
 // PromptPluginSelection shows an interactive multi-select prompt for plugin selection.
 // Returns the list of selected plugin names or an error if the user cancels.
 func PromptPluginSelection(detectionSummary string) ([]string, error) {
-	var selected []string
-
 	// Build options from available plugins
 	options := make([]huh.Option[string], 0, len(AllPluginOptions()))
 	for _, plugin := range AllPluginOptions() {
@@ -104,74 +91,23 @@ func PromptPluginSelection(detectionSummary string) ([]string, error) {
 		description = detectionSummary + "\n" + description
 	}
 
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewMultiSelect[string]().
-				Title("Select plugins to enable:").
-				Description(description).
-				Options(options...).
-				Value(&selected).
-				Filterable(false),
-		),
-	).WithKeyMap(customKeyMap())
-
-	// Set defaults after form creation
-	selected = defaults
-
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return nil, fmt.Errorf("plugin selection canceled by user")
-		}
-		return nil, fmt.Errorf("plugin selection failed: %w", err)
-	}
-
-	return selected, nil
+	return tui.MultiSelect("Select plugins to enable:", description, options, defaults)
 }
 
 // ConfirmOverwrite asks the user if they want to overwrite an existing .sley.yaml file.
 func ConfirmOverwrite() (bool, error) {
-	var confirmed bool
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(".sley.yaml already exists. Overwrite?").
-				Description("This will replace your existing configuration.").
-				Value(&confirmed),
-		),
-	).WithKeyMap(customKeyMap())
-
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return false, nil
-		}
-		return false, fmt.Errorf("confirmation failed: %w", err)
-	}
-
-	return confirmed, nil
+	return tui.Confirm(
+		".sley.yaml already exists. Overwrite?",
+		"This will replace your existing configuration.",
+	)
 }
 
 // confirmVersionMigration asks the user if they want to use the detected version.
 func confirmVersionMigration(version, file string) (bool, error) {
-	var confirmed bool
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(fmt.Sprintf("Use version %s from %s?", version, file)).
-				Description("This will initialize .version with the detected version.").
-				Value(&confirmed),
-		),
-	).WithKeyMap(customKeyMap())
-
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return false, nil
-		}
-		return false, fmt.Errorf("confirmation failed: %w", err)
-	}
-
-	return confirmed, nil
+	return tui.Confirm(
+		fmt.Sprintf("Use version %s from %s?", version, file),
+		"This will initialize .version with the detected version.",
+	)
 }
 
 // selectVersionSource prompts the user to select a version source from multiple options.
@@ -186,22 +122,12 @@ func selectVersionSource(sources []VersionSource) (*VersionSource, error) {
 		options[i] = huh.NewOption(label, i)
 	}
 
-	var selected int
-
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewSelect[int]().
-				Title("Select version to use:").
-				Description("Choose which version to migrate to .version file").
-				Options(options...).
-				Value(&selected),
-		),
-	).WithKeyMap(customKeyMap())
-
-	if err := form.Run(); err != nil {
-		if errors.Is(err, huh.ErrUserAborted) {
-			return nil, nil
-		}
+	selected, err := tui.Select(
+		"Select version to use:",
+		"Choose which version to migrate to .version file",
+		options,
+	)
+	if err != nil {
 		return nil, fmt.Errorf("selection failed: %w", err)
 	}
 

@@ -13,8 +13,8 @@ import (
 // ErrCanceled is returned when the user cancels the operation.
 var ErrCanceled = fmt.Errorf("operation canceled by user")
 
-// customKeyMap returns a KeyMap with Esc added as a quit key.
-func customKeyMap() *huh.KeyMap {
+// CustomKeyMap returns a KeyMap with Esc added as a quit key.
+func CustomKeyMap() *huh.KeyMap {
 	km := huh.NewDefaultKeyMap()
 	// Add "esc" to the quit binding (alongside ctrl+c)
 	km.Quit = key.NewBinding(
@@ -79,7 +79,7 @@ func (p *ModulePrompt) showInitialPrompt() (Choice, error) {
 	form := huh.NewForm(
 		huh.NewGroup(
 			huh.NewSelect[string]().
-				Title(fmt.Sprintf("Found %d module%s with .version files", len(p.modules), pluralize(len(p.modules)))).
+				Title(fmt.Sprintf("Found %d module%s with .version files", len(p.modules), Pluralize(len(p.modules)))).
 				Description(p.formatModuleList()).
 				Options(
 					huh.NewOption("Apply to all modules", "all"),
@@ -88,7 +88,7 @@ func (p *ModulePrompt) showInitialPrompt() (Choice, error) {
 				).
 				Value(&choice),
 		),
-	).WithKeyMap(customKeyMap())
+	).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C
@@ -119,7 +119,7 @@ func (p *ModulePrompt) showMultiSelect() (Selection, error) {
 				Options(options...).
 				Value(&selected),
 		),
-	).WithKeyMap(customKeyMap())
+	).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C
@@ -138,15 +138,25 @@ func (p *ModulePrompt) showMultiSelect() (Selection, error) {
 
 // ConfirmOperation asks for yes/no confirmation.
 func (p *ModulePrompt) ConfirmOperation(message string) (bool, error) {
+	return Confirm(message, "")
+}
+
+// Confirm asks for yes/no confirmation with a title and optional description.
+// If description is empty, only the title is shown.
+func Confirm(title, description string) (bool, error) {
 	var confirmed bool
 
+	confirm := huh.NewConfirm().
+		Title(title).
+		Value(&confirmed)
+
+	if description != "" {
+		confirm = confirm.Description(description)
+	}
+
 	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title(message).
-				Value(&confirmed),
-		),
-	).WithKeyMap(customKeyMap())
+		huh.NewGroup(confirm),
+	).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C - treat as declined
@@ -157,6 +167,66 @@ func (p *ModulePrompt) ConfirmOperation(message string) (bool, error) {
 	}
 
 	return confirmed, nil
+}
+
+// Select shows a single-selection prompt and returns the selected value.
+// Returns the zero value of T if the user cancels.
+func Select[T comparable](title, description string, options []huh.Option[T]) (T, error) {
+	var selected T
+
+	selectField := huh.NewSelect[T]().
+		Title(title).
+		Options(options...).
+		Value(&selected)
+
+	if description != "" {
+		selectField = selectField.Description(description)
+	}
+
+	form := huh.NewForm(
+		huh.NewGroup(selectField),
+	).WithKeyMap(CustomKeyMap())
+
+	if err := form.Run(); err != nil {
+		// User pressed Escape or Ctrl+C - return zero value
+		if errors.Is(err, huh.ErrUserAborted) {
+			var zero T
+			return zero, nil
+		}
+		var zero T
+		return zero, fmt.Errorf("selection failed: %w", err)
+	}
+
+	return selected, nil
+}
+
+// MultiSelect shows a multi-selection prompt and returns the selected values.
+// The defaults parameter specifies which options are pre-selected.
+func MultiSelect[T comparable](title, description string, options []huh.Option[T], defaults []T) ([]T, error) {
+	selected := defaults
+
+	multiSelectField := huh.NewMultiSelect[T]().
+		Title(title).
+		Options(options...).
+		Value(&selected)
+
+	if description != "" {
+		multiSelectField = multiSelectField.Description(description)
+	}
+
+	form := huh.NewForm(
+		huh.NewGroup(multiSelectField),
+	).WithKeyMap(CustomKeyMap())
+
+	if err := form.Run(); err != nil {
+		// User pressed Escape or Ctrl+C
+		if errors.Is(err, huh.ErrUserAborted) {
+			return nil, ErrCanceled
+		}
+		return nil, fmt.Errorf("multi-select failed: %w", err)
+	}
+
+	return selected, nil
 }
 
 // formatModuleList returns a formatted list of modules for display.
@@ -175,18 +245,18 @@ func (p *ModulePrompt) formatModuleList() string {
 	var result strings.Builder
 	for _, mod := range preview {
 		// Use DisplayNameWithPath for disambiguation when modules have same name
-		result.WriteString(fmt.Sprintf("\n  - %s", mod.DisplayNameWithPath()))
+		fmt.Fprintf(&result, "\n  - %s", mod.DisplayNameWithPath())
 	}
 
 	if len(p.modules) > maxPreview {
-		result.WriteString(fmt.Sprintf("\n  ... and %d more", len(p.modules)-maxPreview))
+		fmt.Fprintf(&result, "\n  ... and %d more", len(p.modules)-maxPreview)
 	}
 
 	return result.String()
 }
 
-// pluralize returns "s" if count != 1, empty string otherwise.
-func pluralize(count int) string {
+// Pluralize returns "s" if count != 1, empty string otherwise.
+func Pluralize(count int) string {
 	if count == 1 {
 		return ""
 	}

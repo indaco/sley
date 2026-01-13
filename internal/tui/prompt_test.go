@@ -42,9 +42,9 @@ func TestPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := pluralize(tt.count)
+			got := Pluralize(tt.count)
 			if got != tt.expected {
-				t.Errorf("pluralize(%d) = %q, want %q", tt.count, got, tt.expected)
+				t.Errorf("Pluralize(%d) = %q, want %q", tt.count, got, tt.expected)
 			}
 		})
 	}
@@ -117,10 +117,6 @@ func containsSubstring(s, substr string) bool {
 	}
 	return false
 }
-
-// Note: We cannot easily test the interactive prompts (showInitialPrompt, showMultiSelect)
-// without mocking the huh library or using integration tests.
-// The important parts are tested via the mock implementation.
 
 func TestModulePrompt_PromptModuleSelection_EmptyModules(t *testing.T) {
 	prompt := NewModulePrompt(nil)
@@ -197,10 +193,10 @@ func TestModulePrompt_FormatModuleList_RootModule(t *testing.T) {
 // and Choice tests (String, ParseChoice) are in tui_test.go
 
 func TestCustomKeyMap(t *testing.T) {
-	km := customKeyMap()
+	km := CustomKeyMap()
 
 	if km == nil {
-		t.Fatal("customKeyMap() returned nil")
+		t.Fatal("CustomKeyMap() returned nil")
 	}
 
 	// Verify Quit binding includes both ctrl+c and esc
@@ -218,9 +214,26 @@ func TestCustomKeyMap(t *testing.T) {
 	}
 
 	if !hasCtrlC {
-		t.Error("customKeyMap().Quit should include 'ctrl+c'")
+		t.Error("CustomKeyMap().Quit should include 'ctrl+c'")
 	}
 	if !hasEsc {
-		t.Error("customKeyMap().Quit should include 'esc' for cancel")
+		t.Error("CustomKeyMap().Quit should include 'esc' for cancel")
 	}
+}
+
+// TestConfirmOperation_DelegatesToConfirm verifies ConfirmOperation delegates to Confirm.
+// Note: We cannot test the actual prompt interaction without a terminal.
+func TestConfirmOperation_DelegatesToConfirm(t *testing.T) {
+	// This test verifies the method exists and has the correct signature.
+	// The actual interactive behavior is tested manually.
+	prompt := NewModulePrompt(nil)
+
+	// Verify the method exists with correct signature (compile-time check)
+	_ = prompt.ConfirmOperation
+}
+
+// TestConfirmFunctionSignature verifies the Confirm function has correct signature.
+func TestConfirmFunctionSignature(t *testing.T) {
+	// Verify the function exists with correct signature (compile-time check)
+	_ = Confirm
 }

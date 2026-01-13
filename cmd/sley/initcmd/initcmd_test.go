@@ -14,6 +14,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/testutils"
+	"github.com/indaco/sley/internal/tui"
 	"github.com/urfave/cli/v3"
 )
 
@@ -635,7 +636,7 @@ func TestPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("count=%d", tt.count), func(t *testing.T) {
-			got := pluralize(tt.count)
+			got := tui.Pluralize(tt.count)
 			if got != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, got)
 			}

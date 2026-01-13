@@ -8,6 +8,7 @@ import (
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/printer"
+	"github.com/indaco/sley/internal/tui"
 )
 
 // DiscoveredModule represents a .version file found during workspace discovery.
@@ -229,11 +230,11 @@ func writePluginConfig(sb *strings.Builder, pluginName string) {
 func printWorkspaceSuccessSummary(configCreated bool, plugins []string, modules []DiscoveredModule, ctx *ProjectContext) {
 	if configCreated {
 		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s and workspace configuration",
-			len(plugins), pluralize(len(plugins))))
+			len(plugins), tui.Pluralize(len(plugins))))
 	}
 
 	if len(modules) > 0 {
-		printer.PrintInfo(fmt.Sprintf("Discovered %d module%s:", len(modules), pluralize(len(modules))))
+		printer.PrintInfo(fmt.Sprintf("Discovered %d module%s:", len(modules), tui.Pluralize(len(modules))))
 		for _, mod := range modules {
 			version := mod.Version
 			if version == "" {
