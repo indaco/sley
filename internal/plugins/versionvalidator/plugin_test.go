@@ -912,3 +912,377 @@ func TestMatchBranchPattern_AdditionalCases(t *testing.T) {
 		})
 	}
 }
+
+func TestVersionValidatorPlugin_MaxPreReleaseIterations(t *testing.T) {
+	tests := []struct {
+		name       string
+		maxVal     int
+		preRelease string
+		wantErr    bool
+	}{
+		{
+			name:       "alpha.1 within limit",
+			maxVal:     5,
+			preRelease: "alpha.1",
+			wantErr:    false,
+		},
+		{
+			name:       "alpha.5 at limit",
+			maxVal:     5,
+			preRelease: "alpha.5",
+			wantErr:    false,
+		},
+		{
+			name:       "alpha.6 exceeds limit",
+			maxVal:     5,
+			preRelease: "alpha.6",
+			wantErr:    true,
+		},
+		{
+			name:       "alpha.10 exceeds limit",
+			maxVal:     5,
+			preRelease: "alpha.10",
+			wantErr:    true,
+		},
+		{
+			name:       "beta-3 within limit using dash separator",
+			maxVal:     5,
+			preRelease: "beta-3",
+			wantErr:    false,
+		},
+		{
+			name:       "rc10 exceeds limit no separator",
+			maxVal:     5,
+			preRelease: "rc10",
+			wantErr:    true,
+		},
+		{
+			name:       "no pre-release passes",
+			maxVal:     5,
+			preRelease: "",
+			wantErr:    false,
+		},
+		{
+			name:       "alpha without number passes",
+			maxVal:     5,
+			preRelease: "alpha",
+			wantErr:    false,
+		},
+		{
+			name:       "no max configured passes any iteration",
+			maxVal:     0,
+			preRelease: "alpha.100",
+			wantErr:    false,
+		},
+		{
+			name:       "negative max treated as no limit",
+			maxVal:     -1,
+			preRelease: "alpha.100",
+			wantErr:    false,
+		},
+		{
+			name:       "complex pre-release with embedded numbers",
+			maxVal:     5,
+			preRelease: "build123.rc.6",
+			wantErr:    true,
+		},
+		{
+			name:       "complex pre-release within limit",
+			maxVal:     5,
+			preRelease: "build123.rc.3",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Enabled: true,
+				Rules: []Rule{
+					{Type: RuleMaxPreReleaseIter, Value: tt.maxVal},
+				},
+			}
+			vv := NewVersionValidator(cfg)
+
+			version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: tt.preRelease}
+			err := vv.Validate(version, semver.SemVersion{}, "patch")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestVersionValidatorPlugin_RequireEvenMinor(t *testing.T) {
+	tests := []struct {
+		name       string
+		enabled    bool
+		minor      int
+		preRelease string
+		wantErr    bool
+	}{
+		{
+			name:       "even minor stable passes",
+			enabled:    true,
+			minor:      2,
+			preRelease: "",
+			wantErr:    false,
+		},
+		{
+			name:       "odd minor stable fails",
+			enabled:    true,
+			minor:      3,
+			preRelease: "",
+			wantErr:    true,
+		},
+		{
+			name:       "zero minor stable passes",
+			enabled:    true,
+			minor:      0,
+			preRelease: "",
+			wantErr:    false,
+		},
+		{
+			name:       "odd minor with pre-release passes",
+			enabled:    true,
+			minor:      3,
+			preRelease: "alpha.1",
+			wantErr:    false,
+		},
+		{
+			name:       "even minor with pre-release passes",
+			enabled:    true,
+			minor:      4,
+			preRelease: "beta.2",
+			wantErr:    false,
+		},
+		{
+			name:       "rule disabled odd minor passes",
+			enabled:    false,
+			minor:      5,
+			preRelease: "",
+			wantErr:    false,
+		},
+		{
+			name:       "large even minor passes",
+			enabled:    true,
+			minor:      100,
+			preRelease: "",
+			wantErr:    false,
+		},
+		{
+			name:       "large odd minor fails",
+			enabled:    true,
+			minor:      99,
+			preRelease: "",
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Enabled: true,
+				Rules: []Rule{
+					{Type: RuleRequireEvenMinor, Enabled: tt.enabled},
+				},
+			}
+			vv := NewVersionValidator(cfg)
+
+			version := semver.SemVersion{Major: 1, Minor: tt.minor, Patch: 0, PreRelease: tt.preRelease}
+			err := vv.Validate(version, semver.SemVersion{}, "minor")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestExtractIterationNumber(t *testing.T) {
+	tests := []struct {
+		name       string
+		preRelease string
+		want       int
+	}{
+		{
+			name:       "alpha.1",
+			preRelease: "alpha.1",
+			want:       1,
+		},
+		{
+			name:       "alpha.10",
+			preRelease: "alpha.10",
+			want:       10,
+		},
+		{
+			name:       "beta-2",
+			preRelease: "beta-2",
+			want:       2,
+		},
+		{
+			name:       "rc3",
+			preRelease: "rc3",
+			want:       3,
+		},
+		{
+			name:       "alpha without number",
+			preRelease: "alpha",
+			want:       -1,
+		},
+		{
+			name:       "empty string",
+			preRelease: "",
+			want:       -1,
+		},
+		{
+			name:       "complex with embedded numbers",
+			preRelease: "build123.rc.5",
+			want:       5,
+		},
+		{
+			name:       "only numbers",
+			preRelease: "123",
+			want:       123,
+		},
+		{
+			name:       "number at start only",
+			preRelease: "123abc",
+			want:       -1,
+		},
+		{
+			name:       "snapshot with date",
+			preRelease: "snapshot.20231201",
+			want:       20231201,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractIterationNumber(tt.preRelease)
+			if got != tt.want {
+				t.Errorf("extractIterationNumber(%q) = %d, want %d", tt.preRelease, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestVersionValidatorPlugin_ValidateSet_NewRules(t *testing.T) {
+	tests := []struct {
+		name    string
+		rules   []Rule
+		version semver.SemVersion
+		wantErr bool
+	}{
+		{
+			name: "max pre-release iterations - within limit",
+			rules: []Rule{
+				{Type: RuleMaxPreReleaseIter, Value: 10},
+			},
+			version: semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.5"},
+			wantErr: false,
+		},
+		{
+			name: "max pre-release iterations - exceeds limit",
+			rules: []Rule{
+				{Type: RuleMaxPreReleaseIter, Value: 5},
+			},
+			version: semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.10"},
+			wantErr: true,
+		},
+		{
+			name: "require even minor - stable even passes",
+			rules: []Rule{
+				{Type: RuleRequireEvenMinor, Enabled: true},
+			},
+			version: semver.SemVersion{Major: 1, Minor: 2, Patch: 0},
+			wantErr: false,
+		},
+		{
+			name: "require even minor - stable odd fails",
+			rules: []Rule{
+				{Type: RuleRequireEvenMinor, Enabled: true},
+			},
+			version: semver.SemVersion{Major: 1, Minor: 3, Patch: 0},
+			wantErr: true,
+		},
+		{
+			name: "require even minor - pre-release odd passes",
+			rules: []Rule{
+				{Type: RuleRequireEvenMinor, Enabled: true},
+			},
+			version: semver.SemVersion{Major: 1, Minor: 3, Patch: 0, PreRelease: "alpha.1"},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &Config{
+				Enabled: true,
+				Rules:   tt.rules,
+			}
+			vv := NewVersionValidator(cfg)
+
+			err := vv.ValidateSet(tt.version)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateSet() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestVersionValidatorPlugin_CombinedNewRules(t *testing.T) {
+	cfg := &Config{
+		Enabled: true,
+		Rules: []Rule{
+			{Type: RuleMaxPreReleaseIter, Value: 5},
+			{Type: RuleRequireEvenMinor, Enabled: true},
+		},
+	}
+	vv := NewVersionValidator(cfg)
+
+	tests := []struct {
+		name    string
+		version semver.SemVersion
+		wantErr bool
+	}{
+		{
+			name:    "passes all rules - even minor stable",
+			version: semver.SemVersion{Major: 1, Minor: 2, Patch: 0},
+			wantErr: false,
+		},
+		{
+			name:    "passes all rules - odd minor pre-release within iteration",
+			version: semver.SemVersion{Major: 1, Minor: 3, Patch: 0, PreRelease: "alpha.3"},
+			wantErr: false,
+		},
+		{
+			name:    "fails require even minor",
+			version: semver.SemVersion{Major: 1, Minor: 3, Patch: 0},
+			wantErr: true,
+		},
+		{
+			name:    "fails max pre-release iterations",
+			version: semver.SemVersion{Major: 1, Minor: 2, Patch: 0, PreRelease: "alpha.10"},
+			wantErr: true,
+		},
+		{
+			name:    "fails both rules - odd minor stable exceeds iteration (only first error reported)",
+			version: semver.SemVersion{Major: 1, Minor: 3, Patch: 0, PreRelease: "alpha.10"},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := vv.Validate(tt.version, semver.SemVersion{}, "minor")
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}

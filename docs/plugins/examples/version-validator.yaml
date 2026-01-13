@@ -7,12 +7,23 @@ plugins:
   version-validator:
     enabled: true
     rules:
+      # Pre-release format validation
       - type: "pre-release-format"
         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
 
+      # Version number limits
       - type: "major-version-max"
         value: 10
 
+      # Pre-release iteration limit (e.g., alpha.6 fails if max is 5)
+      - type: "max-prerelease-iterations"
+        value: 10
+
+      # Even minor version policy (stable releases must have even minor)
+      - type: "require-even-minor"
+        enabled: false # Set to true to enforce
+
+      # Branch constraints
       - type: "branch-constraint"
         branch: "release/*"
         allowed: ["patch"]

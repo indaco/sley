@@ -27,6 +27,10 @@ plugins:
         pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
       - type: major-version-max
         value: 10
+      - type: max-prerelease-iterations
+        value: 10
+      - type: require-even-minor
+        enabled: false
       - type: branch-constraint
         branch: "release/*"
         allowed: ["patch"]

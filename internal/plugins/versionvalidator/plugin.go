@@ -32,6 +32,8 @@ const (
 	RuleNoMajorBump         RuleType = "no-major-bump"
 	RuleNoMinorBump         RuleType = "no-minor-bump"
 	RuleNoPatchBump         RuleType = "no-patch-bump"
+	RuleMaxPreReleaseIter   RuleType = "max-prerelease-iterations"
+	RuleRequireEvenMinor    RuleType = "require-even-minor"
 )
 
 // Rule represents a single validation rule.
@@ -147,6 +149,10 @@ func (p *VersionValidatorPlugin) applyRule(rule *Rule, newVersion, previousVersi
 		return p.validateNoBumpType(rule, bumpType, "minor")
 	case RuleNoPatchBump:
 		return p.validateNoBumpType(rule, bumpType, "patch")
+	case RuleMaxPreReleaseIter:
+		return p.validateMaxPreReleaseIterations(rule, newVersion)
+	case RuleRequireEvenMinor:
+		return p.validateRequireEvenMinor(rule, newVersion)
 	default:
 		return fmt.Errorf("unknown rule type: %s", rule.Type)
 	}
@@ -165,6 +171,10 @@ func (p *VersionValidatorPlugin) applySetRule(rule *Rule, version semver.SemVers
 		return p.validateMaxVersion(rule, version.Patch, "patch")
 	case RuleRequirePreRelease0x:
 		return p.validateRequirePreRelease0x(rule, version)
+	case RuleMaxPreReleaseIter:
+		return p.validateMaxPreReleaseIterations(rule, version)
+	case RuleRequireEvenMinor:
+		return p.validateRequireEvenMinor(rule, version)
 	default:
 		// Other rules don't apply to set operations
 		return nil
@@ -287,4 +297,88 @@ func matchBranchPattern(pattern, branch string) (bool, error) {
 	}
 
 	return re.MatchString(branch), nil
+}
+
+// validateMaxPreReleaseIterations checks if the pre-release iteration number exceeds the maximum allowed.
+// For example, with max value of 5, "alpha.6" would fail but "alpha.5" would pass.
+func (p *VersionValidatorPlugin) validateMaxPreReleaseIterations(rule *Rule, version semver.SemVersion) error {
+	if rule.Value <= 0 {
+		return nil // No max configured
+	}
+
+	if version.PreRelease == "" {
+		return nil // No pre-release to validate
+	}
+
+	// Extract iteration number from pre-release label
+	// Supports formats like: alpha.1, beta.2, rc.3, alpha-1, beta-2, alpha1, etc.
+	iteration := extractIterationNumber(version.PreRelease)
+	if iteration < 0 {
+		return nil // No iteration number found, skip validation
+	}
+
+	if iteration > rule.Value {
+		return fmt.Errorf("pre-release iteration %d exceeds maximum allowed value %d (version: %s)", iteration, rule.Value, version.String())
+	}
+
+	return nil
+}
+
+// extractIterationNumber extracts the numeric iteration from a pre-release label.
+// The iteration number must be at the end of the pre-release string.
+// Supports formats: alpha.1, beta-2, rc3, alpha.10, etc.
+// Returns -1 if no iteration number is found at the end.
+func extractIterationNumber(preRelease string) int {
+	if preRelease == "" {
+		return -1
+	}
+
+	// Find the trailing sequence of digits in the pre-release label
+	// The number must be at the very end of the string
+	endIdx := len(preRelease)
+	startIdx := endIdx
+
+	// Scan backwards from the end to find where the digits start
+	for i := len(preRelease) - 1; i >= 0; i-- {
+		c := preRelease[i]
+		if c >= '0' && c <= '9' {
+			startIdx = i
+		} else {
+			break
+		}
+	}
+
+	// No digits at the end
+	if startIdx == endIdx {
+		return -1
+	}
+
+	// Parse the number from the digit substring
+	numStr := preRelease[startIdx:endIdx]
+	n := 0
+	for _, c := range numStr {
+		n = n*10 + int(c-'0')
+	}
+
+	return n
+}
+
+// validateRequireEvenMinor checks if stable releases have even minor version numbers.
+// Pre-releases are allowed to have odd minor versions.
+func (p *VersionValidatorPlugin) validateRequireEvenMinor(rule *Rule, version semver.SemVersion) error {
+	if !rule.Enabled {
+		return nil
+	}
+
+	// Pre-releases are allowed to have odd minor versions
+	if version.PreRelease != "" {
+		return nil
+	}
+
+	// Stable releases must have even minor versions
+	if version.Minor%2 != 0 {
+		return fmt.Errorf("stable releases must have even minor version numbers (got %d.%d.%d); odd minor versions are only allowed for pre-releases", version.Major, version.Minor, version.Patch)
+	}
+
+	return nil
 }
