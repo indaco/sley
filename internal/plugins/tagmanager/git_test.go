@@ -2,6 +2,7 @@ package tagmanager
 
 import (
 	"os/exec"
+	"slices"
 	"testing"
 )
 
@@ -95,73 +96,66 @@ func TestOSGitTagOperations_CreateLightweightTag(t *testing.T) {
 	})
 }
 
-func TestOSGitTagOperations_CreateSignedTag(t *testing.T) {
-	t.Run("success without key", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
-			// Verify correct arguments: git tag -s v1.0.0 -m "message"
-			if name != "git" {
-				t.Errorf("expected git command, got %s", name)
-			}
-			if len(args) < 5 || args[0] != "tag" || args[1] != "-s" || args[2] != "v1.0.0" {
-				t.Errorf("unexpected args: %v", args)
-			}
-			// Verify no -u flag (no key specified)
-			for _, arg := range args {
-				if arg == "-u" {
-					t.Error("unexpected -u flag when no key specified")
-				}
-			}
-			return exec.Command("true")
-		})
-
-		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
-		if err != nil {
-			t.Errorf("CreateSignedTag() error = %v", err)
+func TestOSGitTagOperations_CreateSignedTag_WithoutKey(t *testing.T) {
+	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		if name != "git" {
+			t.Errorf("expected git command, got %s", name)
 		}
+		if len(args) < 5 || args[0] != "tag" || args[1] != "-s" || args[2] != "v1.0.0" {
+			t.Errorf("unexpected args: %v", args)
+		}
+		if slices.Contains(args, "-u") {
+			t.Error("unexpected -u flag when no key specified")
+		}
+		return exec.Command("true")
 	})
 
-	t.Run("success with key", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
-			// Verify correct arguments: git tag -s -u KEYID v1.0.0 -m "message"
-			if name != "git" {
-				t.Errorf("expected git command, got %s", name)
-			}
-			if len(args) < 7 || args[0] != "tag" || args[1] != "-s" || args[2] != "-u" || args[3] != "ABC123" {
-				t.Errorf("unexpected args: %v", args)
-			}
-			return exec.Command("true")
-		})
+	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	if err != nil {
+		t.Errorf("CreateSignedTag() error = %v", err)
+	}
+}
 
-		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "ABC123")
-		if err != nil {
-			t.Errorf("CreateSignedTag() error = %v", err)
+func TestOSGitTagOperations_CreateSignedTag_WithKey(t *testing.T) {
+	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		if name != "git" {
+			t.Errorf("expected git command, got %s", name)
 		}
+		if len(args) < 7 || args[0] != "tag" || args[1] != "-s" || args[2] != "-u" || args[3] != "ABC123" {
+			t.Errorf("unexpected args: %v", args)
+		}
+		return exec.Command("true")
 	})
 
-	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
-			return exec.Command("sh", "-c", "echo 'gpg: signing failed: No secret key' >&2 && exit 1")
-		})
+	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "ABC123")
+	if err != nil {
+		t.Errorf("CreateSignedTag() error = %v", err)
+	}
+}
 
-		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
-		if err == nil {
-			t.Error("CreateSignedTag() expected error")
-		}
-		if err.Error() == "" {
-			t.Error("expected error message")
-		}
+func TestOSGitTagOperations_CreateSignedTag_ErrorWithStderr(t *testing.T) {
+	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		return exec.Command("sh", "-c", "echo 'gpg: signing failed: No secret key' >&2 && exit 1")
 	})
 
-	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
-			return exec.Command("false")
-		})
+	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	if err == nil {
+		t.Error("CreateSignedTag() expected error")
+	}
+	if err.Error() == "" {
+		t.Error("expected error message")
+	}
+}
 
-		err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
-		if err == nil {
-			t.Error("CreateSignedTag() expected error")
-		}
+func TestOSGitTagOperations_CreateSignedTag_ErrorWithoutStderr(t *testing.T) {
+	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		return exec.Command("false")
 	})
+
+	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	if err == nil {
+		t.Error("CreateSignedTag() expected error")
+	}
 }
 
 func TestOSGitTagOperations_TagExists(t *testing.T) {
@@ -292,16 +286,13 @@ func TestOSGitTagOperations_PushTag(t *testing.T) {
 	})
 }
 
-func TestListTags(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_ListTags(t *testing.T) {
 	t.Run("list all tags", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("printf", "v1.0.0\nv1.1.0\nv2.0.0")
-		}
+		})
 
-		tags, err := ListTags("")
+		tags, err := ops.ListTags("")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -311,15 +302,15 @@ func TestListTags(t *testing.T) {
 	})
 
 	t.Run("list with pattern", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			// Verify pattern is passed
 			if len(args) < 3 || args[2] != "v1.*" {
 				t.Errorf("expected pattern v1.*, got args: %v", args)
 			}
 			return exec.Command("printf", "v1.0.0\nv1.1.0")
-		}
+		})
 
-		tags, err := ListTags("v1.*")
+		tags, err := ops.ListTags("v1.*")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -329,11 +320,11 @@ func TestListTags(t *testing.T) {
 	})
 
 	t.Run("empty result", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
-		}
+		})
 
-		tags, err := ListTags("nonexistent*")
+		tags, err := ops.ListTags("nonexistent*")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -343,65 +334,100 @@ func TestListTags(t *testing.T) {
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'git error' >&2 && exit 1")
-		}
+		})
 
-		_, err := ListTags("")
+		_, err := ops.ListTags("")
 		if err == nil {
 			t.Error("ListTags() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		_, err := ListTags("")
+		_, err := ops.ListTags("")
 		if err == nil {
 			t.Error("ListTags() expected error")
 		}
 	})
 }
 
-func TestDeleteTag(t *testing.T) {
-	original := execCommand
-	defer func() { execCommand = original }()
-
+func TestOSGitTagOperations_DeleteTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 3 || args[0] != "tag" || args[1] != "-d" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
-		}
+		})
 
-		err := DeleteTag("v1.0.0")
+		err := ops.DeleteTag("v1.0.0")
 		if err != nil {
 			t.Errorf("DeleteTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'tag not found' >&2 && exit 1")
-		}
+		})
 
-		err := DeleteTag("v1.0.0")
+		err := ops.DeleteTag("v1.0.0")
 		if err == nil {
 			t.Error("DeleteTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		execCommand = func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
-		}
+		})
 
-		err := DeleteTag("v1.0.0")
+		err := ops.DeleteTag("v1.0.0")
 		if err == nil {
 			t.Error("DeleteTag() expected error")
+		}
+	})
+}
+
+func TestOSGitTagOperations_DeleteRemoteTag(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			if name != "git" || len(args) < 4 || args[0] != "push" || args[1] != "origin" || args[2] != "--delete" {
+				t.Errorf("unexpected command: %s %v", name, args)
+			}
+			return exec.Command("true")
+		})
+
+		err := ops.DeleteRemoteTag("v1.0.0")
+		if err != nil {
+			t.Errorf("DeleteRemoteTag() error = %v", err)
+		}
+	})
+
+	t.Run("error with stderr", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("sh", "-c", "echo 'remote ref not found' >&2 && exit 1")
+		})
+
+		err := ops.DeleteRemoteTag("v1.0.0")
+		if err == nil {
+			t.Error("DeleteRemoteTag() expected error")
+		}
+	})
+
+	t.Run("error without stderr", func(t *testing.T) {
+		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("false")
+		})
+
+		err := ops.DeleteRemoteTag("v1.0.0")
+		if err == nil {
+			t.Error("DeleteRemoteTag() expected error")
 		}
 	})
 }
