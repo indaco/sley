@@ -193,13 +193,14 @@ VERSION:
    v0.6.0
 
 COMMANDS:
+   init              Initialize .version file and .sley.yaml configuration
    show              Display current version
    set               Set the version manually
    bump              Bump semantic version (patch, minor, major)
-   changelog         Manage changelog files
    pre               Set pre-release label (e.g., alpha, beta.1)
    doctor, validate  Validate .version file(s) and configuration
-   init              Initialize .version file and .sley.yaml configuration
+   changelog         Manage changelog files
+   tag               Manage git tags for versions
    extension         Manage extensions for sley
    modules, mods     Manage and discover modules in workspace
    help, h           Shows a list of commands or help for one command
@@ -515,6 +516,21 @@ sley changelog merge --changes-dir .changes --output CHANGELOG.md
 sley changelog merge --header-template .changes/header.md
 ```
 
+**Manage git tags**
+
+Manual tag management for workflows that need tagging decoupled from version bumping.
+
+> [!NOTE]
+> Requires the `tag-manager` plugin. See [docs/plugins/TAG_MANAGER.md](docs/plugins/TAG_MANAGER.md) for configuration and workflow examples.
+
+```bash
+sley tag create             # Create tag for current version
+sley tag create --push      # Create and push
+sley tag list               # List version tags
+sley tag push [tag-name]    # Push tag to remote
+sley tag delete <tag-name>  # Delete a tag
+```
+
 **Rolling back a version change**
 
 If you need to undo a version bump:
@@ -629,7 +645,7 @@ jobs:
   bump:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -649,6 +665,9 @@ jobs:
           git add .version
           git commit -m "chore: bump version to $(sley show)"
           git push
+
+      - name: Create and push tag
+        run: sley tag create --push
 ```
 
 ### GitLab CI
@@ -657,8 +676,8 @@ jobs:
 version:bump:
   stage: deploy
   image: golang:1.25
-  only:
-    - main
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
   script:
     - go install github.com/indaco/sley/cmd/sley@latest
     - sley bump patch --strict
@@ -667,6 +686,7 @@ version:bump:
     - git add .version
     - git commit -m "chore: bump version to $(sley show)"
     - git push https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:${CI_COMMIT_BRANCH}
+    - sley tag create --push
 ```
 
 ### Docker Example

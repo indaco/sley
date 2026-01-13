@@ -13,6 +13,7 @@ import (
 	"github.com/indaco/sley/cmd/sley/precmd"
 	"github.com/indaco/sley/cmd/sley/setcmd"
 	"github.com/indaco/sley/cmd/sley/showcmd"
+	"github.com/indaco/sley/cmd/sley/tagcmd"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/console"
 	"github.com/indaco/sley/internal/plugins"
@@ -56,13 +57,14 @@ func newCLI(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
+			initcmd.Run(),
 			showcmd.Run(cfg),
 			setcmd.Run(cfg),
 			bumpcmd.Run(cfg, registry),
-			changelogcmd.Run(cfg),
 			precmd.Run(cfg),
 			doctorcmd.Run(cfg),
-			initcmd.Run(),
+			changelogcmd.Run(cfg),
+			tagcmd.Run(cfg),
 			extensioncmd.Run(),
 			modulescmd.Run(),
 		},

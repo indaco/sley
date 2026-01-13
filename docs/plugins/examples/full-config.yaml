@@ -89,11 +89,11 @@ plugins:
   # Tag Manager
   tag-manager:
     enabled: true
-    auto-create: true
+    auto-create: true # Default is false; set to true for automatic tagging during bump
     prefix: v
     annotate: true
     push: false
-    tag-prereleases: true
+    tag-prereleases: false # Set to true to also tag pre-releases
     sign: false
     signing-key: ""
     message-template: "Release {version}"

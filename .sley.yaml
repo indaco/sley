@@ -11,11 +11,9 @@ path: internal/version/.version
 plugins:
   # Analyzes conventional commits to suggest version bumps
   commit-parser: true
-  # Automatically creates git tags synchronized with version bumps
+  # Manages git tags - use `sley tag create` for manual tagging
   tag-manager:
     enabled: true
-    push: false
-    tag-prereleases: false
   # Generates changelogs from git commits
   changelog-generator:
     enabled: true

@@ -41,11 +41,11 @@ Enable and configure in `.sley.yaml`:
 plugins:
   tag-manager:
     enabled: true
-    auto-create: true
+    auto-create: true # Set to true for automatic tagging during bump
     prefix: "v"
     annotate: true
     push: false
-    tag-prereleases: true # Set to false to skip tagging pre-releases
+    tag-prereleases: true # Set to true to also tag pre-releases
     sign: false # Set to true to create GPG-signed tags
     signing-key: "" # Optional GPG key ID (uses git default if empty)
     message-template: "Release {version}" # Custom tag message template
@@ -56,11 +56,11 @@ plugins:
 | Option             | Type   | Default               | Description                                        |
 | ------------------ | ------ | --------------------- | -------------------------------------------------- |
 | `enabled`          | bool   | false                 | Enable/disable the plugin                          |
-| `auto-create`      | bool   | true                  | Automatically create tags after bumps              |
+| `auto-create`      | bool   | false                 | Automatically create tags after bumps              |
 | `prefix`           | string | `"v"`                 | Prefix for tag names                               |
 | `annotate`         | bool   | true                  | Create annotated tags (vs lightweight)             |
 | `push`             | bool   | false                 | Push tags to remote after creation                 |
-| `tag-prereleases`  | bool   | true                  | Create tags for pre-release versions               |
+| `tag-prereleases`  | bool   | false                 | Create tags for pre-release versions               |
 | `sign`             | bool   | false                 | Create GPG-signed tags (implies annotated)         |
 | `signing-key`      | string | `""`                  | GPG key ID for signing (uses git default if empty) |
 | `message-template` | string | `"Release {version}"` | Template for tag message with placeholders         |
@@ -69,14 +69,14 @@ plugins:
 
 The `tag-prereleases` option controls whether git tags are created for pre-release versions (e.g., `1.0.0-alpha.1`, `2.0.0-rc.1`):
 
-- **`true` (default)**: Tags are created for all versions, including pre-releases. This is useful when you want to track all version changes in git history.
-
-- **`false`**: Tags are only created for stable releases (versions without pre-release identifiers). Pre-release version bumps will update the `.version` file but skip tag creation. This is useful when:
+- **`false` (default)**: Tags are only created for stable releases (versions without pre-release identifiers). Pre-release version bumps will update the `.version` file but skip tag creation. This is useful when:
   - You want to keep your tag list clean and only show stable releases
   - Pre-release versions are experimental and shouldn't be tagged
   - You're using a CI/CD workflow that only needs tags for production releases
 
-**Example with `tag-prereleases: false`:**
+- **`true`**: Tags are created for all versions, including pre-releases. This is useful when you want to track all version changes in git history.
+
+**Example with `tag-prereleases: false` (default):**
 
 ```bash
 # Pre-release bumps - no tags created
@@ -91,7 +91,7 @@ sley bump release
 # => 1.0.0 (tag: v1.0.0)
 ```
 
-**Example with `tag-prereleases: true` (default):**
+**Example with `tag-prereleases: true`:**
 
 ```bash
 # All bumps create tags
@@ -179,7 +179,9 @@ message-template: "{tag} ({prerelease})"
 
 ## Usage
 
-Once enabled, the plugin works automatically:
+### Automatic Tagging
+
+Once enabled with `auto-create: true`, the plugin works automatically:
 
 ```bash
 sley bump patch
@@ -189,6 +191,67 @@ sley bump patch
 sley bump minor
 # => 1.3.0 (tag: v1.3.0, pushed)
 ```
+
+### Manual Tagging with `sley tag`
+
+For workflows that require additional steps between version bump and tag creation (e.g., changelog generation, code review), use `auto-create: false` and the `sley tag` command:
+
+```yaml
+plugins:
+  tag-manager:
+    enabled: true
+    auto-create: false # Disable automatic tagging
+    prefix: "v"
+    annotate: true
+```
+
+The `sley tag` command provides subcommands for manual tag management:
+
+```bash
+# Create a tag for the current version
+sley tag create
+
+# Create and push in one step
+sley tag create --push
+
+# Create with custom message
+sley tag create --message "Release v1.2.3 with new features"
+
+# List existing version tags
+sley tag list
+sley tag list --limit 10
+
+# Push a tag to remote
+sley tag push              # Push tag for current version
+sley tag push v1.2.3       # Push specific tag
+
+# Delete a tag
+sley tag delete v1.2.3
+sley tag delete v1.2.3 --remote  # Also delete from remote
+```
+
+#### Typical Manual Workflow
+
+This workflow ensures the tag points to the release commit that includes all changes:
+
+```bash
+# 1. Bump version
+sley bump minor
+# => 1.3.0 (no tag created with auto-create: false)
+
+# 2. Generate/update changelog
+sley changelog generate
+sley changelog merge
+
+# 3. Commit all changes
+git add .
+git commit -m "chore: release v1.3.0"
+
+# 4. Create and push tag (points to the release commit)
+sley tag create --push
+```
+
+This approach solves the common issue where automatic tagging creates a tag **before** the release commit, causing the tag to point to the wrong commit.
 
 ## Tag Validation (Fail-Fast)
 
@@ -265,8 +328,8 @@ This configuration is useful for CI/CD pipelines where:
 2. **Consistent prefix** - Choose one and stick with it (`v` is most common)
 3. **CI/CD push** - Enable `push: true` only in CI/CD pipelines
 4. **Local development** - Keep `push: false` for local work
-5. **Clean tag list** - Use `tag-prereleases: false` if you only want tags for stable releases
-6. **Pre-release tracking** - Keep `tag-prereleases: true` (default) if you need to track all version changes in git
+5. **Clean tag list** - Keep `tag-prereleases: false` (default) for stable releases only
+6. **Pre-release tracking** - Set `tag-prereleases: true` if you need to track all version changes in git
 7. **GPG signing for releases** - Enable `sign: true` for production releases requiring verification
 8. **Custom messages** - Use `message-template` to include release date or other metadata
 

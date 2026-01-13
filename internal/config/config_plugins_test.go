@@ -17,9 +17,9 @@ func TestTagManagerConfig_GetAutoCreate(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "nil AutoCreate - defaults to true",
+			name:     "nil AutoCreate - defaults to false",
 			config:   &TagManagerConfig{AutoCreate: nil},
-			expected: true,
+			expected: false,
 		},
 		{
 			name:     "explicit true",
@@ -116,9 +116,9 @@ func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "nil TagPrereleases - defaults to true",
+			name:     "nil TagPrereleases - defaults to false",
 			config:   &TagManagerConfig{TagPrereleases: nil},
-			expected: true,
+			expected: false,
 		},
 		{
 			name:     "explicit true",
@@ -262,13 +262,13 @@ plugins:
 			wantValue: false,
 		},
 		{
-			name: "tag-prereleases omitted (defaults to true)",
+			name: "tag-prereleases omitted (defaults to false)",
 			yamlInput: `path: .version
 plugins:
   tag-manager:
     enabled: true
 `,
-			wantValue: true,
+			wantValue: false,
 		},
 		{
 			name: "tag-prereleases with other options",

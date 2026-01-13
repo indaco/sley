@@ -3,6 +3,7 @@ package tagmanager
 import (
 	"fmt"
 
+	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -47,7 +48,7 @@ type Config struct {
 
 	// TagPrereleases controls whether tags are created for pre-release versions.
 	// When false, tags are only created for stable releases (major/minor/patch).
-	// Default: true (for backward compatibility).
+	// Default: false (opt-in for pre-release tagging).
 	TagPrereleases bool
 
 	// Sign creates GPG-signed tags using git tag -s.
@@ -70,11 +71,11 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Enabled:         false,
-		AutoCreate:      true,
+		AutoCreate:      false,
 		Prefix:          "v",
 		Annotate:        true,
 		Push:            false,
-		TagPrereleases:  true,
+		TagPrereleases:  false,
 		Sign:            false,
 		SigningKey:      "",
 		MessageTemplate: "Release {version}",
@@ -84,6 +85,7 @@ func DefaultConfig() *Config {
 // TagManagerPlugin implements the TagManager interface.
 type TagManagerPlugin struct {
 	config *Config
+	gitOps core.GitTagOperations
 }
 
 // Ensure TagManagerPlugin implements TagManager.
@@ -96,11 +98,24 @@ func (p *TagManagerPlugin) Description() string {
 func (p *TagManagerPlugin) Version() string { return "v0.1.0" }
 
 // NewTagManager creates a new tag manager plugin with the given configuration.
+// Uses the default OSGitTagOperations for git operations.
 func NewTagManager(cfg *Config) *TagManagerPlugin {
+	return NewTagManagerWithOps(cfg, NewOSGitTagOperations())
+}
+
+// NewTagManagerWithOps creates a new tag manager plugin with custom git operations.
+// This constructor enables dependency injection for testing.
+func NewTagManagerWithOps(cfg *Config, gitOps core.GitTagOperations) *TagManagerPlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
-	return &TagManagerPlugin{config: cfg}
+	if gitOps == nil {
+		gitOps = NewOSGitTagOperations()
+	}
+	return &TagManagerPlugin{
+		config: cfg,
+		gitOps: gitOps,
+	}
 }
 
 // FormatTagName formats a version as a tag name using the configured prefix.
@@ -135,24 +150,24 @@ func (p *TagManagerPlugin) CreateTag(version semver.SemVersion, message string) 
 	switch {
 	case p.config.Sign:
 		// GPG-signed tag (implies annotated)
-		if err := createSignedTagFn(tagName, message, p.config.SigningKey); err != nil {
+		if err := p.gitOps.CreateSignedTag(tagName, message, p.config.SigningKey); err != nil {
 			return fmt.Errorf("failed to create signed tag: %w", err)
 		}
 	case p.config.Annotate:
 		// Annotated tag (not signed)
-		if err := createAnnotatedTagFn(tagName, message); err != nil {
+		if err := p.gitOps.CreateAnnotatedTag(tagName, message); err != nil {
 			return fmt.Errorf("failed to create annotated tag: %w", err)
 		}
 	default:
 		// Lightweight tag (no message)
-		if err := createLightweightTagFn(tagName); err != nil {
+		if err := p.gitOps.CreateLightweightTag(tagName); err != nil {
 			return fmt.Errorf("failed to create lightweight tag: %w", err)
 		}
 	}
 
 	// Optionally push the tag
 	if p.config.Push {
-		if err := pushTagFn(tagName); err != nil {
+		if err := p.gitOps.PushTag(tagName); err != nil {
 			return fmt.Errorf("failed to push tag: %w", err)
 		}
 	}
@@ -173,12 +188,12 @@ func (p *TagManagerPlugin) FormatTagMessage(version semver.SemVersion) string {
 // TagExists checks if a tag for the given version already exists.
 func (p *TagManagerPlugin) TagExists(version semver.SemVersion) (bool, error) {
 	tagName := p.FormatTagName(version)
-	return tagExistsFn(tagName)
+	return p.gitOps.TagExists(tagName)
 }
 
 // GetLatestTag returns the latest semver tag from git.
 func (p *TagManagerPlugin) GetLatestTag() (semver.SemVersion, error) {
-	tag, err := getLatestTagFn()
+	tag, err := p.gitOps.GetLatestTag()
 	if err != nil {
 		return semver.SemVersion{}, err
 	}

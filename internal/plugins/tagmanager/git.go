@@ -127,29 +127,13 @@ func (g *OSGitTagOperations) PushTag(name string) error {
 	return nil
 }
 
-// defaultGitTagOps is the default git tag operations for backward compatibility.
-var defaultGitTagOps = NewOSGitTagOperations()
-
-// Function variables for backward compatibility during migration.
-// These delegate to the interface-based implementation.
-var (
-	createAnnotatedTagFn   = func(name, message string) error { return defaultGitTagOps.CreateAnnotatedTag(name, message) }
-	createLightweightTagFn = func(name string) error { return defaultGitTagOps.CreateLightweightTag(name) }
-	createSignedTagFn      = func(name, message, keyID string) error { return defaultGitTagOps.CreateSignedTag(name, message, keyID) }
-	tagExistsFn            = func(name string) (bool, error) { return defaultGitTagOps.TagExists(name) }
-	getLatestTagFn         = func() (string, error) { return defaultGitTagOps.GetLatestTag() }
-	pushTagFn              = func(name string) error { return defaultGitTagOps.PushTag(name) }
-	execCommand            = exec.Command
-)
-
-// ListTags returns all git tags matching a pattern.
-func ListTags(pattern string) ([]string, error) {
+func (g *OSGitTagOperations) ListTags(pattern string) ([]string, error) {
 	args := []string{"tag", "-l"}
 	if pattern != "" {
 		args = append(args, pattern)
 	}
 
-	cmd := execCommand("git", args...)
+	cmd := g.execCommand("git", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -170,9 +154,8 @@ func ListTags(pattern string) ([]string, error) {
 	return strings.Split(output, "\n"), nil
 }
 
-// DeleteTag deletes a local git tag.
-func DeleteTag(name string) error {
-	cmd := execCommand("git", "tag", "-d", name)
+func (g *OSGitTagOperations) DeleteTag(name string) error {
+	cmd := g.execCommand("git", "tag", "-d", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -184,4 +167,32 @@ func DeleteTag(name string) error {
 		return fmt.Errorf("git tag delete failed: %w", err)
 	}
 	return nil
+}
+
+func (g *OSGitTagOperations) DeleteRemoteTag(name string) error {
+	cmd := g.execCommand("git", "push", "origin", "--delete", name)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return fmt.Errorf("%s: %w", stderrMsg, err)
+		}
+		return fmt.Errorf("git push --delete tag failed: %w", err)
+	}
+	return nil
+}
+
+// defaultGitTagOps is the default git tag operations instance used by package-level functions.
+var defaultGitTagOps = NewOSGitTagOperations()
+
+// ListTags returns all git tags matching a pattern (package-level convenience function).
+func ListTags(pattern string) ([]string, error) {
+	return defaultGitTagOps.ListTags(pattern)
+}
+
+// DeleteTag deletes a local git tag (package-level convenience function).
+func DeleteTag(name string) error {
+	return defaultGitTagOps.DeleteTag(name)
 }

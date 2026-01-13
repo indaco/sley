@@ -73,10 +73,6 @@ func TestTagManagerPlugin_FormatTagName(t *testing.T) {
 }
 
 func TestTagManagerPlugin_TagExists(t *testing.T) {
-	// Save original and restore after test
-	original := tagExistsFn
-	defer func() { tagExistsFn = original }()
-
 	tests := []struct {
 		name    string
 		version semver.SemVersion
@@ -115,8 +111,10 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tagExistsFn = tt.mockFn
-			tm := NewTagManager(nil)
+			mockOps := &MockGitTagOperations{
+				TagExistsFn: tt.mockFn,
+			}
+			tm := NewTagManagerWithOps(nil, mockOps)
 
 			got, err := tm.TagExists(tt.version)
 			if (err != nil) != tt.wantErr {
@@ -131,9 +129,6 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
-	original := tagExistsFn
-	defer func() { tagExistsFn = original }()
-
 	tests := []struct {
 		name    string
 		version semver.SemVersion
@@ -156,10 +151,12 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tagExistsFn = func(name string) (bool, error) {
-				return tt.exists, nil
+			mockOps := &MockGitTagOperations{
+				TagExistsFn: func(name string) (bool, error) {
+					return tt.exists, nil
+				},
 			}
-			tm := NewTagManager(nil)
+			tm := NewTagManagerWithOps(nil, mockOps)
 
 			err := tm.ValidateTagAvailable(tt.version)
 			if (err != nil) != tt.wantErr {
@@ -170,19 +167,6 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag(t *testing.T) {
-	// Save originals
-	origTagExists := tagExistsFn
-	origCreateAnnotated := createAnnotatedTagFn
-	origCreateLightweight := createLightweightTagFn
-	origPushTag := pushTagFn
-
-	defer func() {
-		tagExistsFn = origTagExists
-		createAnnotatedTagFn = origCreateAnnotated
-		createLightweightTagFn = origCreateLightweight
-		pushTagFn = origPushTag
-	}()
-
 	tests := []struct {
 		name           string
 		cfg            *Config
@@ -246,26 +230,25 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 			lightweightCalled := false
 			pushCalled := false
 
-			tagExistsFn = func(name string) (bool, error) {
-				return tt.tagExists, nil
+			mockOps := &MockGitTagOperations{
+				TagExistsFn: func(name string) (bool, error) {
+					return tt.tagExists, nil
+				},
+				CreateAnnotatedTagFn: func(name, msg string) error {
+					annotatedCalled = true
+					return tt.createErr
+				},
+				CreateLightweightTagFn: func(name string) error {
+					lightweightCalled = true
+					return tt.createErr
+				},
+				PushTagFn: func(name string) error {
+					pushCalled = true
+					return tt.pushErr
+				},
 			}
 
-			createAnnotatedTagFn = func(name, msg string) error {
-				annotatedCalled = true
-				return tt.createErr
-			}
-
-			createLightweightTagFn = func(name string) error {
-				lightweightCalled = true
-				return tt.createErr
-			}
-
-			pushTagFn = func(name string) error {
-				pushCalled = true
-				return tt.pushErr
-			}
-
-			tm := NewTagManager(tt.cfg)
+			tm := NewTagManagerWithOps(tt.cfg, mockOps)
 			err := tm.CreateTag(tt.version, tt.message)
 
 			if (err != nil) != tt.wantErr {
@@ -289,9 +272,6 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 }
 
 func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
-	original := getLatestTagFn
-	defer func() { getLatestTagFn = original }()
-
 	tests := []struct {
 		name    string
 		prefix  string
@@ -330,12 +310,14 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getLatestTagFn = func() (string, error) {
-				return tt.mockTag, tt.mockErr
+			mockOps := &MockGitTagOperations{
+				GetLatestTagFn: func() (string, error) {
+					return tt.mockTag, tt.mockErr
+				},
 			}
 
 			cfg := &Config{Prefix: tt.prefix}
-			tm := NewTagManager(cfg)
+			tm := NewTagManagerWithOps(cfg, mockOps)
 
 			got, err := tm.GetLatestTag()
 			if (err != nil) != tt.wantErr {
@@ -389,8 +371,8 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Enabled != false {
 		t.Errorf("DefaultConfig().Enabled = %v, want false", cfg.Enabled)
 	}
-	if cfg.AutoCreate != true {
-		t.Errorf("DefaultConfig().AutoCreate = %v, want true", cfg.AutoCreate)
+	if cfg.AutoCreate != false {
+		t.Errorf("DefaultConfig().AutoCreate = %v, want false", cfg.AutoCreate)
 	}
 	if cfg.Prefix != "v" {
 		t.Errorf("DefaultConfig().Prefix = %q, want %q", cfg.Prefix, "v")
@@ -429,14 +411,13 @@ func TestTagManagerPlugin_GetConfig(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
-	original := tagExistsFn
-	defer func() { tagExistsFn = original }()
-
-	tagExistsFn = func(name string) (bool, error) {
-		return false, errors.New("git error")
+	mockOps := &MockGitTagOperations{
+		TagExistsFn: func(name string) (bool, error) {
+			return false, errors.New("git error")
+		},
 	}
 
-	tm := NewTagManager(nil)
+	tm := NewTagManagerWithOps(nil, mockOps)
 	err := tm.ValidateTagAvailable(semver.SemVersion{Major: 1, Minor: 0, Patch: 0})
 
 	if err == nil {
@@ -445,28 +426,20 @@ func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_PushError(t *testing.T) {
-	origTagExists := tagExistsFn
-	origCreateAnnotated := createAnnotatedTagFn
-	origPushTag := pushTagFn
-
-	defer func() {
-		tagExistsFn = origTagExists
-		createAnnotatedTagFn = origCreateAnnotated
-		pushTagFn = origPushTag
-	}()
-
-	tagExistsFn = func(name string) (bool, error) {
-		return false, nil
-	}
-	createAnnotatedTagFn = func(name, msg string) error {
-		return nil
-	}
-	pushTagFn = func(name string) error {
-		return errors.New("push failed")
+	mockOps := &MockGitTagOperations{
+		TagExistsFn: func(name string) (bool, error) {
+			return false, nil
+		},
+		CreateAnnotatedTagFn: func(name, msg string) error {
+			return nil
+		},
+		PushTagFn: func(name string) error {
+			return errors.New("push failed")
+		},
 	}
 
 	cfg := &Config{Enabled: true, AutoCreate: true, Prefix: "v", Annotate: true, Push: true}
-	tm := NewTagManager(cfg)
+	tm := NewTagManagerWithOps(cfg, mockOps)
 
 	err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "Release 1.0.0")
 
@@ -555,8 +528,8 @@ func TestTagManagerPlugin_NilConfig(t *testing.T) {
 func TestDefaultConfig_TagPrereleases(t *testing.T) {
 	cfg := DefaultConfig()
 
-	if cfg.TagPrereleases != true {
-		t.Errorf("DefaultConfig().TagPrereleases = %v, want true", cfg.TagPrereleases)
+	if cfg.TagPrereleases != false {
+		t.Errorf("DefaultConfig().TagPrereleases = %v, want false", cfg.TagPrereleases)
 	}
 }
 
@@ -660,19 +633,20 @@ func TestTagManagerPlugin_ShouldCreateTag(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
-	// With default config (TagPrereleases: true), pre-releases should be tagged
-	// Note: Default config has Enabled: false, so we need to enable it
+	// With default config (AutoCreate: false, TagPrereleases: false)
+	// Note: Default config has Enabled: false and AutoCreate: false
 	cfg := DefaultConfig()
 	cfg.Enabled = true
+	cfg.AutoCreate = true // Enable auto-create to test tagging behavior
 	tm := NewTagManager(cfg)
 
-	// Pre-release should be tagged with default config
+	// Pre-release should NOT be tagged with default config (TagPrereleases: false)
 	preRelease := semver.SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1"}
-	if got := tm.ShouldCreateTag(preRelease); got != true {
-		t.Errorf("ShouldCreateTag(preRelease) with default config = %v, want true", got)
+	if got := tm.ShouldCreateTag(preRelease); got != false {
+		t.Errorf("ShouldCreateTag(preRelease) with default config = %v, want false", got)
 	}
 
-	// Stable release should also be tagged
+	// Stable release should still be tagged
 	stable := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 	if got := tm.ShouldCreateTag(stable); got != true {
 		t.Errorf("ShouldCreateTag(stable) with default config = %v, want true", got)
@@ -680,30 +654,21 @@ func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
-	origTagExists := tagExistsFn
-	origCreateSigned := createSignedTagFn
-	origPushTag := pushTagFn
-
-	defer func() {
-		tagExistsFn = origTagExists
-		createSignedTagFn = origCreateSigned
-		pushTagFn = origPushTag
-	}()
-
 	t.Run("create signed tag without key", func(t *testing.T) {
 		signedCalled := false
 		var capturedMessage string
 		var capturedKeyID string
 
-		tagExistsFn = func(name string) (bool, error) {
-			return false, nil
-		}
-
-		createSignedTagFn = func(name, msg, keyID string) error {
-			signedCalled = true
-			capturedMessage = msg
-			capturedKeyID = keyID
-			return nil
+		mockOps := &MockGitTagOperations{
+			TagExistsFn: func(name string) (bool, error) {
+				return false, nil
+			},
+			CreateSignedTagFn: func(name, msg, keyID string) error {
+				signedCalled = true
+				capturedMessage = msg
+				capturedKeyID = keyID
+				return nil
+			},
 		}
 
 		cfg := &Config{
@@ -713,7 +678,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Sign:            true,
 			MessageTemplate: "Release {version}",
 		}
-		tm := NewTagManager(cfg)
+		tm := NewTagManagerWithOps(cfg, mockOps)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -735,14 +700,15 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 		signedCalled := false
 		var capturedKeyID string
 
-		tagExistsFn = func(name string) (bool, error) {
-			return false, nil
-		}
-
-		createSignedTagFn = func(name, msg, keyID string) error {
-			signedCalled = true
-			capturedKeyID = keyID
-			return nil
+		mockOps := &MockGitTagOperations{
+			TagExistsFn: func(name string) (bool, error) {
+				return false, nil
+			},
+			CreateSignedTagFn: func(name, msg, keyID string) error {
+				signedCalled = true
+				capturedKeyID = keyID
+				return nil
+			},
 		}
 
 		cfg := &Config{
@@ -752,7 +718,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Sign:       true,
 			SigningKey: "ABC123DEF456",
 		}
-		tm := NewTagManager(cfg)
+		tm := NewTagManagerWithOps(cfg, mockOps)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -768,12 +734,13 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 	})
 
 	t.Run("signed tag error", func(t *testing.T) {
-		tagExistsFn = func(name string) (bool, error) {
-			return false, nil
-		}
-
-		createSignedTagFn = func(name, msg, keyID string) error {
-			return errors.New("gpg signing failed")
+		mockOps := &MockGitTagOperations{
+			TagExistsFn: func(name string) (bool, error) {
+				return false, nil
+			},
+			CreateSignedTagFn: func(name, msg, keyID string) error {
+				return errors.New("gpg signing failed")
+			},
 		}
 
 		cfg := &Config{
@@ -782,7 +749,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Prefix:     "v",
 			Sign:       true,
 		}
-		tm := NewTagManager(cfg)
+		tm := NewTagManagerWithOps(cfg, mockOps)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -793,14 +760,6 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
-	origTagExists := tagExistsFn
-	origCreateAnnotated := createAnnotatedTagFn
-
-	defer func() {
-		tagExistsFn = origTagExists
-		createAnnotatedTagFn = origCreateAnnotated
-	}()
-
 	tests := []struct {
 		name            string
 		template        string
@@ -837,13 +796,14 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var capturedMessage string
 
-			tagExistsFn = func(name string) (bool, error) {
-				return false, nil
-			}
-
-			createAnnotatedTagFn = func(name, msg string) error {
-				capturedMessage = msg
-				return nil
+			mockOps := &MockGitTagOperations{
+				TagExistsFn: func(name string) (bool, error) {
+					return false, nil
+				},
+				CreateAnnotatedTagFn: func(name, msg string) error {
+					capturedMessage = msg
+					return nil
+				},
 			}
 
 			cfg := &Config{
@@ -853,7 +813,7 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 				Annotate:        true,
 				MessageTemplate: tt.template,
 			}
-			tm := NewTagManager(cfg)
+			tm := NewTagManagerWithOps(cfg, mockOps)
 
 			err := tm.CreateTag(tt.version, "")
 
@@ -868,23 +828,16 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.T) {
-	origTagExists := tagExistsFn
-	origCreateAnnotated := createAnnotatedTagFn
-
-	defer func() {
-		tagExistsFn = origTagExists
-		createAnnotatedTagFn = origCreateAnnotated
-	}()
-
 	var capturedMessage string
 
-	tagExistsFn = func(name string) (bool, error) {
-		return false, nil
-	}
-
-	createAnnotatedTagFn = func(name, msg string) error {
-		capturedMessage = msg
-		return nil
+	mockOps := &MockGitTagOperations{
+		TagExistsFn: func(name string) (bool, error) {
+			return false, nil
+		},
+		CreateAnnotatedTagFn: func(name, msg string) error {
+			capturedMessage = msg
+			return nil
+		},
 	}
 
 	cfg := &Config{
@@ -894,7 +847,7 @@ func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.
 		Annotate:        true,
 		MessageTemplate: "Template message {version}",
 	}
-	tm := NewTagManager(cfg)
+	tm := NewTagManagerWithOps(cfg, mockOps)
 
 	// Explicit message should override template
 	explicitMessage := "Custom explicit message"
@@ -952,5 +905,17 @@ func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
 				t.Errorf("FormatTagMessage() = %q, want %q", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNewTagManagerWithOps_NilGitOps(t *testing.T) {
+	// When gitOps is nil, it should default to OSGitTagOperations
+	tm := NewTagManagerWithOps(nil, nil)
+
+	if tm == nil {
+		t.Fatal("NewTagManagerWithOps() returned nil")
+	}
+	if tm.gitOps == nil {
+		t.Error("NewTagManagerWithOps() should set default gitOps when nil")
 	}
 }

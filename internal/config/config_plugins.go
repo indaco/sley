@@ -31,7 +31,7 @@ type TagManagerConfig struct {
 
 	// TagPrereleases controls whether tags are created for pre-release versions.
 	// When false, tags are only created for stable releases (major/minor/patch).
-	// Default: true.
+	// Default: false.
 	TagPrereleases *bool `yaml:"tag-prereleases,omitempty"`
 
 	// Sign creates GPG-signed tags using git tag -s.
@@ -50,10 +50,10 @@ type TagManagerConfig struct {
 	MessageTemplate string `yaml:"message-template,omitempty"`
 }
 
-// GetAutoCreate returns the auto-create setting with default true.
+// GetAutoCreate returns the auto-create setting with default false.
 func (c *TagManagerConfig) GetAutoCreate() bool {
 	if c.AutoCreate == nil {
-		return true
+		return false
 	}
 	return *c.AutoCreate
 }
@@ -74,10 +74,10 @@ func (c *TagManagerConfig) GetPrefix() string {
 	return c.Prefix
 }
 
-// GetTagPrereleases returns the tag-prereleases setting with default true.
+// GetTagPrereleases returns the tag-prereleases setting with default false.
 func (c *TagManagerConfig) GetTagPrereleases() bool {
 	if c.TagPrereleases == nil {
-		return true
+		return false
 	}
 	return *c.TagPrereleases
 }

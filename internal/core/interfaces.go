@@ -122,6 +122,15 @@ type GitTagOperations interface {
 
 	// PushTag pushes a specific tag to the remote.
 	PushTag(name string) error
+
+	// ListTags returns all git tags matching a pattern.
+	ListTags(pattern string) ([]string, error)
+
+	// DeleteTag deletes a local git tag.
+	DeleteTag(name string) error
+
+	// DeleteRemoteTag deletes a tag from the remote repository.
+	DeleteRemoteTag(name string) error
 }
 
 // GitCommitReader reads git commit information.
