@@ -23,7 +23,7 @@ builds:
       - arm64
 
 archives:
-  - formats: ['tar.gz']
+  - formats: ["tar.gz"]
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
@@ -35,14 +35,7 @@ archives:
     # use zip for windows archives
     format_overrides:
       - goos: windows
-        formats: ['zip']
-
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
+        formats: ["zip"]
 
 homebrew_casks:
   - name: sley
@@ -51,7 +44,7 @@ homebrew_casks:
       name: homebrew-tap
     directory: Casks
     homepage: https://github.com/indaco/sley
-    description: A CLI tool for managing semantic versioning using a .version file
+    description: CLI for semantic versioning using a simple .version file. Language-agnostic with plugins for git tagging, changelog generation, versioning policies and more.
     binaries:
       - sley
     hooks:
@@ -61,9 +54,5 @@ homebrew_casks:
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/sley"]
           end
 
-release:
-  footer: >-
-
-    ---
-
-    Released by [GoReleaser](https://github.com/goreleaser/goreleaser).
+changelog:
+  disable: true
