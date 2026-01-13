@@ -1,18 +1,21 @@
 # Extension Quick Start Guide
 
-Quick reference for using the sley extensions.
+Quick reference for using sley extensions.
+
+> [!TIP]
+> For most use cases, prefer built-in plugins over extensions. Extensions are best for custom integrations or learning how the extension system works. See [README.md](./README.md) for details.
 
 ## Installation
 
 ```bash
 # Install a single extension
-sley extension install ./contrib/extensions/git-tagger
+sley extension install ./contrib/extensions/docker-tag-sync
 
 # List installed extensions
 sley extension list
 
 # Remove an extension
-sley extension remove git-tagger
+sley extension remove docker-tag-sync
 ```
 
 ## Configuration
@@ -21,53 +24,39 @@ Add to your `.sley.yaml`:
 
 ```yaml
 extensions:
-  - name: git-tagger
+  - name: docker-tag-sync
     enabled: true
     hooks:
       - post-bump
     config:
-      prefix: "v"
+      image: "myapp"
+      push: true
 ```
 
 ## Available Extensions
 
-| Extension        | Language | Hook               | Purpose                    |
-| ---------------- | -------- | ------------------ | -------------------------- |
-| git-tagger       | Python   | post-bump          | Create git tags            |
-| package-sync     | Node.js  | post-bump          | Sync version to JSON files |
-| version-policy   | Go       | validate, pre-bump | Enforce policies           |
-| commit-validator | Python   | pre-bump           | Validate commit messages   |
+| Extension        | Language | Hook      | Purpose                        |
+| ---------------- | -------- | --------- | ------------------------------ |
+| docker-tag-sync  | Bash     | post-bump | Tag Docker images with version |
+| commit-validator | Python   | pre-bump  | Validate commit message format |
 
 ## Common Workflows
 
-### Basic Tagging
+### Docker Image Tagging
 
 ```yaml
 extensions:
-  - name: git-tagger
+  - name: docker-tag-sync
     enabled: true
     hooks:
       - post-bump
     config:
-      prefix: "v"
-      annotated: true
+      image: "myapp"
+      push: true
+      registry: "ghcr.io/myorg"
 ```
 
-### Package Management
-
-```yaml
-extensions:
-  - name: package-sync
-    enabled: true
-    hooks:
-      - post-bump
-    config:
-      files:
-        - path: package.json
-          json_paths: [version]
-```
-
-### Strict Validation
+### Strict Commit Validation
 
 ```yaml
 extensions:
@@ -76,64 +65,61 @@ extensions:
     hooks:
       - pre-bump
     config:
-      allowed_types: [feat, fix]
+      allowed_types: [feat, fix, docs, refactor]
       require_scope: true
-
-  - name: version-policy
-    enabled: true
-    hooks:
-      - validate
-      - pre-bump
-    config:
-      no_prerelease_on_main: true
-      require_clean_workdir: true
 ```
 
-### Full Automation
+### Combined with Plugins
 
 ```yaml
+# Use plugins for core functionality
+plugins:
+  commit-parser: true
+  tag-manager:
+    enabled: true
+    prefix: "v"
+    push: true
+  version-validator:
+    enabled: true
+    rules:
+      - type: require-even-minor
+        enabled: true
+      - type: max-prerelease-iterations
+        value: 10
+
+# Use extensions for additional validation
 extensions:
   - name: commit-validator
     enabled: true
     hooks: [pre-bump]
+    config:
+      require_scope: true
 
-  - name: package-sync
+  - name: docker-tag-sync
     enabled: true
     hooks: [post-bump]
     config:
-      files:
-        - package.json
-
-  - name: git-tagger
-    enabled: true
-    hooks: [post-bump]
-    config:
-      prefix: "v"
-      push: true
+      image: "myapp"
 ```
 
 Then:
 
 ```bash
 sley bump auto
-# 1. Validates commits
-# 2. Bumps version
-# 3. Updates package.json
-# 4. Creates and pushes tag
-```
-
-## Testing
-
-```bash
-# Run all extension tests
-cd contrib/extensions
-./test-extensions.sh
+# 1. commit-validator: Validates commit format
+# 2. version-validator: Validates version policies
+# 3. commitparser: Analyzes commits -> determines bump type
+# 4. Version bumped
+# 5. tag-manager: Creates and pushes git tag
+# 6. docker-tag-sync: Tags Docker image
 ```
 
 ## Documentation
 
 - Overview: `contrib/extensions/README.md`
 - Individual extension docs: `contrib/extensions/<name>/README.md`
+- Extension authoring: `docs/EXTENSIONS.md`
+- Built-in plugins: `docs/PLUGINS.md`
 
 ## Support
 

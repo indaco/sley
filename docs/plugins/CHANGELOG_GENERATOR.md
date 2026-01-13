@@ -145,7 +145,8 @@ plugins:
     merge-after: "manual" # Choose: "manual", "immediate", or "prompt"
 ```
 
-**Note:** This option is ignored when `mode` is `"unified"` (already writes directly to CHANGELOG.md) or `"both"` (already writes to both). Using `merge-after: "immediate"` effectively gives you the same output as `mode: "both"`, while maintaining the versioned file workflow.
+> [!NOTE]
+> This option is ignored when `mode` is `"unified"` (already writes directly to CHANGELOG.md) or `"both"` (already writes to both). Using `merge-after: "immediate"` effectively gives you the same output as `mode: "both"`, while maintaining the versioned file workflow.
 
 Example versioned output (`.changes/v1.2.0.md`):
 

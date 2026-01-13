@@ -14,7 +14,8 @@ The tag manager plugin automatically creates and manages git tags synchronized w
 
 Built-in, **disabled by default**
 
-> **Note**: While disabled by default, tag-manager is included in the recommended configuration created by `sley init --yes`.
+> [!NOTE]
+> While disabled by default, tag-manager is included in the recommended configuration created by `sley init --yes`.
 
 ## Features
 

@@ -1,68 +1,45 @@
 # sley Extensions
 
-This directory contains ready-to-use extensions for sley. These extensions can be installed directly or used as templates for your own extensions.
+This directory contains example extensions for sley. These extensions demonstrate how to build extensions in different languages and can be used as templates for your own.
 
 For the complete extension authoring guide, see [docs/EXTENSIONS.md](../../docs/EXTENSIONS.md).
 
+## Extensions vs Plugins
+
+sley provides two extensibility mechanisms:
+
+| Aspect            | Built-in Plugins     | Extensions                            |
+| ----------------- | -------------------- | ------------------------------------- |
+| **Language**      | Go (native)          | Any (Python, Bash, Go, JS, etc.)      |
+| **Performance**   | Fastest              | Varies by language                    |
+| **Dependencies**  | None                 | May require runtime (Python, Node.js) |
+| **Configuration** | `plugins:` section   | `extensions:` section                 |
+| **Use case**      | Production workflows | Custom integrations, examples         |
+
+**Recommendation:** Use built-in plugins when available. Use extensions for:
+
+- Custom integrations not covered by plugins
+- Learning how the extension system works
+- Prototyping before contributing a plugin
+
 ## Available Extensions
 
-### 1. changelog-generator (Shell)
+### 1. docker-tag-sync (Bash)
 
 **Hook**: `post-bump`
-Automatically updates CHANGELOG.md when version is bumped.
-
-[View Documentation](./changelog-generator/README.md)
-
----
-
-### 2. git-tagger (Python)
-
-**Hook**: `post-bump`
-Automatically creates annotated git tags after version bumps.
+Tags and pushes Docker images with the new version.
 
 Features:
 
-- Configurable tag prefix (default: "v")
-- Optional GPG signing
-- Optional automatic push to remote
-- Customizable tag messages
+- Docker image tagging
+- Optional push to registry
+- Configurable image name
 
-[View Documentation](./git-tagger/README.md)
-
----
-
-### 3. package-sync (Node.js)
-
-**Hook**: `post-bump`
-Synchronizes version to package.json and other JSON files.
-
-Features:
-
-- Updates multiple JSON files
-- Supports nested JSON paths
-- Preserves file formatting
-
-[View Documentation](./package-sync/README.md)
+[View Documentation](./docker-tag-sync/README.md)
 
 ---
 
-### 4. version-policy (Go)
-
-**Hook**: `validate`, `pre-bump`
-Enforces versioning policies and organizational rules.
-
-Features:
-
-- Prevents prereleases on main/master branches
-- Requires clean git working directory
-- Limits prerelease iteration numbers
-- Compiled binary for fast execution
-
-[View Documentation](./version-policy/README.md)
-
----
-
-### 5. commit-validator (Python)
+### 2. commit-validator (Python)
 
 **Hook**: `pre-bump`
 Validates commits follow conventional commit format.
@@ -71,61 +48,31 @@ Features:
 
 - Validates commits since last tag
 - Configurable allowed types
-- Works with `bump auto` workflow
+- Optional scope requirement
+- Blocks bump on invalid commits
+
+> [!NOTE]
+> This complements the `commitparser` plugin. While `commitparser` parses commits to infer bump type (permissive), `commit-validator` enforces strict format compliance (blocks on invalid).
 
 [View Documentation](./commit-validator/README.md)
 
 ---
 
-## Language Comparison
+## Language Examples
 
-| Extension           | Language | Dependencies         | Startup Time |
-| ------------------- | -------- | -------------------- | ------------ |
-| changelog-generator | Shell    | None (sh, awk, grep) | <10ms        |
-| git-tagger          | Python 3 | None (stdlib only)   | ~50ms        |
-| package-sync        | Node.js  | None (stdlib only)   | ~100ms       |
-| version-policy      | Go       | None (compiled)      | <5ms         |
-| commit-validator    | Python 3 | None (stdlib only)   | ~50ms        |
+These extensions demonstrate different implementation languages:
 
-## Plugin Integration
-
-Extensions work seamlessly with built-in plugins for complete automation.
-
-### Example: Auto-Bump Workflow
-
-The `commitparser` plugin analyzes commits, extensions handle the rest:
-
-```yaml
-# .sley.yaml
-plugins:
-  commit-parser: true # Built-in commit analysis
-
-extensions:
-  - name: commit-validator # Validates commit format
-    hooks: [pre-bump]
-  - name: changelog-generator # Updates changelog
-    hooks: [post-bump]
-  - name: git-tagger # Creates git tag
-    hooks: [post-bump]
-```
-
-```bash
-sley bump auto
-# 1. commit-validator: Ensures commits are valid
-# 2. commitparser: Analyzes commits -> determines bump type
-# 3. Version bumped
-# 4. changelog-generator: Updates CHANGELOG.md
-# 5. git-tagger: Creates and pushes tag
-```
-
-See [docs/PLUGINS.md](../../docs/PLUGINS.md) for detailed plugin documentation.
+| Extension        | Language | Runtime | Startup Time |
+| ---------------- | -------- | ------- | ------------ |
+| docker-tag-sync  | Bash     | sh      | <10ms        |
+| commit-validator | Python 3 | python3 | ~50ms        |
 
 ## Installing Extensions
 
 ### From Local Path
 
 ```bash
-sley extension install --path ./contrib/extensions/git-tagger
+sley extension install --path ./contrib/extensions/docker-tag-sync
 ```
 
 ### From URL
@@ -140,11 +87,13 @@ After installation, configure in `.sley.yaml`:
 
 ```yaml
 extensions:
-  - name: git-tagger
+  - name: docker-tag-sync
     enabled: true
+    hooks:
+      - post-bump
     config:
-      prefix: "v"
-      annotated: true
+      image: myapp
+      push: true
 ```
 
 ### Managing Extensions
@@ -154,20 +103,48 @@ extensions:
 sley extension list
 
 # Remove an extension
-sley extension remove git-tagger
+sley extension remove docker-tag-sync
 ```
 
-## Building Go Extensions
+## Plugin Integration
 
-For Go-based extensions like version-policy:
+Extensions work seamlessly with built-in plugins for complete automation.
+
+### Example: Strict Validation Workflow
+
+```yaml
+# .sley.yaml
+plugins:
+  commit-parser: true # Built-in commit analysis
+  tag-manager:
+    enabled: true
+    prefix: "v"
+  version-validator:
+    enabled: true
+    rules:
+      - type: require-even-minor
+        enabled: true
+      - type: max-prerelease-iterations
+        value: 10
+
+extensions:
+  - name: commit-validator # Strict format validation
+    enabled: true
+    hooks: [pre-bump]
+    config:
+      require_scope: true
+```
 
 ```bash
-cd contrib/extensions/version-policy
-make build
-
-# Cross-platform builds
-make build-all
+sley bump auto
+# 1. commit-validator: Blocks if commits are invalid
+# 2. version-validator: Validates version policies
+# 3. commitparser: Analyzes commits -> determines bump type
+# 4. Version bumped
+# 5. tag-manager: Creates git tag
 ```
+
+See [docs/PLUGINS.md](../../docs/PLUGINS.md) for detailed plugin documentation.
 
 ## Creating Your Own Extension
 

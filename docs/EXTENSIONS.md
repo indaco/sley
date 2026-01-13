@@ -25,12 +25,12 @@ Extensions are executable scripts that run at specific hook points during versio
 
 ## Hook Points
 
-| Hook          | When                    | Use Cases                                      |
-| ------------- | ----------------------- | ---------------------------------------------- |
-| `pre-bump`    | Before version bump     | Validate preconditions, run linters/tests      |
-| `post-bump`   | After successful bump   | Update files, create tags, send notifications  |
-| `pre-release` | Before pre-release      | Validate pre-release labels, check readiness   |
-| `validate`    | Custom validation       | Enforce policies, validate version format      |
+| Hook          | When                  | Use Cases                                     |
+| ------------- | --------------------- | --------------------------------------------- |
+| `pre-bump`    | Before version bump   | Validate preconditions, run linters/tests     |
+| `post-bump`   | After successful bump | Update files, create tags, send notifications |
+| `pre-release` | Before pre-release    | Validate pre-release labels, check readiness  |
+| `validate`    | Custom validation     | Enforce policies, validate version format     |
 
 ### Input Context
 
@@ -133,8 +133,8 @@ This copies the extension to `~/.sley-extensions/my-extension/` and adds it to `
 ```yaml
 # .sley.yaml
 extensions:
-  - name: changelog-generator
-    path: /Users/username/.sley-extensions/changelog-generator
+  - name: docker-tag-sync
+    path: /Users/username/.sley-extensions/docker-tag-sync
     enabled: true
 ```
 
@@ -183,21 +183,18 @@ sley bump patch --skip-hooks
 
 See `contrib/extensions/` for reference implementations:
 
-- **commit-validator** - Validates conventional commit format
-- **docker-tag-sync** - Syncs version to Docker image tags
-- **git-tagger** - Creates git tags on version bumps
-- **package-sync** - Syncs version across package manifests
-- **version-policy** - Enforces custom versioning policies
+- **docker-tag-sync** (Bash) - Tags and pushes Docker images with version
+- **commit-validator** (Python) - Validates conventional commit format
 
 ## Troubleshooting
 
-| Issue                 | Solution                                                  |
-| --------------------- | --------------------------------------------------------- |
-| Extension not found   | Check `sley extension list` and `.sley.yaml`              |
-| Not executing         | Verify `enabled: true`, script executable, proper shebang |
-| Permission denied     | Run `chmod +x hook.sh`                                    |
-| Timeout errors        | Optimize script or split into smaller tasks               |
-| Invalid JSON output   | Test manually with `echo '{"hook":"post-bump"}' \| ./hook.sh` |
+| Issue               | Solution                                                      |
+| ------------------- | ------------------------------------------------------------- |
+| Extension not found | Check `sley extension list` and `.sley.yaml`                  |
+| Not executing       | Verify `enabled: true`, script executable, proper shebang     |
+| Permission denied   | Run `chmod +x hook.sh`                                        |
+| Timeout errors      | Optimize script or split into smaller tasks                   |
+| Invalid JSON output | Test manually with `echo '{"hook":"post-bump"}' \| ./hook.sh` |
 
 ## Error Propagation
 
