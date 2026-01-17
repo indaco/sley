@@ -249,10 +249,7 @@ func (v *Validator) validateChangelogParserConfig(ctx context.Context) {
 	cfg := v.cfg.Plugins.ChangelogParser
 
 	// Validate changelog file path
-	changelogPath := cfg.Path
-	if changelogPath == "" {
-		changelogPath = "CHANGELOG.md"
-	}
+	changelogPath := cfg.GetPath()
 	if !filepath.IsAbs(changelogPath) {
 		changelogPath = filepath.Join(v.rootDir, changelogPath)
 	}
@@ -260,7 +257,7 @@ func (v *Validator) validateChangelogParserConfig(ctx context.Context) {
 	if _, err := v.fs.Stat(ctx, changelogPath); err != nil {
 		if os.IsNotExist(err) {
 			v.addValidation("Plugin: changelog-parser", false,
-				fmt.Sprintf("Changelog file '%s' does not exist", cfg.Path), false)
+				fmt.Sprintf("Changelog file '%s' does not exist", cfg.GetPath()), false)
 		} else {
 			v.addValidation("Plugin: changelog-parser", false,
 				fmt.Sprintf("Cannot access changelog file: %v", err), false)
@@ -272,10 +269,26 @@ func (v *Validator) validateChangelogParserConfig(ctx context.Context) {
 	if cfg.Priority != "" && cfg.Priority != "changelog" && cfg.Priority != "commits" {
 		v.addValidation("Plugin: changelog-parser", false,
 			fmt.Sprintf("Invalid priority '%s': must be 'changelog' or 'commits'", cfg.Priority), false)
-	} else {
-		v.addValidation("Plugin: changelog-parser", true,
-			fmt.Sprintf("Changelog file '%s' is accessible", cfg.Path), false)
+		return
 	}
+
+	// Validate format setting
+	validFormats := map[string]bool{
+		"keepachangelog": true,
+		"grouped":        true,
+		"github":         true,
+		"minimal":        true,
+		"auto":           true,
+		"":               true,
+	}
+	if !validFormats[cfg.Format] {
+		v.addValidation("Plugin: changelog-parser", false,
+			fmt.Sprintf("Invalid format '%s': must be 'keepachangelog', 'grouped', 'github', 'minimal', or 'auto'", cfg.Format), false)
+		return
+	}
+
+	v.addValidation("Plugin: changelog-parser", true,
+		fmt.Sprintf("Changelog file '%s' is accessible (format: %s)", cfg.GetPath(), cfg.GetFormat()), false)
 }
 
 // validateChangelogGeneratorConfig validates the changelog-generator plugin configuration.
