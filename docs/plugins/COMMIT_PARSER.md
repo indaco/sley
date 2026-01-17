@@ -117,6 +117,24 @@ sley bump auto                           # Result: minor
 
 ## Integration with Other Plugins
 
+### With Changelog Parser
+
+When both plugins are enabled, use the `priority` setting in changelog-parser to control precedence:
+
+```yaml
+plugins:
+  commit-parser: true
+  changelog-parser:
+    enabled: true
+    format: auto # keepachangelog, grouped, github, minimal, auto
+    priority: "commits" # commit-parser takes precedence
+```
+
+- **priority: "commits"**: Commit parser runs first (recommended for CI/CD)
+- **priority: "changelog"**: Changelog parser runs first, commit parser is fallback
+
+### With Other Plugins
+
 ```yaml
 plugins:
   commit-parser: true
@@ -148,8 +166,19 @@ Flow: commit-parser analyzes commits -> version-validator validates -> version u
 | Wrong bump type inferred | Check `git log --oneline -10` for correct prefixes       |
 | No bump type found       | `bump auto` defaults to patch if no conventional commits |
 
+## Comparison with Changelog Parser
+
+| Feature            | Commit Parser        | Changelog Parser                        |
+| ------------------ | -------------------- | --------------------------------------- |
+| Input source       | Git commit messages  | CHANGELOG.md                            |
+| Format requirement | Conventional Commits | Multiple (keepachangelog, grouped, etc) |
+| Manual control     | Low                  | High                                    |
+| Automation level   | Fully automatic      | Semi-automatic                          |
+| Best for           | CI/CD workflows      | Release planning                        |
+
 ## See Also
 
+- [Example Configuration](./examples/commit-parser.yaml) - Commit-parser setup
 - [Full Plugin Configuration](./examples/full-config.yaml) - All plugins working together
 - [Changelog Generator](./CHANGELOG_GENERATOR.md) - Generate changelogs from commits
-- [Changelog Parser](./CHANGELOG_PARSER.md) - Alternative: infer bump from CHANGELOG.md
+- [Changelog Parser](./CHANGELOG_PARSER.md) - Alternative: infer bump from CHANGELOG.md (supports multiple formats)

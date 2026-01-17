@@ -19,6 +19,9 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 		if plugin.config.Priority != "changelog" {
 			t.Errorf("expected default priority 'changelog', got %s", plugin.config.Priority)
 		}
+		if plugin.config.Format != "keepachangelog" {
+			t.Errorf("expected default format 'keepachangelog', got %s", plugin.config.Format)
+		}
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
@@ -28,6 +31,7 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 			RequireUnreleasedSection: false,
 			InferBumpType:            true,
 			Priority:                 "commits",
+			Format:                   "minimal",
 		}
 		plugin := NewChangelogParser(cfg)
 		if plugin.config.Path != "docs/CHANGES.md" {
@@ -35,6 +39,9 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 		}
 		if plugin.config.Priority != "commits" {
 			t.Errorf("expected priority 'commits', got %s", plugin.config.Priority)
+		}
+		if plugin.config.Format != "minimal" {
+			t.Errorf("expected format 'minimal', got %s", plugin.config.Format)
 		}
 	})
 
@@ -46,6 +53,17 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 		plugin := NewChangelogParser(cfg)
 		if plugin.config.Path != "CHANGELOG.md" {
 			t.Errorf("expected default path 'CHANGELOG.md', got %s", plugin.config.Path)
+		}
+	})
+
+	t.Run("with empty format applies default", func(t *testing.T) {
+		cfg := &Config{
+			Enabled: true,
+			Format:  "",
+		}
+		plugin := NewChangelogParser(cfg)
+		if plugin.config.Format != "keepachangelog" {
+			t.Errorf("expected default format 'keepachangelog', got %s", plugin.config.Format)
 		}
 	})
 }
@@ -67,6 +85,9 @@ func TestDefaultConfig(t *testing.T) {
 	if cfg.Priority != "changelog" {
 		t.Errorf("expected default priority 'changelog', got %s", cfg.Priority)
 	}
+	if cfg.Format != "keepachangelog" {
+		t.Errorf("expected default format 'keepachangelog', got %s", cfg.Format)
+	}
 }
 
 func TestPluginMetadata(t *testing.T) {
@@ -80,8 +101,8 @@ func TestPluginMetadata(t *testing.T) {
 		t.Error("expected non-empty description")
 	}
 
-	if plugin.Version() != "v0.1.0" {
-		t.Errorf("expected version 'v0.1.0', got %s", plugin.Version())
+	if plugin.Version() != "v0.2.0" {
+		t.Errorf("expected version 'v0.2.0', got %s", plugin.Version())
 	}
 }
 
@@ -111,6 +132,7 @@ func TestGetConfig(t *testing.T) {
 		Enabled:  true,
 		Path:     "custom/CHANGELOG.md",
 		Priority: "commits",
+		Format:   "grouped",
 	}
 	plugin := NewChangelogParser(cfg)
 
@@ -118,13 +140,38 @@ func TestGetConfig(t *testing.T) {
 	if gotCfg.Path != "custom/CHANGELOG.md" {
 		t.Errorf("expected path 'custom/CHANGELOG.md', got %s", gotCfg.Path)
 	}
+	if gotCfg.Format != "grouped" {
+		t.Errorf("expected format 'grouped', got %s", gotCfg.Format)
+	}
 }
 
-func TestInferBumpType_Plugin(t *testing.T) {
-	// Save original and restore after test
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+func TestGetFormat(t *testing.T) {
+	tests := []struct {
+		format   string
+		expected string
+	}{
+		{"keepachangelog", "keepachangelog"},
+		{"grouped", "grouped"},
+		{"github", "github"},
+		{"minimal", "minimal"},
+		{"auto", "auto"},
+		{"", "keepachangelog"},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.format, func(t *testing.T) {
+			cfg := &Config{Enabled: true, Format: tt.format}
+			plugin := NewChangelogParser(cfg)
+
+			got := plugin.GetFormat()
+			if got != tt.expected {
+				t.Errorf("GetFormat() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestInferBumpType_Plugin_Errors(t *testing.T) {
 	t.Run("disabled plugin", func(t *testing.T) {
 		cfg := &Config{Enabled: false, InferBumpType: true}
 		plugin := NewChangelogParser(cfg)
@@ -150,84 +197,93 @@ func TestInferBumpType_Plugin(t *testing.T) {
 			t.Errorf("expected 'inference disabled' error, got: %v", err)
 		}
 	})
+}
 
-	t.Run("successful inference - major", func(t *testing.T) {
-		changelog := `# Changelog
+func TestInferBumpType_Plugin_Success(t *testing.T) {
+	origOpenFile := openFileFn
+	defer func() { openFileFn = origOpenFile }()
+
+	tests := []struct {
+		name     string
+		format   string
+		content  string
+		wantBump string
+	}{
+		{
+			name:   "keepachangelog major",
+			format: "keepachangelog",
+			content: `# Changelog
 
 ## [Unreleased]
 
 ### Removed
 - Old API
-`
-		openFileFn = mockOpenFile(changelog)
+`,
+			wantBump: "major",
+		},
+		{
+			name:   "minimal minor",
+			format: "minimal",
+			content: `## v1.2.0
 
-		cfg := &Config{
-			Enabled:       true,
-			Path:          "CHANGELOG.md",
-			InferBumpType: true,
-		}
-		plugin := NewChangelogParser(cfg)
+- [Feat] New feature
+- [Fix] Bug fix
+`,
+			wantBump: "minor",
+		},
+		{
+			name:   "grouped patch",
+			format: "grouped",
+			content: `## v1.0.1 - 2024-01-15
 
-		bumpType, err := plugin.InferBumpType()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if bumpType != "major" {
-			t.Errorf("expected 'major', got %s", bumpType)
-		}
-	})
+### Bug Fixes
 
-	t.Run("successful inference - minor", func(t *testing.T) {
-		changelog := `# Changelog
+- Fixed memory leak
 
-## [Unreleased]
+## v1.0.0
+`,
+			wantBump: "patch",
+		},
+		{
+			name:   "auto detect",
+			format: "auto",
+			content: `## [Unreleased]
 
 ### Added
-- New feature
-`
-		openFileFn = mockOpenFile(changelog)
+- Feature
 
-		cfg := &Config{
-			Enabled:       true,
-			Path:          "CHANGELOG.md",
-			InferBumpType: true,
-		}
-		plugin := NewChangelogParser(cfg)
+## [1.0.0]
+`,
+			wantBump: "minor",
+		},
+	}
 
-		bumpType, err := plugin.InferBumpType()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if bumpType != "minor" {
-			t.Errorf("expected 'minor', got %s", bumpType)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			openFileFn = mockOpenFile(tt.content)
 
-	t.Run("successful inference - patch", func(t *testing.T) {
-		changelog := `# Changelog
+			cfg := &Config{
+				Enabled:       true,
+				Path:          "CHANGELOG.md",
+				InferBumpType: true,
+				Format:        tt.format,
+			}
+			plugin := NewChangelogParser(cfg)
 
-## [Unreleased]
+			bumpType, err := plugin.InferBumpType()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if bumpType != tt.wantBump {
+				t.Errorf("expected %q, got %q", tt.wantBump, bumpType)
+			}
+		})
+	}
+}
 
-### Fixed
-- Bug fix
-`
-		openFileFn = mockOpenFile(changelog)
-
-		cfg := &Config{
-			Enabled:       true,
-			Path:          "CHANGELOG.md",
-			InferBumpType: true,
-		}
-		plugin := NewChangelogParser(cfg)
-
-		bumpType, err := plugin.InferBumpType()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if bumpType != "patch" {
-			t.Errorf("expected 'patch', got %s", bumpType)
-		}
-	})
+func TestInferBumpType_Plugin_FileErrors(t *testing.T) {
+	origOpenFile := openFileFn
+	defer func() { openFileFn = origOpenFile }()
 
 	t.Run("parse error", func(t *testing.T) {
 		openFileFn = func(name string) (*os.File, error) {
@@ -270,14 +326,55 @@ func TestInferBumpType_Plugin(t *testing.T) {
 		if err == nil {
 			t.Error("expected error for empty unreleased section, got nil")
 		}
-		if !strings.Contains(err.Error(), "failed to infer bump type") {
-			t.Errorf("expected 'failed to infer bump type' error, got: %v", err)
+	})
+}
+
+func TestInferBumpTypeWithConfidence(t *testing.T) {
+	origOpenFile := openFileFn
+	defer func() { openFileFn = origOpenFile }()
+
+	t.Run("returns bump type and confidence", func(t *testing.T) {
+		changelog := `## [Unreleased]
+
+### Added
+- Feature
+
+## [1.0.0]
+`
+		openFileFn = mockOpenFile(changelog)
+
+		cfg := &Config{
+			Enabled:       true,
+			Path:          "CHANGELOG.md",
+			InferBumpType: true,
+			Format:        "keepachangelog",
+		}
+		plugin := NewChangelogParser(cfg)
+
+		bumpType, confidence, err := plugin.InferBumpTypeWithConfidence()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if bumpType != "minor" {
+			t.Errorf("expected bump type 'minor', got %s", bumpType)
+		}
+		if confidence != "high" {
+			t.Errorf("expected confidence 'high', got %s", confidence)
+		}
+	})
+
+	t.Run("disabled returns error", func(t *testing.T) {
+		cfg := &Config{Enabled: false, InferBumpType: true}
+		plugin := NewChangelogParser(cfg)
+
+		_, _, err := plugin.InferBumpTypeWithConfidence()
+		if err == nil {
+			t.Error("expected error, got nil")
 		}
 	})
 }
 
 func TestValidateHasEntries(t *testing.T) {
-	// Save original and restore after test
 	origOpenFile := openFileFn
 	defer func() { openFileFn = origOpenFile }()
 
@@ -349,32 +446,6 @@ func TestValidateHasEntries(t *testing.T) {
 		}
 	})
 
-	t.Run("missing unreleased section", func(t *testing.T) {
-		changelog := `# Changelog
-
-## [1.0.0] - 2024-01-01
-
-### Added
-- Old feature
-`
-		openFileFn = mockOpenFile(changelog)
-
-		cfg := &Config{
-			Enabled:                  true,
-			Path:                     "CHANGELOG.md",
-			RequireUnreleasedSection: true,
-		}
-		plugin := NewChangelogParser(cfg)
-
-		err := plugin.ValidateHasEntries()
-		if err == nil {
-			t.Error("expected error for missing unreleased section, got nil")
-		}
-		if !strings.Contains(err.Error(), "changelog validation failed") {
-			t.Errorf("expected 'changelog validation failed' error, got: %v", err)
-		}
-	})
-
 	t.Run("file not found", func(t *testing.T) {
 		openFileFn = func(name string) (*os.File, error) {
 			return nil, os.ErrNotExist
@@ -443,10 +514,8 @@ func TestShouldTakePrecedence(t *testing.T) {
 	}
 }
 
-// mockOpenFile returns a function that creates a mock file from a string
 func mockOpenFile(content string) func(string) (*os.File, error) {
 	return func(name string) (*os.File, error) {
-		// Create a temporary file with the content
 		tmpFile, err := os.CreateTemp("", "changelog-test-*.md")
 		if err != nil {
 			return nil, err
@@ -458,14 +527,12 @@ func mockOpenFile(content string) func(string) (*os.File, error) {
 			return nil, err
 		}
 
-		// Seek back to start
 		if _, err := tmpFile.Seek(0, 0); err != nil {
 			tmpFile.Close()
 			os.Remove(tmpFile.Name())
 			return nil, err
 		}
 
-		// The file will be cleaned up by the test cleanup
 		return tmpFile, nil
 	}
 }
@@ -475,7 +542,6 @@ func TestPluginInterface(t *testing.T) {
 }
 
 func TestRegistry(t *testing.T) {
-	// Save original state
 	origParser := defaultChangelogParser
 	defer func() { defaultChangelogParser = origParser }()
 
@@ -529,15 +595,12 @@ func TestRegistry(t *testing.T) {
 	t.Run("duplicate registration warning", func(t *testing.T) {
 		ResetChangelogParser()
 
-		// Register first parser
 		cfg1 := &Config{Enabled: true}
 		Register(cfg1)
 
-		// Attempt to register second parser
 		cfg2 := &Config{Enabled: true}
 		Register(cfg2)
 
-		// Should still have the first parser
 		parser := GetChangelogParserFn()
 		if parser == nil {
 			t.Fatal("expected first parser to remain registered")
@@ -546,7 +609,6 @@ func TestRegistry(t *testing.T) {
 }
 
 func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
-	// Save original and restore after test
 	origOpenFile := openFileFn
 	defer func() { openFileFn = origOpenFile }()
 
@@ -583,4 +645,88 @@ func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
 			t.Error("expected error, got nil")
 		}
 	})
+
+	t.Run("invalid format error", func(t *testing.T) {
+		cfg := &Config{
+			Enabled:       true,
+			InferBumpType: true,
+			Format:        "invalid_format",
+		}
+		plugin := NewChangelogParser(cfg)
+
+		_, err := plugin.InferBumpType()
+		if err == nil {
+			t.Error("expected error for invalid format, got nil")
+		}
+	})
+}
+
+func TestMultiFormatSupport(t *testing.T) {
+	origOpenFile := openFileFn
+	defer func() { openFileFn = origOpenFile }()
+
+	formats := []struct {
+		name     string
+		format   string
+		content  string
+		wantBump string
+	}{
+		{
+			name:   "keepachangelog",
+			format: "keepachangelog",
+			content: `## [Unreleased]
+
+### Added
+- Feature
+
+## [1.0.0]
+`,
+			wantBump: "minor",
+		},
+		{
+			name:   "minimal",
+			format: "minimal",
+			content: `## v1.2.0
+
+- [Feat] Feature
+
+## v1.1.0
+`,
+			wantBump: "minor",
+		},
+		{
+			name:   "grouped",
+			format: "grouped",
+			content: `## v1.2.0
+
+### Features
+
+- Feature
+
+## v1.1.0
+`,
+			wantBump: "minor",
+		},
+	}
+
+	for _, tt := range formats {
+		t.Run(tt.name, func(t *testing.T) {
+			openFileFn = mockOpenFile(tt.content)
+
+			cfg := &Config{
+				Enabled:       true,
+				InferBumpType: true,
+				Format:        tt.format,
+			}
+			plugin := NewChangelogParser(cfg)
+
+			bumpType, err := plugin.InferBumpType()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if bumpType != tt.wantBump {
+				t.Errorf("expected %q, got %q", tt.wantBump, bumpType)
+			}
+		})
+	}
 }

@@ -7,9 +7,42 @@ plugins:
   changelog-parser:
     enabled: true
     path: "CHANGELOG.md"
+    format: "auto" # keepachangelog, grouped, github, minimal, auto
     require-unreleased-section: true
     infer-bump-type: true
     priority: "changelog" # "changelog" or "commits"
 
   # Commit parser as fallback when priority is "changelog"
   commit-parser: true
+
+# ---
+# Format-specific examples:
+# ---
+
+# Keep a Changelog (default):
+# plugins:
+#   changelog-parser:
+#     enabled: true
+#     format: keepachangelog
+
+# Grouped format with custom section mapping:
+# plugins:
+#   changelog-parser:
+#     enabled: true
+#     format: grouped
+#     grouped-section-map:
+#       "New Features": "Added"
+#       "Bug Fixes": "Fixed"
+#       "Breaking": "Removed"
+
+# GitHub format (limited inference - see docs):
+# plugins:
+#   changelog-parser:
+#     enabled: true
+#     format: github
+
+# Minimal format:
+# plugins:
+#   changelog-parser:
+#     enabled: true
+#     format: minimal

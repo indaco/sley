@@ -173,6 +173,31 @@ type ChangelogParserConfig struct {
 
 	// Priority determines which parser takes precedence: "changelog" or "commits"
 	Priority string `yaml:"priority,omitempty"`
+
+	// Format specifies the changelog format: keepachangelog, grouped, github, minimal, auto.
+	// Default: keepachangelog (for backward compatibility).
+	Format string `yaml:"format,omitempty"`
+
+	// GroupedSectionMap provides custom section-to-category mapping for grouped format.
+	// Keys are section names as they appear in the changelog (e.g., "Features", "Bug Fixes").
+	// Values are semantic categories (Added, Changed, Fixed, Removed, Deprecated, Security).
+	GroupedSectionMap map[string]string `yaml:"grouped-section-map,omitempty"`
+}
+
+// GetFormat returns the format with default "keepachangelog".
+func (c *ChangelogParserConfig) GetFormat() string {
+	if c.Format == "" {
+		return "keepachangelog"
+	}
+	return c.Format
+}
+
+// GetPath returns the path with default "CHANGELOG.md".
+func (c *ChangelogParserConfig) GetPath() string {
+	if c.Path == "" {
+		return "CHANGELOG.md"
+	}
+	return c.Path
 }
 
 // ChangelogGeneratorConfig holds configuration for the changelog generator plugin.

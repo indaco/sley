@@ -3,10 +3,10 @@ package changelogparser
 import (
 	"errors"
 	"fmt"
+	"os"
 )
 
-// ChangelogParser defines the interface for parsing changelog files
-// to infer version bumps and validate changelog completeness.
+// ChangelogInferrer defines the interface for parsing changelog files.
 type ChangelogInferrer interface {
 	Name() string
 	Description() string
@@ -22,43 +22,36 @@ type ChangelogParserPlugin struct {
 
 // Config holds configuration for the changelog parser plugin.
 type Config struct {
-	// Enabled controls whether the plugin is active.
-	Enabled bool
-
-	// Path is the path to the changelog file (default: "CHANGELOG.md").
-	Path string
-
-	// RequireUnreleasedSection enforces presence of Unreleased section.
+	Enabled                  bool
+	Path                     string
 	RequireUnreleasedSection bool
-
-	// InferBumpType enables automatic bump type inference from changelog.
-	InferBumpType bool
-
-	// Priority determines which parser takes precedence: "changelog" or "commits"
-	// When set to "changelog", changelog-based inference overrides commit-based inference.
-	Priority string
+	InferBumpType            bool
+	Priority                 string
+	Format                   string
+	GroupedSectionMap        map[string]string
 }
 
-// Ensure ChangelogParserPlugin implements the plugin interface.
 var _ ChangelogInferrer = (*ChangelogParserPlugin)(nil)
 
 func (p *ChangelogParserPlugin) Name() string { return "changelog-parser" }
 func (p *ChangelogParserPlugin) Description() string {
 	return "Parses CHANGELOG.md to infer bump type and validate changelog completeness"
 }
-func (p *ChangelogParserPlugin) Version() string { return "v0.1.0" }
+func (p *ChangelogParserPlugin) Version() string { return "v0.2.0" }
 
-// NewChangelogParser creates a new changelog parser plugin with the given configuration.
+// NewChangelogParser creates a new changelog parser plugin.
 func NewChangelogParser(cfg *Config) *ChangelogParserPlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
-	// Apply defaults
 	if cfg.Path == "" {
 		cfg.Path = "CHANGELOG.md"
 	}
 	if cfg.Priority == "" {
 		cfg.Priority = "changelog"
+	}
+	if cfg.Format == "" {
+		cfg.Format = "keepachangelog"
 	}
 	return &ChangelogParserPlugin{config: cfg}
 }
@@ -71,15 +64,14 @@ func DefaultConfig() *Config {
 		RequireUnreleasedSection: true,
 		InferBumpType:            true,
 		Priority:                 "changelog",
+		Format:                   "keepachangelog",
 	}
 }
 
-// IsEnabled returns whether the plugin is active.
 func (p *ChangelogParserPlugin) IsEnabled() bool {
 	return p.config.Enabled
 }
 
-// GetConfig returns the plugin configuration.
 func (p *ChangelogParserPlugin) GetConfig() *Config {
 	return p.config
 }
@@ -90,18 +82,30 @@ func (p *ChangelogParserPlugin) InferBumpType() (string, error) {
 		return "", errors.New("changelog parser not enabled or inference disabled")
 	}
 
-	parser := newChangelogFileParser(p.config.Path)
-	section, err := parser.ParseUnreleased()
+	section, err := p.parseUnreleasedWithFormat()
 	if err != nil {
 		return "", fmt.Errorf("failed to parse unreleased section: %w", err)
 	}
 
-	bumpType, err := section.InferBumpType()
-	if err != nil {
-		return "", fmt.Errorf("failed to infer bump type: %w", err)
+	if section.InferredBumpType == "" {
+		return "", errors.New("failed to infer bump type: no bump type could be determined")
 	}
 
-	return bumpType, nil
+	return section.InferredBumpType, nil
+}
+
+// InferBumpTypeWithConfidence returns bump type and confidence level.
+func (p *ChangelogParserPlugin) InferBumpTypeWithConfidence() (bumpType, confidence string, err error) {
+	if !p.IsEnabled() || !p.config.InferBumpType {
+		return "", "", errors.New("changelog parser not enabled or inference disabled")
+	}
+
+	section, err := p.parseUnreleasedWithFormat()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse unreleased section: %w", err)
+	}
+
+	return section.InferredBumpType, section.BumpTypeConfidence, nil
 }
 
 // ValidateHasEntries validates that the Unreleased section has entries.
@@ -110,8 +114,7 @@ func (p *ChangelogParserPlugin) ValidateHasEntries() error {
 		return nil
 	}
 
-	parser := newChangelogFileParser(p.config.Path)
-	section, err := parser.ParseUnreleased()
+	section, err := p.parseUnreleasedWithFormat()
 	if err != nil {
 		return fmt.Errorf("changelog validation failed: %w", err)
 	}
@@ -123,7 +126,31 @@ func (p *ChangelogParserPlugin) ValidateHasEntries() error {
 	return nil
 }
 
-// ShouldTakePrecedence returns true if changelog parser should take precedence over commit parser.
+// ShouldTakePrecedence returns true if changelog parser should take precedence.
 func (p *ChangelogParserPlugin) ShouldTakePrecedence() bool {
 	return p.IsEnabled() && p.config.Priority == "changelog"
+}
+
+// parseUnreleasedWithFormat creates the appropriate parser and parses.
+func (p *ChangelogParserPlugin) parseUnreleasedWithFormat() (*ParsedSection, error) {
+	parser, err := NewParser(p.config.Format, p.config)
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := openFileFn(p.config.Path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, errors.New("changelog file not found")
+		}
+		return nil, err
+	}
+	defer file.Close()
+
+	return parser.ParseUnreleased(file)
+}
+
+// GetFormat returns the configured format.
+func (p *ChangelogParserPlugin) GetFormat() string {
+	return p.config.Format
 }

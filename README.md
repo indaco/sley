@@ -714,16 +714,16 @@ docker build --build-arg VERSION=$(sley show) -t myapp:$(sley show) .
 
 ### Available Plugins
 
-| Plugin                | Description                                            | Default  |
-| --------------------- | ------------------------------------------------------ | -------- |
-| `commit-parser`       | Analyzes conventional commits to determine bump type   | Enabled  |
-| `tag-manager`         | Automatically creates git tags synchronized with bumps | Disabled |
-| `version-validator`   | Enforces versioning policies and constraints           | Disabled |
-| `dependency-check`    | Validates and syncs versions across multiple files     | Disabled |
-| `changelog-parser`    | Infers bump type from CHANGELOG.md entries             | Disabled |
-| `changelog-generator` | Generates changelog from conventional commits          | Disabled |
-| `release-gate`        | Pre-bump validation (clean worktree, branch, WIP)      | Disabled |
-| `audit-log`           | Records version changes with metadata to a log file    | Disabled |
+| Plugin                                                       | Description                                            | Default  |
+| ------------------------------------------------------------ | ------------------------------------------------------ | -------- |
+| [`commit-parser`](docs/plugins/COMMIT_PARSER.md)             | Analyzes conventional commits to determine bump type   | Enabled  |
+| [`tag-manager`](docs/plugins/TAG_MANAGER.md)                 | Automatically creates git tags synchronized with bumps | Disabled |
+| [`version-validator`](docs/plugins/VERSION_VALIDATOR.md)     | Enforces versioning policies and constraints           | Disabled |
+| [`dependency-check`](docs/plugins/DEPENDENCY_CHECK.md)       | Validates and syncs versions across multiple files     | Disabled |
+| [`changelog-parser`](docs/plugins/CHANGELOG_PARSER.md)       | Infers bump type from CHANGELOG.md entries             | Disabled |
+| [`changelog-generator`](docs/plugins/CHANGELOG_GENERATOR.md) | Generates changelog from conventional commits          | Disabled |
+| [`release-gate`](docs/plugins/RELEASE_GATE.md)               | Pre-bump validation (clean worktree, branch, WIP)      | Disabled |
+| [`audit-log`](docs/plugins/AUDIT_LOG.md)                     | Records version changes with metadata to a log file    | Disabled |
 
 ### Quick Example
 

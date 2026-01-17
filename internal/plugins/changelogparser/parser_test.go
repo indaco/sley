@@ -110,10 +110,9 @@ func TestParseUnreleasedSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parser := &changelogFileParser{path: "test.md"}
 			reader := strings.NewReader(tt.changelog)
 
-			section, err := parser.parseUnreleasedSection(reader)
+			section, err := parseKeepAChangelogUnreleased(reader)
 
 			if tt.wantErr {
 				if err == nil {
@@ -278,7 +277,6 @@ func TestInferBumpType(t *testing.T) {
 
 func TestParseUnreleased_FileOperations(t *testing.T) {
 	t.Run("file not found", func(t *testing.T) {
-		// Save original and restore after test
 		origOpenFile := openFileFn
 		defer func() { openFileFn = origOpenFile }()
 
@@ -298,7 +296,6 @@ func TestParseUnreleased_FileOperations(t *testing.T) {
 	})
 
 	t.Run("file read error", func(t *testing.T) {
-		// Save original and restore after test
 		origOpenFile := openFileFn
 		defer func() { openFileFn = origOpenFile }()
 
@@ -337,10 +334,9 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 ### Added
 - Version 1 feature
 `
-		parser := &changelogFileParser{path: "test.md"}
 		reader := strings.NewReader(changelog)
 
-		section, err := parser.parseUnreleasedSection(reader)
+		section, err := parseKeepAChangelogUnreleased(reader)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -366,15 +362,13 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 ### Fixed
 - Bug fix
 `
-		parser := &changelogFileParser{path: "test.md"}
 		reader := strings.NewReader(changelog)
 
-		section, err := parser.parseUnreleasedSection(reader)
+		section, err := parseKeepAChangelogUnreleased(reader)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		// Should only capture properly formatted entries
 		if len(section.Added) != 2 {
 			t.Errorf("expected 2 Added entries, got %d", len(section.Added))
 		}
@@ -390,10 +384,9 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 ### Fixed
 - Bug fix
 `
-		parser := &changelogFileParser{path: "test.md"}
 		reader := strings.NewReader(changelog)
 
-		section, err := parser.parseUnreleasedSection(reader)
+		section, err := parseKeepAChangelogUnreleased(reader)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -465,19 +458,158 @@ func TestSectionRegexPatterns(t *testing.T) {
 }
 
 func TestParseUnreleasedSection_ScannerError(t *testing.T) {
-	// Create a reader that will cause scanner.Err() to return an error
 	errorReader := &erroringReader{}
-	parser := &changelogFileParser{path: "test.md"}
 
-	_, err := parser.parseUnreleasedSection(errorReader)
+	_, err := parseKeepAChangelogUnreleased(errorReader)
 	if err == nil {
 		t.Error("expected error from scanner, got nil")
 	}
 }
 
-// erroringReader is a reader that returns an error
 type erroringReader struct{}
 
 func (e *erroringReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("read error")
+}
+
+func TestToParsedSection(t *testing.T) {
+	section := &UnreleasedSection{
+		HasEntries: true,
+		Added:      []string{"Feature A", "Feature B"},
+		Fixed:      []string{"Bug fix"},
+		Removed:    []string{"Old API"},
+	}
+
+	parsed := section.ToParsedSection()
+
+	if !parsed.HasEntries {
+		t.Error("expected HasEntries to be true")
+	}
+
+	if parsed.InferredBumpType != "major" {
+		t.Errorf("expected InferredBumpType 'major', got %q", parsed.InferredBumpType)
+	}
+
+	if len(parsed.Entries) != 4 {
+		t.Errorf("expected 4 entries, got %d", len(parsed.Entries))
+	}
+
+	categories := make(map[string]int)
+	for _, e := range parsed.Entries {
+		categories[e.Category]++
+	}
+
+	if categories["Added"] != 2 {
+		t.Errorf("expected 2 Added entries, got %d", categories["Added"])
+	}
+	if categories["Fixed"] != 1 {
+		t.Errorf("expected 1 Fixed entry, got %d", categories["Fixed"])
+	}
+	if categories["Removed"] != 1 {
+		t.Errorf("expected 1 Removed entry, got %d", categories["Removed"])
+	}
+}
+
+func TestFromParsedSection(t *testing.T) {
+	parsed := &ParsedSection{
+		HasEntries: true,
+		Entries: []ParsedEntry{
+			{Category: "Added", Description: "Feature A"},
+			{Category: "Added", Description: "Feature B"},
+			{Category: "Fixed", Description: "Bug fix"},
+			{Category: "Removed", Description: "Old API"},
+		},
+	}
+
+	section := FromParsedSection(parsed)
+
+	if !section.HasEntries {
+		t.Error("expected HasEntries to be true")
+	}
+
+	if len(section.Added) != 2 {
+		t.Errorf("expected 2 Added entries, got %d", len(section.Added))
+	}
+	if len(section.Fixed) != 1 {
+		t.Errorf("expected 1 Fixed entry, got %d", len(section.Fixed))
+	}
+	if len(section.Removed) != 1 {
+		t.Errorf("expected 1 Removed entry, got %d", len(section.Removed))
+	}
+}
+
+func TestInferBumpFromEntries(t *testing.T) {
+	tests := []struct {
+		name           string
+		entries        []ParsedEntry
+		wantBump       string
+		wantConfidence string
+	}{
+		{
+			name:           "empty entries",
+			entries:        []ParsedEntry{},
+			wantBump:       "",
+			wantConfidence: "none",
+		},
+		{
+			name: "breaking entry",
+			entries: []ParsedEntry{
+				{Category: "Added", IsBreaking: true},
+			},
+			wantBump:       "major",
+			wantConfidence: "high",
+		},
+		{
+			name: "removed category",
+			entries: []ParsedEntry{
+				{Category: "Removed"},
+			},
+			wantBump:       "major",
+			wantConfidence: "high",
+		},
+		{
+			name: "changed category",
+			entries: []ParsedEntry{
+				{Category: "Changed"},
+			},
+			wantBump:       "major",
+			wantConfidence: "medium",
+		},
+		{
+			name: "added category",
+			entries: []ParsedEntry{
+				{Category: "Added"},
+			},
+			wantBump:       "minor",
+			wantConfidence: "high",
+		},
+		{
+			name: "fixed category",
+			entries: []ParsedEntry{
+				{Category: "Fixed"},
+			},
+			wantBump:       "patch",
+			wantConfidence: "high",
+		},
+		{
+			name: "unknown category",
+			entries: []ParsedEntry{
+				{Category: "Unknown"},
+			},
+			wantBump:       "",
+			wantConfidence: "none",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bumpType, confidence := inferBumpFromEntries(tt.entries)
+			if bumpType != tt.wantBump {
+				t.Errorf("bumpType = %q, want %q", bumpType, tt.wantBump)
+			}
+			if confidence != tt.wantConfidence {
+				t.Errorf("confidence = %q, want %q", confidence, tt.wantConfidence)
+			}
+		})
+	}
 }

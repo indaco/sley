@@ -9,3 +9,23 @@ plugins:
 
   # To disable:
   # commit-parser: false
+
+# ---
+# Integration with changelog-parser:
+# ---
+
+# Use commit-parser as primary (recommended for CI/CD):
+# plugins:
+#   commit-parser: true
+#   changelog-parser:
+#     enabled: true
+#     format: auto
+#     priority: "commits"  # commit-parser takes precedence
+
+# Use changelog-parser as primary, commit-parser as fallback:
+# plugins:
+#   commit-parser: true
+#   changelog-parser:
+#     enabled: true
+#     format: keepachangelog
+#     priority: "changelog"  # changelog-parser takes precedence
