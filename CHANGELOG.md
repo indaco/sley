@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.8.0 - 2026-01-19
+
+### 🚀 Enhancements
+
+- **changelog-parser:** support multiple changelog formats ([b682ab8](https://github.com/indaco/sley/commit/b682ab8)) ([#154](https://github.com/indaco/sley/pull/154))
+
+### 💅 Refactors
+
+- **tui:** consolidate TUI utilities and prompt functions ([7dfdf16](https://github.com/indaco/sley/commit/7dfdf16)) ([#151](https://github.com/indaco/sley/pull/151))
+
+### 📖 Documentation
+
+- update README flow ([548fbb9](https://github.com/indaco/sley/commit/548fbb9)) ([#155](https://github.com/indaco/sley/pull/155))
+
+### 🤖 CI
+
+- ci/update-goreleaser-config-and-workflow (#152) ([a58129d](https://github.com/indaco/sley/commit/a58129d))
+
+**Full Changelog:** [v0.7.0...v0.8.0](https://github.com/indaco/sley/compare/v0.7.0...v0.8.0)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.7.0 - 2026-01-13
 
 ### 🚀 Enhancements

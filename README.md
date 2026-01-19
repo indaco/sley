@@ -516,7 +516,7 @@ USAGE:
    sley [global options] [command [command options]]
 
 VERSION:
-   v0.7.0
+   v0.8.0
 
 COMMANDS:
    init              Initialize .version file and .sley.yaml configuration
