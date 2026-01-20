@@ -7,3 +7,9 @@ repos:
         entry: scripts/githooks/commit-msg
         language: system
         stages: [commit-msg]
+      - id: pre-push-checks
+        name: Run quality checks and tests
+        entry: scripts/githooks/pre-push
+        language: system
+        stages: [pre-push]
+        pass_filenames: false
