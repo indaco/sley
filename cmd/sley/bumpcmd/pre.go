@@ -96,7 +96,7 @@ func runSingleModulePreBump(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, newVersion, previousVersion, "pre"); err != nil {
+	if err := executePostBumpActions(registry, newVersion, previousVersion, "pre", execCtx.Path); err != nil {
 		return err
 	}
 

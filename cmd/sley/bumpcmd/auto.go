@@ -177,7 +177,7 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, next, current, "auto"); err != nil {
+	if err := executePostBumpActions(registry, next, current, "auto", path); err != nil {
 		return err
 	}
 

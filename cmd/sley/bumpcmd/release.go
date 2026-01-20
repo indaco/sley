@@ -95,7 +95,7 @@ func runSingleModuleRelease(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, newVersion, previousVersion, "release"); err != nil {
+	if err := executePostBumpActions(registry, newVersion, previousVersion, "release", path); err != nil {
 		return err
 	}
 
