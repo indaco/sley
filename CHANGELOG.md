@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.8.1 - 2026-01-20
+
+### 🩹 Fixes
+
+- **plugins:** dependency-check plugin works in multi-module mode ([aefbc50](https://github.com/indaco/sley/commit/aefbc50)) ([#163](https://github.com/indaco/sley/pull/163))
+- **githooks:** define missing color variables in commit-msg hook ([7b586be](https://github.com/indaco/sley/commit/7b586be)) ([#158](https://github.com/indaco/sley/pull/158))
+
+### 💅 Refactors
+
+- **tests:** reduce complexity in JSON version tests ([b4cee55](https://github.com/indaco/sley/commit/b4cee55)) ([#165](https://github.com/indaco/sley/pull/165))
+
+### 📖 Documentation
+
+- **readme:** improve table of contents visibility ([4fc1d30](https://github.com/indaco/sley/commit/4fc1d30)) ([#160](https://github.com/indaco/sley/pull/160))
+
+### 🤖 CI
+
+- **hooks:** add pre-push hook for quality checks and tests ([343dddb](https://github.com/indaco/sley/commit/343dddb)) ([#164](https://github.com/indaco/sley/pull/164))
+- **workflows:** trigger workflows only on Go file changes ([d8c090f](https://github.com/indaco/sley/commit/d8c090f)) ([#159](https://github.com/indaco/sley/pull/159))
+
+### 📦 Build
+
+- **deps:** bump deps to latest versions ([5329308](https://github.com/indaco/sley/commit/5329308)) ([#157](https://github.com/indaco/sley/pull/157))
+
+**Full Changelog:** [v0.8.0...v0.8.1](https://github.com/indaco/sley/compare/v0.8.0...v0.8.1)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.8.0 - 2026-01-19
 
 ### 🚀 Enhancements
