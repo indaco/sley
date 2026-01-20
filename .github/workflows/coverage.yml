@@ -3,6 +3,10 @@ name: Test Coverage
 on:
   push:
     branches: [main]
+    paths:
+      - "**.go"
+      - "go.mod"
+      - "go.sum"
   workflow_dispatch:
 
 env:
