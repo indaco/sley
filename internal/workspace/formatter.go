@@ -54,14 +54,35 @@ func formatTextVersionInfo(result ExecutionResult) string {
 	}
 }
 
+// formatModulePath returns the path info for a module in parentheses.
+// Uses RelPath if available, otherwise uses Dir.
+func formatModulePath(mod *Module) string {
+	if mod.RelPath != "" {
+		return mod.RelPath
+	}
+	if mod.Dir != "" && mod.Dir != "." {
+		return mod.Dir
+	}
+	return ""
+}
+
 // writeTextResultLine writes a single result line to the builder.
 func writeTextResultLine(sb *strings.Builder, result ExecutionResult) {
+	path := formatModulePath(result.Module)
 	if result.Success {
 		fmt.Fprintf(sb, "  %s %s", printer.SuccessBadge("✓"), result.Module.Name)
+		// Add path in faint style for disambiguation
+		if path != "" {
+			fmt.Fprintf(sb, " %s", printer.Faint("("+path+")"))
+		}
 		sb.WriteString(printer.Faint(formatTextVersionInfo(result)))
 	} else {
-		fmt.Fprintf(sb, "  %s %s: ", printer.ErrorBadge("✗"), result.Module.Name)
-		sb.WriteString(printer.Faint(result.Error.Error()))
+		fmt.Fprintf(sb, "  %s %s", printer.ErrorBadge("✗"), result.Module.Name)
+		// Add path in faint style for disambiguation
+		if path != "" {
+			fmt.Fprintf(sb, " %s", printer.Faint("("+path+")"))
+		}
+		fmt.Fprintf(sb, ": %s", printer.Faint(result.Error.Error()))
 	}
 	sb.WriteString("\n")
 }

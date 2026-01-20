@@ -743,3 +743,118 @@ func TestGetFormatterWithVerb_JSON(t *testing.T) {
 		t.Error("JSON formatter should output JSON object")
 	}
 }
+
+func TestFormatModulePath(t *testing.T) {
+	tests := []struct {
+		name     string
+		module   *Module
+		expected string
+	}{
+		{
+			name:     "with RelPath",
+			module:   &Module{Name: "api", RelPath: "services/api/.version", Dir: "/workspace/services/api"},
+			expected: "services/api/.version",
+		},
+		{
+			name:     "with Dir only",
+			module:   &Module{Name: "api", RelPath: "", Dir: "/workspace/services/api"},
+			expected: "/workspace/services/api",
+		},
+		{
+			name:     "with Dir as current directory",
+			module:   &Module{Name: "root", RelPath: "", Dir: "."},
+			expected: "",
+		},
+		{
+			name:     "empty paths",
+			module:   &Module{Name: "empty", RelPath: "", Dir: ""},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatModulePath(tt.module)
+			if got != tt.expected {
+				t.Errorf("formatModulePath() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestTextFormatter_FormatResults_WithPathDisambiguation(t *testing.T) {
+	formatter := NewTextFormatter("Bump minor")
+
+	// Create modules with same name but different paths (simulating ambiguous names)
+	modules := []*Module{
+		{Name: "version", Path: "/workspace/backend/gateway/internal/version/.version", RelPath: "backend/gateway/internal/version/.version"},
+		{Name: "version", Path: "/workspace/cli/internal/version/.version", RelPath: "cli/internal/version/.version"},
+		{Name: "frontend", Path: "/workspace/frontend/.version", RelPath: "frontend/.version"},
+	}
+
+	results := []ExecutionResult{
+		{
+			Module:     modules[0],
+			OldVersion: "0.8.0",
+			NewVersion: "0.9.0",
+			Success:    true,
+			Duration:   100 * time.Millisecond,
+		},
+		{
+			Module:     modules[1],
+			OldVersion: "0.8.0",
+			NewVersion: "0.9.0",
+			Success:    true,
+			Duration:   95 * time.Millisecond,
+		},
+		{
+			Module:     modules[2],
+			OldVersion: "0.8.0",
+			NewVersion: "0.9.0",
+			Success:    true,
+			Duration:   90 * time.Millisecond,
+		},
+	}
+
+	output := formatter.FormatResults(results)
+
+	// Verify paths are shown for disambiguation
+	if !strings.Contains(output, "backend/gateway/internal/version/.version") {
+		t.Error("Output should contain path for first 'version' module for disambiguation")
+	}
+	if !strings.Contains(output, "cli/internal/version/.version") {
+		t.Error("Output should contain path for second 'version' module for disambiguation")
+	}
+	if !strings.Contains(output, "frontend/.version") {
+		t.Error("Output should contain path for frontend module")
+	}
+}
+
+func TestTextFormatter_FormatResults_FailedWithPath(t *testing.T) {
+	formatter := NewTextFormatter("bump")
+
+	module := &Module{
+		Name:    "version",
+		Path:    "/workspace/cli/.version",
+		RelPath: "cli/.version",
+	}
+
+	results := []ExecutionResult{
+		{
+			Module:   module,
+			Success:  false,
+			Error:    errors.New("permission denied"),
+			Duration: 10 * time.Millisecond,
+		},
+	}
+
+	output := formatter.FormatResults(results)
+
+	// Verify path is shown for failed results too
+	if !strings.Contains(output, "cli/.version") {
+		t.Error("Output should contain path for failed module")
+	}
+	if !strings.Contains(output, "permission denied") {
+		t.Error("Output should contain error message")
+	}
+}
