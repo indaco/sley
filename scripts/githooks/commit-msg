@@ -3,6 +3,19 @@
 # commit-msg hook with length validation
 # Adheres to Conventional Commits specification with additional types (breaking)
 # Based on: https://github.com/leoroese/blog-tube/blob/main/.husky/commit-msg
+
+# Define color codes
+RED='\x1b[31;1m'
+GREEN='\x1b[32m'
+YELLOW='\x1b[33m'
+DIM='\x1b[2m'
+RESET='\x1b[0m'
+
+# Ensure commit message file exists
+if [ ! -f "$1" ]; then
+    exit 0
+fi
+
 commit_msg=$(head -1 "$1")
 
 # Allow merge commits, revert commits, and other special Git commits
@@ -25,7 +38,7 @@ fi
 msg_length=${#commit_msg}
 max_length=88
 
-if [ $msg_length -gt $max_length ]; then
+if [ "$msg_length" -gt "$max_length" ]; then
     echo ""
     printf "${RED}Commit message too long!${RESET}\n" >&2
     printf "Current length: ${RED}%d${RESET} chars\n" $msg_length >&2
