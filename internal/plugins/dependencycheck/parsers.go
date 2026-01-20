@@ -9,6 +9,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/pelletier/go-toml/v2"
+	"github.com/tidwall/sjson"
 )
 
 // Function variables for testability.
@@ -54,29 +55,23 @@ func readJSONVersion(path, field string) (string, error) {
 }
 
 // writeJSONVersion writes a version to a JSON file using dot notation for nested fields.
+// Uses sjson to preserve field order and formatting in the original file.
 func writeJSONVersion(path, field, version string) error {
 	data, err := readFileFn(path)
 	if err != nil {
 		return fmt.Errorf("failed to read file %q: %w", path, err)
 	}
 
-	var obj map[string]any
-	if err := json.Unmarshal(data, &obj); err != nil {
-		return fmt.Errorf("failed to parse JSON in %q: %w", path, err)
-	}
-
-	if err := setNestedValue(obj, field, version); err != nil {
-		return fmt.Errorf("in file %q: %w", path, err)
-	}
-
-	// Marshal with indentation for readability
-	updated, err := json.MarshalIndent(obj, "", "  ")
+	// Use sjson to update only the specified field, preserving structure and field order
+	updated, err := sjson.SetBytes(data, field, version)
 	if err != nil {
-		return fmt.Errorf("failed to marshal JSON for %q: %w", path, err)
+		return fmt.Errorf("failed to set version in %q: %w", path, err)
 	}
 
-	// Add trailing newline
-	updated = append(updated, '\n')
+	// Ensure trailing newline
+	if len(updated) > 0 && updated[len(updated)-1] != '\n' {
+		updated = append(updated, '\n')
+	}
 
 	if err := writeFileFn(path, updated, 0644); err != nil {
 		return fmt.Errorf("failed to write file %q: %w", path, err)
