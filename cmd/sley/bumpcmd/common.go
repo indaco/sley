@@ -68,7 +68,7 @@ func executeSingleModuleBump(
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, newVersion, previousVersion, params.bumpType); err != nil {
+	if err := executePostBumpActions(registry, newVersion, previousVersion, params.bumpType, execCtx.Path); err != nil {
 		return err
 	}
 
@@ -105,9 +105,11 @@ func executePreBumpValidations(registry *plugins.PluginRegistry, newVersion, pre
 
 // executePostBumpActions runs all post-bump operations like syncing dependencies,
 // generating changelog, and recording audit logs.
-func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+// The bumpedPath parameter is the path to the .version file that was just bumped,
+// used to avoid showing it twice in the dependency sync output.
+func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath string) error {
 	// Sync dependency files after updating .version
-	if err := syncDependencies(registry, newVersion); err != nil {
+	if err := syncDependencies(registry, newVersion, bumpedPath); err != nil {
 		return err
 	}
 
@@ -184,7 +186,7 @@ func executeStandardBump(
 
 	if !execCtx.IsSingleModule() {
 		// Multi-module mode delegates to runMultiModuleBump
-		return runMultiModuleBump(ctx, cmd, execCtx, multiModuleOp, params.pre, params.meta, params.preserveMeta)
+		return runMultiModuleBump(ctx, cmd, execCtx, registry, multiModuleOp, params.pre, params.meta, params.preserveMeta)
 	}
 
 	// Single-module mode uses the unified executor

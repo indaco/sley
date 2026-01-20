@@ -7,7 +7,9 @@ import (
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
+	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
 )
@@ -17,6 +19,7 @@ func runMultiModuleBump(
 	ctx context.Context,
 	cmd *cli.Command,
 	execCtx *clix.ExecutionContext,
+	registry *plugins.PluginRegistry,
 	bumpType operations.BumpType,
 	preRelease, metadata string,
 	preserveMetadata bool,
@@ -59,7 +62,43 @@ func runMultiModuleBump(
 		return fmt.Errorf("%d module(s) failed", workspace.ErrorCount(results))
 	}
 
+	// Sync dependencies after all modules are bumped successfully.
+	// The dependency-check plugin syncs files globally, so we call it once
+	// using the new version from the first successful result.
+	// We pass the paths of all bumped modules to avoid showing them twice.
+	if newVersion := getFirstSuccessfulVersion(results); newVersion != "" {
+		parsedVersion, err := semver.ParseVersion(newVersion)
+		if err == nil {
+			bumpedPaths := getBumpedModulePaths(results)
+			if err := syncDependencies(registry, parsedVersion, bumpedPaths...); err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
+}
+
+// getBumpedModulePaths extracts the paths of all successfully bumped modules.
+func getBumpedModulePaths(results []workspace.ExecutionResult) []string {
+	var paths []string
+	for _, r := range results {
+		if r.Success && r.Module != nil {
+			paths = append(paths, r.Module.Path)
+		}
+	}
+	return paths
+}
+
+// getFirstSuccessfulVersion returns the new version from the first successful result.
+// Returns empty string if no successful results exist.
+func getFirstSuccessfulVersion(results []workspace.ExecutionResult) string {
+	for _, r := range results {
+		if r.Success && r.NewVersion != "" {
+			return r.NewVersion
+		}
+	}
+	return ""
 }
 
 // printQuietSummary prints a minimal summary of results.

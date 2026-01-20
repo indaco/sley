@@ -60,7 +60,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, r
 		// The BumpOperation will handle preserve-meta correctly
 		meta = ""
 	}
-	return runMultiModuleBump(ctx, cmd, execCtx, operations.BumpRelease, "", meta, isPreserveMeta)
+	return runMultiModuleBump(ctx, cmd, execCtx, registry, operations.BumpRelease, "", meta, isPreserveMeta)
 }
 
 // runSingleModuleRelease handles the single-module release operation.
@@ -95,7 +95,7 @@ func runSingleModuleRelease(ctx context.Context, cmd *cli.Command, cfg *config.C
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, newVersion, previousVersion, "release"); err != nil {
+	if err := executePostBumpActions(registry, newVersion, previousVersion, "release", path); err != nil {
 		return err
 	}
 
