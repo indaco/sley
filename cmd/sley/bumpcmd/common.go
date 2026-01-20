@@ -184,7 +184,7 @@ func executeStandardBump(
 
 	if !execCtx.IsSingleModule() {
 		// Multi-module mode delegates to runMultiModuleBump
-		return runMultiModuleBump(ctx, cmd, execCtx, multiModuleOp, params.pre, params.meta, params.preserveMeta)
+		return runMultiModuleBump(ctx, cmd, execCtx, registry, multiModuleOp, params.pre, params.meta, params.preserveMeta)
 	}
 
 	// Single-module mode uses the unified executor

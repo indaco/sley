@@ -103,7 +103,7 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 	// Handle multi-module mode
 	// For auto bump, we need to determine the bump type first
 	bumpType := determineBumpType(registry, label, disableInfer, since, until)
-	return runMultiModuleBump(ctx, cmd, execCtx, bumpType, "", meta, isPreserveMeta)
+	return runMultiModuleBump(ctx, cmd, execCtx, registry, bumpType, "", meta, isPreserveMeta)
 }
 
 // determineBumpType determines the bump type for multi-module auto bump.
