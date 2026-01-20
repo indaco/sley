@@ -73,8 +73,10 @@ cat .version
 
 You're ready! Continue to [Usage](#usage) for common workflows, or [Installation](#installation) to get started.
 
+## Table of Contents
+
 <details>
-<summary>Table of Contents</summary>
+<summary>Click to expand</summary>
 
 - [Quick Start](#quick-start)
 - [Features](#features)
