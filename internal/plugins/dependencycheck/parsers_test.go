@@ -344,8 +344,61 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 }
 
-func TestReadWriteJSONVersion(t *testing.T) {
-	// Save original and restore
+func TestReadJSONVersion(t *testing.T) {
+	originalRead := readFileFn
+	defer func() { readFileFn = originalRead }()
+
+	tests := []struct {
+		name      string
+		content   string
+		field     string
+		want      string
+		wantError bool
+	}{
+		{
+			name:    "simple field",
+			content: `{"version": "1.2.3"}`,
+			field:   "version",
+			want:    "1.2.3",
+		},
+		{
+			name:    "nested field",
+			content: `{"metadata": {"version": "2.0.0"}}`,
+			field:   "metadata.version",
+			want:    "2.0.0",
+		},
+		{
+			name:      "invalid JSON",
+			content:   `{invalid}`,
+			field:     "version",
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			readFileFn = func(path string) ([]byte, error) {
+				return []byte(tt.content), nil
+			}
+
+			version, err := readJSONVersion("file.json", tt.field)
+			if tt.wantError {
+				if err == nil {
+					t.Error("readJSONVersion() should return error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("readJSONVersion() error = %v", err)
+			}
+			if version != tt.want {
+				t.Errorf("readJSONVersion() = %q, want %q", version, tt.want)
+			}
+		})
+	}
+}
+
+func TestWriteJSONVersion(t *testing.T) {
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -353,46 +406,7 @@ func TestReadWriteJSONVersion(t *testing.T) {
 		writeFileFn = originalWrite
 	}()
 
-	t.Run("read JSON simple field", func(t *testing.T) {
-		readFileFn = func(path string) ([]byte, error) {
-			return []byte(`{"version": "1.2.3"}`), nil
-		}
-
-		version, err := readJSONVersion("package.json", "version")
-		if err != nil {
-			t.Fatalf("readJSONVersion() error = %v", err)
-		}
-		if version != "1.2.3" {
-			t.Errorf("readJSONVersion() = %q, want %q", version, "1.2.3")
-		}
-	})
-
-	t.Run("read JSON nested field", func(t *testing.T) {
-		readFileFn = func(path string) ([]byte, error) {
-			return []byte(`{"metadata": {"version": "2.0.0"}}`), nil
-		}
-
-		version, err := readJSONVersion("file.json", "metadata.version")
-		if err != nil {
-			t.Fatalf("readJSONVersion() error = %v", err)
-		}
-		if version != "2.0.0" {
-			t.Errorf("readJSONVersion() = %q, want %q", version, "2.0.0")
-		}
-	})
-
-	t.Run("read JSON invalid JSON", func(t *testing.T) {
-		readFileFn = func(path string) ([]byte, error) {
-			return []byte(`{invalid}`), nil
-		}
-
-		_, err := readJSONVersion("file.json", "version")
-		if err == nil {
-			t.Error("readJSONVersion() should return error for invalid JSON")
-		}
-	})
-
-	t.Run("write JSON simple field", func(t *testing.T) {
+	t.Run("simple field with trailing newline", func(t *testing.T) {
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`{"version": "1.2.3"}`), nil
 		}
@@ -407,18 +421,12 @@ func TestReadWriteJSONVersion(t *testing.T) {
 		if err != nil {
 			t.Fatalf("writeJSONVersion() error = %v", err)
 		}
-
-		// Should have trailing newline
-		if len(written) == 0 {
-			t.Error("writeJSONVersion() wrote empty data")
-		}
-		if written[len(written)-1] != '\n' {
-			t.Error("writeJSONVersion() should add trailing newline")
+		if len(written) == 0 || written[len(written)-1] != '\n' {
+			t.Error("writeJSONVersion() should write data with trailing newline")
 		}
 	})
 
-	t.Run("write JSON preserves field order", func(t *testing.T) {
-		// package.json with specific field order: name, version, description, main
+	t.Run("preserves field order", func(t *testing.T) {
 		input := `{
   "name": "my-package",
   "version": "1.0.0",
@@ -441,30 +449,12 @@ func TestReadWriteJSONVersion(t *testing.T) {
 			t.Fatalf("writeJSONVersion() error = %v", err)
 		}
 
-		// Verify the field order is preserved (name before version before description)
 		writtenStr := string(written)
-
-		nameIdx := indexOfSubstring(writtenStr, `"name"`)
-		versionIdx := indexOfSubstring(writtenStr, `"version"`)
-		descIdx := indexOfSubstring(writtenStr, `"description"`)
-		mainIdx := indexOfSubstring(writtenStr, `"main"`)
-
-		if nameIdx == -1 || versionIdx == -1 || descIdx == -1 || mainIdx == -1 {
-			t.Fatalf("Missing expected fields in output: %s", writtenStr)
-		}
-
-		if nameIdx >= versionIdx || versionIdx >= descIdx || descIdx >= mainIdx {
-			t.Errorf("Field order not preserved. Expected name < version < description < main, got indices: name=%d, version=%d, description=%d, main=%d",
-				nameIdx, versionIdx, descIdx, mainIdx)
-		}
-
-		// Verify the version was actually updated
-		if !containsSubstring(writtenStr, `"version":"1.0.1"`) && !containsSubstring(writtenStr, `"version": "1.0.1"`) {
-			t.Errorf("Version not updated correctly. Output: %s", writtenStr)
-		}
+		verifyJSONFieldOrder(t, writtenStr, []string{"name", "version", "description", "main"})
+		verifyVersionUpdated(t, writtenStr, "1.0.1")
 	})
 
-	t.Run("write JSON nested field preserves structure", func(t *testing.T) {
+	t.Run("nested field preserves structure", func(t *testing.T) {
 		input := `{
   "name": "my-package",
   "metadata": {
@@ -491,20 +481,37 @@ func TestReadWriteJSONVersion(t *testing.T) {
 		}
 
 		writtenStr := string(written)
-
-		// Verify the nested version was updated
-		if !containsSubstring(writtenStr, `"version":"2.0.1"`) && !containsSubstring(writtenStr, `"version": "2.0.1"`) {
-			t.Errorf("Nested version not updated correctly. Output: %s", writtenStr)
-		}
-
-		// Verify other fields are still present
-		if !containsSubstring(writtenStr, `"author"`) {
-			t.Error("author field missing after update")
-		}
-		if !containsSubstring(writtenStr, `"license"`) {
-			t.Error("license field missing after update")
+		verifyVersionUpdated(t, writtenStr, "2.0.1")
+		for _, field := range []string{"author", "license"} {
+			if !containsSubstring(writtenStr, `"`+field+`"`) {
+				t.Errorf("%s field missing after update", field)
+			}
 		}
 	})
+}
+
+func verifyJSONFieldOrder(t *testing.T, content string, fields []string) {
+	t.Helper()
+	indices := make([]int, len(fields))
+	for i, field := range fields {
+		indices[i] = indexOfSubstring(content, `"`+field+`"`)
+		if indices[i] == -1 {
+			t.Fatalf("Missing expected field %q in output: %s", field, content)
+		}
+	}
+	for i := 1; i < len(indices); i++ {
+		if indices[i-1] >= indices[i] {
+			t.Errorf("Field order not preserved: %s should come before %s", fields[i-1], fields[i])
+		}
+	}
+}
+
+func verifyVersionUpdated(t *testing.T, content, version string) {
+	t.Helper()
+	if !containsSubstring(content, `"version":"`+version+`"`) &&
+		!containsSubstring(content, `"version": "`+version+`"`) {
+		t.Errorf("Version not updated to %s. Output: %s", version, content)
+	}
 }
 
 // Helper functions for string matching in tests
