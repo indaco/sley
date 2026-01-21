@@ -140,19 +140,19 @@ The `.version` file complements your existing tools. Pair it with `git tag` for 
 
 ### Prerequisites
 
-- **Required**: Git (for auto-initialization and tag-manager plugin)
-- **Optional**: Go 1.25+ (only required if installing via `go install`)
+- **Required**: [Git](https://git-scm.com/) (for auto-initialization and tag-manager plugin)
 - **Recommended**: Familiarity with [semantic versioning](https://semver.org/)
 
 ### Choose Your Installation Method
 
-| If you...                           | Use...                | Jump to...                                          |
-| ----------------------------------- | --------------------- | --------------------------------------------------- |
-| Use macOS/Linux with Homebrew       | Homebrew              | [Option 1](#option-1-homebrew-macoslinux)           |
-| Want latest version system-wide     | `go install` (global) | [Option 2](#option-2-install-via-go-install-global) |
-| Need local project-specific install | `go install` (tool)   | [Option 3](#option-3-install-via-go-install-tool)   |
-| Don't have Go installed             | Prebuilt binary       | [Option 4](#option-4-prebuilt-binaries)             |
-| Want to contribute or customize     | Build from source     | [Option 5](#option-5-clone-and-build-manually)      |
+| If you...                           | Use...                | Requires                                             | Jump to...                                          |
+| ----------------------------------- | --------------------- | ---------------------------------------------------- | --------------------------------------------------- |
+| Use macOS/Linux with Homebrew       | Homebrew              | [Homebrew](https://brew.sh/)                         | [Option 1](#option-1-homebrew-macoslinux)           |
+| Want latest version system-wide     | `go install` (global) | [Go](https://go.dev/) 1.25+                          | [Option 2](#option-2-install-via-go-install-global) |
+| Need local project-specific install | `go install` (tool)   | [Go](https://go.dev/) 1.25+                          | [Option 3](#option-3-install-via-go-install-tool)   |
+| Use asdf version manager            | asdf plugin           | [asdf](https://asdf-vm.com/)                         | [Option 4](#option-4-asdf)                          |
+| Don't have Go installed             | Prebuilt binary       | —                                                    | [Option 5](#option-5-prebuilt-binaries)             |
+| Want to contribute or customize     | Build from source     | [Go](https://go.dev/), [just](https://just.systems/) | [Option 6](#option-6-clone-and-build-manually)      |
 
 ### Option 1: Homebrew (macOS/Linux)
 
@@ -180,11 +180,20 @@ Once installed, use it with
 go tool sley
 ```
 
-### Option 4: Prebuilt binaries
+### Option 4: asdf
+
+Install using the [asdf](https://asdf-vm.com/) version manager:
+
+```bash
+asdf plugin add sley https://github.com/indaco/asdf-sley.git
+asdf install sley latest
+```
+
+### Option 5: Prebuilt binaries
 
 Download the pre-compiled binaries from the [releases page](https://github.com/indaco/sley/releases) and place the binary in your system's PATH.
 
-### Option 5: Clone and build manually
+### Option 6: Clone and build manually
 
 ```bash
 git clone https://github.com/indaco/sley.git
