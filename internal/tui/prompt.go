@@ -21,6 +21,16 @@ func CustomKeyMap() *huh.KeyMap {
 		key.WithKeys("ctrl+c", "esc"),
 		key.WithHelp("esc", "cancel"),
 	)
+	// Use 'a' for select all (ctrl+a conflicts with terminal select all)
+	km.MultiSelect.SelectAll = key.NewBinding(
+		key.WithKeys("a"),
+		key.WithHelp("a", "select all"),
+	)
+	// Use 'n' for select none
+	km.MultiSelect.SelectNone = key.NewBinding(
+		key.WithKeys("n"),
+		key.WithHelp("n", "select none"),
+	)
 	return km
 }
 

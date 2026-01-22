@@ -219,10 +219,40 @@ func TestCustomKeyMap(t *testing.T) {
 	if !hasEsc {
 		t.Error("CustomKeyMap().Quit should include 'esc' for cancel")
 	}
+
+	// Verify MultiSelect.SelectAll uses 'a' instead of 'ctrl+a' to avoid terminal conflicts
+	selectAllKeys := km.MultiSelect.SelectAll.Keys()
+	hasA := false
+	hasCtrlA := false
+	for _, k := range selectAllKeys {
+		if k == "a" {
+			hasA = true
+		}
+		if k == "ctrl+a" {
+			hasCtrlA = true
+		}
+	}
+	if !hasA {
+		t.Error("CustomKeyMap().MultiSelect.SelectAll should include 'a'")
+	}
+	if hasCtrlA {
+		t.Error("CustomKeyMap().MultiSelect.SelectAll should NOT include 'ctrl+a' (conflicts with terminal)")
+	}
+
+	// Verify MultiSelect.SelectNone uses 'n'
+	selectNoneKeys := km.MultiSelect.SelectNone.Keys()
+	hasN := false
+	for _, k := range selectNoneKeys {
+		if k == "n" {
+			hasN = true
+		}
+	}
+	if !hasN {
+		t.Error("CustomKeyMap().MultiSelect.SelectNone should include 'n'")
+	}
 }
 
 // TestConfirmOperation_DelegatesToConfirm verifies ConfirmOperation delegates to Confirm.
-// Note: We cannot test the actual prompt interaction without a terminal.
 func TestConfirmOperation_DelegatesToConfirm(t *testing.T) {
 	// This test verifies the method exists and has the correct signature.
 	// The actual interactive behavior is tested manually.
