@@ -88,7 +88,7 @@ func (p *ModulePrompt) showInitialPrompt() (Choice, error) {
 				).
 				Value(&choice),
 		),
-	).WithKeyMap(CustomKeyMap())
+	).WithTheme(sleyTheme()).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C
@@ -119,7 +119,7 @@ func (p *ModulePrompt) showMultiSelect() (Selection, error) {
 				Options(options...).
 				Value(&selected),
 		),
-	).WithKeyMap(CustomKeyMap())
+	).WithTheme(sleyTheme()).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C
@@ -156,7 +156,7 @@ func Confirm(title, description string) (bool, error) {
 
 	form := huh.NewForm(
 		huh.NewGroup(confirm),
-	).WithKeyMap(CustomKeyMap())
+	).WithTheme(sleyTheme()).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C - treat as declined
@@ -185,7 +185,7 @@ func Select[T comparable](title, description string, options []huh.Option[T]) (T
 
 	form := huh.NewForm(
 		huh.NewGroup(selectField),
-	).WithKeyMap(CustomKeyMap())
+	).WithTheme(sleyTheme()).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C - return zero value
@@ -216,7 +216,7 @@ func MultiSelect[T comparable](title, description string, options []huh.Option[T
 
 	form := huh.NewForm(
 		huh.NewGroup(multiSelectField),
-	).WithKeyMap(CustomKeyMap())
+	).WithTheme(sleyTheme()).WithKeyMap(CustomKeyMap())
 
 	if err := form.Run(); err != nil {
 		// User pressed Escape or Ctrl+C
