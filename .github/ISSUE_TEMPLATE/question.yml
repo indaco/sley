@@ -1,0 +1,44 @@
+name: Question
+description: Ask a question about using sley
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about sley? We're here to help!
+
+        Before asking, please check:
+        - [README](https://github.com/indaco/sley#readme)
+        - [Existing issues](https://github.com/indaco/sley/issues)
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: What area does your question relate to?
+      options:
+        - Getting started / Installation
+        - Configuration
+        - CLI usage
+        - Plugins
+        - Extensions
+        - Monorepo/workspace
+        - Changelog
+        - CI/CD integration
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any additional context that might help us answer your question.
