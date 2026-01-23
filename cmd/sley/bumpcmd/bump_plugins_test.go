@@ -562,6 +562,60 @@ func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
 	}
 }
 
+func TestValidateDependencyConsistency_AutoSyncSkipsError(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create package.json with different version
+	pkgPath := filepath.Join(tmpDir, "package.json")
+	if err := os.WriteFile(pkgPath, []byte(`{"version": "0.9.0"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
+
+	tests := []struct {
+		name      string
+		autoSync  bool
+		expectErr bool
+	}{
+		{
+			name:      "auto-sync disabled returns error on inconsistencies",
+			autoSync:  false,
+			expectErr: true,
+		},
+		{
+			name:      "auto-sync enabled skips error on inconsistencies",
+			autoSync:  true,
+			expectErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plugin := dependencycheck.NewDependencyChecker(&dependencycheck.Config{
+				Enabled:  true,
+				AutoSync: tt.autoSync,
+				Files: []dependencycheck.FileConfig{
+					{Path: pkgPath, Field: "version", Format: "json"},
+				},
+			})
+
+			registry := plugins.NewPluginRegistry()
+			if err := registry.RegisterDependencyChecker(plugin); err != nil {
+				t.Fatalf("failed to register dependency checker: %v", err)
+			}
+
+			err := validateDependencyConsistency(registry, version)
+			if tt.expectErr && err == nil {
+				t.Error("expected error, got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Errorf("expected no error, got: %v", err)
+			}
+		})
+	}
+}
+
 func TestSingleModuleBump_ValidateTagAvailableFails(t *testing.T) {
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")

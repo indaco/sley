@@ -183,6 +183,11 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 	}
 
 	if len(inconsistencies) > 0 {
+		// If auto-sync is enabled, skip the error - inconsistencies will be fixed after the bump
+		if plugin.GetConfig().AutoSync {
+			return nil
+		}
+
 		var details strings.Builder
 		details.WriteString("version inconsistencies detected:\n")
 		for _, inc := range inconsistencies {
