@@ -562,6 +562,52 @@ func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
 	}
 }
 
+func TestSingleModuleBump_ValidateDependencyConsistencyWithAutoSync(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionPath := filepath.Join(tmpDir, ".version")
+	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
+
+	// Create package.json with different version
+	pkgPath := filepath.Join(tmpDir, "package.json")
+	if err := os.WriteFile(pkgPath, []byte(`{"version": "0.9.0"}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Save and restore
+	origGetDependencyCheckerFn := dependencycheck.GetDependencyCheckerFn
+	defer func() { dependencycheck.GetDependencyCheckerFn = origGetDependencyCheckerFn }()
+
+	// Create dependency checker with auto-sync enabled - should NOT fail on inconsistencies
+	plugin := dependencycheck.NewDependencyChecker(&dependencycheck.Config{
+		Enabled:  true,
+		AutoSync: true, // This should cause the validation to pass
+		Files: []dependencycheck.FileConfig{
+			{Path: pkgPath, Field: "version", Format: "json"},
+		},
+	})
+
+	cfg := &config.Config{Path: versionPath}
+	registry := plugins.NewPluginRegistry()
+	if err := registry.RegisterDependencyChecker(plugin); err != nil {
+		t.Fatalf("failed to register dependency checker: %v", err)
+	}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, registry)})
+
+	// With auto-sync enabled, bump should succeed even with inconsistent versions
+	err := appCli.Run(context.Background(), []string{
+		"sley", "bump", "major",
+	})
+	if err != nil {
+		t.Errorf("expected no error with auto-sync enabled, got: %v", err)
+	}
+
+	// Verify the version was bumped
+	got := testutils.ReadTempVersionFile(t, tmpDir)
+	if got != "2.0.0" {
+		t.Errorf("expected version 2.0.0, got %q", got)
+	}
+}
+
 func TestValidateDependencyConsistency_AutoSyncSkipsError(t *testing.T) {
 	tmpDir := t.TempDir()
 
