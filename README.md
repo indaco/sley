@@ -527,7 +527,7 @@ USAGE:
    sley [global options] [command [command options]]
 
 VERSION:
-   v0.8.2
+   v0.8.3
 
 COMMANDS:
    init              Initialize .version file and .sley.yaml configuration

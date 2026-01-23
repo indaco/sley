@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.8.3 - 2026-01-23
+
+### 🩹 Fixes
+
+- **bump:** run pre-bump extensions before plugin validation ([8621801](https://github.com/indaco/sley/commit/8621801)) ([#175](https://github.com/indaco/sley/pull/175))
+- **plugins:** respect auto-sync flag in dependency-check validation ([79ca2af](https://github.com/indaco/sley/commit/79ca2af)) ([#174](https://github.com/indaco/sley/pull/174))
+
+**Full Changelog:** [v0.8.2...v0.8.3](https://github.com/indaco/sley/compare/v0.8.2...v0.8.3)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.8.2 - 2026-01-22
 
 ### 🩹 Fixes
