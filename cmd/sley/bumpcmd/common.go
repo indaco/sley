@@ -52,13 +52,25 @@ func executeSingleModuleBump(
 	// Apply pre-release and build metadata
 	newVersion.Build = calculateNewBuild(params.meta, params.preserveMeta, previousVersion.Build)
 
-	// Execute all pre-bump validations
-	if err := executePreBumpValidations(registry, newVersion, previousVersion, params.bumpType); err != nil {
+	// Run pre-bump extension hooks first - extensions may set up state that plugins need to validate
+	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), params.bumpType, params.skipHooks); err != nil {
 		return err
 	}
 
-	// Run pre-bump extension hooks
-	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), params.bumpType, params.skipHooks); err != nil {
+	// Re-read the current version in case an extension modified the .version file
+	// (e.g., an extension that fetches the latest release from GitHub and updates .version)
+	if !params.skipHooks {
+		previousVersion, err = semver.ReadVersion(execCtx.Path)
+		if err != nil {
+			return err
+		}
+		// Recalculate the new version based on the potentially updated previous version
+		newVersion = params.versionCalc(previousVersion)
+		newVersion.Build = calculateNewBuild(params.meta, params.preserveMeta, previousVersion.Build)
+	}
+
+	// Execute all pre-bump validations after extensions have run
+	if err := executePreBumpValidations(registry, newVersion, previousVersion, params.bumpType); err != nil {
 		return err
 	}
 
