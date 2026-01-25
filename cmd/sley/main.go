@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/indaco/sley/internal/cli"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/plugins"
@@ -40,6 +41,6 @@ func runCLI(args []string) error {
 		return fmt.Errorf("failed to load pre-release hooks: %w", err)
 	}
 
-	app := newCLI(cfg, registry)
+	app := cli.New(cfg, registry)
 	return app.Run(context.Background(), args)
 }

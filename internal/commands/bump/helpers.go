@@ -1,0 +1,327 @@
+package bump
+
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/extensionmgr"
+	"github.com/indaco/sley/internal/plugins"
+	"github.com/indaco/sley/internal/plugins/auditlog"
+	"github.com/indaco/sley/internal/plugins/changeloggenerator"
+	"github.com/indaco/sley/internal/plugins/dependencycheck"
+	"github.com/indaco/sley/internal/plugins/releasegate"
+	"github.com/indaco/sley/internal/plugins/tagmanager"
+	"github.com/indaco/sley/internal/plugins/versionvalidator"
+	"github.com/indaco/sley/internal/printer"
+	"github.com/indaco/sley/internal/semver"
+)
+
+// moduleInfoFromPath derives module info from a .version file path.
+// For single-module projects, this provides the directory context for extensions.
+func moduleInfoFromPath(versionPath string) *extensionmgr.ModuleInfo {
+	dir := filepath.Dir(versionPath)
+	name := filepath.Base(dir)
+	// If the .version is in the current directory, use "." as name
+	if dir == "." || name == "." {
+		return nil
+	}
+	return &extensionmgr.ModuleInfo{
+		Dir:  dir,
+		Name: name,
+	}
+}
+
+// runPreBumpExtensionHooks runs pre-bump extension hooks if not skipped.
+func runPreBumpExtensionHooks(ctx context.Context, cfg *config.Config, path, newVersion, prevVersion, bumpType string, skipHooks bool) error {
+	if skipHooks {
+		return nil
+	}
+	moduleInfo := moduleInfoFromPath(path)
+	return extensionmgr.RunPreBumpHooks(ctx, cfg, newVersion, prevVersion, bumpType, moduleInfo)
+}
+
+// runPostBumpExtensionHooks runs post-bump extension hooks if not skipped.
+func runPostBumpExtensionHooks(ctx context.Context, cfg *config.Config, path, prevVersion, bumpType string, skipHooks bool) error {
+	if skipHooks {
+		return nil
+	}
+
+	currentVersion, err := semver.ReadVersion(path)
+	if err != nil {
+		return err
+	}
+
+	prereleasePtr, metadataPtr := extractVersionPointers(currentVersion)
+	moduleInfo := moduleInfoFromPath(path)
+	return extensionmgr.RunPostBumpHooks(ctx, cfg, currentVersion.String(), prevVersion, bumpType, prereleasePtr, metadataPtr, moduleInfo)
+}
+
+// extractVersionPointers extracts prerelease and metadata as pointers (nil if empty).
+func extractVersionPointers(v semver.SemVersion) (*string, *string) {
+	var prereleasePtr, metadataPtr *string
+	if v.PreRelease != "" {
+		prereleasePtr = &v.PreRelease
+	}
+	if v.Build != "" {
+		metadataPtr = &v.Build
+	}
+	return prereleasePtr, metadataPtr
+}
+
+// calculateNewBuild determines the build metadata for a new version.
+func calculateNewBuild(meta string, preserveMeta bool, currentBuild string) string {
+	if meta != "" {
+		return meta
+	}
+	if preserveMeta {
+		return currentBuild
+	}
+	return ""
+}
+
+// validateTagAvailable checks if a tag can be created for the version.
+// Returns nil if tag manager is not enabled or tag is available.
+func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVersion) error {
+	tm := registry.GetTagManager()
+	if tm == nil {
+		return nil
+	}
+
+	// Check if the plugin is enabled and auto-create is on
+	if plugin, ok := tm.(*tagmanager.TagManagerPlugin); ok {
+		if !plugin.IsEnabled() {
+			return nil
+		}
+	}
+
+	return tm.ValidateTagAvailable(version)
+}
+
+// createTagAfterBump creates a git tag for the version if tag manager is enabled.
+func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string) error {
+	tm := registry.GetTagManager()
+	if tm == nil {
+		return nil
+	}
+
+	// Check if the plugin is enabled and auto-create is on
+	plugin, ok := tm.(*tagmanager.TagManagerPlugin)
+	if !ok || !plugin.IsEnabled() {
+		return nil
+	}
+
+	message := fmt.Sprintf("Release %s (%s bump)", version.String(), bumpType)
+	if err := tm.CreateTag(version, message); err != nil {
+		return fmt.Errorf("failed to create tag: %w", err)
+	}
+
+	tagName := tm.FormatTagName(version)
+	printer.PrintSuccess(fmt.Sprintf("Created tag: %s", tagName))
+
+	if plugin.GetConfig().Push {
+		printer.PrintSuccess(fmt.Sprintf("Pushed tag: %s", tagName))
+	}
+
+	return nil
+}
+
+// validateVersionPolicy checks if the version bump is allowed by configured policies.
+// Returns nil if version validator is not enabled or validation passes.
+func validateVersionPolicy(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+	vv := registry.GetVersionValidator()
+	if vv == nil {
+		return nil
+	}
+
+	// Check if the plugin is enabled
+	if plugin, ok := vv.(*versionvalidator.VersionValidatorPlugin); ok {
+		if !plugin.IsEnabled() {
+			return nil
+		}
+	}
+
+	return vv.Validate(newVersion, previousVersion, bumpType)
+}
+
+// validateReleaseGate checks if quality gates pass before allowing the bump.
+// Returns nil if release gate is not enabled or all gates pass.
+func validateReleaseGate(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType string) error {
+	rg := registry.GetReleaseGate()
+	if rg == nil {
+		return nil
+	}
+
+	// Check if the plugin is enabled
+	if plugin, ok := rg.(*releasegate.ReleaseGatePlugin); ok {
+		if !plugin.IsEnabled() {
+			return nil
+		}
+	}
+
+	return rg.ValidateRelease(newVersion, previousVersion, bumpType)
+}
+
+// validateDependencyConsistency checks if all dependency files match the current version.
+// Returns nil if dependency checker is not enabled or all files are consistent.
+func validateDependencyConsistency(registry *plugins.PluginRegistry, version semver.SemVersion) error {
+	dc := registry.GetDependencyChecker()
+	if dc == nil {
+		return nil
+	}
+
+	plugin, ok := dc.(*dependencycheck.DependencyCheckerPlugin)
+	if !ok || !plugin.IsEnabled() {
+		return nil
+	}
+
+	inconsistencies, err := dc.CheckConsistency(version.String())
+	if err != nil {
+		return fmt.Errorf("dependency check failed: %w", err)
+	}
+
+	if len(inconsistencies) > 0 {
+		// If auto-sync is enabled, skip the error - inconsistencies will be fixed after the bump
+		if plugin.GetConfig().AutoSync {
+			return nil
+		}
+
+		var details strings.Builder
+		details.WriteString("version inconsistencies detected:\n")
+		for _, inc := range inconsistencies {
+			details.WriteString(fmt.Sprintf("  - %s\n", inc.String()))
+		}
+		details.WriteString("\nRun with auto-sync enabled to fix automatically, or update files manually.")
+		return fmt.Errorf("%s", details.String())
+	}
+
+	return nil
+}
+
+// syncDependencies updates all configured dependency files to match the new version.
+// Returns nil if dependency checker is not enabled or auto-sync is disabled.
+// The bumpedPaths parameter contains paths that were already bumped as modules
+// and should be excluded from the output (they're still synced but not displayed twice).
+func syncDependencies(registry *plugins.PluginRegistry, version semver.SemVersion, bumpedPaths ...string) error {
+	dc := registry.GetDependencyChecker()
+	if dc == nil {
+		return nil
+	}
+
+	plugin, ok := dc.(*dependencycheck.DependencyCheckerPlugin)
+	if !ok || !plugin.IsEnabled() || !plugin.GetConfig().AutoSync {
+		return nil
+	}
+
+	files := plugin.GetConfig().Files
+	if len(files) == 0 {
+		return nil
+	}
+
+	if err := dc.SyncVersions(version.String()); err != nil {
+		return fmt.Errorf("failed to sync dependency versions: %w", err)
+	}
+
+	// Build set of bumped paths for quick lookup
+	bumpedSet := make(map[string]bool, len(bumpedPaths))
+	for _, p := range bumpedPaths {
+		bumpedSet[p] = true
+	}
+
+	// Filter files to only show ones not already bumped as modules
+	var additionalFiles []dependencycheck.FileConfig
+	for _, file := range files {
+		if !bumpedSet[file.Path] {
+			additionalFiles = append(additionalFiles, file)
+		}
+	}
+
+	// Only print section if there are additional files to show
+	if len(additionalFiles) > 0 {
+		fmt.Println("Sync dependencies")
+		for _, file := range additionalFiles {
+			name := deriveDependencyName(file.Path)
+			fmt.Printf("  %s %s %s%s\n", printer.SuccessBadge("✓"), name, printer.Faint("("+file.Path+")"), printer.Faint(": "+version.String()))
+		}
+	}
+
+	return nil
+}
+
+// deriveDependencyName extracts a display name from a file path.
+// For .version files, uses the parent directory name.
+// For other files (package.json, etc.), uses the filename.
+func deriveDependencyName(path string) string {
+	base := filepath.Base(path)
+	if base == ".version" {
+		dir := filepath.Dir(path)
+		return filepath.Base(dir)
+	}
+	return base
+}
+
+// generateChangelogAfterBump generates changelog entries if changelog generator is enabled.
+// Returns nil if changelog generator is not enabled.
+func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, previousVersion semver.SemVersion, bumpType string) error {
+	cg := registry.GetChangelogGenerator()
+	if cg == nil {
+		return nil
+	}
+
+	plugin, ok := cg.(*changeloggenerator.ChangelogGeneratorPlugin)
+	if !ok || !plugin.IsEnabled() {
+		return nil
+	}
+
+	versionStr := "v" + version.String()
+
+	// Use actual git tag for commit range, not version file content
+	// The version file may contain pre-release/metadata that doesn't match a real tag
+	prevVersionStr, err := changeloggenerator.GetLatestTagFn()
+	if err != nil {
+		// If no tags exist, generate from all commits
+		prevVersionStr = ""
+	}
+
+	if err := cg.GenerateForVersion(versionStr, prevVersionStr, bumpType); err != nil {
+		return fmt.Errorf("failed to generate changelog: %w", err)
+	}
+
+	mode := plugin.GetConfig().Mode
+	switch mode {
+	case "versioned":
+		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md", plugin.GetConfig().ChangesDir, versionStr))
+	case "unified":
+		printer.PrintSuccess(fmt.Sprintf("Updated changelog: %s", plugin.GetConfig().ChangelogPath))
+	case "both":
+		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md and %s",
+			plugin.GetConfig().ChangesDir, versionStr, plugin.GetConfig().ChangelogPath))
+	}
+
+	return nil
+}
+
+// recordAuditLogEntry records the version bump to the audit log if enabled.
+// Returns nil if audit log is not enabled or if logging fails (doesn't block the bump).
+func recordAuditLogEntry(registry *plugins.PluginRegistry, version, previousVersion semver.SemVersion, bumpType string) error {
+	al := registry.GetAuditLog()
+	if al == nil {
+		return nil
+	}
+
+	plugin, ok := al.(*auditlog.AuditLogPlugin)
+	if !ok || !plugin.IsEnabled() {
+		return nil
+	}
+
+	entry := &auditlog.Entry{
+		PreviousVersion: previousVersion.String(),
+		NewVersion:      version.String(),
+		BumpType:        bumpType,
+	}
+
+	// RecordEntry handles errors gracefully and logs warnings
+	return al.RecordEntry(entry)
+}
