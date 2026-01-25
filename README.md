@@ -37,7 +37,7 @@
 <p align="center">
   <b><a href="https://sley.indaco.dev">Documentation</a></b> |
   <b><a href="https://sley.indaco.dev/guide/quick-start.html">Quick Start</a></b> |
-  <b><a href="https://sley.indaco.dev/reference/cli-commands.html">CLI Reference</a></b>
+  <b><a href="https://sley.indaco.dev/reference/cli.html">CLI Reference</a></b>
 </p>
 
 ## Overview
@@ -142,7 +142,7 @@ Full documentation is available at **[sley.indaco.dev](https://sley.indaco.dev)*
 - [Usage Guide](https://sley.indaco.dev/guide/usage.html)
 - [Plugins](https://sley.indaco.dev/plugins/)
 - [Extensions](https://sley.indaco.dev/extensions/)
-- [CI/CD Integration](https://sley.indaco.dev/guide/ci-cd-integration.html)
+- [CI/CD Integration](https://sley.indaco.dev/guide/ci-cd.html)
 
 ## Contributing
 
