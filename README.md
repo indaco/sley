@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="assets/logo.svg" alt="sley logo" width="120" height="120">
+  <img src="https://raw.githubusercontent.com/indaco/gh-assets/main/sley/logo.svg" alt="sley logo" width="120" height="120">
   <br>
   <code>sley</code>
 </h1>
