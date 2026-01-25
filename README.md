@@ -131,7 +131,7 @@ plugins:
     enabled: true
 ```
 
-See the [configuration reference](https://sley.indaco.dev/reference/sley-yaml-configuration.html) for all options.
+See the [configuration reference](https://sley.indaco.dev/reference/sley-yaml.html) for all options.
 
 ## Documentation
 
