@@ -4,916 +4,149 @@
   <code>sley</code>
 </h1>
 <h2 align="center" style="font-size: 1.5rem;">
-  Version orchestrator for semantic versioning
+  A semantic version orchestrator for your projects.
 </h2>
 
 <p align="center">
   <a href="https://github.com/indaco/sley/actions/workflows/ci.yml" target="_blank">
     <img src="https://github.com/indaco/sley/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
-  <a href="https://codecov.io/gh/indaco/sley">
+  <a href="https://codecov.io/gh/indaco/sley" target="_blank">
     <img src="https://codecov.io/gh/indaco/sley/branch/main/graph/badge.svg" alt="Code coverage" />
   </a>
   <a href="https://goreportcard.com/report/github.com/indaco/sley" target="_blank">
     <img src="https://goreportcard.com/badge/github.com/indaco/sley" alt="Go Report Card" />
   </a>
-  <a href="https://github.com/indaco/sley/actions/workflows/ci.yml" target="_blank">
+  <a href="https://github.com/indaco/sley/security" target="_blank">
     <img src="https://img.shields.io/badge/security-govulncheck-green" alt="Security Scan" />
   </a>
-  <a href="https://github.com/indaco/sley/releases/latest">
+  <a href="https://github.com/indaco/sley/releases" target="_blank">
     <img src="https://img.shields.io/github/v/tag/indaco/sley?label=version&sort=semver&color=4c1" alt="version">
   </a>
   <a href="https://pkg.go.dev/github.com/indaco/sley" target="_blank">
     <img src="https://pkg.go.dev/badge/github.com/indaco/sley.svg" alt="Go Reference" />
   </a>
-  <a href="https://github.com/indaco/sley/blob/main/LICENSE" target="_blank">
+  <a href="LICENSE" target="_blank">
     <img src="https://img.shields.io/badge/license-mit-blue?style=flat-square" alt="License" />
   </a>
-  <a href="https://www.jetify.com/devbox/docs/contributor-quickstart/" target="_blank">
+  <a href="https://www.jetify.com/devbox" target="_blank">
     <img src="https://www.jetify.com/img/devbox/shield_moon.svg" alt="Built with Devbox" />
   </a>
 </p>
 
-A command-line tool for managing [SemVer 2.0.0](https://semver.org/) versions using a simple `.version` file. Works with any language or stack, integrates with CI/CD pipelines, and extends via built-in plugins for git tagging, changelog generation, and version validation.
-
-> _sley - named for the weaving tool that arranges threads in precise order._
-
 <p align="center">
-  <a href="#quick-start">Quick Start</a> |
-  <a href="#installation">Installation</a> |
-  <a href="#usage">Usage</a> |
-  <a href="#cli-commands--options">CLI Commands</a> |
-  <a href="#plugin-system">Plugins</a> |
-  <a href="#configuration">Configuration</a>
+  <b><a href="https://sley.indaco.dev">Documentation</a></b> |
+  <b><a href="https://sley.indaco.dev/guide/quick-start.html">Quick Start</a></b> |
+  <b><a href="https://sley.indaco.dev/reference/cli-commands.html">CLI Reference</a></b>
 </p>
 
-## Quick Start
+## Overview
 
-```bash
-# 1. Install (choose your method from Installation section below)
-brew install indaco/tap/sley
+sley manages [SemVer 2.0.0](https://semver.org/) versions using a simple `.version` file. It's language-agnostic, works with any stack, and integrates with Git for tagging and changelog management.
 
-# 2. Initialize your project
-sley init --yes
-# => Created .version with version 0.1.0
-# => Created .sley.yaml with default plugins
-
-# 3. Verify your setup
-sley show
-# => 0.1.0
-
-# 4. Make your first version bump
-sley bump patch
-# => 0.1.1
-
-# 5. Check the result
-cat .version
-# => 0.1.1
 ```
-
-You're ready! Continue to [Usage](#usage) for common workflows, or [Installation](#installation) to get started.
-
-## Table of Contents
-
-<details>
-<summary>Click to expand</summary>
-
-- [Quick Start](#quick-start)
-- [Features](#features)
-- [Why .version?](#why-version)
-- [Installation](#installation)
-- [Usage](#usage)
-- [CLI Commands & Options](#cli-commands--options)
-- [Configuration](#configuration)
-- [Plugin System](#plugin-system)
-- [Extension System](#extension-system)
-- [CI/CD Integration](#cicd-integration)
-- [Monorepo / Multi-Module Support](#monorepo--multi-module-support)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [AI Assistance](#ai-assistance)
-- [License](#license)
-
-</details>
+.version → 1.2.3
+```
 
 ## Features
 
-- Lightweight `.version` file - SemVer 2.0.0 compliant
-- `init`, `bump`, `set`, `show`, `validate` - intuitive version control
-- Pre-release support with auto-increment (`alpha`, `beta.1`, `rc.2`, `--inc`)
-- Built-in plugins - git tagging, changelog generation, version policy enforcement, commit parsing
-- Extension system - hook external scripts into the version lifecycle
-- Monorepo/multi-module support - manage multiple `.version` files at once
-- Works standalone or in CI - `--strict` for strict mode
-- Configurable via flags, env vars, or `.sley.yaml`
-
-## Why .version?
-
-`sley` was born from patterns that kept repeating across my projects:
-
-**It started with Go**: Using `//go:embed .version` for version info - no build flags, no magic. This became the default approach for every Go project.
-
-**Then frontend projects**: The same pattern worked for SvelteKit, and other frontend stacks with a Vite plugin to read from `.version`. One file, same workflow, any stack.
-
-**Then multi-stack projects**: With a SvelteKit frontend, Go gateway, and Python/Rust services in one repo, the need became clear: version each component individually, but also bump them all at once when needed.
-
-`sley` solves all of these. The plugin system (audit-log, version-validator, release-gate) came later to support organizational requirements like audit trails and policy enforcement.
-
-### What it is
-
-- A **single source of truth** for your project version
-- **Language-agnostic** - works with Go, Python, Node, Rust, or any stack
-- **CI/CD friendly** - inject into Docker labels, GitHub Actions, release scripts
-- **Human-readable** - just a plain text file containing `1.2.3`
-- **Predictable** - no magic, no hidden state, version is what you set
-
-### What it is NOT
-
-- **Not a replacement for git tags** - use the `tag-manager` plugin to sync both
-- **Not a package manager** - it doesn't publish or distribute anything
-- **Not a standalone changelog tool** - changelog generation is available via the built-in `changelog-generator` plugin
-- **Not a build system** - it just manages the version string
-
-The `.version` file complements your existing tools. Pair it with `git tag` for releases, inject it into binaries at build time, or sync it across `package.json`, `Cargo.toml`, and other files using the [`dependency-check` plugin](#plugin-system).
+- **Simple** — One `.version` file, one source of truth
+- **Language-agnostic** — Works with Go, Node, Python, Rust, or any stack
+- **Plugin system** — Extend with built-in or custom plugins
+- **Git integration** — Auto-tag releases, generate changelogs
+- **Monorepo support** — Manage multiple modules independently
+- **CI/CD ready** — Designed for automation pipelines
 
 ## Installation
 
-### Prerequisites
-
-- **Required**: [Git](https://git-scm.com/) (for auto-initialization and tag-manager plugin)
-- **Recommended**: Familiarity with [semantic versioning](https://semver.org/)
-
-### Choose Your Installation Method
-
-| If you...                           | Use...                | Requires                                             | Jump to...                                          |
-| ----------------------------------- | --------------------- | ---------------------------------------------------- | --------------------------------------------------- |
-| Use macOS/Linux with Homebrew       | Homebrew              | [Homebrew](https://brew.sh/)                         | [Option 1](#option-1-homebrew-macoslinux)           |
-| Want latest version system-wide     | `go install` (global) | [Go](https://go.dev/) 1.25+                          | [Option 2](#option-2-install-via-go-install-global) |
-| Need local project-specific install | `go install` (tool)   | [Go](https://go.dev/) 1.25+                          | [Option 3](#option-3-install-via-go-install-tool)   |
-| Use asdf version manager            | asdf plugin           | [asdf](https://asdf-vm.com/)                         | [Option 4](#option-4-asdf)                          |
-| Don't have Go installed             | Prebuilt binary       | —                                                    | [Option 5](#option-5-prebuilt-binaries)             |
-| Want to contribute or customize     | Build from source     | [Go](https://go.dev/), [just](https://just.systems/) | [Option 6](#option-6-clone-and-build-manually)      |
-
-### Option 1: Homebrew (macOS/Linux)
+### Homebrew (macOS/Linux)
 
 ```bash
 brew install indaco/tap/sley
 ```
 
-### Option 2: Install via `go install` (global)
+### asdf
+
+```bash
+asdf plugin add sley https://github.com/indaco/asdf-sley.git
+asdf install sley latest
+asdf set --home sley latest
+```
+
+### Go
 
 ```bash
 go install github.com/indaco/sley/cmd/sley@latest
 ```
 
-### Option 3: Install via `go install` (tool)
+### Pre-built binaries
 
-With Go 1.24 or greater installed, you can install `sley` locally in your project by running:
+Download from [Releases](https://github.com/indaco/sley/releases).
 
-```bash
-go get -tool github.com/indaco/sley/cmd/sley@latest
-```
-
-Once installed, use it with
+## Quick Start
 
 ```bash
-go tool sley
-```
-
-### Option 4: asdf
-
-Install using the [asdf](https://asdf-vm.com/) version manager:
-
-```bash
-asdf plugin add sley https://github.com/indaco/asdf-sley.git
-asdf install sley latest
-```
-
-### Option 5: Prebuilt binaries
-
-Download the pre-compiled binaries from the [releases page](https://github.com/indaco/sley/releases) and place the binary in your system's PATH.
-
-### Option 6: Clone and build manually
-
-```bash
-git clone https://github.com/indaco/sley.git
-cd sley
-just install
-```
-
-## Usage
-
-**Display current version**
-
-```bash
-# .version = 1.2.3
-sley show
-# => 1.2.3
-```
-
-```bash
-# Fail if .version is missing (strict mode)
-sley show --strict
-# => Error: version file not found at .version
-```
-
-**Set version manually**
-
-```bash
-sley set 2.1.0
-# => .version is now 2.1.0
-```
-
-You can also set a pre-release version:
-
-```bash
-sley set 2.1.0 --pre beta.1
-# => .version is now 2.1.0-beta.1
-```
-
-You can also attach build metadata:
-
-```bash
-sley set 1.0.0 --meta ci.001
-# => .version is now 1.0.0+ci.001
-```
-
-Or combine both:
-
-```bash
-sley set 1.0.0 --pre alpha --meta build.42
-# => .version is now 1.0.0-alpha+build.42
-```
-
-**Bump version**
-
-```bash
-sley show
-# => 1.2.3
-
-sley bump patch
-# => 1.2.4
-
-sley bump minor
-# => 1.3.0
-
-sley bump major
-# => 2.0.0
-
-# .version = 1.3.0-alpha.1+build.123
-sley bump release
-# => 1.3.0
-```
-
-**Increment pre-release (`bump pre`)**
-
-Increment only the pre-release portion without bumping the version number:
-
-```bash
-# .version = 1.0.0-rc.1
-sley bump pre
-# => 1.0.0-rc.2
-
-# .version = 1.0.0-rc1
-sley bump pre
-# => 1.0.0-rc2
-
-# Switch to a different pre-release label
-# .version = 1.0.0-alpha.3
-sley bump pre --label beta
-# => 1.0.0-beta.1
-```
-
-You can also pass `--pre` and/or `--meta` flags to any bump:
-
-```bash
-sley bump patch --pre beta.1
-# => 1.2.4-beta.1
-
-sley bump minor --meta ci.123
-# => 1.3.0+ci.123
-
-sley bump major --pre rc.1 --meta build.7
-# => 2.0.0-rc.1+build.7
-
-# Skip pre-release hooks and extensions during bump
-sley bump patch --skip-hooks
-# => 1.2.4 (no hooks executed)
-```
-
-> [!NOTE]
-> By default, any existing build metadata (the part after `+`) is **cleared** when bumping the version.
-
-To **preserve** existing metadata, pass the `--preserve-meta` flag:
-
-```bash
-# .version = 1.2.3+build.789
-sley bump patch --preserve-meta
-# => 1.2.4+build.789
-
-# .version = 1.2.3+build.789
-sley bump patch --meta new.build
-# => 1.2.4+new.build (overrides existing metadata)
-```
-
-**Smart bump logic (`bump auto`)**
-
-Automatically determine the next version:
-
-```bash
-# .version = 1.2.3-alpha.1
-sley bump auto
-# => 1.2.3
-
-# .version = 1.2.3
-sley bump auto
-# => 1.2.4
-```
-
-Override bump with `--label`:
-
-```bash
-sley bump auto --label minor
-# => 1.3.0
-
-sley bump auto --label major --meta ci.9
-# => 2.0.0+ci.9
-
-sley bump auto --label patch --preserve-meta
-# => bumps patch and keeps build metadata
-```
-
-Valid `--label` values: `patch`, `minor`, `major`.
-
-**Manage pre-release versions**
-
-```bash
-# .version = 0.2.1
-sley pre --label alpha
-# => 0.2.2-alpha
-```
-
-If a pre-release is already present, it's replaced:
-
-```bash
-# .version = 0.2.2-beta.3
-sley pre --label alpha
-# => 0.2.2-alpha
-```
-
-**Auto-increment pre-release label**
-
-```bash
-# .version = 1.2.3
-sley pre --label alpha --inc
-# => 1.2.3-alpha.1
-```
-
-```bash
-# .version = 1.2.3-alpha.1
-sley pre --label alpha --inc
-# => 1.2.3-alpha.2
-```
-
-**Validate .version file**
-
-Check whether the `.version` file exists and contains a valid semantic version:
-
-```bash
-# .version = 1.2.3
-sley validate
-# => Valid version file at ./<path>/.version
-```
-
-If the file is missing or contains an invalid value, an error is returned:
-
-```bash
-# .version = invalid-content
-sley validate
-# => Error: invalid version format: ...
-```
-
-**Manage changelogs**
-
-While sley isn't a standalone changelog tool, the `changelog-generator` plugin provides full changelog support. This utility command helps you work with versioned changelog files created by the plugin.
-
-> [!NOTE]
-> Requires the `changelog-generator` plugin. See [docs/plugins/CHANGELOG_GENERATOR.md](docs/plugins/CHANGELOG_GENERATOR.md) for configuration options including automatic merging with `merge-after`.
-
-Merge versioned changelog files into a unified `CHANGELOG.md`:
-
-```bash
-sley changelog merge
-
-# Specify custom paths
-sley changelog merge --changes-dir .changes --output CHANGELOG.md
-
-# Use a custom header template
-sley changelog merge --header-template .changes/header.md
-```
-
-**Manage git tags**
-
-Manual tag management for workflows that need tagging decoupled from version bumping.
-
-> [!NOTE]
-> Requires the `tag-manager` plugin. See [docs/plugins/TAG_MANAGER.md](docs/plugins/TAG_MANAGER.md) for configuration and workflow examples.
-
-```bash
-sley tag create             # Create tag for current version
-sley tag create --push      # Create and push
-sley tag list               # List version tags
-sley tag push [tag-name]    # Push tag to remote
-sley tag delete <tag-name>  # Delete a tag
-```
-
-**Rolling back a version change**
-
-If you need to undo a version bump:
-
-```bash
-# Manual method - set back to previous version
-sley set 1.2.3
-
-# Git method (if changes were committed)
-git revert HEAD
-# Or reset if not pushed yet
-git reset --hard HEAD^
-
-# If using tag-manager plugin, also delete the tag
-git tag -d v1.2.4
-# If tag was pushed to remote
-git push origin :refs/tags/v1.2.4
-```
-
-> [!NOTE]
-> Automated rollback is not built into sley. Always track version changes in git for easy reversion.
-
-**Initialize .version file**
-
-```bash
+# Initialize in your project
 sley init
-# => Interactive mode: select plugins, create .sley.yaml
+
+# Bump the version
+sley bump patch    # 1.0.0 → 1.0.1
+sley bump minor    # 1.0.1 → 1.1.0
+sley bump major    # 1.1.0 → 2.0.0
+
+# Auto-detect from conventional commits
+sley bump auto
+
+# Show current version
+sley show
 ```
 
-Use `--yes` for non-interactive initialization with defaults:
+## Plugins
 
-```bash
-sley init --yes
-# => Created .version with version 0.1.0
-# => Created .sley.yaml with default plugins (commit-parser, tag-manager)
-```
+sley includes built-in plugins for common workflows:
 
-Enable specific plugins:
+| Plugin                                                                          | Purpose                                   |
+| ------------------------------------------------------------------------------- | ----------------------------------------- |
+| [commit-parser](https://sley.indaco.dev/plugins/commit-parser.html)             | Infer bump type from conventional commits |
+| [tag-manager](https://sley.indaco.dev/plugins/tag-manager.html)                 | Auto-create Git tags                      |
+| [changelog-generator](https://sley.indaco.dev/plugins/changelog-generator.html) | Generate changelog from commits           |
+| [version-validator](https://sley.indaco.dev/plugins/version-validator.html)     | Enforce versioning policies               |
+| [dependency-check](https://sley.indaco.dev/plugins/dependency-check.html)       | Sync versions across files                |
+| [release-gate](https://sley.indaco.dev/plugins/release-gate.html)               | Pre-bump validation checks                |
 
-```bash
-sley init --enable commit-parser,changelog-generator,audit-log
-# => Created .sley.yaml with 3 plugins enabled
-```
-
-Force overwrite existing configuration:
-
-```bash
-sley init --yes --force
-# => Overwrites existing .sley.yaml
-```
-
-Migrate version from existing project files:
-
-```bash
-sley init --migrate --yes
-# => Detected 2.0.0 from package.json, uses it for .version
-```
-
-### Interactive Mode
-
-When running `sley init` without flags in an interactive terminal, you'll see:
-
-```
-Initializing sley...
-
-Detected:
-  - Git repository
-  - package.json (Node.js project)
-
-Select plugins to enable:
-  [x] Commit Parser - Analyze conventional commits to determine bump type
-  [x] Tag Manager - Auto-create git tags after version bumps
-  [ ] Version Validator - Enforce versioning policies
-  [ ] Dependency Check - Sync version to package.json and other files
-  [ ] Changelog Parser - Infer bump type from CHANGELOG.md
-  [ ] Changelog Generator - Generate changelogs from commits
-  [ ] Release Gate - Pre-bump validation (clean worktree, CI status)
-  [ ] Audit Log - Record version history with metadata
-
-Created .version with version 0.1.0
-Created .sley.yaml with 2 plugins enabled
-
-Next steps:
-  - Review .sley.yaml and adjust settings
-  - Run 'sley bump patch' to increment version
-  - Run 'sley doctor' to verify setup
-```
-
-The init command automatically detects your project type (Git, Node.js, Go, Rust, Python) and suggests relevant plugins.
-
-## CLI Commands & Options
-
-```bash
-NAME:
-   sley - Version orchestrator for semantic versioning
-
-USAGE:
-   sley [global options] [command [command options]]
-
-VERSION:
-   v0.8.3
-
-COMMANDS:
-   init              Initialize .version file and .sley.yaml configuration
-   show              Display current version
-   set               Set the version manually
-   bump              Bump semantic version (patch, minor, major)
-   pre               Set pre-release label (e.g., alpha, beta.1)
-   doctor, validate  Validate .version file(s) and configuration
-   changelog         Manage changelog files
-   tag               Manage git tags for versions
-   extension         Manage extensions for sley
-   modules, mods     Manage and discover modules in workspace
-   help, h           Shows a list of commands or help for one command
-
-GLOBAL OPTIONS:
-   --path string, -p string  Path to .version file (default: ".version")
-   --strict, --no-auto-init  Fail if .version file is missing (disable auto-initialization)
-   --no-color                Disable colored output
-   --help, -h                show help
-   --version, -v             print the version
-```
+See all plugins in the [documentation](https://sley.indaco.dev/plugins/).
 
 ## Configuration
 
-The CLI determines the `.version` path in the following order:
-
-1. `--path` flag
-2. `SLEY_PATH` environment variable
-3. `.sley.yaml` file
-4. Fallback: `.version` in the current directory
-
-**Example: Use Environment Variable**
-
-```bash
-export SLEY_PATH=./my-folder/.version
-sley patch
-```
-
-**Example: Use .sley.yaml**
-
-```bash
-# .sley.yaml
-path: ./my-folder/.version
-```
-
-If both are missing, the CLI uses `.version` in the current directory.
-
-### Auto-initialization
-
-If the `.version` file does not exist when running the CLI:
-
-1. It tries to read the latest Git tag via `git describe --tags`.
-2. If the tag is a valid semantic version, it is used.
-3. Otherwise, the file is initialized to 0.1.0.
-
-This ensures your project always has a starting point.
-
-### Using `sley init`
-
-The recommended way to initialize a new project is with `sley init`:
-
-```bash
-# Interactive mode - select plugins and generate .sley.yaml
-sley init
-
-# Non-interactive with sensible defaults
-sley init --yes
-
-# Use a pre-configured template
-sley init --template automation
-
-# Enable specific plugins
-sley init --enable commit-parser,tag-manager,changelog-generator
-
-# Initialize as monorepo with workspace configuration
-sley init --workspace --yes
-
-# Migrate version from existing package.json, Cargo.toml, etc.
-sley init --migrate --yes
-
-# Custom path
-sley init --path internal/version/.version
-```
-
-**Available flags:**
-
-| Flag           | Description                                               |
-| -------------- | --------------------------------------------------------- |
-| `--yes`, `-y`  | Use defaults without prompts (commit-parser, tag-manager) |
-| `--template`   | Use a pre-configured template (see below)                 |
-| `--enable`     | Comma-separated list of plugins to enable                 |
-| `--workspace`  | Initialize as monorepo with workspace configuration       |
-| `--migrate`    | Detect version from existing files (package.json, etc.)   |
-| `--force`      | Overwrite existing .sley.yaml                             |
-| `--path`, `-p` | Custom path for .version file                             |
-
-**Available templates:**
-
-| Template     | Plugins Enabled                                             |
-| ------------ | ----------------------------------------------------------- |
-| `basic`      | commit-parser                                               |
-| `git`        | commit-parser, tag-manager                                  |
-| `automation` | commit-parser, tag-manager, changelog-generator             |
-| `strict`     | commit-parser, tag-manager, version-validator, release-gate |
-| `full`       | All plugins enabled                                         |
-
-**To disable auto-initialization**, use the `--strict` flag.
-This is useful in CI/CD environments or stricter workflows where you want the command to fail if the file is missing:
-
-```bash
-sley bump patch --strict
-# => Error: .version file not found
-```
-
-## Plugin System
-
-`sley` includes built-in plugins that provide deep integration with version bump logic. Unlike extensions (external scripts), plugins are compiled into the binary for native performance.
-
-> [!NOTE]
-> You don't need a `.sley.yaml` file to use sley! The tool works out-of-the-box with `commit-parser` enabled. Create a config only when you need to customize behavior.
-
-### Available Plugins
-
-| Plugin                                                       | Description                                            | Default  |
-| ------------------------------------------------------------ | ------------------------------------------------------ | -------- |
-| [`commit-parser`](docs/plugins/COMMIT_PARSER.md)             | Analyzes conventional commits to determine bump type   | Enabled  |
-| [`tag-manager`](docs/plugins/TAG_MANAGER.md)                 | Automatically creates git tags synchronized with bumps | Disabled |
-| [`version-validator`](docs/plugins/VERSION_VALIDATOR.md)     | Enforces versioning policies and constraints           | Disabled |
-| [`dependency-check`](docs/plugins/DEPENDENCY_CHECK.md)       | Validates and syncs versions across multiple files     | Disabled |
-| [`changelog-parser`](docs/plugins/CHANGELOG_PARSER.md)       | Infers bump type from CHANGELOG.md entries             | Disabled |
-| [`changelog-generator`](docs/plugins/CHANGELOG_GENERATOR.md) | Generates changelog from conventional commits          | Disabled |
-| [`release-gate`](docs/plugins/RELEASE_GATE.md)               | Pre-bump validation (clean worktree, branch, WIP)      | Disabled |
-| [`audit-log`](docs/plugins/AUDIT_LOG.md)                     | Records version changes with metadata to a log file    | Disabled |
-
-### Quick Example
+Configure sley with a `.sley.yaml` file:
 
 ```yaml
-# .sley.yaml
 plugins:
   commit-parser: true
   tag-manager:
     enabled: true
     prefix: "v"
-    annotate: true
-    push: false
-  version-validator:
-    enabled: true
-    rules:
-      - type: "major-version-max"
-        value: 10
-      - type: "branch-constraint"
-        branch: "release/*"
-        allowed: ["patch"]
-  dependency-check:
-    enabled: true
-    auto-sync: true
-    files:
-      - path: "package.json"
-        field: "version"
-        format: "json"
+    sign: true
   changelog-generator:
     enabled: true
-    mode: "versioned"
-    format: "grouped" # or "keepachangelog" for Keep a Changelog spec
-    repository:
-      auto-detect: true
 ```
 
-For detailed documentation on all plugins and their configuration, see [docs/PLUGINS.md](docs/PLUGINS.md).
+See the [configuration reference](https://sley.indaco.dev/reference/sley-yaml-configuration.html) for all options.
 
-## Extension System
+## Documentation
 
-`sley` supports extensions - external scripts that hook into the version lifecycle for automation tasks like updating changelogs, creating git tags, or enforcing version policies.
+Full documentation is available at **[sley.indaco.dev](https://sley.indaco.dev)**:
 
-```bash
-# Install an extension
-sley extension install --path ./path/to/extension
-
-# List installed extensions
-sley extension list
-
-# Remove an extension
-sley extension remove my-extension
-```
-
-Ready-to-use extensions are available in [contrib/extensions/](contrib/extensions/).
-
-For detailed documentation on hooks, JSON interface, and creating extensions, see [docs/EXTENSIONS.md](docs/EXTENSIONS.md).
-
-## CI/CD Integration
-
-`sley` works seamlessly in CI/CD environments with the `--strict` flag for strict mode and auto-detection of CI environments.
-
-### GitHub Actions
-
-```yaml
-name: Version Bump
-on:
-  workflow_dispatch:
-    inputs:
-      bump_type:
-        description: "Bump type"
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-
-jobs:
-  bump:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Install sley
-        run: |
-          curl -L https://github.com/indaco/sley/releases/latest/download/sley-linux-amd64 -o sley
-          chmod +x sley
-          sudo mv sley /usr/local/bin/
-
-      - name: Bump version
-        run: sley bump ${{ inputs.bump_type }} --strict
-
-      - name: Commit and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .version
-          git commit -m "chore: bump version to $(sley show)"
-          git push
-
-      - name: Create and push tag
-        run: sley tag create --push
-```
-
-### GitLab CI
-
-```yaml
-version:bump:
-  stage: deploy
-  image: golang:1.25
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-  script:
-    - go install github.com/indaco/sley/cmd/sley@latest
-    - sley bump patch --strict
-    - git config user.name "GitLab CI"
-    - git config user.email "ci@gitlab.com"
-    - git add .version
-    - git commit -m "chore: bump version to $(sley show)"
-    - git push https://oauth2:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:${CI_COMMIT_BRANCH}
-    - sley tag create --push
-```
-
-### Docker Example
-
-Inject version into Docker image builds:
-
-```dockerfile
-FROM alpine:latest
-ARG VERSION
-LABEL version="${VERSION}"
-COPY . /app
-```
-
-```bash
-# Build with version from sley
-docker build --build-arg VERSION=$(sley show) -t myapp:$(sley show) .
-```
-
-## Monorepo / Multi-Module Support
-
-`sley` supports managing multiple `.version` files across a monorepo. When multiple modules are detected, the CLI automatically enables multi-module mode.
-
-> [!TIP]
-> Working with a monorepo? If your project has multiple services/packages with separate versions, this section shows you how to manage them all at once.
-
-```bash
-# List discovered modules
-sley modules list
-
-# Show all module versions
-sley show --all
-
-# Bump all modules
-sley bump patch --all
-
-# Bump specific module
-sley bump patch --module api
-
-# Bump multiple modules
-sley bump patch --modules api,web
-
-# Bump modules matching pattern
-sley bump patch --pattern "services/*"
-```
-
-For CI/CD, use `--non-interactive` or set `CI=true` to disable prompts.
-
-For detailed documentation on module discovery, configuration, and patterns, see [docs/MONOREPO.md](docs/MONOREPO.md).
-
-## Troubleshooting
-
-### "Error: .version file not found"
-
-The `.version` file does not exist in the expected location.
-
-**Solutions**:
-
-- Run `sley init` to create the file
-- Use the `--path` flag to specify a custom location: `sley show --path ./custom/.version`
-- Set the `SLEY_PATH` environment variable: `export SLEY_PATH=./custom/.version`
-- Check your `.sley.yaml` for the configured path
-
-### "Error: invalid version format"
-
-The `.version` file contains content that is not a valid SemVer version.
-
-**Solutions**:
-
-- Run `sley doctor` to validate and see detailed error information
-- Ensure the file contains only a valid SemVer version (e.g., `1.2.3`, `2.0.0-beta.1`)
-- Remove any extra whitespace, newlines, or comments
-- Use `sley set 1.0.0` to reset to a valid version
-
-### Plugin-specific errors
-
-If you encounter errors related to plugins (e.g., tag-manager, changelog-generator):
-
-**Solutions**:
-
-- Run `sley doctor` to validate your configuration
-- Check the individual plugin documentation in [docs/PLUGINS.md](docs/PLUGINS.md)
-- Verify your `.sley.yaml` configuration syntax
-- Try disabling the plugin temporarily to isolate the issue
-
-### "Error: git repository not found"
-
-The tag-manager plugin or auto-initialization requires a git repository.
-
-**Solutions**:
-
-- Initialize a git repository: `git init`
-- Ensure you're running sley from within a git repository
-- Disable the tag-manager plugin if you don't need git integration
-
-### Module not detected in monorepo
-
-A `.version` file exists but is not being discovered in multi-module mode.
-
-**Solutions**:
-
-- Check `.sleyignore` for exclude patterns that might match your module
-- Verify the file is named exactly `.version` (not `version` or `.version.txt`)
-- Run `sley modules list` to see discovered modules
-- Check workspace configuration in `.sley.yaml`
-
-### Permission denied errors
-
-Unable to read or write the `.version` file.
-
-**Solutions**:
-
-- Ensure the file has appropriate permissions: `chmod 644 .version`
-- Check directory permissions
-- Run with appropriate user permissions
-
-### Getting more help
-
-- Run `sley doctor` for detailed diagnostics
-- Check individual plugin documentation for plugin-specific issues
-- Review your `.sley.yaml` configuration
-- See the [Contributing Guide](CONTRIBUTING.md) for reporting issues
+- [What is sley?](https://sley.indaco.dev/guide/what-is-sley.html)
+- [Installation](https://sley.indaco.dev/guide/installation.html)
+- [Usage Guide](https://sley.indaco.dev/guide/usage.html)
+- [Plugins](https://sley.indaco.dev/plugins/)
+- [Extensions](https://sley.indaco.dev/extensions/)
+- [CI/CD Integration](https://sley.indaco.dev/guide/ci-cd-integration.html)
 
 ## Contributing
 
-Contributions are welcome!
-
-See the [Contributing Guide](/CONTRIBUTING.md) for setting up the development tools.
-
-## AI Assistance
-
-Built by humans, with some help from AI. After the v0.5.0 release, [Claude Code](https://claude.ai/code) assisted with test generation, documentation scaffolding, code review, and tedious refactoring (like renaming from "semver" to "sley"). The project logo was also AI-generated under the maintainer's direction. All output was reviewed, reworked and approved by the maintainer.
+Contributions are welcome. See [CONTRIBUTING](CONTRIBUTING.md) for guidelines.
 
 ## License
 
