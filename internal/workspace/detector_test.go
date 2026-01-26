@@ -185,7 +185,7 @@ func TestDetector_MaxDepth(t *testing.T) {
 	cfg := &config.Config{
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				MaxDepth: &maxDepth,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}

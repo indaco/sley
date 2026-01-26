@@ -8,29 +8,29 @@ import (
 // File permission constants for consistent security across the codebase.
 // These follow the principle of least privilege.
 const (
-	// PermOwnerRW is read/write for owner only (0600).
+	// PermOwnerRW is read/write for owner only (0o600).
 	// Use for sensitive files: config, version files, audit logs.
-	PermOwnerRW fs.FileMode = 0600
+	PermOwnerRW fs.FileMode = 0o600
 
-	// PermOwnerRWGroupR is read/write for owner, read for group (0640).
+	// PermOwnerRWGroupR is read/write for owner, read for group (0o640).
 	// Use for files that need to be readable by group members.
-	PermOwnerRWGroupR fs.FileMode = 0640
+	PermOwnerRWGroupR fs.FileMode = 0o640
 
-	// PermPublicRead is read/write for owner, read for all (0644).
+	// PermPublicRead is read/write for owner, read for all (0o644).
 	// Use for public files: changelogs, documentation.
-	PermPublicRead fs.FileMode = 0644
+	PermPublicRead fs.FileMode = 0o644
 
-	// PermDirDefault is read/write/execute for owner, read/execute for others (0755).
+	// PermDirDefault is read/write/execute for owner, read/execute for others (0o755).
 	// Use for directories that need to be traversable.
-	PermDirDefault fs.FileMode = 0755
+	PermDirDefault fs.FileMode = 0o755
 
-	// PermDirPrivate is read/write/execute for owner only (0700).
+	// PermDirPrivate is read/write/execute for owner only (0o700).
 	// Use for directories containing sensitive data.
-	PermDirPrivate fs.FileMode = 0700
+	PermDirPrivate fs.FileMode = 0o700
 
-	// PermExecutable is the executable bit mask (0111).
+	// PermExecutable is the executable bit mask (0o111).
 	// Use to check if a file has any executable permission.
-	PermExecutable fs.FileMode = 0111
+	PermExecutable fs.FileMode = 0o111
 )
 
 // Timeout constants for external operations.

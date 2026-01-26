@@ -336,7 +336,7 @@ func (g *Generator) writeNewContributorFallback(sb *strings.Builder, nc *NewCont
 // WriteVersionedFile writes the changelog to a version-specific file.
 func (g *Generator) WriteVersionedFile(version, content string) error {
 	dir := g.config.ChangesDir
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, core.PermDirDefault); err != nil {
 		return fmt.Errorf("failed to create changes directory %q: %w", dir, err)
 	}
 

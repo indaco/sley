@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/indaco/sley/internal/core"
 )
 
 // ReadFile reads the contents of a file and fails the test on error.
@@ -43,7 +45,7 @@ func ReadTempVersionFile(t *testing.T, dir string) string {
 func WriteTempVersionFile(t *testing.T, dir, version string) string {
 	t.Helper()
 	path := filepath.Join(dir, ".version")
-	WriteFile(t, path, version, 0644)
+	WriteFile(t, path, version, core.PermPublicRead)
 
 	return path
 }
@@ -54,6 +56,6 @@ func WriteTempConfig(t *testing.T, content string) string {
 	tmpDir := t.TempDir()
 	tmpPath := filepath.Join(tmpDir, ".sley.yaml")
 
-	WriteFile(t, tmpPath, content, 0644)
+	WriteFile(t, tmpPath, content, core.PermPublicRead)
 	return tmpPath
 }

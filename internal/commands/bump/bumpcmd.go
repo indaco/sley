@@ -1,7 +1,7 @@
 package bump
 
 import (
-	"github.com/indaco/sley/internal/cli/flags"
+	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/urfave/cli/v3"
@@ -23,7 +23,7 @@ func Run(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 			Usage: "Preserve existing build metadata when bumping",
 		},
 	}
-	cmdFlags = append(cmdFlags, flags.MultiModuleFlags()...)
+	cmdFlags = append(cmdFlags, cliflags.MultiModuleFlags()...)
 
 	return &cli.Command{
 		Name:      "bump",

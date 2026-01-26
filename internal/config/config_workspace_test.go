@@ -25,8 +25,8 @@ func TestDiscoveryDefaults(t *testing.T) {
 		t.Error("expected Recursive to be true by default")
 	}
 
-	if defaults.MaxDepth == nil || *defaults.MaxDepth != 10 {
-		t.Errorf("expected MaxDepth to be 10, got %v", defaults.MaxDepth)
+	if defaults.ModuleMaxDepth == nil || *defaults.ModuleMaxDepth != 10 {
+		t.Errorf("expected MaxDepth to be 10, got %v", defaults.ModuleMaxDepth)
 	}
 
 	expectedExcludes := []string{
@@ -56,7 +56,7 @@ workspace:
   discovery:
     enabled: true
     recursive: true
-    max_depth: 5
+    module_max_depth: 5
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
@@ -258,7 +258,7 @@ workspace:
 		yamlContent := `path: .version
 workspace:
   discovery:
-    max_depth: 3
+    module_max_depth: 3
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {

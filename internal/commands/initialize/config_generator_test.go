@@ -6,6 +6,8 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/discovery"
+	"github.com/indaco/sley/internal/parser"
 )
 
 func TestGenerateConfigWithComments_Empty(t *testing.T) {
@@ -233,5 +235,118 @@ func TestGenerateConfigWithComments_InlineComments(t *testing.T) {
 	}
 	if !strings.Contains(dataStr, "tag-manager") {
 		t.Error("expected tag-manager in output")
+	}
+}
+
+func TestGenerateConfigWithDiscovery(t *testing.T) {
+	plugins := []string{"dependency-check", "tag-manager"}
+	syncCandidates := []discovery.SyncCandidate{
+		{
+			Path:        "package.json",
+			Format:      parser.FormatJSON,
+			Field:       "version",
+			Description: "Node.js",
+		},
+		{
+			Path:        "Cargo.toml",
+			Format:      parser.FormatTOML,
+			Field:       "package.version",
+			Description: "Rust",
+		},
+	}
+
+	data, err := GenerateConfigWithDiscovery(".version", plugins, syncCandidates)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("failed to parse generated config: %v", err)
+	}
+
+	// Verify dependency-check is configured
+	if cfg.Plugins == nil || cfg.Plugins.DependencyCheck == nil {
+		t.Fatal("expected dependency-check config")
+	}
+
+	depCheck := cfg.Plugins.DependencyCheck
+	if !depCheck.Enabled {
+		t.Error("expected dependency-check to be enabled")
+	}
+	if !depCheck.AutoSync {
+		t.Error("expected auto-sync to be enabled")
+	}
+	if len(depCheck.Files) != 2 {
+		t.Errorf("expected 2 files, got %d", len(depCheck.Files))
+	}
+
+	// Verify file configurations
+	if depCheck.Files[0].Path != "package.json" {
+		t.Errorf("expected first file to be package.json, got %s", depCheck.Files[0].Path)
+	}
+	if depCheck.Files[0].Format != "json" {
+		t.Errorf("expected first file format to be json, got %s", depCheck.Files[0].Format)
+	}
+	if depCheck.Files[1].Path != "Cargo.toml" {
+		t.Errorf("expected second file to be Cargo.toml, got %s", depCheck.Files[1].Path)
+	}
+}
+
+func TestGenerateConfigWithDiscovery_EmptyCandidates(t *testing.T) {
+	plugins := []string{"dependency-check"}
+	syncCandidates := []discovery.SyncCandidate{}
+
+	data, err := GenerateConfigWithDiscovery(".version", plugins, syncCandidates)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("failed to parse generated config: %v", err)
+	}
+
+	// Should still have dependency-check enabled, but no files
+	if cfg.Plugins == nil || cfg.Plugins.DependencyCheck == nil {
+		t.Fatal("expected dependency-check config")
+	}
+
+	if len(cfg.Plugins.DependencyCheck.Files) != 0 {
+		t.Errorf("expected 0 files for empty candidates, got %d", len(cfg.Plugins.DependencyCheck.Files))
+	}
+}
+
+func TestGenerateConfigWithDiscovery_WithRegexPattern(t *testing.T) {
+	plugins := []string{"dependency-check"}
+	syncCandidates := []discovery.SyncCandidate{
+		{
+			Path:        "version.go",
+			Format:      parser.FormatRegex,
+			Pattern:     `Version = "(.*?)"`,
+			Description: "Go version constant",
+		},
+	}
+
+	data, err := GenerateConfigWithDiscovery(".version", plugins, syncCandidates)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("failed to parse generated config: %v", err)
+	}
+
+	if len(cfg.Plugins.DependencyCheck.Files) != 1 {
+		t.Fatalf("expected 1 file, got %d", len(cfg.Plugins.DependencyCheck.Files))
+	}
+
+	file := cfg.Plugins.DependencyCheck.Files[0]
+	if file.Format != "regex" {
+		t.Errorf("expected format to be regex, got %s", file.Format)
+	}
+	if file.Pattern != `Version = "(.*?)"` {
+		t.Errorf("expected pattern to be preserved, got %s", file.Pattern)
 	}
 }

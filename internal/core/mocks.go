@@ -168,6 +168,13 @@ func (m *MockFileSystem) GetFile(path string) ([]byte, bool) {
 	return data, ok
 }
 
+// SetDir marks a directory as existing (for test setup).
+func (m *MockFileSystem) SetDir(path string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.dirs[path] = true
+}
+
 type mockFileInfo struct {
 	name  string
 	size  int64
@@ -176,7 +183,7 @@ type mockFileInfo struct {
 
 func (m *mockFileInfo) Name() string       { return m.name }
 func (m *mockFileInfo) Size() int64        { return m.size }
-func (m *mockFileInfo) Mode() fs.FileMode  { return 0644 }
+func (m *mockFileInfo) Mode() fs.FileMode  { return PermPublicRead }
 func (m *mockFileInfo) ModTime() time.Time { return time.Now() }
 func (m *mockFileInfo) IsDir() bool        { return m.isDir }
 func (m *mockFileInfo) Sys() any           { return nil }
@@ -188,7 +195,7 @@ type mockDirEntry struct {
 
 func (m *mockDirEntry) Name() string      { return m.name }
 func (m *mockDirEntry) IsDir() bool       { return m.isDir }
-func (m *mockDirEntry) Type() fs.FileMode { return 0644 }
+func (m *mockDirEntry) Type() fs.FileMode { return PermPublicRead }
 func (m *mockDirEntry) Info() (fs.FileInfo, error) {
 	return &mockFileInfo{name: m.name, isDir: m.isDir}, nil
 }

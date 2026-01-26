@@ -49,7 +49,7 @@
 //	  discovery:
 //	    enabled: true      # Enable module auto-discovery
 //	    recursive: true    # Search subdirectories
-//	    max_depth: 10      # Maximum directory depth
+//	    module_max_depth: 10      # Maximum directory depth
 //	    exclude:           # Additional paths to exclude
 //	      - custom_dir
 //

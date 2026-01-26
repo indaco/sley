@@ -30,7 +30,7 @@ func (v *Validator) validateDiscoveryConfig() {
 	discovery := v.cfg.Workspace.Discovery
 
 	// Validate max depth
-	if discovery.MaxDepth != nil && *discovery.MaxDepth < 0 {
+	if discovery.ModuleMaxDepth != nil && *discovery.ModuleMaxDepth < 0 {
 		v.addValidation("Workspace: Discovery", false,
 			"max_depth cannot be negative", false)
 	}

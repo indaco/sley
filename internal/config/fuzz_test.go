@@ -36,7 +36,7 @@ workspace:
   discovery:
     enabled: true
     recursive: true
-    max_depth: 10`,
+    module_max_depth: 10`,
 		// Config with modules
 		`path: .version
 workspace:
@@ -171,7 +171,7 @@ func FuzzDiscoveryConfig(f *testing.F) {
     recursive: false`,
 		`workspace:
   discovery:
-    max_depth: 5`,
+    module_max_depth: 5`,
 		`workspace:
   discovery:
     exclude:
@@ -208,8 +208,8 @@ func FuzzDiscoveryConfig(f *testing.F) {
 			}
 
 			// MaxDepth should always have a value (defaults to 10)
-			if discovery.MaxDepth == nil {
-				t.Error("discovery.MaxDepth should not be nil after GetDiscoveryConfig")
+			if discovery.ModuleMaxDepth == nil {
+				t.Error("discovery.ModuleMaxDepth should not be nil after GetDiscoveryConfig")
 			}
 		}
 	})

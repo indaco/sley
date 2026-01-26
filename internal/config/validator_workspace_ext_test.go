@@ -95,7 +95,7 @@ func TestValidator_ValidateWorkspaceConfig(t *testing.T) {
 			config: &Config{
 				Workspace: &WorkspaceConfig{
 					Discovery: &DiscoveryConfig{
-						MaxDepth: func() *int { v := -1; return &v }(),
+						ModuleMaxDepth: func() *int { v := -1; return &v }(),
 					},
 				},
 			},

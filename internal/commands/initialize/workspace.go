@@ -177,7 +177,7 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 	sb.WriteString("  discovery:\n")
 	sb.WriteString("    enabled: true\n")
 	sb.WriteString("    recursive: true\n")
-	sb.WriteString("    max_depth: 10\n")
+	sb.WriteString("    module_max_depth: 10\n")
 	sb.WriteString("    exclude:\n")
 	for _, pattern := range config.DefaultExcludePatterns {
 		sb.WriteString(fmt.Sprintf("      - %q\n", pattern))

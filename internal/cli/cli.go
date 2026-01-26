@@ -6,10 +6,10 @@ import (
 
 	"github.com/indaco/sley/internal/commands/bump"
 	"github.com/indaco/sley/internal/commands/changelog"
+	"github.com/indaco/sley/internal/commands/discover"
 	"github.com/indaco/sley/internal/commands/doctor"
 	"github.com/indaco/sley/internal/commands/extension"
 	"github.com/indaco/sley/internal/commands/initialize"
-	"github.com/indaco/sley/internal/commands/modules"
 	"github.com/indaco/sley/internal/commands/pre"
 	"github.com/indaco/sley/internal/commands/set"
 	"github.com/indaco/sley/internal/commands/show"
@@ -58,15 +58,15 @@ func New(cfg *config.Config, registry *plugins.PluginRegistry) *urfavecli.Comman
 		},
 		Commands: []*urfavecli.Command{
 			initialize.Run(),
+			discover.Run(cfg),
 			show.Run(cfg),
 			set.Run(cfg),
 			bump.Run(cfg, registry),
 			pre.Run(cfg),
 			doctor.Run(cfg),
-			changelog.Run(cfg),
 			tag.Run(cfg),
+			changelog.Run(cfg),
 			extension.Run(),
-			modules.Run(),
 		},
 	}
 }

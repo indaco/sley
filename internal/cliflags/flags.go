@@ -1,4 +1,4 @@
-package flags
+package cliflags
 
 import "github.com/urfave/cli/v3"
 

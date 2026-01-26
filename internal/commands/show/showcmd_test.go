@@ -137,9 +137,9 @@ func TestCLI_ShowCommand_MultiModule_All(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -187,9 +187,9 @@ func TestCLI_ShowCommand_MultiModule_Specific(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -234,9 +234,9 @@ func TestCLI_ShowCommand_MultiModule_Quiet(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -281,9 +281,9 @@ func TestCLI_ShowCommand_MultiModule_JSONFormat(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -328,9 +328,9 @@ func TestCLI_ShowCommand_MultiModule_TableFormat(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -380,9 +380,9 @@ func TestCLI_ShowCommand_MultiModule_TableFormat2(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -438,9 +438,9 @@ func TestCLI_ShowCommand_MultiModule_Parallel(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -491,9 +491,9 @@ func TestCLI_ShowCommand_MultiModule_SuccessQuiet(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}

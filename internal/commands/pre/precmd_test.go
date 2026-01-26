@@ -334,9 +334,9 @@ func TestCLI_PreCommand_MultiModule_All(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -394,9 +394,9 @@ func TestCLI_PreCommand_MultiModule_Increment(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -452,9 +452,9 @@ func TestCLI_PreCommand_MultiModule_Specific(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -500,9 +500,9 @@ func TestCLI_PreCommand_MultiModule_Quiet(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -555,9 +555,9 @@ func TestCLI_PreCommand_MultiModule_JSONFormat(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -607,9 +607,9 @@ func TestCLI_PreCommand_MultiModule_Parallel(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -653,9 +653,9 @@ func TestCLI_PreCommand_MultiModule_TextFormat(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
