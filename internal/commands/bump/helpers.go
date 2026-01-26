@@ -264,7 +264,7 @@ func deriveDependencyName(path string) string {
 
 // generateChangelogAfterBump generates changelog entries if changelog generator is enabled.
 // Returns nil if changelog generator is not enabled.
-func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, previousVersion semver.SemVersion, bumpType string) error {
+func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ semver.SemVersion, bumpType string) error {
 	cg := registry.GetChangelogGenerator()
 	if cg == nil {
 		return nil
