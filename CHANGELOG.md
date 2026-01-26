@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.9.0 - 2026-01-26
+
+### 🚀 Enhancements
+
+- add discover command with dependency-check workflow ([cef0757](https://github.com/indaco/sley/commit/cef0757)) ([#181](https://github.com/indaco/sley/pull/181))
+
+### 💅 Refactors
+
+- move CLI commands and setup to internal packages ([77228f1](https://github.com/indaco/sley/commit/77228f1)) ([#180](https://github.com/indaco/sley/pull/180))
+
+### 📖 Documentation
+
+- fix README link to sley-yaml reference URL ([6a79581](https://github.com/indaco/sley/commit/6a79581)) ([#179](https://github.com/indaco/sley/pull/179))
+- update CLI and CI/CD reference links in README ([cee42cc](https://github.com/indaco/sley/commit/cee42cc)) ([#177](https://github.com/indaco/sley/pull/177))
+- migrate documentation to dedicated website ([0dcf712](https://github.com/indaco/sley/commit/0dcf712)) ([#176](https://github.com/indaco/sley/pull/176))
+
+### 🏡 Chores
+
+- **assets:** replace local logo with remote URL ([e717098](https://github.com/indaco/sley/commit/e717098)) ([#178](https://github.com/indaco/sley/pull/178))
+
+**Full Changelog:** [v0.8.3...v0.9.0](https://github.com/indaco/sley/compare/v0.8.3...v0.9.0)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.8.3 - 2026-01-23
 
 ### 🩹 Fixes
