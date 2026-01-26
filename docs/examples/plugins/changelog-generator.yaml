@@ -1,0 +1,47 @@
+# Changelog Generator Plugin Example
+# See: https://sley.indaco.dev/plugins/changelog-generator.html
+
+path: .version
+
+plugins:
+  changelog-generator:
+    enabled: true
+    mode: "versioned" # "versioned", "unified", or "both"
+    format: "grouped" # "grouped", "keepachangelog", "github", or "minimal"
+    changes-dir: ".changes"
+    changelog-path: "CHANGELOG.md"
+    # merge-after controls when versioned changelog files are merged into CHANGELOG.md
+    # - "manual" (default): No auto-merge, use 'sley changelog merge' command
+    # - "immediate": Merge right after changelog generation
+    # - "prompt": Interactive confirmation (auto-skips in CI/non-interactive environments)
+    merge-after: "manual"
+    # header-template: "path/to/header.tmpl" # Optional custom header template
+    repository:
+      auto-detect: true
+      # provider: "github" # or "gitlab"
+      # host: "github.com"
+      # owner: "your-org"
+      # repo: "your-repo"
+    # Custom commit grouping rules (optional)
+    # groups:
+    #   - pattern: "^feat"
+    #     label: "Features"
+    #     icon: "sparkles"
+    use-default-icons: true
+    # group-icons:
+    #   Features: "sparkles"
+    #   "Bug Fixes": "bug"
+    # breaking-changes-icon: "warning"
+    exclude-patterns:
+      - "^Merge"
+      - "^WIP"
+      - "^fixup!"
+      - "^squash!"
+    include-non-conventional: false
+    contributors:
+      enabled: true
+      # format: "{{.Name}}"
+      # icon: "heart"
+      show-new-contributors: true
+      # new-contributors-format: "{{.Name}}"
+      # new-contributors-icon: "tada"

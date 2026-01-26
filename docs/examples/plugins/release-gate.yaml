@@ -1,0 +1,18 @@
+# Release Gate Plugin Example
+# See: https://sley.indaco.dev/plugins/release-gate.html
+
+path: .version
+
+plugins:
+  release-gate:
+    enabled: true
+    require-clean-worktree: true
+    blocked-on-wip-commits: true
+    require-ci-pass: false
+    allowed-branches:
+      - "main"
+      - "release/*"
+      - "hotfix/*"
+    blocked-branches:
+      - "experimental/*"
+      - "wip/*"
