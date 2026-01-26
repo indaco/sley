@@ -34,6 +34,12 @@ func NewService(fs core.FileSystem, cfg *config.Config) *Service {
 
 // Discover scans the given root directory and returns discovery results.
 func (s *Service) Discover(ctx context.Context, root string) (*Result, error) {
+	return s.DiscoverWithDepth(ctx, root, -1)
+}
+
+// DiscoverWithDepth scans the given root directory with a specified manifest discovery depth.
+// If manifestMaxDepth is -1, the configured default (or 3) is used.
+func (s *Service) DiscoverWithDepth(ctx context.Context, root string, manifestMaxDepth int) (*Result, error) {
 	result := &Result{
 		Mode:           NoModules,
 		Modules:        make([]Module, 0),
@@ -64,15 +70,31 @@ func (s *Service) Discover(ctx context.Context, root string) (*Result, error) {
 		result.Mode = MultiModule
 	}
 
-	// Discover manifest files
-	manifests, err := s.discoverManifests(ctx, root)
+	// Determine manifest max depth
+	if manifestMaxDepth < 0 {
+		discovery := s.cfg.GetDiscoveryConfig()
+		if discovery.ManifestMaxDepth != nil {
+			manifestMaxDepth = *discovery.ManifestMaxDepth
+		} else {
+			manifestMaxDepth = 3 // Default
+		}
+	}
+
+	// Discover manifest files recursively across the entire project
+	manifests, err := s.discoverAllManifests(ctx, root, manifestMaxDepth)
 	if err != nil {
 		return nil, err
 	}
 	result.Manifests = manifests
 
 	// Generate sync candidates from manifests
-	result.SyncCandidates = s.generateSyncCandidates(manifests)
+	result.SyncCandidates = s.generateSyncCandidates(result.Manifests)
+
+	// Generate sync candidates from modules (excluding root .version)
+	moduleCandidates := s.generateModuleSyncCandidates(result.Modules)
+
+	// Combine both types of sync candidates
+	result.SyncCandidates = append(result.SyncCandidates, moduleCandidates...)
 
 	// Detect version mismatches
 	result.Mismatches = s.detectMismatches(result)
@@ -98,8 +120,8 @@ func (s *Service) discoverModules(ctx context.Context, root string) ([]Module, e
 
 	// Get max depth
 	maxDepth := core.MaxDiscoveryDepth
-	if discovery.MaxDepth != nil {
-		maxDepth = *discovery.MaxDepth
+	if discovery.ModuleMaxDepth != nil {
+		maxDepth = *discovery.ModuleMaxDepth
 	}
 
 	// Check if recursive discovery is enabled
@@ -227,8 +249,80 @@ func (s *Service) shouldExclude(name, path string, excludes []string) bool {
 	return false
 }
 
-// discoverManifests finds manifest files in the root directory.
-func (s *Service) discoverManifests(ctx context.Context, root string) ([]ManifestSource, error) {
+// discoverAllManifests recursively discovers manifest files in the directory tree.
+// It walks the directory tree up to maxDepth levels from root, looking for known
+// manifest files (package.json, Cargo.toml, etc.) in each directory.
+// Excluded directories (node_modules, vendor, .git, etc.) are skipped.
+func (s *Service) discoverAllManifests(ctx context.Context, root string, maxDepth int) ([]ManifestSource, error) {
+	var manifests []ManifestSource
+	seen := make(map[string]bool) // Track visited paths to avoid duplicates
+	excludes := s.cfg.GetExcludePatterns()
+
+	// Helper function to walk directories recursively
+	var walkManifests func(dir string, depth int) error
+	walkManifests = func(dir string, depth int) error {
+		// Check depth limit
+		if depth > maxDepth {
+			return nil
+		}
+
+		// Check for context cancellation
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		// Skip if we've already scanned this directory
+		if seen[dir] {
+			return nil
+		}
+		seen[dir] = true
+
+		// Discover manifests in this directory
+		dirManifests, err := s.discoverManifestsInDir(ctx, dir, root)
+		if err != nil {
+			return err
+		}
+		manifests = append(manifests, dirManifests...)
+
+		// Read directory entries
+		entries, err := s.fs.ReadDir(ctx, dir)
+		if err != nil {
+			// Skip directories we can't read
+			return nil
+		}
+
+		// Recurse into subdirectories
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+
+			name := entry.Name()
+			path := filepath.Join(dir, name)
+
+			// Skip excluded patterns
+			if s.shouldExclude(name, path, excludes) {
+				continue
+			}
+
+			if err := walkManifests(path, depth+1); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	// Start walking from root at depth 0
+	if err := walkManifests(root, 0); err != nil {
+		return nil, err
+	}
+
+	return manifests, nil
+}
+
+// discoverManifestsInDir finds manifest files in a specific directory.
+func (s *Service) discoverManifestsInDir(ctx context.Context, dir, root string) ([]ManifestSource, error) {
 	var manifests []ManifestSource
 
 	for _, known := range DefaultKnownManifests() {
@@ -237,7 +331,7 @@ func (s *Service) discoverManifests(ctx context.Context, root string) ([]Manifes
 			return nil, err
 		}
 
-		path := filepath.Join(root, known.Filename)
+		path := filepath.Join(dir, known.Filename)
 
 		// Check if file exists
 		if _, err := s.fs.Stat(ctx, path); err != nil {
@@ -259,9 +353,15 @@ func (s *Service) discoverManifests(ctx context.Context, root string) ([]Manifes
 			continue
 		}
 
+		// Calculate relative path from root
+		relPath, err := filepath.Rel(root, path)
+		if err != nil {
+			relPath = path
+		}
+
 		manifests = append(manifests, ManifestSource{
 			Path:        path,
-			RelPath:     known.Filename,
+			RelPath:     relPath,
 			Filename:    known.Filename,
 			Version:     version,
 			Format:      known.Format,
@@ -290,6 +390,29 @@ func (s *Service) generateSyncCandidates(manifests []ManifestSource) []SyncCandi
 	return candidates
 }
 
+// generateModuleSyncCandidates creates SyncCandidates from discovered modules.
+// It excludes the root .version file since that is the source, not a sync target.
+func (s *Service) generateModuleSyncCandidates(modules []Module) []SyncCandidate {
+	candidates := make([]SyncCandidate, 0)
+
+	for _, m := range modules {
+		// Skip the root .version file - it's the source, not a sync target
+		if m.RelPath == ".version" {
+			continue
+		}
+
+		candidates = append(candidates, SyncCandidate{
+			Path:        m.RelPath,
+			Format:      parser.FormatRaw,
+			Field:       "", // Not needed for raw format
+			Version:     m.Version,
+			Description: "Version file (" + m.RelPath + ")",
+		})
+	}
+
+	return candidates
+}
+
 // detectMismatches finds version mismatches between sources.
 func (s *Service) detectMismatches(result *Result) []Mismatch {
 	return DetectMismatches(result)
@@ -311,8 +434,14 @@ func (s *Service) DiscoverModulesOnly(ctx context.Context, root string) ([]Modul
 }
 
 // DiscoverManifestsOnly is a convenience method that only discovers manifest files.
+// It uses the configured manifest max depth (default: 3).
 func (s *Service) DiscoverManifestsOnly(ctx context.Context, root string) ([]ManifestSource, error) {
-	return s.discoverManifests(ctx, root)
+	discovery := s.cfg.GetDiscoveryConfig()
+	maxDepth := 3
+	if discovery.ManifestMaxDepth != nil {
+		maxDepth = *discovery.ManifestMaxDepth
+	}
+	return s.discoverAllManifests(ctx, root, maxDepth)
 }
 
 // DiscoverAt is a convenience function that creates a Service and runs discovery.
