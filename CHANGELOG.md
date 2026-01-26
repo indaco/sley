@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.9.1 - 2026-01-26
+
+### 🩹 Fixes
+
+- **bump:** respect pre-bump extension changes in auto command ([8e1ff5c](https://github.com/indaco/sley/commit/8e1ff5c)) ([#183](https://github.com/indaco/sley/pull/183))
+
+**Full Changelog:** [v0.9.0...v0.9.1](https://github.com/indaco/sley/compare/v0.9.0...v0.9.1)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.9.0 - 2026-01-26
 
 ### 🚀 Enhancements
