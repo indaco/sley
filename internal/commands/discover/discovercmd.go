@@ -26,6 +26,12 @@ Scans the current directory for:
 Shows discovered version sources and suggests dependency-check configuration
 for keeping versions in sync.`,
 		Flags: []cli.Flag{
+			&cli.IntFlag{
+				Name:    "depth",
+				Aliases: []string{"d"},
+				Usage:   "Maximum directory depth for manifest discovery",
+				Value:   3,
+			},
 			&cli.StringFlag{
 				Name:    "format",
 				Aliases: []string{"f"},
@@ -56,11 +62,14 @@ func runDiscoverCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 		return fmt.Errorf("failed to get current directory: %w", err)
 	}
 
-	// Run discovery
+	// Get depth flag
+	depth := cmd.Int("depth")
+
+	// Run discovery with specified depth
 	fs := core.NewOSFileSystem()
 	svc := discovery.NewService(fs, cfg)
 
-	result, err := svc.Discover(ctx, rootDir)
+	result, err := svc.DiscoverWithDepth(ctx, rootDir, depth)
 	if err != nil {
 		return fmt.Errorf("discovery failed: %w", err)
 	}
