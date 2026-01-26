@@ -9,6 +9,7 @@ import (
 type Prompter interface {
 	Confirm(title, description string) (bool, error)
 	MultiSelect(title, description string, options []huh.Option[string], defaults []string) ([]string, error)
+	Select(title, description string, options []huh.Option[string]) (string, error)
 }
 
 // TUIPrompter implements Prompter using the tui package.
@@ -27,6 +28,11 @@ func (p *TUIPrompter) Confirm(title, description string) (bool, error) {
 // MultiSelect shows a multi-select prompt.
 func (p *TUIPrompter) MultiSelect(title, description string, options []huh.Option[string], defaults []string) ([]string, error) {
 	return tui.MultiSelect(title, description, options, defaults)
+}
+
+// Select shows a single-select prompt.
+func (p *TUIPrompter) Select(title, description string, options []huh.Option[string]) (string, error) {
+	return tui.Select(title, description, options)
 }
 
 // OutputFormat controls how discovery results are displayed.

@@ -87,14 +87,10 @@ func (s *Service) DiscoverWithDepth(ctx context.Context, root string, manifestMa
 	}
 	result.Manifests = manifests
 
-	// Generate sync candidates from manifests
+	// Generate sync candidates from manifests only
+	// Note: Submodule .version files are NOT sync targets - they are sources of truth
+	// for their respective modules. Use workspace configuration for multi-module projects.
 	result.SyncCandidates = s.generateSyncCandidates(result.Manifests)
-
-	// Generate sync candidates from modules (excluding root .version)
-	moduleCandidates := s.generateModuleSyncCandidates(result.Modules)
-
-	// Combine both types of sync candidates
-	result.SyncCandidates = append(result.SyncCandidates, moduleCandidates...)
 
 	// Detect version mismatches
 	result.Mismatches = s.detectMismatches(result)
@@ -384,29 +380,6 @@ func (s *Service) generateSyncCandidates(manifests []ManifestSource) []SyncCandi
 			Field:       m.Field,
 			Version:     m.Version,
 			Description: m.Description,
-		})
-	}
-
-	return candidates
-}
-
-// generateModuleSyncCandidates creates SyncCandidates from discovered modules.
-// It excludes the root .version file since that is the source, not a sync target.
-func (s *Service) generateModuleSyncCandidates(modules []Module) []SyncCandidate {
-	candidates := make([]SyncCandidate, 0)
-
-	for _, m := range modules {
-		// Skip the root .version file - it's the source, not a sync target
-		if m.RelPath == ".version" {
-			continue
-		}
-
-		candidates = append(candidates, SyncCandidate{
-			Path:        m.RelPath,
-			Format:      parser.FormatRaw,
-			Field:       "", // Not needed for raw format
-			Version:     m.Version,
-			Description: "Version file (" + m.RelPath + ")",
 		})
 	}
 
