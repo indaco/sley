@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/indaco/sley/internal/cli/flags"
+	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
@@ -30,7 +30,7 @@ func Run(cfg *config.Config) *cli.Command {
 			Usage: "Increment numeric suffix if it exists or add '.1'",
 		},
 	}
-	cmdFlags = append(cmdFlags, flags.MultiModuleFlags()...)
+	cmdFlags = append(cmdFlags, cliflags.MultiModuleFlags()...)
 
 	return &cli.Command{
 		Name:      "pre",

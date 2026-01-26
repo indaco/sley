@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/indaco/sley/internal/cli/flags"
+	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
@@ -21,7 +21,7 @@ func Run(cfg *config.Config) *cli.Command {
 		Name:      "show",
 		Usage:     "Display current version",
 		UsageText: "sley show [--all] [--module name] [--format text|json|table]",
-		Flags:     flags.MultiModuleFlags(),
+		Flags:     cliflags.MultiModuleFlags(),
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return runShowCmd(ctx, cmd, cfg)
 		},

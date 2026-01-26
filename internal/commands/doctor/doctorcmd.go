@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/indaco/sley/internal/cli/flags"
+	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
@@ -26,7 +26,7 @@ func Run(cfg *config.Config) *cli.Command {
 		Aliases:   []string{"validate"},
 		Usage:     "Validate .version file(s) and configuration",
 		UsageText: "sley doctor [--all] [--module name] [--format text|json|table]",
-		Flags:     flags.MultiModuleFlags(),
+		Flags:     cliflags.MultiModuleFlags(),
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return runDoctorCmd(ctx, cmd, cfg)
 		},
