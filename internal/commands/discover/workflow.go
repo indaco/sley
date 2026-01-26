@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/huh"
+	"github.com/goccy/go-yaml"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/discovery"
 	"github.com/indaco/sley/internal/parser"
 	"github.com/indaco/sley/internal/printer"
+	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/tui"
 )
 
@@ -72,13 +74,13 @@ func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 		return false, nil
 	}
 
-	// Suggest dependency-check configuration if we have sync candidates
+	// If we have sync candidates (multi-module project), run the dependency-check setup
 	if len(w.result.SyncCandidates) > 0 {
 		return w.runDependencyCheckSetup(ctx)
 	}
 
-	printer.PrintInfo("Run 'sley init' to complete setup with plugin selection.")
-	return true, nil
+	// No sync candidates - create config with default plugins only
+	return w.createConfigWithDefaults(ctx)
 }
 
 // runExistingConfigWorkflow handles the case when .sley.yaml already exists.
@@ -97,7 +99,7 @@ func (w *Workflow) runExistingConfigWorkflow(ctx context.Context) (bool, error) 
 }
 
 // runMismatchWorkflow offers to help resolve version mismatches.
-func (w *Workflow) runMismatchWorkflow(ctx context.Context) (bool, error) {
+func (w *Workflow) runMismatchWorkflow(_ context.Context) (bool, error) {
 	fmt.Println()
 	printer.PrintWarning(fmt.Sprintf("Found %d version mismatch(es).", len(w.result.Mismatches)))
 	printer.PrintFaint("Consider enabling the dependency-check plugin with auto-sync to keep versions in sync.")
@@ -106,15 +108,16 @@ func (w *Workflow) runMismatchWorkflow(ctx context.Context) (bool, error) {
 }
 
 // suggestAdditionalSyncFiles suggests files that could be added to dependency-check.
-func (w *Workflow) suggestAdditionalSyncFiles(ctx context.Context) (bool, error) {
+func (w *Workflow) suggestAdditionalSyncFiles(_ context.Context) (bool, error) {
 	// This is informational only - don't prompt in normal flow
 	return false, nil
 }
 
-// runDependencyCheckSetup guides the user through dependency-check configuration.
+// runDependencyCheckSetup guides the user through dependency-check configuration
+// and creates the config file with dependency-check plugin enabled.
 func (w *Workflow) runDependencyCheckSetup(ctx context.Context) (bool, error) {
 	fmt.Println()
-	printer.PrintInfo("Suggested dependency-check configuration:")
+	printer.PrintInfo("Discovered files that can sync with .version:")
 	fmt.Println()
 
 	// Show discovered files that can be synced
@@ -130,21 +133,12 @@ func (w *Workflow) runDependencyCheckSetup(ctx context.Context) (bool, error) {
 	}
 
 	if len(selected) == 0 {
-		printer.PrintFaint("No files selected. You can configure dependency-check later in .sley.yaml")
-		return false, nil
+		printer.PrintFaint("No files selected. Creating config with default plugins only.")
+		return w.createConfigWithDefaults(ctx)
 	}
 
-	// Generate and show the configuration
-	configSnippet := w.generateDependencyCheckConfig(selected)
-	fmt.Println()
-	printer.PrintInfo("Add this to your .sley.yaml:")
-	fmt.Println()
-	printer.PrintFaint("```yaml")
-	fmt.Print(configSnippet)
-	printer.PrintFaint("```")
-	fmt.Println()
-
-	return true, nil
+	// Create config file with dependency-check plugin enabled
+	return w.createConfigWithDependencyCheck(ctx, selected)
 }
 
 // selectSyncFiles prompts the user to select which files to sync.
@@ -194,6 +188,191 @@ func filterCandidatesByPaths(candidates []discovery.SyncCandidate, selectedPaths
 		}
 	}
 	return selected
+}
+
+// createConfigWithDefaults creates .sley.yaml with default plugins (commit-parser, tag-manager).
+func (w *Workflow) createConfigWithDefaults(ctx context.Context) (bool, error) {
+	// Initialize .version file if needed
+	if err := w.ensureVersionFile(ctx); err != nil {
+		return false, err
+	}
+
+	// Default plugins: commit-parser and tag-manager
+	selectedPlugins := []string{"commit-parser", "tag-manager"}
+
+	// Generate config
+	configData, err := generateConfigYAML(defaultVersionPath(), selectedPlugins, nil)
+	if err != nil {
+		return false, fmt.Errorf("failed to generate config: %w", err)
+	}
+
+	// Write config file
+	if err := os.WriteFile(".sley.yaml", configData, config.ConfigFilePerm); err != nil {
+		return false, fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	w.printInitSuccess(selectedPlugins, nil)
+	return true, nil
+}
+
+// createConfigWithDependencyCheck creates .sley.yaml with default plugins plus dependency-check.
+func (w *Workflow) createConfigWithDependencyCheck(ctx context.Context, syncCandidates []discovery.SyncCandidate) (bool, error) {
+	// Initialize .version file if needed
+	if err := w.ensureVersionFile(ctx); err != nil {
+		return false, err
+	}
+
+	// Plugins: default plugins + dependency-check
+	selectedPlugins := []string{"commit-parser", "tag-manager", "dependency-check"}
+
+	// Generate config with discovery
+	configData, err := generateConfigYAML(defaultVersionPath(), selectedPlugins, syncCandidates)
+	if err != nil {
+		return false, fmt.Errorf("failed to generate config: %w", err)
+	}
+
+	// Write config file
+	if err := os.WriteFile(".sley.yaml", configData, config.ConfigFilePerm); err != nil {
+		return false, fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	w.printInitSuccess(selectedPlugins, syncCandidates)
+	return true, nil
+}
+
+// ensureVersionFile creates the .version file if it doesn't exist.
+func (w *Workflow) ensureVersionFile(_ context.Context) error {
+	versionPath := defaultVersionPath()
+
+	// Check if .version already exists
+	if _, err := os.Stat(versionPath); err == nil {
+		return nil // File exists, nothing to do
+	}
+
+	// Create .version file
+	created, err := semver.InitializeVersionFileWithFeedback(versionPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize .version file: %w", err)
+	}
+
+	if created {
+		version, err := semver.ReadVersion(versionPath)
+		if err == nil {
+			printer.PrintSuccess(fmt.Sprintf("Created %s with version %s", versionPath, version.String()))
+		} else {
+			printer.PrintSuccess(fmt.Sprintf("Created %s", versionPath))
+		}
+	}
+
+	return nil
+}
+
+// defaultVersionPath returns the default .version file path.
+func defaultVersionPath() string {
+	return ".version"
+}
+
+// printInitSuccess prints success messages after initialization.
+func (w *Workflow) printInitSuccess(plugins []string, syncCandidates []discovery.SyncCandidate) {
+	fmt.Println()
+	printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin(s) enabled", len(plugins)))
+
+	// Show enabled plugins
+	fmt.Println()
+	printer.PrintInfo("Enabled plugins:")
+	for _, p := range plugins {
+		fmt.Printf("  - %s\n", p)
+	}
+
+	// Show sync files if dependency-check is configured
+	if len(syncCandidates) > 0 {
+		fmt.Println()
+		printer.PrintInfo("Configured sync files:")
+		for _, c := range syncCandidates {
+			fmt.Printf("  - %s\n", c.Path)
+		}
+	}
+
+	// Next steps
+	fmt.Println()
+	printer.PrintInfo("Next steps:")
+	fmt.Println("  - Review .sley.yaml and adjust settings")
+	fmt.Println("  - Run 'sley bump patch' to increment version")
+	fmt.Println("  - Run 'sley doctor' to verify setup")
+}
+
+// generateConfigYAML generates the YAML configuration content.
+func generateConfigYAML(versionPath string, plugins []string, syncCandidates []discovery.SyncCandidate) ([]byte, error) {
+	cfg := &config.Config{
+		Path: versionPath,
+	}
+
+	// Create plugins config based on selections
+	pluginsCfg := &config.PluginConfig{}
+
+	for _, name := range plugins {
+		switch name {
+		case "commit-parser":
+			pluginsCfg.CommitParser = true
+		case "tag-manager":
+			pluginsCfg.TagManager = &config.TagManagerConfig{
+				Enabled: true,
+			}
+		case "dependency-check":
+			depCheck := &config.DependencyCheckConfig{
+				Enabled:  true,
+				AutoSync: true,
+			}
+			if len(syncCandidates) > 0 {
+				depCheck.Files = make([]config.DependencyFileConfig, len(syncCandidates))
+				for i, c := range syncCandidates {
+					depCheck.Files[i] = config.DependencyFileConfig{
+						Path:    c.Path,
+						Format:  c.Format.String(),
+						Field:   c.Field,
+						Pattern: c.Pattern,
+					}
+				}
+			}
+			pluginsCfg.DependencyCheck = depCheck
+		}
+	}
+
+	cfg.Plugins = pluginsCfg
+
+	return marshalConfigWithComments(cfg, plugins)
+}
+
+// marshalConfigWithComments marshals config to YAML with helpful comments.
+func marshalConfigWithComments(cfg *config.Config, plugins []string) ([]byte, error) {
+	// Import yaml package for marshaling
+	data, err := marshalToYAML(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add header comments
+	var result strings.Builder
+	result.WriteString("# sley configuration file\n")
+	result.WriteString("# Documentation: https://github.com/indaco/sley\n")
+	result.WriteString("# Generated by 'sley discover'\n")
+	result.WriteString("\n")
+
+	if len(plugins) > 0 {
+		result.WriteString("# Enabled plugins:\n")
+		for _, name := range plugins {
+			result.WriteString(fmt.Sprintf("#   - %s\n", name))
+		}
+		result.WriteString("\n")
+	}
+
+	result.Write(data)
+	return []byte(result.String()), nil
+}
+
+// marshalToYAML marshals a config to YAML bytes.
+func marshalToYAML(cfg *config.Config) ([]byte, error) {
+	return yaml.Marshal(cfg)
 }
 
 // generateDependencyCheckConfig generates YAML configuration for dependency-check.
