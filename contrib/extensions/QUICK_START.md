@@ -116,10 +116,10 @@ sley bump auto
 
 ## Documentation
 
-- Overview: `contrib/extensions/README.md`
+- [Extensions Overview](https://sley.indaco.dev/extensions/)
+- [Extension Authoring Guide](https://sley.indaco.dev/extensions/#creating-an-extension)
+- [Built-in Plugins](https://sley.indaco.dev/plugins/)
 - Individual extension docs: `contrib/extensions/<name>/README.md`
-- Extension authoring: `docs/EXTENSIONS.md`
-- Built-in plugins: `docs/PLUGINS.md`
 
 ## Support
 

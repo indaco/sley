@@ -174,5 +174,5 @@ extensions:
 
 ## See Also
 
-- [Extension System](../../README.md) - How extensions work
-- [tag-manager plugin](../../../docs/plugins/TAG_MANAGER.md) - Git tag automation (built-in)
+- [Extensions Overview](https://sley.indaco.dev/extensions/) - How extensions work
+- [tag-manager plugin](https://sley.indaco.dev/plugins/tag-manager.html) - Git tag automation (built-in)
