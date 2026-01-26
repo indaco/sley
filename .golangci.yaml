@@ -26,10 +26,17 @@ linters:
       enabled-tags:
         - diagnostic
         - performance
+        - style
       disabled-checks:
         - hugeParam
         - filepathJoin
         - commentedOutCode
+        - unnamedResult
+        - ifElseChain
+        - paramTypeCombine
+        - importShadow
+        - emptyStringTest
+        - regexpSimplify
     gosec:
       excludes:
         - G304
@@ -76,6 +83,11 @@ linters:
         linters:
           - gocritic
         text: "stringXbytes"
+      # Test files: allow hardcoded octal permissions for testing edge cases
+      - path: _test\.go
+        linters:
+          - gocritic
+        text: "octalLiteral"
       # Prealloc is often too noisy for small slices
       - path: \.go$
         linters:
