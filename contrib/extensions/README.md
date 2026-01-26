@@ -2,7 +2,7 @@
 
 This directory contains example extensions for sley. These extensions demonstrate how to build extensions in different languages and can be used as templates for your own.
 
-For the complete extension authoring guide, see [docs/EXTENSIONS.md](../../docs/EXTENSIONS.md).
+For the complete extension authoring guide, see the [Extension Authoring Guide](https://sley.indaco.dev/extensions/#creating-an-extension).
 
 ## Extensions vs Plugins
 
@@ -144,23 +144,13 @@ sley bump auto
 # 5. tag-manager: Creates git tag
 ```
 
-See [docs/PLUGINS.md](../../docs/PLUGINS.md) for detailed plugin documentation.
-
-## Creating Your Own Extension
-
-See the [Extension System documentation](../../docs/EXTENSIONS.md) for:
-
-- Directory structure and manifest format
-- JSON input/output specification
-- Hook points reference
-- Code examples in multiple languages
-- Best practices and troubleshooting
+See the [Plugins documentation](https://sley.indaco.dev/plugins/) for detailed plugin documentation.
 
 ## Contributing
 
 Want to contribute an extension?
 
-1. Follow the structure in [docs/EXTENSIONS.md](../../docs/EXTENSIONS.md)
+1. Follow the [Extension Authoring Guide](https://sley.indaco.dev/extensions/#creating-an-extension)
 2. Include comprehensive documentation
 3. Add tests to `test-extensions.sh`
 4. Minimize external dependencies
