@@ -1,0 +1,53 @@
+# Version Validator Plugin Example
+# See: https://sley.indaco.dev/plugins/version-validator.html
+
+path: .version
+
+plugins:
+  version-validator:
+    enabled: true
+    rules:
+      # Pre-release format validation
+      - type: "pre-release-format"
+        pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
+
+      # Version number limits
+      - type: "major-version-max"
+        value: 10
+
+      # - type: "minor-version-max"
+      #   value: 99
+
+      # - type: "patch-version-max"
+      #   value: 99
+
+      # Pre-release iteration limit (e.g., alpha.6 fails if max is 5)
+      - type: "max-prerelease-iterations"
+        value: 10
+
+      # Require pre-release for 0.x versions
+      # - type: "require-pre-release-for-0x"
+      #   enabled: true
+
+      # Even minor version policy (stable releases must have even minor)
+      - type: "require-even-minor"
+        enabled: false # Set to true to enforce
+
+      # Disallow specific bump types
+      # - type: "no-major-bump"
+      #   enabled: true
+
+      # - type: "no-minor-bump"
+      #   enabled: true
+
+      # - type: "no-patch-bump"
+      #   enabled: true
+
+      # Branch constraints
+      - type: "branch-constraint"
+        branch: "release/*"
+        allowed: ["patch"]
+
+      - type: "branch-constraint"
+        branch: "main"
+        allowed: ["minor", "patch"]

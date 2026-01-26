@@ -1,0 +1,33 @@
+# Dependency Check Plugin Example
+# See: https://sley.indaco.dev/plugins/dependency-check.html
+
+path: .version
+
+plugins:
+  dependency-check:
+    enabled: true
+    auto-sync: true
+    files:
+      # JSON
+      - path: package.json
+        field: version
+        format: json
+
+      # YAML
+      - path: Chart.yaml
+        field: version
+        format: yaml
+
+      # TOML (nested field)
+      - path: pyproject.toml
+        field: tool.poetry.version
+        format: toml
+
+      # Raw (entire file is the version)
+      - path: VERSION
+        format: raw
+
+      # Regex (pattern with capturing group)
+      - path: src/version.go
+        format: regex
+        pattern: 'const Version = "(.*?)"'

@@ -1,0 +1,14 @@
+# Audit Log Plugin Example
+# See: https://sley.indaco.dev/plugins/audit-log.html
+
+path: .version
+
+plugins:
+  audit-log:
+    enabled: true
+    path: ".version-history.json"
+    format: "json" # or "yaml"
+    include-author: true
+    include-timestamp: true
+    include-commit-sha: true
+    include-branch: true

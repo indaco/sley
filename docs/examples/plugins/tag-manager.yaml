@@ -1,0 +1,26 @@
+# Tag Manager Plugin Example
+# See: https://sley.indaco.dev/plugins/tag-manager.html
+
+path: .version
+
+plugins:
+  tag-manager:
+    enabled: true
+    # Set to true for automatic tagging during bump
+    # Default is false - use `sley tag create` for manual workflow
+    auto-create: false
+    prefix: "v"
+    annotate: true
+    push: false
+    # Set to true to also create tags for pre-release versions
+    tag-prereleases: false
+
+    # GPG Signing (optional)
+    # Requires git to be configured with a GPG signing key
+    sign: false
+    signing-key: "" # Optional: specific GPG key ID (uses git default if empty)
+
+    # Custom Message Template (optional)
+    # Available placeholders: {version}, {tag}, {prefix}, {date},
+    #                         {major}, {minor}, {patch}, {prerelease}, {build}
+    message-template: "Release {version}"

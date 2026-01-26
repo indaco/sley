@@ -1,0 +1,111 @@
+# Full Plugin Configuration Example
+# All plugins working together
+# See: https://sley.indaco.dev/reference/sley-yaml.html
+
+path: .version
+
+plugins:
+  # Commit Parser (enabled by default)
+  commit-parser: true
+
+  # Release Gate
+  release-gate:
+    enabled: true
+    require-clean-worktree: true
+    blocked-on-wip-commits: true
+    require-ci-pass: false
+    allowed-branches:
+      - "main"
+      - "release/*"
+    blocked-branches:
+      - "experimental/*"
+
+  # Version Validator
+  version-validator:
+    enabled: true
+    rules:
+      - type: pre-release-format
+        pattern: "^(alpha|beta|rc)(\\.[0-9]+)?$"
+      - type: major-version-max
+        value: 10
+      - type: max-prerelease-iterations
+        value: 10
+      - type: require-even-minor
+        enabled: false
+      - type: branch-constraint
+        branch: "release/*"
+        allowed: ["patch"]
+      - type: branch-constraint
+        branch: "main"
+        allowed: ["minor", "patch"]
+
+  # Dependency Check
+  dependency-check:
+    enabled: true
+    auto-sync: true
+    files:
+      - path: package.json
+        field: version
+        format: json
+      - path: Chart.yaml
+        field: version
+        format: yaml
+      - path: pyproject.toml
+        field: tool.poetry.version
+        format: toml
+      - path: VERSION
+        format: raw
+      - path: src/version.go
+        format: regex
+        pattern: 'const Version = "(.*?)"'
+
+  # Changelog Parser
+  changelog-parser:
+    enabled: true
+    path: CHANGELOG.md
+    require-unreleased-section: true
+    infer-bump-type: true
+    priority: commits
+
+  # Changelog Generator
+  changelog-generator:
+    enabled: true
+    mode: "both"
+    format: "grouped"
+    changes-dir: ".changes"
+    changelog-path: "CHANGELOG.md"
+    merge-after: "manual"
+    repository:
+      auto-detect: true
+    use-default-icons: true
+    exclude-patterns:
+      - "^Merge"
+      - "^WIP"
+      - "^fixup!"
+      - "^squash!"
+    include-non-conventional: false
+    contributors:
+      enabled: true
+      show-new-contributors: true
+
+  # Tag Manager
+  tag-manager:
+    enabled: true
+    auto-create: true # Default is false; set to true for automatic tagging during bump
+    prefix: v
+    annotate: true
+    push: false
+    tag-prereleases: false # Set to true to also tag pre-releases
+    sign: false
+    signing-key: ""
+    message-template: "Release {version}"
+
+  # Audit Log
+  audit-log:
+    enabled: true
+    path: ".version-history.json"
+    format: "json"
+    include-author: true
+    include-timestamp: true
+    include-commit-sha: true
+    include-branch: true
