@@ -38,7 +38,7 @@ set -euo pipefail
 INPUT=$(cat)
 
 # Parse JSON fields using jq (or fallback to grep/sed for basic parsing)
-if command -v jq &> /dev/null; then
+if command -v jq &>/dev/null; then
     VERSION=$(echo "$INPUT" | jq -r '.version // empty')
     PROJECT_ROOT=$(echo "$INPUT" | jq -r '.project_root // empty')
     IMAGE=$(echo "$INPUT" | jq -r '.config.image // empty')
@@ -50,6 +50,7 @@ if command -v jq &> /dev/null; then
 else
     # Fallback: basic parsing without jq
     VERSION=$(echo "$INPUT" | grep -o '"version"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
+    # shellcheck disable=SC2034  # PROJECT_ROOT parsed for consistency, not used by this extension
     PROJECT_ROOT=$(echo "$INPUT" | grep -o '"project_root"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/.*: *"\([^"]*\)".*/\1/')
     IMAGE=""
     SOURCE_TAG="latest"
@@ -88,7 +89,7 @@ TARGET_TAG="${PREFIX}${VERSION}"
 TARGET_IMAGE="$FULL_IMAGE:$TARGET_TAG"
 
 # Check if source image exists
-if ! docker image inspect "$SOURCE_IMAGE" &> /dev/null; then
+if ! docker image inspect "$SOURCE_IMAGE" &>/dev/null; then
     output_result "false" "Source image not found: $SOURCE_IMAGE. Build the image first."
     exit 1
 fi
