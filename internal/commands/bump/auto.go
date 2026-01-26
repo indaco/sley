@@ -172,6 +172,20 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 		return err
 	}
 
+	// Re-read the version file in case an extension modified it.
+	// If the extension changed the version, use it directly without additional bumping.
+	// This is important when commit-parser: false - the extension sets the definitive version.
+	if !skipHooks {
+		updatedVersion, err := semver.ReadVersion(path)
+		if err != nil {
+			return fmt.Errorf("failed to re-read version after pre-bump hooks: %w", err)
+		}
+		// If the version file was modified by an extension, use the extension's version as-is
+		if updatedVersion.String() != current.String() {
+			next = updatedVersion
+		}
+	}
+
 	if err := semver.SaveVersion(path, next); err != nil {
 		return fmt.Errorf("failed to save version: %w", err)
 	}
