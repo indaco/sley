@@ -107,5 +107,5 @@ func assertDiscoveryRecursive(t *testing.T, disc *DiscoveryConfig, expected bool
 
 func assertDiscoveryMaxDepth(t *testing.T, disc *DiscoveryConfig, expected int) {
 	t.Helper()
-	assertIntPtr(t, "MaxDepth", disc.MaxDepth, expected)
+	assertIntPtr(t, "ModuleMaxDepth", disc.ModuleMaxDepth, expected)
 }

@@ -123,7 +123,7 @@ func TestGetMultiModuleContext_DiscoverModulesError(t *testing.T) {
 			Discovery: &config.DiscoveryConfig{
 				Enabled: func() *bool { b := true; return &b }(),
 				// Set max depth to 0 to limit discovery
-				MaxDepth: func() *int { d := 0; return &d }(),
+				ModuleMaxDepth: func() *int { d := 0; return &d }(),
 			},
 		},
 	}
@@ -302,9 +302,9 @@ func TestGetExecutionContext_MultiModuleWithNonInteractive(t *testing.T) {
 		Path: ".version",
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}
@@ -507,9 +507,9 @@ func TestGetExecutionContext_SingleModuleDetection(t *testing.T) {
 		Path: versionFile,
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				Enabled:   &enabled,
-				Recursive: &recursive,
-				MaxDepth:  &maxDepth,
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}

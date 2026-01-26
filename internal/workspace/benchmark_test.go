@@ -156,7 +156,7 @@ func BenchmarkDetector_MaxDepthLimit(b *testing.B) {
 	cfg := &config.Config{
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
-				MaxDepth: &maxDepth,
+				ModuleMaxDepth: &maxDepth,
 			},
 		},
 	}

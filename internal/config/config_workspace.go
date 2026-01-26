@@ -8,8 +8,12 @@ type DiscoveryConfig struct {
 	// Recursive enables searching subdirectories (default: true).
 	Recursive *bool `yaml:"recursive,omitempty"`
 
-	// MaxDepth limits directory traversal depth (default: 10).
-	MaxDepth *int `yaml:"max_depth,omitempty"`
+	// ModuleMaxDepth limits directory traversal depth for module discovery (default: 10).
+	ModuleMaxDepth *int `yaml:"module_max_depth,omitempty"`
+
+	// ManifestMaxDepth limits directory traversal depth for manifest discovery (default: 3).
+	// This is separate from ModuleMaxDepth to allow different depths for modules vs manifests.
+	ManifestMaxDepth *int `yaml:"manifest_max_depth,omitempty"`
 
 	// Exclude lists paths/patterns to skip during discovery.
 	Exclude []string `yaml:"exclude,omitempty"`
@@ -62,12 +66,14 @@ func DiscoveryDefaults() *DiscoveryConfig {
 	enabled := true
 	recursive := true
 	maxDepth := 10
+	manifestMaxDepth := 3
 
 	return &DiscoveryConfig{
-		Enabled:   &enabled,
-		Recursive: &recursive,
-		MaxDepth:  &maxDepth,
-		Exclude:   DefaultExcludePatterns,
+		Enabled:          &enabled,
+		Recursive:        &recursive,
+		ModuleMaxDepth:   &maxDepth,
+		ManifestMaxDepth: &manifestMaxDepth,
+		Exclude:          DefaultExcludePatterns,
 	}
 }
 
@@ -83,10 +89,11 @@ func (c *Config) GetDiscoveryConfig() *DiscoveryConfig {
 
 	// Apply defaults for nil pointer fields
 	result := &DiscoveryConfig{
-		Enabled:   cfg.Enabled,
-		Recursive: cfg.Recursive,
-		MaxDepth:  cfg.MaxDepth,
-		Exclude:   cfg.Exclude,
+		Enabled:          cfg.Enabled,
+		Recursive:        cfg.Recursive,
+		ModuleMaxDepth:   cfg.ModuleMaxDepth,
+		ManifestMaxDepth: cfg.ManifestMaxDepth,
+		Exclude:          cfg.Exclude,
 	}
 
 	if result.Enabled == nil {
@@ -95,8 +102,11 @@ func (c *Config) GetDiscoveryConfig() *DiscoveryConfig {
 	if result.Recursive == nil {
 		result.Recursive = defaults.Recursive
 	}
-	if result.MaxDepth == nil {
-		result.MaxDepth = defaults.MaxDepth
+	if result.ModuleMaxDepth == nil {
+		result.ModuleMaxDepth = defaults.ModuleMaxDepth
+	}
+	if result.ManifestMaxDepth == nil {
+		result.ManifestMaxDepth = defaults.ManifestMaxDepth
 	}
 
 	return result

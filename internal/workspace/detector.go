@@ -193,8 +193,8 @@ func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, roo
 // exceedsMaxDepth checks if current depth exceeds the configured maximum.
 func (d *Detector) exceedsMaxDepth(depth int, discovery *config.DiscoveryConfig) bool {
 	maxDepth := core.MaxDiscoveryDepth
-	if discovery.MaxDepth != nil {
-		maxDepth = *discovery.MaxDepth
+	if discovery.ModuleMaxDepth != nil {
+		maxDepth = *discovery.ModuleMaxDepth
 	}
 	return depth > maxDepth
 }
