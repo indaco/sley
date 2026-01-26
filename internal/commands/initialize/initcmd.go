@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/discovery"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/tui"
@@ -263,8 +266,23 @@ func createConfigFile(versionPath string, selectedPlugins []string, forceFlag bo
 		}
 	}
 
-	// Generate config with comments
-	configData, err := GenerateConfigWithComments(versionPath, selectedPlugins)
+	// Check if dependency-check plugin is selected
+	var configData []byte
+	var err error
+
+	if containsPlugin(selectedPlugins, "dependency-check") {
+		// Run discovery to find sync candidates for dependency-check config
+		syncCandidates := discoverSyncCandidates()
+		if len(syncCandidates) > 0 {
+			configData, err = GenerateConfigWithDiscovery(versionPath, selectedPlugins, syncCandidates)
+		} else {
+			configData, err = GenerateConfigWithComments(versionPath, selectedPlugins)
+		}
+	} else {
+		// Generate config without discovery
+		configData, err = GenerateConfigWithComments(versionPath, selectedPlugins)
+	}
+
 	if err != nil {
 		return false, fmt.Errorf("failed to generate config: %w", err)
 	}
@@ -275,6 +293,30 @@ func createConfigFile(versionPath string, selectedPlugins []string, forceFlag bo
 	}
 
 	return true, nil
+}
+
+// containsPlugin checks if a plugin name is in the selected plugins list.
+func containsPlugin(plugins []string, name string) bool {
+	return slices.Contains(plugins, name)
+}
+
+// discoverSyncCandidates runs discovery to find files that can sync with .version.
+func discoverSyncCandidates() []discovery.SyncCandidate {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil
+	}
+
+	ctx := context.Background()
+	fs := core.NewOSFileSystem()
+	cfg := &config.Config{}
+	svc := discovery.NewService(fs, cfg)
+	result, err := svc.Discover(ctx, cwd)
+	if err != nil {
+		return nil
+	}
+
+	return result.SyncCandidates
 }
 
 // printVersionOnlySuccess prints a message when only .version was created (no config).

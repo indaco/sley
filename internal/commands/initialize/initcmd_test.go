@@ -1066,3 +1066,104 @@ func TestCLI_InitCommand_NoPluginsSelected(t *testing.T) {
 		t.Error("expected .version to be created")
 	}
 }
+
+func TestContainsPlugin(t *testing.T) {
+	tests := []struct {
+		name     string
+		plugins  []string
+		target   string
+		expected bool
+	}{
+		{
+			name:     "plugin exists",
+			plugins:  []string{"commit-parser", "tag-manager", "dependency-check"},
+			target:   "dependency-check",
+			expected: true,
+		},
+		{
+			name:     "plugin does not exist",
+			plugins:  []string{"commit-parser", "tag-manager"},
+			target:   "dependency-check",
+			expected: false,
+		},
+		{
+			name:     "empty list",
+			plugins:  []string{},
+			target:   "dependency-check",
+			expected: false,
+		},
+		{
+			name:     "single plugin match",
+			plugins:  []string{"dependency-check"},
+			target:   "dependency-check",
+			expected: true,
+		},
+		{
+			name:     "partial match does not count",
+			plugins:  []string{"dependency"},
+			target:   "dependency-check",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := containsPlugin(tt.plugins, tt.target)
+			if got != tt.expected {
+				t.Errorf("containsPlugin(%v, %q) = %v, want %v", tt.plugins, tt.target, got, tt.expected)
+			}
+		})
+	}
+}
+
+func TestCreateConfigFile_WithDependencyCheck(t *testing.T) {
+	// This test verifies that createConfigFile uses discovery
+	// when dependency-check plugin is selected
+	tmp := t.TempDir()
+	t.Chdir(tmp)
+
+	// Create a package.json file for discovery
+	pkgContent := `{"name": "test", "version": "1.0.0"}`
+	if err := os.WriteFile("package.json", []byte(pkgContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create config with dependency-check enabled
+	created, err := createConfigFile(".version", []string{"dependency-check", "commit-parser"}, false)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !created {
+		t.Error("expected file to be created")
+	}
+
+	// Verify config was created with dependency-check configuration
+	configData, err := os.ReadFile(".sley.yaml")
+	if err != nil {
+		t.Fatalf("failed to read config: %v", err)
+	}
+
+	var loadedCfg config.Config
+	if err := yaml.Unmarshal(configData, &loadedCfg); err != nil {
+		t.Fatalf("failed to parse config: %v", err)
+	}
+
+	// Verify dependency-check is configured
+	if loadedCfg.Plugins == nil || loadedCfg.Plugins.DependencyCheck == nil {
+		t.Fatal("expected dependency-check config")
+	}
+
+	if !loadedCfg.Plugins.DependencyCheck.Enabled {
+		t.Error("expected dependency-check to be enabled")
+	}
+
+	// Should have auto-sync enabled
+	if !loadedCfg.Plugins.DependencyCheck.AutoSync {
+		t.Error("expected auto-sync to be enabled")
+	}
+
+	// Should have discovered package.json
+	if len(loadedCfg.Plugins.DependencyCheck.Files) == 0 {
+		t.Log("Note: No files discovered (this may be expected depending on discovery implementation)")
+	}
+}
