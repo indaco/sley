@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/fs"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
@@ -728,109 +729,12 @@ func TestService_DiscoverAllManifests_ConfiguredDepth(t *testing.T) {
 	}
 }
 
-// Tests for module sync candidates
+// Tests for SyncCandidates - verifying they only contain manifests, not .version files
 
-func TestService_GenerateModuleSyncCandidates(t *testing.T) {
-	svc := NewService(nil, nil)
-
-	modules := []Module{
-		{
-			Name:    "root",
-			Path:    "/project/.version",
-			RelPath: ".version",
-			Version: "1.0.0",
-			Dir:     "/project",
-		},
-		{
-			Name:    "version",
-			Path:    "/project/backend/gateway/internal/version/.version",
-			RelPath: "backend/gateway/internal/version/.version",
-			Version: "1.0.0",
-			Dir:     "/project/backend/gateway/internal/version",
-		},
-		{
-			Name:    "version",
-			Path:    "/project/cli/internal/version/.version",
-			RelPath: "cli/internal/version/.version",
-			Version: "1.0.0",
-			Dir:     "/project/cli/internal/version",
-		},
-	}
-
-	candidates := svc.generateModuleSyncCandidates(modules)
-
-	// Root .version should NOT be included (it's the source)
-	if len(candidates) != 2 {
-		t.Errorf("expected 2 sync candidates (excluding root), got %d", len(candidates))
-	}
-
-	// Verify root .version is NOT in candidates
-	for _, c := range candidates {
-		if c.Path == ".version" {
-			t.Error("root .version should NOT be included as sync candidate")
-		}
-	}
-
-	// Verify subdirectory .version files ARE in candidates
-	foundBackend := false
-	foundCli := false
-	for _, c := range candidates {
-		if c.Path == "backend/gateway/internal/version/.version" {
-			foundBackend = true
-			if c.Format != parser.FormatRaw {
-				t.Errorf("expected Format=raw, got %v", c.Format)
-			}
-			if c.Field != "" {
-				t.Errorf("expected empty Field for raw format, got %q", c.Field)
-			}
-		}
-		if c.Path == "cli/internal/version/.version" {
-			foundCli = true
-		}
-	}
-
-	if !foundBackend {
-		t.Error("expected backend/.version to be in sync candidates")
-	}
-	if !foundCli {
-		t.Error("expected cli/.version to be in sync candidates")
-	}
-}
-
-func TestService_GenerateModuleSyncCandidates_EmptyModules(t *testing.T) {
-	svc := NewService(nil, nil)
-
-	candidates := svc.generateModuleSyncCandidates([]Module{})
-
-	if len(candidates) != 0 {
-		t.Errorf("expected 0 candidates for empty modules, got %d", len(candidates))
-	}
-}
-
-func TestService_GenerateModuleSyncCandidates_OnlyRoot(t *testing.T) {
-	svc := NewService(nil, nil)
-
-	modules := []Module{
-		{
-			Name:    "root",
-			Path:    "/project/.version",
-			RelPath: ".version",
-			Version: "1.0.0",
-			Dir:     "/project",
-		},
-	}
-
-	candidates := svc.generateModuleSyncCandidates(modules)
-
-	// Only root module, which should be excluded
-	if len(candidates) != 0 {
-		t.Errorf("expected 0 candidates (root excluded), got %d", len(candidates))
-	}
-}
-
-func TestService_Discover_SyncCandidatesIncludeModules(t *testing.T) {
+func TestService_Discover_SyncCandidatesOnlyContainManifests(t *testing.T) {
 	// Integration test: verify that Discover() returns sync candidates
-	// for both manifests AND subdirectory .version files
+	// ONLY for manifest files, NOT for .version files
+	// Submodule .version files are sources of truth, not sync targets
 	mockFS := core.NewMockFileSystem()
 
 	// Set up a monorepo structure
@@ -865,40 +769,38 @@ func TestService_Discover_SyncCandidatesIncludeModules(t *testing.T) {
 		candidatesByPath[c.Path] = c
 	}
 
-	// Verify minimum count
-	if len(result.SyncCandidates) < 3 {
-		t.Errorf("expected at least 3 sync candidates, got %d", len(result.SyncCandidates))
-	}
-
 	// Root .version should NOT be in sync candidates
 	if _, found := candidatesByPath[".version"]; found {
 		t.Error("root .version should NOT be in sync candidates")
 	}
 
-	// Verify expected candidates exist with correct format
-	assertCandidate(t, candidatesByPath, "frontend/package.json", parser.FormatJSON)
-	assertCandidate(t, candidatesByPath, "backend/gateway/internal/version/.version", parser.FormatRaw)
-	assertCandidate(t, candidatesByPath, "cli/internal/version/.version", parser.FormatRaw)
+	// Submodule .version files should NOT be in sync candidates
+	// They are sources of truth for their respective modules
+	for path := range candidatesByPath {
+		if strings.HasSuffix(path, ".version") {
+			t.Errorf(".version file %q should NOT be in sync candidates - use workspace config instead", path)
+		}
+	}
+
+	// Manifest files SHOULD be in sync candidates
+	if _, found := candidatesByPath["frontend/package.json"]; !found {
+		t.Error("frontend/package.json should be in sync candidates")
+	}
+
+	// Verify SyncCandidates only contains manifest files
+	for _, c := range result.SyncCandidates {
+		if c.Format == parser.FormatRaw && strings.HasSuffix(c.Path, ".version") {
+			t.Errorf("SyncCandidate %q is a .version file - should not be included", c.Path)
+		}
+	}
 }
 
-// assertCandidate verifies a sync candidate exists with the expected format.
-func assertCandidate(t *testing.T, candidates map[string]SyncCandidate, path string, expectedFormat parser.Format) {
-	t.Helper()
-	candidate, found := candidates[path]
-	if !found {
-		t.Errorf("expected %s to be in sync candidates", path)
-		return
-	}
-	if candidate.Format != expectedFormat {
-		t.Errorf("expected %s Format=%v, got %v", path, expectedFormat, candidate.Format)
-	}
-}
-
-func TestService_Discover_MultiModule_SyncCandidates(t *testing.T) {
+func TestService_Discover_MultiModule_SyncCandidatesExcludeVersionFiles(t *testing.T) {
 	// Test the complete flow for a monorepo with multiple .version files
+	// Verify that SyncCandidates only contains manifests
 	mockFS := core.NewMockFileSystem()
 
-	// Monorepo structure matching the expected output example:
+	// Monorepo structure:
 	// /monorepo/.version (root)
 	// /monorepo/frontend/package.json
 	// /monorepo/backend/gateway/internal/version/.version
@@ -931,24 +833,26 @@ func TestService_Discover_MultiModule_SyncCandidates(t *testing.T) {
 		t.Errorf("expected MultiModule mode, got %v", result.Mode)
 	}
 
-	// Count expected sync candidates
-	manifestCount := 0
-	moduleCount := 0
+	// Verify modules are still discovered (for workspace config)
+	if len(result.Modules) < 3 {
+		t.Errorf("expected at least 3 modules discovered, got %d", len(result.Modules))
+	}
+
+	// Verify SyncCandidates ONLY contains manifest files
 	for _, c := range result.SyncCandidates {
-		if c.Format == parser.FormatRaw {
-			moduleCount++
-		} else {
-			manifestCount++
+		if strings.HasSuffix(c.Path, ".version") {
+			t.Errorf("SyncCandidate should not include .version file: %q", c.Path)
 		}
 	}
 
-	// Should have 1 manifest (frontend/package.json)
+	// Should have at least 1 manifest (frontend/package.json)
+	manifestCount := 0
+	for _, c := range result.SyncCandidates {
+		if c.Format != parser.FormatRaw {
+			manifestCount++
+		}
+	}
 	if manifestCount < 1 {
 		t.Errorf("expected at least 1 manifest sync candidate, got %d", manifestCount)
-	}
-
-	// Should have 2 module sync candidates (backend and cli .version files)
-	if moduleCount != 2 {
-		t.Errorf("expected 2 module sync candidates, got %d", moduleCount)
 	}
 }
