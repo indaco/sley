@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/indaco/sley/internal/clix"
+	"github.com/indaco/sley/internal/commands/depsync"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
@@ -70,7 +71,7 @@ func runMultiModuleBump(
 		parsedVersion, err := semver.ParseVersion(newVersion)
 		if err == nil {
 			bumpedPaths := getBumpedModulePaths(results)
-			if err := syncDependencies(registry, parsedVersion, bumpedPaths...); err != nil {
+			if err := depsync.SyncDependencies(registry, parsedVersion, bumpedPaths...); err != nil {
 				return err
 			}
 		}
