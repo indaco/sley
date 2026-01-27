@@ -13,10 +13,11 @@ import (
 
 // RepoURL represents a parsed repository URL
 type RepoURL struct {
-	Host  string // github.com, gitlab.com, etc.
-	Owner string // user or organization
-	Repo  string // repository name
-	Raw   string // original URL
+	Host   string // github.com, gitlab.com, etc.
+	Owner  string // user or organization
+	Repo   string // repository name
+	Subdir string // optional subdirectory path within the repository
+	Raw    string // original URL
 }
 
 // ParseRepoURL parses various repository URL formats into a RepoURL struct
@@ -44,18 +45,28 @@ func ParseRepoURL(urlStr string) (*RepoURL, error) {
 
 	// Extract owner and repo from path
 	path := strings.TrimPrefix(parsed.Path, "/")
-	path = strings.TrimSuffix(path, ".git")
+	path = strings.TrimSuffix(path, "/")
 
 	parts := strings.Split(path, "/")
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid repository URL format: expected owner/repo")
 	}
 
+	// Remove .git suffix from repo name if present
+	repo := strings.TrimSuffix(parts[1], ".git")
+
+	// Extract subdirectory if present (anything beyond owner/repo)
+	var subdir string
+	if len(parts) > 2 {
+		subdir = strings.Join(parts[2:], "/")
+	}
+
 	return &RepoURL{
-		Host:  host,
-		Owner: parts[0],
-		Repo:  parts[1],
-		Raw:   urlStr,
+		Host:   host,
+		Owner:  parts[0],
+		Repo:   repo,
+		Subdir: subdir,
+		Raw:    urlStr,
 	}, nil
 }
 
@@ -134,9 +145,24 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 		}
 	}()
 
-	// Install from the cloned directory
-	fmt.Printf("Installing extension from %s...\n", tempDir)
-	return registerLocalExtension(tempDir, configPath, extensionDirectory)
+	// Navigate to subdirectory if specified
+	extensionPath := tempDir
+	if repoURL.Subdir != "" {
+		extensionPath = fmt.Sprintf("%s/%s", tempDir, repoURL.Subdir)
+		if _, err := os.Stat(extensionPath); os.IsNotExist(err) {
+			return fmt.Errorf("subdirectory %q not found in repository %s", repoURL.Subdir, repoURL.String())
+		} else if err != nil {
+			return fmt.Errorf("failed to access subdirectory %q: %w", repoURL.Subdir, err)
+		}
+	}
+
+	// Install from the cloned directory (or subdirectory)
+	if repoURL.Subdir != "" {
+		fmt.Printf("Installing extension from %s (subdirectory: %s)...\n", repoURL.String(), repoURL.Subdir)
+	} else {
+		fmt.Printf("Installing extension from %s...\n", repoURL.String())
+	}
+	return registerLocalExtension(extensionPath, configPath, extensionDirectory)
 }
 
 // IsURL checks if a string looks like a URL (has a host and path)
