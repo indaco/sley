@@ -39,7 +39,7 @@ func (u *DefaultConfigUpdater) AddExtension(path string, extension config.Extens
 		if ext.Name == extension.Name {
 			printer.PrintInfo(fmt.Sprintf("Extension %q is already installed at: %s", extension.Name, ext.Path))
 			printer.PrintInfo("To reinstall, remove it first:")
-			fmt.Printf("  sley extension remove --name %s\n", extension.Name)
+			fmt.Printf("  sley extension uninstall --name %s\n", extension.Name)
 			return fmt.Errorf("extension %q already registered in configuration", extension.Name)
 		}
 	}

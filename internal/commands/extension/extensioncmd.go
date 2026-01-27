@@ -12,7 +12,7 @@ func Run() *cli.Command {
 		Commands: []*cli.Command{
 			installCmd(),
 			listCmd(),
-			removeCmd(),
+			uninstallCmd(),
 		},
 	}
 }
