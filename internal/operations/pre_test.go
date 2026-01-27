@@ -15,6 +15,7 @@ func TestNewPreOperation(t *testing.T) {
 
 	if op == nil {
 		t.Fatal("NewPreOperation returned nil")
+		return
 	}
 	if op.fs == nil {
 		t.Error("fs is nil")

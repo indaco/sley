@@ -16,6 +16,7 @@ func TestNewBumpOperation(t *testing.T) {
 
 	if op == nil {
 		t.Fatal("NewBumpOperation returned nil")
+		return
 	}
 	if op.fs == nil {
 		t.Error("fs is nil")
