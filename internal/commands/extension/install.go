@@ -17,16 +17,32 @@ func installCmd() *cli.Command {
 
 Supported URL formats (any git-accessible host):
   - https://github.com/user/repo
-  - https://gitlab.com/user/repo
-  - https://git.example.com/user/repo (self-hosted)
-  - github.com/user/repo (without protocol)
+  - https://github.com/user/repo@v1.0.0 (specific version)
+  - https://github.com/user/repo@develop (from branch)
+  - https://github.com/user/repo@abc123 (specific commit)
   - github.com/user/repo/path/to/extension (with subdirectory)
+  - github.com/user/repo/path/to/extension@v2.0.0 (subdirectory with version)
+  - https://gitlab.com/user/repo (GitLab)
+  - https://git.example.com/user/repo (self-hosted)
 
 Examples:
+  # Install from local path
   sley extension install --path ./my-extension
+
+  # Install latest from default branch
   sley extension install --url https://github.com/user/sley-ext-changelog
-  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator
-  sley extension install --url https://git.company.com/team/extension`,
+
+  # Install specific version
+  sley extension install --url github.com/user/sley-ext-changelog@v1.0.0
+
+  # Install from branch
+  sley extension install --url github.com/user/sley-ext-changelog@develop
+
+  # Install from subdirectory with version
+  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator@v2.0.0
+
+  # Install from self-hosted git
+  sley extension install --url https://git.company.com/team/extension@main`,
 		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 			{
 				Flags: [][]cli.Flag{
