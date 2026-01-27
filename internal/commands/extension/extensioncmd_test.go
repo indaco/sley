@@ -41,9 +41,9 @@ func checkCLIOutput(t *testing.T, output, extensionName string, deleted bool) {
 	t.Helper()
 	var expected string
 	if deleted {
-		expected = fmt.Sprintf("Extension %q and its directory removed successfully.", extensionName)
+		expected = fmt.Sprintf("Extension %q and its directory uninstalled successfully.", extensionName)
 	} else {
-		expected = fmt.Sprintf("Extension %q removed, but its directory is preserved.", extensionName)
+		expected = fmt.Sprintf("Extension %q uninstalled, but its directory is preserved.", extensionName)
 	}
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output to contain %q, got:\n%s", expected, output)
@@ -64,25 +64,16 @@ func checkExtensionDirDeleted(t *testing.T, dir string, expectDeleted bool) {
 	}
 }
 
-func checkExtensionDisabledInConfig(t *testing.T, configPath, extensionName string) {
+func checkExtensionRemovedFromConfig(t *testing.T, configPath, extensionName string) {
 	t.Helper()
-	cfg, err := config.LoadConfigFn()
+	data, err := os.ReadFile(configPath)
 	if err != nil {
-		t.Fatalf("failed to reload config: %v", err)
+		t.Fatalf("failed to read config file: %v", err)
 	}
 
-	found := false
-	for _, ext := range cfg.Extensions {
-		if ext.Name == extensionName {
-			found = true
-			if ext.Enabled {
-				t.Errorf("expected extension %q to be disabled, but it's still enabled", extensionName)
-			}
-			break
-		}
-	}
-	if !found {
-		t.Errorf("extension %q not found in config", extensionName)
+	// The extension entry should no longer appear in the file.
+	if strings.Contains(string(data), "name: "+extensionName) {
+		t.Errorf("expected extension %q to be removed from config, but it is still present.\nConfig content:\n%s", extensionName, string(data))
 	}
 }
 
@@ -347,10 +338,10 @@ hooks:
 }
 
 /* ------------------------------------------------------------------------- */
-/* EXTENSION REMOVE COMMAND                                                  */
+/* EXTENSION UNINSTALL COMMAND                                               */
 /* ------------------------------------------------------------------------- */
 
-func TestExtensionRemoveCmd_DeleteFolderVariants(t *testing.T) {
+func TestExtensionUninstallCmd_DeleteFolderVariants(t *testing.T) {
 	extensionName := "mock-extension"
 
 	tests := []struct {
@@ -381,7 +372,7 @@ func TestExtensionRemoveCmd_DeleteFolderVariants(t *testing.T) {
 			createExtensionDir(t, extensionDir)
 			writeConfigFile(t, configPath)
 
-			args := []string{"sley", "extension", "remove", "--name", extensionName}
+			args := []string{"sley", "extension", "uninstall", "--name", extensionName}
 			if tt.deleteFolder {
 				args = append(args, "--delete-folder")
 			}
@@ -398,12 +389,12 @@ func TestExtensionRemoveCmd_DeleteFolderVariants(t *testing.T) {
 
 			checkCLIOutput(t, output, extensionName, tt.deleteFolder)
 			checkExtensionDirDeleted(t, extensionDir, tt.expectDeleted)
-			checkExtensionDisabledInConfig(t, configPath, extensionName)
+			checkExtensionRemovedFromConfig(t, configPath, extensionName)
 		})
 	}
 }
 
-func TestExtensionRemoveCmd_DeleteFolderFailure(t *testing.T) {
+func TestExtensionUninstallCmd_DeleteFolderFailure(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("permission-based RemoveAll failure is unreliable on Windows")
 	}
@@ -445,7 +436,7 @@ func TestExtensionRemoveCmd_DeleteFolderFailure(t *testing.T) {
 	var cliErr error
 	_, captureErr := testutils.CaptureStdout(func() {
 		cliErr = testutils.RunCLITestAllowError(t, appCli, []string{
-			"sley", "extension", "remove",
+			"sley", "extension", "uninstall",
 			"--name", extensionName,
 			"--delete-folder",
 		}, tmpDir)
@@ -468,8 +459,8 @@ func TestExtensionRemoveCmd_DeleteFolderFailure(t *testing.T) {
 
 }
 
-func TestCLI_ExtensionRemove_MissingName(t *testing.T) {
-	if os.Getenv("TEST_EXTENSION_REMOVE_MISSING_NAME") == "1" {
+func TestCLI_ExtensionUninstall_MissingName(t *testing.T) {
+	if os.Getenv("TEST_EXTENSION_UNINSTALL_MISSING_NAME") == "1" {
 		tmp := t.TempDir()
 
 		// Write valid .sley.yaml with 1 extension (won't be used, but still required)
@@ -489,7 +480,7 @@ func TestCLI_ExtensionRemove_MissingName(t *testing.T) {
 
 		// Run command WITHOUT --name (should trigger the validation)
 		err := appCli.Run(context.Background(), []string{
-			"sley", "extension", "remove", "--path", configPath,
+			"sley", "extension", "uninstall", "--path", configPath,
 		})
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -500,55 +491,47 @@ func TestCLI_ExtensionRemove_MissingName(t *testing.T) {
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_ExtensionRemove_MissingName")
-	cmd.Env = append(os.Environ(), "TEST_EXTENSION_REMOVE_MISSING_NAME=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_ExtensionUninstall_MissingName")
+	cmd.Env = append(os.Environ(), "TEST_EXTENSION_UNINSTALL_MISSING_NAME=1")
 	output, err := cmd.CombinedOutput()
 
 	if err == nil {
 		t.Fatal("expected non-zero exit status")
 	}
 
-	expected := "please provide an extension name to remove"
+	expected := "please provide an extension name to uninstall"
 	if !strings.Contains(string(output), expected) {
 		t.Errorf("expected output to contain %q, got:\n%s", expected, output)
 	}
 }
 
-func TestExtensionRemoveCmd_LoadConfigError(t *testing.T) {
-	// Mock the LoadConfig function to simulate an error
-	originalLoadConfig := config.LoadConfigFn
-	defer func() {
-		config.LoadConfigFn = originalLoadConfig
-	}()
-
-	config.LoadConfigFn = func() (*config.Config, error) {
-		return nil, fmt.Errorf("failed to load configuration")
-	}
-
+func TestExtensionUninstallCmd_ReadConfigError(t *testing.T) {
+	// The uninstall command reads the config file directly via
+	// RemoveExtension. When the file does not exist the error is
+	// surfaced to the user.
 	tmpDir := t.TempDir()
-	extensionConfigPath := filepath.Join(tmpDir, ".sley.yaml")
+	// Do NOT create .sley.yaml so the read fails.
 
-	// Prepare and run the CLI command
-	cfg := &config.Config{Path: extensionConfigPath}
+	cfg := &config.Config{Path: filepath.Join(tmpDir, ".sley.yaml")}
 	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run()})
 
 	// Capture the output
 	output, err := testutils.CaptureStdout(func() {
-		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "remove", "--name", "mock-plugin"}, tmpDir)
+		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "uninstall", "--name", "mock-plugin"}, tmpDir)
 	})
 
 	if err != nil {
 		t.Fatalf("Failed to capture stdout: %v", err)
 	}
 
-	// Expected error message
-	expected := "failed to load configuration"
+	// Expected error message from the file read failure
+	expected := "failed to uninstall extension"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output to contain %q, got %q", expected, output)
 	}
 }
 
-func TestExtensionRemoveCmd_PluginNotFound(t *testing.T) {
+func TestExtensionUninstallCmd_ExtensionNotFound(t *testing.T) {
 	tmpDir := t.TempDir()
 	extensionConfigPath := filepath.Join(tmpDir, ".sley.yaml")
 
@@ -564,7 +547,7 @@ func TestExtensionRemoveCmd_PluginNotFound(t *testing.T) {
 
 	// Capture the output
 	output, err := testutils.CaptureStdout(func() {
-		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "remove", "--name", "mock-extension"}, tmpDir)
+		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "uninstall", "--name", "mock-extension"}, tmpDir)
 	})
 
 	if err != nil {
@@ -578,28 +561,25 @@ func TestExtensionRemoveCmd_PluginNotFound(t *testing.T) {
 	}
 }
 
-func TestExtensionRemoveCmd_SaveConfigError(t *testing.T) {
-	// Mock the SaveConfig function to simulate an error
-	originalSaveConfig := config.SaveConfigFn
-	defer func() {
-		config.SaveConfigFn = originalSaveConfig
-	}()
-
-	config.SaveConfigFn = func(cfg *config.Config) error {
-		return fmt.Errorf("failed to save updated configuration")
+func TestExtensionUninstallCmd_WriteConfigError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("permission-based write failure is unreliable on Windows")
 	}
 
 	tmpDir := t.TempDir()
 	extensionConfigPath := filepath.Join(tmpDir, ".sley.yaml")
 
-	// Create a dummy .sley.yaml configuration file
+	// Create a config file then make it read-only so the write fails.
 	content := `extensions:
   - name: mock-extension
     path: /path/to/extension
     enabled: true`
-	if err := os.WriteFile(extensionConfigPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(extensionConfigPath, []byte(content), 0444); err != nil {
 		t.Fatalf("failed to create .sley.yaml: %v", err)
 	}
+	t.Cleanup(func() {
+		_ = os.Chmod(extensionConfigPath, 0644)
+	})
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: extensionConfigPath}
@@ -607,15 +587,15 @@ func TestExtensionRemoveCmd_SaveConfigError(t *testing.T) {
 
 	// Capture the output
 	output, err := testutils.CaptureStdout(func() {
-		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "remove", "--name", "mock-extension"}, tmpDir)
+		testutils.RunCLITest(t, appCli, []string{"sley", "extension", "uninstall", "--name", "mock-extension"}, tmpDir)
 	})
 
 	if err != nil {
 		t.Fatalf("Failed to capture stdout: %v", err)
 	}
 
-	// Expected error message
-	expected := "failed to save updated configuration"
+	// Expected error message from the file write failure
+	expected := "failed to uninstall extension"
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output to contain %q, got %q", expected, output)
 	}

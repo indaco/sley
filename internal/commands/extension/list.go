@@ -16,13 +16,13 @@ func listCmd() *cli.Command {
 		Name:  "list",
 		Usage: "List installed extensions",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runExtenstionList()
+			return runExtensionList()
 		},
 	}
 }
 
-// runExtenstionList lists installed extensions.
-func runExtenstionList() error {
+// runExtensionList lists installed extensions.
+func runExtensionList() error {
 	cfg, err := config.LoadConfigFn()
 	if err != nil {
 		printer.PrintError(fmt.Sprintf("failed to load configuration: %v", err))
