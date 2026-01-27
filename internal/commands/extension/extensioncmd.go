@@ -11,8 +11,10 @@ func Run() *cli.Command {
 		Usage: "Manage extensions for sley",
 		Commands: []*cli.Command{
 			installCmd(),
-			listCmd(),
 			uninstallCmd(),
+			enableCmd(),
+			disableCmd(),
+			listCmd(),
 		},
 	}
 }

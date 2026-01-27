@@ -123,6 +123,56 @@ func (u *DefaultConfigUpdater) RemoveExtension(path string, extensionName string
 	return nil
 }
 
+// SetExtensionEnabled sets the enabled field for the named extension in the
+// YAML config at the given path. It preserves existing comments and formatting
+// by only replacing the extensions section rather than rewriting the entire file.
+func (u *DefaultConfigUpdater) SetExtensionEnabled(path string, extensionName string, enabled bool) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read config %q: %w", path, err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("failed to parse config %q: %w", path, err)
+	}
+
+	// Find the extension and update its enabled field
+	found := false
+	for i := range cfg.Extensions {
+		if cfg.Extensions[i].Name == extensionName {
+			cfg.Extensions[i].Enabled = enabled
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		return fmt.Errorf("extension %q not found in configuration", extensionName)
+	}
+
+	// Marshal only the extensions section to preserve comments elsewhere.
+	type extSection struct {
+		Extensions []config.ExtensionConfig `yaml:"extensions"`
+	}
+	sectionBytes, err := u.marshaler.Marshal(extSection{Extensions: cfg.Extensions})
+	if err != nil {
+		return fmt.Errorf("failed to marshal config: %w", err)
+	}
+
+	// Surgically replace just the extensions section in the original content.
+	replacement := strings.TrimRight(string(sectionBytes), "\n")
+	result, replaced := replaceYAMLSection(string(data), "extensions", replacement)
+	if !replaced {
+		return fmt.Errorf("extensions section not found in config file %q", path)
+	}
+
+	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil {
+		return fmt.Errorf("failed to write config %q: %w", path, err)
+	}
+	return nil
+}
+
 // replaceYAMLSection replaces a top-level YAML key and its indented block in
 // content with the given replacement text. It returns the updated content and
 // true if the key was found and replaced, or the original content and false
