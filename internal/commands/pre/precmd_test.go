@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/testutils"
 	"github.com/indaco/sley/internal/workspace"
@@ -22,7 +23,7 @@ func TestCLI_PreCommand_StaticLabel(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 	testutils.RunCLITest(t, appCli, []string{"sley", "pre", "--label", "beta.1"}, tmpDir)
@@ -39,7 +40,7 @@ func TestCLI_PreCommand_Increment(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	testutils.RunCLITest(t, appCli, []string{"sley", "pre", "--label", "beta", "--inc"}, tmpDir)
 	content := testutils.ReadTempVersionFile(t, tmpDir)
@@ -54,7 +55,7 @@ func TestCLI_PreCommand_AutoInitFeedback(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	output, err := testutils.CaptureStdout(func() {
 		testutils.RunCLITest(t, appCli, []string{"sley", "pre", "--label", "alpha"}, tmpDir)
@@ -80,7 +81,7 @@ func TestCLI_PreCommand_InvalidVersion(t *testing.T) {
 
 	// Prepare and run the CLI command
 	cfg := &config.Config{Path: defaultPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "pre", "--label", "alpha", "--path", customPath,
@@ -110,7 +111,7 @@ func TestCLI_PreCommand_SaveVersionFails(t *testing.T) {
 
 		// Prepare and run the CLI command
 		cfg := &config.Config{Path: versionPath}
-		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 		err := appCli.Run(context.Background(), []string{
 			"sley", "pre", "--label", "rc", "--path", versionPath,
@@ -151,7 +152,7 @@ func TestCLI_PreCommand_StaticLabel_Variants(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	tests := []struct {
 		name     string
@@ -183,7 +184,7 @@ func TestCLI_PreCommand_Increment_Variants(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	tests := []struct {
 		name     string
@@ -216,7 +217,7 @@ func TestCLI_PreCommand_LabelSwitchWithIncrement(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	tests := []struct {
 		name     string
@@ -246,7 +247,7 @@ func TestCLI_PreCommand_EdgeCases(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	tests := []struct {
 		name     string
@@ -295,7 +296,7 @@ func TestCLI_PreCommand_PermissionErrors(t *testing.T) {
 	versionPath := filepath.Join(protectedDir, ".version")
 
 	cfg := &config.Config{Path: versionPath}
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	err := appCli.Run(context.Background(), []string{
 		"sley", "pre", "--label", "alpha", "--path", versionPath,
@@ -341,7 +342,7 @@ func TestCLI_PreCommand_MultiModule_All(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --all flag
 	output, err := testutils.CaptureStdout(func() {
@@ -401,7 +402,7 @@ func TestCLI_PreCommand_MultiModule_Increment(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --all and --inc flags
 	output, err := testutils.CaptureStdout(func() {
@@ -459,7 +460,7 @@ func TestCLI_PreCommand_MultiModule_Specific(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --module flag to target specific module
 	testutils.RunCLITest(t, appCli, []string{"sley", "pre", "--label", "alpha", "--module", "module-a"}, tmpDir)
@@ -507,7 +508,7 @@ func TestCLI_PreCommand_MultiModule_Quiet(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --quiet flag
 	output, err := testutils.CaptureStdout(func() {
@@ -562,7 +563,7 @@ func TestCLI_PreCommand_MultiModule_JSONFormat(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --format json
 	output, err := testutils.CaptureStdout(func() {
@@ -614,7 +615,7 @@ func TestCLI_PreCommand_MultiModule_Parallel(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --parallel flag
 	testutils.RunCLITest(t, appCli, []string{"sley", "pre", "--label", "alpha", "--all", "--parallel"}, tmpDir)
@@ -660,7 +661,7 @@ func TestCLI_PreCommand_MultiModule_TextFormat(t *testing.T) {
 		},
 	}
 
-	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg, plugins.NewPluginRegistry())})
 
 	// Test with --format text
 	output, err := testutils.CaptureStdout(func() {
