@@ -22,8 +22,9 @@ func (m *MockYAMLMarshaler) Marshal(v any) ([]byte, error) {
 
 // MockConfigUpdater is a mock implementation of ConfigUpdater for testing
 type MockConfigUpdater struct {
-	AddExtensionFunc    func(path string, extension config.ExtensionConfig) error
-	RemoveExtensionFunc func(path string, extensionName string) error
+	AddExtensionFunc        func(path string, extension config.ExtensionConfig) error
+	RemoveExtensionFunc     func(path string, extensionName string) error
+	SetExtensionEnabledFunc func(path string, extensionName string, enabled bool) error
 }
 
 func (m *MockConfigUpdater) AddExtension(path string, extension config.ExtensionConfig) error {
@@ -36,6 +37,13 @@ func (m *MockConfigUpdater) AddExtension(path string, extension config.Extension
 func (m *MockConfigUpdater) RemoveExtension(path string, extensionName string) error {
 	if m.RemoveExtensionFunc != nil {
 		return m.RemoveExtensionFunc(path, extensionName)
+	}
+	return nil
+}
+
+func (m *MockConfigUpdater) SetExtensionEnabled(path string, extensionName string, enabled bool) error {
+	if m.SetExtensionEnabledFunc != nil {
+		return m.SetExtensionEnabledFunc(path, extensionName, enabled)
 	}
 	return nil
 }

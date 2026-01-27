@@ -44,8 +44,14 @@ sley extension install --path ./contrib/extensions/github-version-sync
 # List installed extensions
 sley extension list
 
-# Remove an extension
-sley extension remove --name commit-validator
+# Disable an extension (temporarily turn off without uninstalling)
+sley extension disable --name commit-validator
+
+# Re-enable a disabled extension
+sley extension enable --name commit-validator
+
+# Uninstall an extension (remove from config, optionally delete files)
+sley extension uninstall --name commit-validator
 ```
 
 ## Documentation

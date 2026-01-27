@@ -14,6 +14,7 @@ type YAMLMarshaler interface {
 type ConfigUpdater interface {
 	AddExtension(path string, extension config.ExtensionConfig) error
 	RemoveExtension(path string, extensionName string) error
+	SetExtensionEnabled(path string, extensionName string, enabled bool) error
 }
 
 // ManifestLoader handles loading extension manifests

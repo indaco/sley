@@ -50,12 +50,12 @@ sley manages [SemVer 2.0.0](https://semver.org/) versions using a simple `.versi
 
 ## Features
 
-- **Simple** — One `.version` file, one source of truth
-- **Language-agnostic** — Works with Go, Node, Python, Rust, or any stack
-- **Plugin system** — Extend with built-in or custom plugins
-- **Git integration** — Auto-tag releases, generate changelogs
-- **Monorepo support** — Manage multiple modules independently
-- **CI/CD ready** — Designed for automation pipelines
+- **Simple** - One `.version` file, one source of truth
+- **Language-agnostic** - Works with Go, Node, Python, Rust, or any stack
+- **Plugin system** - Extend with built-in or custom plugins
+- **Git integration** - Auto-tag releases, generate changelogs
+- **Monorepo support** - Manage multiple modules independently
+- **CI/CD ready** - Designed for automation pipelines
 
 ## Installation
 
