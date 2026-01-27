@@ -26,7 +26,8 @@ func TestAddExtensionToConfig_Success(t *testing.T) {
 		Enabled: true,
 	}
 
-	if err := AddExtensionToConfig(configPath, extension); err != nil {
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	if err := updater.AddExtension(configPath, extension); err != nil {
 		t.Fatalf("expected success, got: %v", err)
 	}
 
@@ -88,7 +89,8 @@ extensions:
 	}
 
 	// First registration (extension already exists in config, should error)
-	err = AddExtensionToConfig(configPath, extension)
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	err = updater.AddExtension(configPath, extension)
 	if err == nil {
 		t.Fatal("expected error for duplicate extension, got nil")
 	}
@@ -117,7 +119,8 @@ func TestAddExtensionToConfig_ReadFileError(t *testing.T) {
 		Enabled: true,
 	}
 
-	err := AddExtensionToConfig(invalidPath, extension)
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	err := updater.AddExtension(invalidPath, extension)
 	if err == nil || !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("expected file not found error, got: %v", err)
 	}
@@ -132,7 +135,8 @@ func TestAddExtensionToConfig_UnmarshalError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := AddExtensionToConfig(configPath, config.ExtensionConfig{
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	err := updater.AddExtension(configPath, config.ExtensionConfig{
 		Name:    "test",
 		Path:    "some/path",
 		Enabled: true,
@@ -152,16 +156,15 @@ func TestAddExtensionToConfig_MarshalError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Backup the original yaml.Marshal
-	originalMarshal := marshalFunc
-	defer func() { marshalFunc = originalMarshal }()
-
-	// Force yaml.Marshal to fail
-	marshalFunc = func(v any) ([]byte, error) {
-		return nil, errors.New("forced marshal failure")
+	// Create updater with mock marshaler that fails
+	mockMarshaler := &MockYAMLMarshaler{
+		MarshalFunc: func(v any) ([]byte, error) {
+			return nil, errors.New("forced marshal failure")
+		},
 	}
+	updater := NewDefaultConfigUpdater(mockMarshaler)
 
-	err := AddExtensionToConfig(configPath, config.ExtensionConfig{
+	err := updater.AddExtension(configPath, config.ExtensionConfig{
 		Name:    "fail-marshaling",
 		Path:    ".sley-extensions/fail",
 		Enabled: true,
@@ -185,12 +188,80 @@ func TestAddExtensionToConfig_WriteFileError(t *testing.T) {
 		_ = os.Chmod(configPath, 0644)
 	})
 
-	err := AddExtensionToConfig(configPath, config.ExtensionConfig{
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	err := updater.AddExtension(configPath, config.ExtensionConfig{
 		Name:    "test",
 		Path:    "some/path",
 		Enabled: true,
 	})
 	if err == nil || !strings.Contains(err.Error(), "permission denied") {
 		t.Fatalf("expected write error, got: %v", err)
+	}
+}
+
+func TestAddExtensionToConfig_ProperYAMLIndentation(t *testing.T) {
+	tmpDir := t.TempDir()
+	configPath := filepath.Join(tmpDir, ".sley.yaml")
+
+	initial := []byte("path: .version\nextensions: []\n")
+	if err := os.WriteFile(configPath, initial, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Add first extension
+	ext1 := config.ExtensionConfig{
+		Name:    "extension-one",
+		Path:    ".sley-extensions/extension-one",
+		Enabled: true,
+	}
+	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
+	if err := updater.AddExtension(configPath, ext1); err != nil {
+		t.Fatalf("failed to add first extension: %v", err)
+	}
+
+	// Add second extension
+	ext2 := config.ExtensionConfig{
+		Name:    "extension-two",
+		Path:    ".sley-extensions/extension-two",
+		Enabled: true,
+	}
+	if err := updater.AddExtension(configPath, ext2); err != nil {
+		t.Fatalf("failed to add second extension: %v", err)
+	}
+
+	// Read the raw YAML content
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	yamlContent := string(data)
+
+	// Verify proper indentation: list items should be indented with 2 spaces
+	expectedIndentation := []string{
+		"extensions:",
+		"  - name: extension-one",
+		"    path: .sley-extensions/extension-one",
+		"    enabled: true",
+		"  - name: extension-two",
+		"    path: .sley-extensions/extension-two",
+		"    enabled: true",
+	}
+
+	for _, expected := range expectedIndentation {
+		if !strings.Contains(yamlContent, expected) {
+			t.Errorf("expected YAML to contain %q, but it doesn't.\nActual YAML:\n%s", expected, yamlContent)
+		}
+	}
+
+	// Verify it doesn't have improper indentation (no indent for list items)
+	improperPatterns := []string{
+		"extensions:\n- name:", // List item directly after extensions: with no indent
+	}
+
+	for _, improper := range improperPatterns {
+		if strings.Contains(yamlContent, improper) {
+			t.Errorf("YAML should not contain improper indentation pattern %q.\nActual YAML:\n%s", improper, yamlContent)
+		}
 	}
 }

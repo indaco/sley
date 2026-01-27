@@ -6,16 +6,34 @@ import (
 	"path/filepath"
 
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/extensions"
+	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/printer"
 )
 
-var (
-	userHomeDirFn            = os.UserHomeDir
-	RegisterLocalExtensionFn = registerLocalExtension
-)
+// DefaultExtensionRegistrar implements ExtensionRegistrar for registering local extensions
+type DefaultExtensionRegistrar struct {
+	manifestLoader ManifestLoader
+	configUpdater  ConfigUpdater
+	fileCopier     core.FileCopier
+	homeDir        HomeDirectory
+}
 
-// registerLocalExtension installs an extension from a local directory into the extension
+// NewDefaultExtensionRegistrar creates a new DefaultExtensionRegistrar with the given dependencies
+func NewDefaultExtensionRegistrar(
+	manifestLoader ManifestLoader,
+	configUpdater ConfigUpdater,
+	fileCopier core.FileCopier,
+	homeDir HomeDirectory,
+) *DefaultExtensionRegistrar {
+	return &DefaultExtensionRegistrar{
+		manifestLoader: manifestLoader,
+		configUpdater:  configUpdater,
+		fileCopier:     fileCopier,
+		homeDir:        homeDir,
+	}
+}
+
+// Register installs an extension from a local directory into the extension
 // directory and registers it in the project's configuration file.
 //
 // The function performs the following steps:
@@ -51,7 +69,7 @@ var (
 //   - extension.yaml is missing or invalid
 //   - configuration file doesn't exist
 //   - file operations fail (permissions, disk space, etc.)
-func registerLocalExtension(localPath, configPath, extensionDirectory string) error {
+func (r *DefaultExtensionRegistrar) Register(localPath, configPath, extensionDirectory string) error {
 	// 1. Validate source path (ensure it's a directory)
 	info, err := os.Stat(localPath)
 	if err != nil {
@@ -62,7 +80,7 @@ func registerLocalExtension(localPath, configPath, extensionDirectory string) er
 	}
 
 	// 2. Load and validate the extension manifest
-	manifest, err := extensions.LoadExtensionManifestFn(localPath)
+	manifest, err := r.manifestLoader.Load(localPath)
 	if err != nil {
 		return fmt.Errorf("failed to load extension manifest from %q: %w", localPath, err)
 	}
@@ -74,7 +92,7 @@ func registerLocalExtension(localPath, configPath, extensionDirectory string) er
 	baseDir := extensionDirectory
 	if baseDir == "" {
 		// Global installation: use user's home directory
-		homeDir, err := userHomeDirFn()
+		homeDir, err := r.homeDir.Get()
 		if err != nil {
 			return fmt.Errorf("failed to get user home directory: %w", err)
 		}
@@ -106,23 +124,41 @@ func registerLocalExtension(localPath, configPath, extensionDirectory string) er
 	}
 
 	// 5. Copy the extension files to the destination directory
-	if err := copyDirFn(localPath, destPath); err != nil {
+	if err := r.fileCopier.CopyDir(localPath, destPath); err != nil {
 		return fmt.Errorf("failed to copy extension files from %q to %q: %w", localPath, destPath, err)
 	}
 
-	// 6. Update the config
+	// 6. Convert destPath to relative path from config file location
+	configDir := filepath.Dir(absConfigPath)
+	relPath, err := filepath.Rel(configDir, destPath)
+	if err != nil {
+		// If we can't make it relative, use the absolute path as fallback
+		relPath = destPath
+	}
+
+	// 7. Update the config
 	extensionCfg := config.ExtensionConfig{
 		Name:    manifest.Name,
-		Path:    destPath,
+		Path:    relPath,
 		Enabled: true,
 	}
 
-	// 7. Add the extension to the config file
-	if err := AddExtensionToConfigFn(absConfigPath, extensionCfg); err != nil {
+	// 8. Add the extension to the config file
+	if err := r.configUpdater.AddExtension(absConfigPath, extensionCfg); err != nil {
 		return fmt.Errorf("failed to update config %q: %w", absConfigPath, err)
 	}
 
-	// 8. Success message
+	// 9. Success message
 	printer.PrintSuccess(fmt.Sprintf("Extension %q registered successfully.", manifest.Name))
 	return nil
+}
+
+// NewDefaultExtensionRegistrarInstance creates a new registrar with default implementations
+func NewDefaultExtensionRegistrarInstance() *DefaultExtensionRegistrar {
+	return NewDefaultExtensionRegistrar(
+		&DefaultManifestLoader{},
+		NewDefaultConfigUpdater(&DefaultYAMLMarshaler{}),
+		NewOSFileCopier(),
+		&OSHomeDirectory{},
+	)
 }

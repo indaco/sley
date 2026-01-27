@@ -9,14 +9,19 @@ import (
 	"github.com/indaco/sley/internal/printer"
 )
 
-var (
-	marshalFunc            = yaml.Marshal
-	AddExtensionToConfigFn = AddExtensionToConfig
-)
+// DefaultConfigUpdater implements ConfigUpdater for updating extension configurations
+type DefaultConfigUpdater struct {
+	marshaler YAMLMarshaler
+}
 
-// AddExtensionToConfig appends an extension entry to the YAML config at the given path.
+// NewDefaultConfigUpdater creates a new DefaultConfigUpdater with the given marshaler
+func NewDefaultConfigUpdater(marshaler YAMLMarshaler) *DefaultConfigUpdater {
+	return &DefaultConfigUpdater{marshaler: marshaler}
+}
+
+// AddExtension appends an extension entry to the YAML config at the given path.
 // It avoids duplicates and preserves existing fields.
-func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
+func (u *DefaultConfigUpdater) AddExtension(path string, extension config.ExtensionConfig) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read config %q: %w", path, err)
@@ -39,7 +44,7 @@ func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
 
 	cfg.Extensions = append(cfg.Extensions, extension)
 
-	out, err := marshalFunc(cfg)
+	out, err := u.marshaler.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}

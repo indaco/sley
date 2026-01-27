@@ -97,7 +97,8 @@ func runExtensionInstall(cmd *cli.Command) error {
 		}
 
 		// Proceed with normal extension registration from local path
-		if err := extensionmgr.RegisterLocalExtensionFn(localPath, ".sley.yaml", extensionDirectory); err != nil {
+		registrar := extensionmgr.NewDefaultExtensionRegistrarInstance()
+		if err := registrar.Register(localPath, ".sley.yaml", extensionDirectory); err != nil {
 			return cli.Exit(fmt.Sprintf("Failed to install extension: %v", err), 1)
 		}
 		return nil

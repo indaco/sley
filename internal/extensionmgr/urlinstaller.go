@@ -208,7 +208,10 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 	} else {
 		printer.PrintInfo(fmt.Sprintf("Installing extension from %s...", repoURL.String()))
 	}
-	return registerLocalExtension(extensionPath, configPath, extensionDirectory)
+
+	// Register the extension using the default registrar
+	registrar := NewDefaultExtensionRegistrarInstance()
+	return registrar.Register(extensionPath, configPath, extensionDirectory)
 }
 
 // IsURL checks if a string looks like a URL (has a host and path)

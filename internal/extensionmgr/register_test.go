@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/goccy/go-yaml"
+
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/extensions"
 	"github.com/indaco/sley/internal/testutils"
 )
 
@@ -48,7 +49,8 @@ entry: extension.go
 		return nil
 	}
 
-	err := RegisterLocalExtensionFn(extensionDir, cfgPath, tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, cfgPath, tmpDir)
 	if err != nil {
 		t.Fatalf("expected success, got error: %v", err)
 	}
@@ -56,7 +58,8 @@ entry: extension.go
 
 func TestRegisterLocalExtension_InvalidPath(t *testing.T) {
 	tmpDir := os.TempDir()
-	err := RegisterLocalExtensionFn("/nonexistent/path", ".sley.yaml", tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register("/nonexistent/path", ".sley.yaml", tmpDir)
 	if err == nil || !strings.Contains(err.Error(), "extension path") {
 		t.Errorf("expected extension path error, got: %v", err)
 	}
@@ -67,7 +70,8 @@ func TestRegisterLocalExtension_NotDirectory(t *testing.T) {
 	file := filepath.Join(tmpDir, "file.txt")
 	_ = os.WriteFile(file, []byte("test"), 0644)
 
-	err := RegisterLocalExtensionFn(file, ".sley.yaml", tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(file, ".sley.yaml", tmpDir)
 	if err == nil || !strings.Contains(err.Error(), "must be a directory") {
 		t.Errorf("expected directory error, got: %v", err)
 	}
@@ -79,7 +83,8 @@ func TestRegisterLocalExtension_InvalidManifest(t *testing.T) {
 	_ = os.Mkdir(extensionDir, 0755)
 	_ = os.WriteFile(filepath.Join(extensionDir, "extension.yaml"), []byte("invalid: yaml:::"), 0644)
 
-	err := RegisterLocalExtensionFn(extensionDir, ".sley.yaml", tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, ".sley.yaml", tmpDir)
 	if err == nil || !strings.Contains(err.Error(), "failed to load extension manifest") {
 		t.Errorf("expected manifest load error, got: %v", err)
 	}
@@ -93,18 +98,23 @@ func TestRegisterLocalExtension_CopyDirFails(t *testing.T) {
 	// Create the config file
 	configPath := testutils.WriteTempConfig(t, "extensions: []\n")
 
-	// Temporarily override CopyDirFn to simulate failure
-	originalCopyDirFn := copyDirFn
-	copyDirFn = func(src, dst string) error {
-		return fmt.Errorf("simulated copy failure")
+	// Create mock file copier that fails
+	mockFileCopier := &MockFileCopier{
+		CopyDirFunc: func(src, dst string) error {
+			return fmt.Errorf("simulated copy failure")
+		},
 	}
-	defer func() {
-		// Restore original CopyDir function
-		copyDirFn = originalCopyDirFn
-	}()
 
-	// Call RegisterLocalExtensionFn which should now fail due to the simulated copy error
-	err := RegisterLocalExtensionFn(extensionDir, configPath, tmpDir)
+	// Create registrar with mocked file copier
+	registrar := NewDefaultExtensionRegistrar(
+		&DefaultManifestLoader{},
+		NewDefaultConfigUpdater(&DefaultYAMLMarshaler{}),
+		mockFileCopier,
+		&OSHomeDirectory{},
+	)
+
+	// Call Register which should now fail due to the simulated copy error
+	err := registrar.Register(extensionDir, configPath, tmpDir)
 	if err == nil {
 		t.Fatal("expected error when copying, got nil")
 	}
@@ -124,7 +134,8 @@ func TestRegisterLocalExtension_DefaultConfigPath(t *testing.T) {
 	setupWorkingDirForTest(t, tmpDir)
 
 	// Register the extension for the first time
-	err := RegisterLocalExtensionFn(tmpextensionDir, tmpConfigPath, tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(tmpextensionDir, tmpConfigPath, tmpDir)
 	if err != nil {
 		t.Fatalf("expected no error on first extension registration, got: %v", err)
 	}
@@ -178,7 +189,8 @@ func TestRegisterLocalExtension_DefaultConfigPathUsed_CurrentWorkingDir(t *testi
 	})
 
 	// Register the extension with default extension path
-	err = RegisterLocalExtensionFn(tmpextensionDir, tmpConfigPath, "")
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err = registrar.Register(tmpextensionDir, tmpConfigPath, "")
 	if err != nil {
 		t.Fatalf("expected no error on extension registration, got: %v", err)
 	}
@@ -225,7 +237,8 @@ func TestRegisterLocalExtension_DefaultConfigPathUsed_OtherDir(t *testing.T) {
 	})
 
 	// Register the extension with the temporary extension folder
-	err = RegisterLocalExtensionFn(tmpExtensionDir, tmpConfigPath, tmpExtensionFolder)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err = registrar.Register(tmpExtensionDir, tmpConfigPath, tmpExtensionFolder)
 	if err != nil {
 		t.Fatalf("expected no error on extension registration, got: %v", err)
 	}
@@ -270,7 +283,8 @@ func TestRegisterLocalExtension_DotExtensionDir(t *testing.T) {
 
 	// Register the extension with "." as extension directory
 	// This should install to ./.sley-extensions/, NOT $HOME/.sley-extensions/
-	err = RegisterLocalExtensionFn(tmpExtensionDir, tmpConfigPath, ".")
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err = registrar.Register(tmpExtensionDir, tmpConfigPath, ".")
 	if err != nil {
 		t.Fatalf("expected no error on extension registration, got: %v", err)
 	}
@@ -305,18 +319,24 @@ func TestRegisterLocalExtension_DotExtensionDir(t *testing.T) {
 }
 
 func TestRegisterLocalExtension_UserHomeDirError(t *testing.T) {
-	// Backup and restore the original function
-	originalFn := userHomeDirFn
-	defer func() { userHomeDirFn = originalFn }()
-
-	userHomeDirFn = func() (string, error) {
-		return "", errors.New("mocked failure")
-	}
-
 	tmpExtensionDir := setupextensionDir(t, "mock-extension", "1.0.0")
 	tmpConfigPath := testutils.WriteTempConfig(t, "path: .version")
 
-	err := RegisterLocalExtensionFn(tmpExtensionDir, tmpConfigPath, "")
+	// Create registrar with mock home directory that fails
+	mockHomeDir := &MockHomeDirectory{
+		GetFunc: func() (string, error) {
+			return "", errors.New("mocked failure")
+		},
+	}
+
+	registrar := NewDefaultExtensionRegistrar(
+		&DefaultManifestLoader{},
+		NewDefaultConfigUpdater(&DefaultYAMLMarshaler{}),
+		NewOSFileCopier(),
+		mockHomeDir,
+	)
+
+	err := registrar.Register(tmpExtensionDir, tmpConfigPath, "")
 	if err == nil || !strings.Contains(err.Error(), "failed to get user home directory") {
 		t.Fatalf("expected user home dir error, got: %v", err)
 	}
@@ -351,7 +371,8 @@ entry: mock-extension.go
 	}
 
 	// Call the RegisterLocalExtension function
-	err := RegisterLocalExtensionFn(extensionDir, configPath, tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, configPath, tmpDir)
 	if err != nil {
 		t.Fatalf("expected no error during extension registration, got: %v", err)
 	}
@@ -383,7 +404,8 @@ entry: mock-extension.go
 	}
 
 	// Call the RegisterLocalExtension function with an invalid config path
-	err := RegisterLocalExtensionFn(extensionDir, nonExistentConfigPath, tmpDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, nonExistentConfigPath, tmpDir)
 	if err == nil {
 		t.Fatal("expected error due to non-existent config file, got nil")
 	}
@@ -403,7 +425,8 @@ func TestRegisterLocalExtension_InvalidConfigPathResolution(t *testing.T) {
 	invalidConfigPath := "/invalid/path/to/.sley.yaml"
 
 	// Try registering the extension with the invalid config path
-	err := RegisterLocalExtensionFn(tmpextensionDir, invalidConfigPath, os.TempDir())
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(tmpextensionDir, invalidConfigPath, os.TempDir())
 	if err == nil {
 		t.Fatal("expected error due to invalid config path resolution, got nil")
 	}
@@ -415,41 +438,80 @@ func TestRegisterLocalExtension_InvalidConfigPathResolution(t *testing.T) {
 	}
 }
 
+func TestRegisterLocalExtension_PathIsRelative(t *testing.T) {
+	// Create temp directory for test
+	tmpDir := t.TempDir()
+
+	// Create config file
+	configPath := filepath.Join(tmpDir, ".sley.yaml")
+	if err := os.WriteFile(configPath, []byte("path: .version\n"), 0644); err != nil {
+		t.Fatalf("failed to create config: %v", err)
+	}
+
+	// Create extension directory
+	extensionDir := setupextensionDir(t, "test-extension", "1.0.0")
+
+	// Register extension with project-local installation
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, configPath, tmpDir)
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	// Read and parse the config file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read config: %v", err)
+	}
+
+	var cfg config.Config
+	if err := yaml.Unmarshal(data, &cfg); err != nil {
+		t.Fatalf("failed to parse config: %v", err)
+	}
+
+	// Verify extension was added
+	if len(cfg.Extensions) != 1 {
+		t.Fatalf("expected 1 extension, got %d", len(cfg.Extensions))
+	}
+
+	ext := cfg.Extensions[0]
+
+	// Verify path is relative (not absolute)
+	if filepath.IsAbs(ext.Path) {
+		t.Errorf("expected relative path, got absolute path: %s", ext.Path)
+	}
+
+	// Verify path format is consistent (.sley-extensions/extension-name)
+	expectedPath := filepath.Join(".sley-extensions", "test-extension")
+	if ext.Path != expectedPath {
+		t.Errorf("expected path %q, got %q", expectedPath, ext.Path)
+	}
+}
+
 func TestRegisterLocalExtension_InstallExtensionToConfigError(t *testing.T) {
 	// Set up the initial config
 	tmpConfigPath := testutils.WriteTempConfig(t, `path: .version`)
-	tmpextensionDir := setupextensionDir(t, "mock-extension", "1.0.0")
-
-	// Simulate the error returned by InstallExtensionToConfig
-	localPath := t.TempDir()
+	tmpExtensionDir := setupextensionDir(t, "mock-extension", "1.0.0")
+	tmpInstallDir := t.TempDir()
 	cfgPath := tmpConfigPath // Path to the config file
 
-	// Mock the LoadExtensionManifest function to return a mock manifest
-	mockManifest := &extensions.ExtensionManifest{
-		Name:        "mock-extension",
-		Version:     "1.0.0",
-		Description: "Mock Extension",
-		Author:      "Test Author",
-		Repository:  "https://github.com/test/repo",
-		Entry:       "mock-entry",
+	// Create mock config updater that fails
+	mockUpdater := &MockConfigUpdater{
+		AddExtensionFunc: func(path string, extension config.ExtensionConfig) error {
+			return fmt.Errorf("failed to update config: some error")
+		},
 	}
 
-	// Mock LoadExtensionManifest to return the mock manifest
-	extensions.LoadExtensionManifestFn = func(path string) (*extensions.ExtensionManifest, error) {
-		return mockManifest, nil
-	}
-
-	// Simulate AddExtensionToConfig error by overriding the function
-	originalAddExtensionToConfig := AddExtensionToConfigFn
-	defer func() {
-		AddExtensionToConfigFn = originalAddExtensionToConfig // Restore original after test
-	}()
-	AddExtensionToConfigFn = func(path string, extension config.ExtensionConfig) error {
-		return fmt.Errorf("failed to update config: some error")
-	}
+	// Create registrar with mocked config updater
+	registrar := NewDefaultExtensionRegistrar(
+		&DefaultManifestLoader{},
+		mockUpdater,
+		NewOSFileCopier(),
+		&OSHomeDirectory{},
+	)
 
 	// Attempt to register the extension
-	err := RegisterLocalExtensionFn(localPath, cfgPath, tmpextensionDir)
+	err := registrar.Register(tmpExtensionDir, cfgPath, tmpInstallDir)
 
 	// Check that we get the expected error
 	if err == nil {
@@ -484,7 +546,8 @@ func setupWorkingDirForTest(t *testing.T, targetDir string) {
 func verifyDuplicateRegistrationError(t *testing.T, extensionDir, configPath, installDir string) {
 	t.Helper()
 
-	err := RegisterLocalExtensionFn(extensionDir, configPath, installDir)
+	registrar := NewDefaultExtensionRegistrarInstance()
+	err := registrar.Register(extensionDir, configPath, installDir)
 	if err == nil {
 		t.Fatal("expected error on duplicate extension registration, got nil")
 	}
