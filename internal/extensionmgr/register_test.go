@@ -120,74 +120,26 @@ func TestRegisterLocalExtension_DefaultConfigPath(t *testing.T) {
 	tmpDir := filepath.Dir(tmpConfigPath)
 	tmpextensionDir := setupextensionDir(t, "mock-extension", "1.0.0")
 
-	origDir, err := os.Getwd() // Get the original working directory to restore later
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
-
-	if err := os.Chdir(tmpDir); err != nil { // Change to the directory of the temporary config file
-		t.Fatalf("failed to change directory to %s: %v", tmpDir, err)
-	}
-	t.Cleanup(func() { // Ensure we restore the original working directory after the test
-		if err := os.Chdir(origDir); err != nil {
-			t.Fatalf("failed to restore working directory: %v", err)
-		}
-	})
+	// Setup working directory and cleanup
+	setupWorkingDirForTest(t, tmpDir)
 
 	// Register the extension for the first time
-	err = RegisterLocalExtensionFn(tmpextensionDir, tmpConfigPath, tmpDir)
+	err := RegisterLocalExtensionFn(tmpextensionDir, tmpConfigPath, tmpDir)
 	if err != nil {
 		t.Fatalf("expected no error on first extension registration, got: %v", err)
 	}
 
-	// Register the extension again
-	err = RegisterLocalExtensionFn(tmpextensionDir, tmpConfigPath, tmpDir)
-	if err != nil {
-		t.Fatalf("expected no error on second extension registration, got: %v", err)
-	}
+	// Attempt duplicate registration - should fail
+	verifyDuplicateRegistrationError(t, tmpextensionDir, tmpConfigPath, tmpDir)
 
-	// Check if the .sley.yaml file exists before loading it
-	if _, err := os.Stat(tmpConfigPath); os.IsNotExist(err) {
-		t.Fatalf(".sley.yaml file does not exist at %s", tmpConfigPath)
-	}
+	// Verify config state
+	verifyConfigHasOneExtension(t, tmpConfigPath, ".version")
 
-	// Ensure the config file has the extension registered
-	cfg, err := config.LoadConfigFn()
-	if err != nil {
-		t.Fatalf("expected no error loading config, got: %v", err)
-	}
+	// Attempt registration with empty configPath - should also fail
+	verifyDuplicateRegistrationError(t, tmpextensionDir, "", tmpDir)
 
-	// Guard check for nil config
-	if cfg == nil {
-		t.Fatal("config is nil after loading")
-	}
-
-	// Check that there's exactly one extensions
-	if len(cfg.Extensions) != 1 {
-		t.Fatalf("expected 1 extension in config, got: %d", len(cfg.Extensions))
-	}
-
-	// Ensure that the default config path has been used if configPath is empty
-	if cfg.Path != ".version" {
-		t.Errorf("expected config path to be .version, got: %s", cfg.Path)
-	}
-
-	// Test that the default config path is used when no configPath is passed
-	err = RegisterLocalExtensionFn(tmpextensionDir, "", tmpDir)
-	if err != nil {
-		t.Fatalf("expected no error on second extension registration with empty configPath, got: %v", err)
-	}
-
-	// Verify the path has been set to the default value when configPath is empty
-	cfg, err = config.LoadConfigFn()
-	if err != nil {
-		t.Fatalf("expected no error loading config, got: %v", err)
-	}
-
-	// Ensure the path is still the default
-	if cfg.Path != ".version" {
-		t.Errorf("expected config path to be .version, got: %s", cfg.Path)
-	}
+	// Verify config still has one extension
+	verifyConfigHasOneExtension(t, tmpConfigPath, ".version")
 }
 
 func TestRegisterLocalExtension_DefaultConfigPathUsed_CurrentWorkingDir(t *testing.T) {
@@ -505,6 +457,70 @@ func TestRegisterLocalExtension_InstallExtensionToConfigError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "failed to update config") {
 		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// setupWorkingDirForTest changes to the given directory and registers cleanup
+func setupWorkingDirForTest(t *testing.T, targetDir string) {
+	t.Helper()
+
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+
+	if err := os.Chdir(targetDir); err != nil {
+		t.Fatalf("failed to change directory to %s: %v", targetDir, err)
+	}
+
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+}
+
+// verifyDuplicateRegistrationError attempts registration and verifies it fails with "already registered" error
+func verifyDuplicateRegistrationError(t *testing.T, extensionDir, configPath, installDir string) {
+	t.Helper()
+
+	err := RegisterLocalExtensionFn(extensionDir, configPath, installDir)
+	if err == nil {
+		t.Fatal("expected error on duplicate extension registration, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "already registered") {
+		t.Errorf("expected error to contain 'already registered', got: %v", err)
+	}
+}
+
+// verifyConfigHasOneExtension loads config and verifies it has exactly one extension with expected path
+func verifyConfigHasOneExtension(t *testing.T, configPath, expectedPath string) {
+	t.Helper()
+
+	// Check config file exists
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		t.Fatalf(".sley.yaml file does not exist at %s", configPath)
+	}
+
+	// Load config
+	cfg, err := config.LoadConfigFn()
+	if err != nil {
+		t.Fatalf("expected no error loading config, got: %v", err)
+	}
+
+	if cfg == nil {
+		t.Fatal("config is nil after loading")
+	}
+
+	// Verify extension count
+	if len(cfg.Extensions) != 1 {
+		t.Fatalf("expected 1 extension in config, got: %d", len(cfg.Extensions))
+	}
+
+	// Verify config path
+	if cfg.Path != expectedPath {
+		t.Errorf("expected config path to be %s, got: %s", expectedPath, cfg.Path)
 	}
 }
 
