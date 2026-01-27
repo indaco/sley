@@ -13,6 +13,7 @@ type YAMLMarshaler interface {
 // ConfigUpdater handles extension configuration updates
 type ConfigUpdater interface {
 	AddExtension(path string, extension config.ExtensionConfig) error
+	RemoveExtension(path string, extensionName string) error
 }
 
 // ManifestLoader handles loading extension manifests
