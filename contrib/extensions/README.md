@@ -7,10 +7,11 @@ This directory contains example extensions demonstrating how to build sley exten
 
 ## Available Extensions
 
-| Extension                               | Language | Hook      | Description                          |
-| --------------------------------------- | -------- | --------- | ------------------------------------ |
-| [commit-validator](./commit-validator/) | Python   | pre-bump  | Validates conventional commit format |
-| [docker-tag-sync](./docker-tag-sync/)   | Bash     | post-bump | Tags and pushes Docker images        |
+| Extension                                     | Language | Hook      | Description                                  |
+| --------------------------------------------- | -------- | --------- | -------------------------------------------- |
+| [commit-validator](./commit-validator/)       | Python   | pre-bump  | Validates conventional commit format         |
+| [docker-tag-sync](./docker-tag-sync/)         | Bash     | post-bump | Tags and pushes Docker images                |
+| [github-version-sync](./github-version-sync/) | Bash     | pre-bump  | Syncs version from GitHub repository release |
 
 Each extension includes a complete `README.md` with usage examples and configuration options.
 
@@ -24,6 +25,9 @@ sley extension install --url github.com/indaco/sley/contrib/extensions/commit-va
 
 # Install docker-tag-sync (Bash)
 sley extension install --url github.com/indaco/sley/contrib/extensions/docker-tag-sync
+
+# Install github-version-sync (Bash)
+sley extension install --url github.com/indaco/sley/contrib/extensions/github-version-sync
 ```
 
 Or from a local clone:
@@ -31,6 +35,7 @@ Or from a local clone:
 ```bash
 sley extension install --path ./contrib/extensions/commit-validator
 sley extension install --path ./contrib/extensions/docker-tag-sync
+sley extension install --path ./contrib/extensions/github-version-sync
 ```
 
 ## Management
@@ -51,6 +56,7 @@ For complete documentation, configuration examples, and troubleshooting:
 - **[Creating Extensions](https://sley.indaco.dev/extensions/#creating-an-extension)** - Build your own extensions
 - **[Commit Validator](https://sley.indaco.dev/extensions/commit-validator.html)** - Commit validation extension docs
 - **[Docker Tag Sync](https://sley.indaco.dev/extensions/docker-tag-sync.html)** - Docker tagging extension docs
+- **[GitHub Version Sync](https://sley.indaco.dev/extensions/github-version-sync.html)** - GitHub version sync extension docs
 - **[Plugin System](https://sley.indaco.dev/plugins/)** - Built-in plugins vs extensions comparison
 
 ## Using These Examples

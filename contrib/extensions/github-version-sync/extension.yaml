@@ -1,0 +1,8 @@
+name: github-version-sync
+version: 1.0.0
+description: Syncs the .version file to the latest release from a GitHub repository
+author: sley
+repository: https://github.com/indaco/sley/tree/main/contrib/extensions/github-version-sync
+entry: hook.sh
+hooks:
+  - pre-bump
