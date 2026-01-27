@@ -73,10 +73,14 @@ func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, i
 		// Resolve script path
 		scriptPath := filepath.Join(extCfg.Path, manifest.Entry)
 
+		// Create extension-specific input with config
+		extInput := *input
+		extInput.Config = extCfg.Config
+
 		// Execute the hook
 		fmt.Printf("Running extension %s (%s)... ", printer.Info(extCfg.Name), printer.Faint(string(hookType)))
 
-		output, err := r.Executor.Execute(ctx, scriptPath, input)
+		output, err := r.Executor.Execute(ctx, scriptPath, &extInput)
 		if err != nil {
 			console.PrintFailure("FAIL")
 			return fmt.Errorf("extension %q hook %q failed: %w", extCfg.Name, hookType, err)

@@ -16,15 +16,16 @@ import (
 
 // HookInput represents the JSON input passed to an extension script
 type HookInput struct {
-	Hook            string  `json:"hook"`
-	Version         string  `json:"version"`
-	PreviousVersion string  `json:"previous_version,omitempty"`
-	BumpType        string  `json:"bump_type,omitempty"`
-	Prerelease      *string `json:"prerelease,omitempty"`
-	Metadata        *string `json:"metadata,omitempty"`
-	ProjectRoot     string  `json:"project_root"`
-	ModuleDir       string  `json:"module_dir,omitempty"`  // Directory containing the .version file (for monorepo support)
-	ModuleName      string  `json:"module_name,omitempty"` // Module identifier (for monorepo support)
+	Hook            string         `json:"hook"`
+	Version         string         `json:"version"`
+	PreviousVersion string         `json:"previous_version,omitempty"`
+	BumpType        string         `json:"bump_type,omitempty"`
+	Prerelease      *string        `json:"prerelease,omitempty"`
+	Metadata        *string        `json:"metadata,omitempty"`
+	ProjectRoot     string         `json:"project_root"`
+	ModuleDir       string         `json:"module_dir,omitempty"`  // Directory containing the .version file (for monorepo support)
+	ModuleName      string         `json:"module_name,omitempty"` // Module identifier (for monorepo support)
+	Config          map[string]any `json:"config,omitempty"`      // Extension-specific configuration
 }
 
 // HookOutput represents the JSON output expected from an extension script
