@@ -481,6 +481,11 @@ func TestBumpOperation_Name(t *testing.T) {
 			bumpType: BumpAuto,
 			expected: "bump auto",
 		},
+		{
+			name:     "pre",
+			bumpType: BumpPre,
+			expected: "bump pre",
+		},
 	}
 
 	for _, tt := range tests {
@@ -491,6 +496,225 @@ func TestBumpOperation_Name(t *testing.T) {
 			name := op.Name()
 			if name != tt.expected {
 				t.Errorf("Name() = %q, want %q", name, tt.expected)
+			}
+		})
+	}
+}
+
+func TestBumpOperation_Execute_Pre_IncrementExisting(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  string
+		label    string
+		expected string
+	}{
+		{
+			name:     "increment rc.1 to rc.2",
+			initial:  "1.2.3-rc.1\n",
+			label:    "",
+			expected: "1.2.3-rc.2\n",
+		},
+		{
+			name:     "increment rc.9 to rc.10",
+			initial:  "1.2.3-rc.9\n",
+			label:    "",
+			expected: "1.2.3-rc.10\n",
+		},
+		{
+			name:     "increment beta.1 to beta.2",
+			initial:  "2.0.0-beta.1\n",
+			label:    "",
+			expected: "2.0.0-beta.2\n",
+		},
+		{
+			name:     "increment alpha to alpha.1 with no number",
+			initial:  "1.0.0-alpha\n",
+			label:    "",
+			expected: "1.0.0-alpha.1\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := core.NewMockFileSystem()
+			fs.SetFile("/test/.version", []byte(tt.initial))
+
+			op := NewBumpOperation(fs, BumpPre, tt.label, "", false)
+			mod := &workspace.Module{
+				Name: "test",
+				Path: "/test/.version",
+			}
+
+			ctx := context.Background()
+			err := op.Execute(ctx, mod)
+			if err != nil {
+				t.Fatalf("Execute failed: %v", err)
+			}
+
+			data, ok := fs.GetFile("/test/.version")
+			if !ok {
+				t.Fatal("version file not found")
+			}
+
+			if string(data) != tt.expected {
+				t.Errorf("version = %q, want %q", string(data), tt.expected)
+			}
+		})
+	}
+}
+
+func TestBumpOperation_Execute_Pre_WithLabel(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  string
+		label    string
+		expected string
+	}{
+		{
+			name:     "add rc to stable version",
+			initial:  "1.2.3\n",
+			label:    "rc",
+			expected: "1.2.3-rc.1\n",
+		},
+		{
+			name:     "switch from alpha to beta",
+			initial:  "1.2.3-alpha.3\n",
+			label:    "beta",
+			expected: "1.2.3-beta.1\n",
+		},
+		{
+			name:     "switch from rc to alpha",
+			initial:  "1.2.3-rc.1\n",
+			label:    "alpha",
+			expected: "1.2.3-alpha.1\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs := core.NewMockFileSystem()
+			fs.SetFile("/test/.version", []byte(tt.initial))
+
+			op := NewBumpOperation(fs, BumpPre, tt.label, "", false)
+			mod := &workspace.Module{
+				Name: "test",
+				Path: "/test/.version",
+			}
+
+			ctx := context.Background()
+			err := op.Execute(ctx, mod)
+			if err != nil {
+				t.Fatalf("Execute failed: %v", err)
+			}
+
+			data, ok := fs.GetFile("/test/.version")
+			if !ok {
+				t.Fatal("version file not found")
+			}
+
+			if string(data) != tt.expected {
+				t.Errorf("version = %q, want %q", string(data), tt.expected)
+			}
+		})
+	}
+}
+
+func TestBumpOperation_Execute_Pre_NoExistingPreRelease(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	// BumpPre with no label and no existing pre-release should fail
+	op := NewBumpOperation(fs, BumpPre, "", "", false)
+	mod := &workspace.Module{
+		Name: "test",
+		Path: "/test/.version",
+	}
+
+	ctx := context.Background()
+	err := op.Execute(ctx, mod)
+	if err == nil {
+		t.Fatal("expected error when no pre-release exists and no label provided")
+	}
+}
+
+func TestBumpOperation_Execute_Pre_PreserveMetadata(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3-rc.1+build.99\n"))
+
+	op := NewBumpOperation(fs, BumpPre, "", "", true)
+	mod := &workspace.Module{
+		Name: "test",
+		Path: "/test/.version",
+	}
+
+	ctx := context.Background()
+	err := op.Execute(ctx, mod)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	data, ok := fs.GetFile("/test/.version")
+	if !ok {
+		t.Fatal("version file not found")
+	}
+
+	expected := "1.2.3-rc.2+build.99\n"
+	if string(data) != expected {
+		t.Errorf("version = %q, want %q", string(data), expected)
+	}
+}
+
+func TestBumpOperation_Execute_Pre_WithNewMetadata(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3-rc.1\n"))
+
+	op := NewBumpOperation(fs, BumpPre, "", "ci.456", false)
+	mod := &workspace.Module{
+		Name: "test",
+		Path: "/test/.version",
+	}
+
+	ctx := context.Background()
+	err := op.Execute(ctx, mod)
+	if err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	data, ok := fs.GetFile("/test/.version")
+	if !ok {
+		t.Fatal("version file not found")
+	}
+
+	expected := "1.2.3-rc.2+ci.456\n"
+	if string(data) != expected {
+		t.Errorf("version = %q, want %q", string(data), expected)
+	}
+}
+
+func TestExtractPreReleaseBase(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"rc.1", "rc"},
+		{"rc.10", "rc"},
+		{"beta.2", "beta"},
+		{"alpha.1", "alpha"},
+		{"rc1", "rc"},
+		{"beta5", "beta"},
+		{"rc-1", "rc-"},
+		{"alpha", "alpha"},
+		{"rc", "rc"},
+		{"1", "1"},           // Pure number returns as-is (edge case)
+		{"123", "123"},       // Pure number returns as-is (edge case)
+		{"dev.1.2", "dev.1"}, // Multiple dots, extracts up to last numeric part
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := extractPreReleaseBase(tt.input)
+			if result != tt.expected {
+				t.Errorf("extractPreReleaseBase(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
 	}
