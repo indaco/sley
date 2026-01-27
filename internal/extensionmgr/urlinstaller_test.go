@@ -632,6 +632,100 @@ func TestRepoURL_HostChecks(t *testing.T) {
 	}
 }
 
+// TestParseRepoURL_VariousGitHosts tests URL parsing for various git hosting services
+func TestParseRepoURL_VariousGitHosts(t *testing.T) {
+	tests := []struct {
+		name      string
+		urlStr    string
+		wantHost  string
+		wantOwner string
+		wantRepo  string
+		wantErr   bool
+	}{
+		{
+			name:      "Bitbucket",
+			urlStr:    "https://bitbucket.org/user/repo",
+			wantHost:  "bitbucket.org",
+			wantOwner: "user",
+			wantRepo:  "repo",
+			wantErr:   false,
+		},
+		{
+			name:      "Self-hosted GitLab",
+			urlStr:    "https://gitlab.company.com/team/extension",
+			wantHost:  "gitlab.company.com",
+			wantOwner: "team",
+			wantRepo:  "extension",
+			wantErr:   false,
+		},
+		{
+			name:      "GitHub Enterprise",
+			urlStr:    "https://github.enterprise.com/org/project",
+			wantHost:  "github.enterprise.com",
+			wantOwner: "org",
+			wantRepo:  "project",
+			wantErr:   false,
+		},
+		{
+			name:      "Gitea instance",
+			urlStr:    "https://gitea.example.com/developer/tool",
+			wantHost:  "gitea.example.com",
+			wantOwner: "developer",
+			wantRepo:  "tool",
+			wantErr:   false,
+		},
+		{
+			name:      "Custom git server",
+			urlStr:    "https://git.example.org/team/app",
+			wantHost:  "git.example.org",
+			wantOwner: "team",
+			wantRepo:  "app",
+			wantErr:   false,
+		},
+		{
+			name:      "Self-hosted with port",
+			urlStr:    "https://git.company.com:8443/user/repo",
+			wantHost:  "git.company.com:8443",
+			wantOwner: "user",
+			wantRepo:  "repo",
+			wantErr:   false,
+		},
+		{
+			name:      "Bitbucket without protocol",
+			urlStr:    "bitbucket.org/workspace/repository",
+			wantHost:  "bitbucket.org",
+			wantOwner: "workspace",
+			wantRepo:  "repository",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRepoURL(tt.urlStr)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if got.Host != tt.wantHost {
+				t.Errorf("ParseRepoURL() Host = %v, want %v", got.Host, tt.wantHost)
+			}
+			if got.Owner != tt.wantOwner {
+				t.Errorf("ParseRepoURL() Owner = %v, want %v", got.Owner, tt.wantOwner)
+			}
+			if got.Repo != tt.wantRepo {
+				t.Errorf("ParseRepoURL() Repo = %v, want %v", got.Repo, tt.wantRepo)
+			}
+		})
+	}
+}
+
 /* ------------------------------------------------------------------------- */
 /* TABLE-DRIVEN TESTS FOR SUBDIRECTORY PARSING                             */
 /* ------------------------------------------------------------------------- */

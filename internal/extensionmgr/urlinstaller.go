@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // RepoURL represents a parsed repository URL
@@ -126,13 +127,8 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 		return fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	// Validate that we support this host
-	if !repoURL.IsGitHubURL() && !repoURL.IsGitLabURL() {
-		return fmt.Errorf("unsupported repository host: %s (only github.com and gitlab.com are supported)", repoURL.Host)
-	}
-
-	// Clone the repository
-	fmt.Printf("Cloning %s...\n", repoURL.String())
+	// Clone the repository (any git-accessible host is supported)
+	printer.PrintInfo(fmt.Sprintf("Cloning %s...", repoURL.String()))
 	tempDir, err := CloneRepository(repoURL)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository %s: %w", repoURL.String(), err)
@@ -141,7 +137,7 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 	// Clean up temp directory after installation
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+			printer.PrintWarning(fmt.Sprintf("Failed to clean up temp directory %s: %v", tempDir, err))
 		}
 	}()
 
@@ -158,9 +154,9 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 
 	// Install from the cloned directory (or subdirectory)
 	if repoURL.Subdir != "" {
-		fmt.Printf("Installing extension from %s (subdirectory: %s)...\n", repoURL.String(), repoURL.Subdir)
+		printer.PrintInfo(fmt.Sprintf("Installing extension from %s (subdirectory: %s)...", repoURL.String(), repoURL.Subdir))
 	} else {
-		fmt.Printf("Installing extension from %s...\n", repoURL.String())
+		printer.PrintInfo(fmt.Sprintf("Installing extension from %s...", repoURL.String()))
 	}
 	return registerLocalExtension(extensionPath, configPath, extensionDirectory)
 }

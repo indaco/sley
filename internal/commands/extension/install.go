@@ -15,17 +15,18 @@ func installCmd() *cli.Command {
 		Usage: "Install an extension from a remote repo or local path",
 		Description: `Install an extension from a local path or remote Git repository.
 
-Supported URL formats:
+Supported URL formats (any git-accessible host):
   - https://github.com/user/repo
   - https://gitlab.com/user/repo
-  - github.com/user/repo
-  - gitlab.com/user/repo
+  - https://git.example.com/user/repo (self-hosted)
+  - github.com/user/repo (without protocol)
   - github.com/user/repo/path/to/extension (with subdirectory)
 
 Examples:
   sley extension install --path ./my-extension
   sley extension install --url https://github.com/user/sley-ext-changelog
-  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator`,
+  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator
+  sley extension install --url https://git.company.com/team/extension`,
 		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 			{
 				Flags: [][]cli.Flag{

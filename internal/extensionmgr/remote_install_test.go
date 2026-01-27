@@ -3,8 +3,6 @@
 package extensionmgr
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -17,33 +15,62 @@ import (
 // They may be flaky depending on network conditions and should be used
 // primarily for manual verification.
 
-// TestRemoteInstallation_UnsupportedHost tests installation from unsupported git hosts
-// This test doesn't make network calls, it just tests URL validation
-func TestRemoteInstallation_UnsupportedHost(t *testing.T) {
+// TestRemoteInstallation_VariousGitHosts tests URL parsing for various git hosting services
+// This test doesn't make network calls, it just validates that various hosts are accepted
+func TestRemoteInstallation_VariousGitHosts(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
 
-	tmpDir := t.TempDir()
-	configPath := filepath.Join(tmpDir, ".sley.yaml")
-
-	// Create minimal config
-	initialConfig := `extensions: []`
-	if err := os.WriteFile(configPath, []byte(initialConfig), 0644); err != nil {
-		t.Fatalf("failed to create config: %v", err)
+	tests := []struct {
+		name    string
+		url     string
+		wantErr bool
+	}{
+		{
+			name:    "GitHub",
+			url:     "github.com/user/repo",
+			wantErr: false,
+		},
+		{
+			name:    "GitLab",
+			url:     "gitlab.com/user/repo",
+			wantErr: false,
+		},
+		{
+			name:    "Bitbucket",
+			url:     "bitbucket.org/user/repo",
+			wantErr: false,
+		},
+		{
+			name:    "Self-hosted GitLab",
+			url:     "gitlab.company.com/team/extension",
+			wantErr: false,
+		},
+		{
+			name:    "GitHub Enterprise",
+			url:     "github.enterprise.com/org/repo",
+			wantErr: false,
+		},
+		{
+			name:    "Custom git host",
+			url:     "git.example.com/user/project",
+			wantErr: false,
+		},
 	}
 
-	// Test with unsupported host (bitbucket)
-	testURL := "bitbucket.org/user/repo"
-
-	err := InstallFromURL(testURL, configPath, tmpDir)
-	if err == nil {
-		t.Error("expected error for unsupported host")
-	}
-
-	// Verify error message mentions unsupported host
-	if !contains(err.Error(), "unsupported") {
-		t.Errorf("expected error about unsupported host, got: %v", err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test URL parsing - should accept any valid git URL format
+			repoURL, err := ParseRepoURL(tt.url)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && repoURL == nil {
+				t.Error("ParseRepoURL() returned nil for valid URL")
+			}
+		})
 	}
 }
 
