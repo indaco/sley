@@ -20,11 +20,12 @@ Supported URL formats:
   - https://gitlab.com/user/repo
   - github.com/user/repo
   - gitlab.com/user/repo
+  - github.com/user/repo/path/to/extension (with subdirectory)
 
 Examples:
   sley extension install --path ./my-extension
   sley extension install --url https://github.com/user/sley-ext-changelog
-  sley extension install --url github.com/user/sley-ext-notify`,
+  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator`,
 		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 			{
 				Flags: [][]cli.Flag{
@@ -73,18 +74,9 @@ func runExtensionInstall(cmd *cli.Command) error {
 
 	// Handle local path installation
 	if localPath != "" {
-		// Auto-detect if the path looks like a URL
+		// Reject if URL is detected in --path flag
 		if extensionmgr.IsURL(localPath) {
-			// Validate git is available
-			if err := extensionmgr.ValidateGitAvailable(); err != nil {
-				return cli.Exit(fmt.Sprintf("Error: %v", err), 1)
-			}
-
-			// Install from URL
-			if err := extensionmgr.InstallFromURL(localPath, ".sley.yaml", extensionDirectory); err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to install extension from URL: %v", err), 1)
-			}
-			return nil
+			return cli.Exit("URL detected in --path flag. Please use --url flag for remote installations.", 1)
 		}
 
 		// Proceed with normal extension registration from local path
