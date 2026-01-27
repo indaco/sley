@@ -76,55 +76,96 @@ func (u *DefaultConfigUpdater) AddExtension(path string, extension config.Extens
 // if the key was not present.
 func replaceYAMLSection(content, key, replacement string) (string, bool) {
 	lines := strings.Split(content, "\n")
-	prefix := key + ":"
 
-	startIdx := -1
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		// Match only top-level keys (no leading whitespace) that start with
-		// the key name followed by a colon.
-		if len(line) > 0 && line[0] != ' ' && line[0] != '\t' &&
-			(trimmed == prefix || strings.HasPrefix(trimmed, prefix+" ") || strings.HasPrefix(trimmed, prefix+"\n")) {
-			startIdx = i
-			break
-		}
-	}
-
+	startIdx := findTopLevelKeyIndex(lines, key)
 	if startIdx == -1 {
 		return content, false
 	}
 
-	// Determine the end of the section: all subsequent lines that are indented
-	// or blank belong to this section. A non-indented, non-blank line marks
-	// the start of the next section.
+	endIdx := findSectionEnd(lines, startIdx)
+
+	return buildReplacedContent(lines, startIdx, endIdx, replacement), true
+}
+
+// findTopLevelKeyIndex returns the line index of the first top-level YAML key
+// matching key, or -1 if not found. A top-level key has no leading whitespace
+// and is followed by a colon.
+func findTopLevelKeyIndex(lines []string, key string) int {
+	prefix := key + ":"
+	for i, line := range lines {
+		if !isTopLevelLine(line) {
+			continue
+		}
+		trimmed := strings.TrimSpace(line)
+		if trimmed == prefix || strings.HasPrefix(trimmed, prefix+" ") || strings.HasPrefix(trimmed, prefix+"\n") {
+			return i
+		}
+	}
+	return -1
+}
+
+// isTopLevelLine reports whether a line is non-empty and has no leading
+// whitespace, indicating a top-level YAML key.
+func isTopLevelLine(line string) bool {
+	return len(line) > 0 && line[0] != ' ' && line[0] != '\t'
+}
+
+// isBlankLine reports whether a line is empty or contains only whitespace.
+func isBlankLine(line string) bool {
+	return strings.TrimSpace(line) == ""
+}
+
+// isIndentedLine reports whether a non-empty line starts with whitespace.
+func isIndentedLine(line string) bool {
+	return len(line) > 0 && (line[0] == ' ' || line[0] == '\t')
+}
+
+// findSectionEnd returns the index of the first line after the section that
+// starts at startIdx. Indented and blank lines belong to the section. A blank
+// line followed by a non-indented line (or EOF) marks the section boundary.
+func findSectionEnd(lines []string, startIdx int) int {
 	endIdx := startIdx + 1
 	for endIdx < len(lines) {
 		line := lines[endIdx]
-		if line == "" || strings.TrimSpace(line) == "" {
-			// Blank lines might be part of the section or a separator.
-			// Look ahead to see if the next non-blank line is still indented.
-			ahead := endIdx + 1
-			for ahead < len(lines) && strings.TrimSpace(lines[ahead]) == "" {
-				ahead++
-			}
-			if ahead < len(lines) && len(lines[ahead]) > 0 && (lines[ahead][0] == ' ' || lines[ahead][0] == '\t') {
-				// Still inside the section.
+		if isBlankLine(line) {
+			if ahead := skipBlankLines(lines, endIdx+1); isIndentedLine(safeLineAt(lines, ahead)) {
 				endIdx = ahead + 1
 				continue
 			}
-			// Blank line(s) followed by a top-level key or EOF: section ends here.
 			break
 		}
-		if line[0] != ' ' && line[0] != '\t' {
-			// Next top-level key: section ends before this line.
+		if !isIndentedLine(line) {
 			break
 		}
 		endIdx++
 	}
+	return endIdx
+}
 
-	// Build the result: lines before the section + replacement + lines after.
+// skipBlankLines advances from index start past any consecutive blank lines
+// and returns the index of the first non-blank line (or len(lines) if none).
+func skipBlankLines(lines []string, start int) int {
+	i := start
+	for i < len(lines) && isBlankLine(lines[i]) {
+		i++
+	}
+	return i
+}
+
+// safeLineAt returns lines[i] if i is within bounds, or an empty string
+// otherwise. This avoids index-out-of-range checks at call sites.
+func safeLineAt(lines []string, i int) string {
+	if i < len(lines) {
+		return lines[i]
+	}
+	return ""
+}
+
+// buildReplacedContent assembles the final content by concatenating lines
+// before startIdx, the replacement text, and lines from endIdx onward.
+func buildReplacedContent(lines []string, startIdx, endIdx int, replacement string) string {
 	var result strings.Builder
-	for i := 0; i < startIdx; i++ {
+	for i := range startIdx {
 		result.WriteString(lines[i])
 		result.WriteString("\n")
 	}
@@ -136,6 +177,5 @@ func replaceYAMLSection(content, key, replacement string) (string, bool) {
 			result.WriteString("\n")
 		}
 	}
-
-	return result.String(), true
+	return result.String()
 }
