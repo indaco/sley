@@ -87,19 +87,18 @@ extensions:
 		Enabled: true,
 	}
 
-	// First registration (no error expected)
+	// First registration (extension already exists in config, should error)
 	err = AddExtensionToConfig(configPath, extension)
-	if err != nil {
-		t.Fatalf("unexpected error during first registration: %v", err)
+	if err == nil {
+		t.Fatal("expected error for duplicate extension, got nil")
 	}
 
-	// Second registration (no error expected, duplicates are silently skipped)
-	err = AddExtensionToConfig(configPath, extension)
-	if err != nil {
-		t.Fatalf("unexpected error during second registration: %v", err)
+	// Error should indicate extension already registered
+	if !strings.Contains(err.Error(), "already registered") {
+		t.Errorf("expected error to contain 'already registered', got: %v", err)
 	}
 
-	// Ensure the config file has only one plugin
+	// Ensure the config file still has only one plugin
 	cfg, err := config.LoadConfigFn()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)

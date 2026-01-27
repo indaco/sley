@@ -6,6 +6,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/printer"
 )
 
 var (
@@ -26,10 +27,13 @@ func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
 		return fmt.Errorf("failed to parse config %q: %w", path, err)
 	}
 
-	// Avoid duplicates
+	// Check for duplicates and inform user
 	for _, ext := range cfg.Extensions {
 		if ext.Name == extension.Name {
-			return nil
+			printer.PrintInfo(fmt.Sprintf("Extension %q is already installed at: %s", extension.Name, ext.Path))
+			printer.PrintInfo("To reinstall, remove it first:")
+			fmt.Printf("  sley extension remove --name %s\n", extension.Name)
+			return fmt.Errorf("extension %q already registered in configuration", extension.Name)
 		}
 	}
 
