@@ -1,6 +1,8 @@
 package extensions
 
 import (
+	"errors"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -20,12 +22,12 @@ func TestExtensionManifest_Validate(t *testing.T) {
 		modify   func(m *ExtensionManifest)
 		expected string
 	}{
-		{"missing name", func(m *ExtensionManifest) { m.Name = "" }, "missing 'name'"},
-		{"missing version", func(m *ExtensionManifest) { m.Version = "" }, "missing 'version'"},
-		{"missing description", func(m *ExtensionManifest) { m.Description = "" }, "missing 'description'"},
-		{"missing author", func(m *ExtensionManifest) { m.Author = "" }, "missing 'author'"},
-		{"missing repository", func(m *ExtensionManifest) { m.Repository = "" }, "missing 'repository'"},
-		{"missing entry", func(m *ExtensionManifest) { m.Entry = "" }, "missing 'entry'"},
+		{"missing name", func(m *ExtensionManifest) { m.Name = "" }, "name"},
+		{"missing version", func(m *ExtensionManifest) { m.Version = "" }, "version"},
+		{"missing description", func(m *ExtensionManifest) { m.Description = "" }, "description"},
+		{"missing author", func(m *ExtensionManifest) { m.Author = "" }, "author"},
+		{"missing repository", func(m *ExtensionManifest) { m.Repository = "" }, "repository"},
+		{"missing entry", func(m *ExtensionManifest) { m.Entry = "" }, "entry"},
 	}
 
 	for _, tt := range tests {
@@ -34,7 +36,19 @@ func TestExtensionManifest_Validate(t *testing.T) {
 			tt.modify(&m)
 
 			err := m.ValidateManifest()
-			if err == nil || !strings.Contains(err.Error(), tt.expected) {
+			if err == nil {
+				t.Errorf("expected error, got nil")
+				return
+			}
+
+			// Check if it's our custom error type
+			var valErr *ManifestValidationError
+			if errors.As(err, &valErr) {
+				found := slices.Contains(valErr.MissingFields, tt.expected)
+				if !found {
+					t.Errorf("expected missing field %q, got %v", tt.expected, valErr.MissingFields)
+				}
+			} else if !strings.Contains(err.Error(), tt.expected) {
 				t.Errorf("expected error to contain %q, got %v", tt.expected, err)
 			}
 		})
@@ -110,7 +124,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "hook.sh",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'name'",
+			wantErrText: "name",
 		},
 		{
 			name: "missing version only",
@@ -123,7 +137,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "hook.sh",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'version'",
+			wantErrText: "version",
 		},
 		{
 			name: "missing description only",
@@ -136,7 +150,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "hook.sh",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'description'",
+			wantErrText: "description",
 		},
 		{
 			name: "missing author only",
@@ -149,7 +163,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "hook.sh",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'author'",
+			wantErrText: "author",
 		},
 		{
 			name: "missing repository only",
@@ -162,7 +176,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "hook.sh",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'repository'",
+			wantErrText: "repository",
 		},
 		{
 			name: "missing entry only",
@@ -175,7 +189,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'entry'",
+			wantErrText: "entry",
 		},
 		{
 			name: "all fields empty",
@@ -188,7 +202,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 				Entry:       "",
 			},
 			wantErr:     true,
-			wantErrText: "missing 'name'", // Should fail on first check
+			wantErrText: "name", // Should contain all missing fields
 		},
 		{
 			name: "whitespace only fields",
@@ -308,5 +322,147 @@ func TestExtensionManifest_Fields(t *testing.T) {
 			}
 			tt.checkFn(t, tt.manifest)
 		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* TESTS FOR CUSTOM MANIFEST ERROR TYPES                                   */
+/* ------------------------------------------------------------------------- */
+
+// TestManifestNotFoundError tests the ManifestNotFoundError type
+func TestManifestNotFoundError(t *testing.T) {
+	err := &ManifestNotFoundError{
+		Path: "/path/to/extension.yaml",
+		Dir:  "/path/to",
+	}
+
+	// Test Error() method
+	if !strings.Contains(err.Error(), "extension manifest not found") {
+		t.Errorf("Error() should contain \"extension manifest not found\", got: %s", err.Error())
+	}
+
+	if !strings.Contains(err.Error(), "/path/to/extension.yaml") {
+		t.Errorf("Error() should contain path, got: %s", err.Error())
+	}
+
+	// Test Suggestion() method
+	suggestion := err.Suggestion()
+	expectedParts := []string{
+		"Extension manifest not found",
+		"name:",
+		"version:",
+		"description:",
+		"author:",
+		"repository:",
+		"entry:",
+		"hooks:",
+		"Documentation:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(suggestion, part) {
+			t.Errorf("Suggestion() should contain %q, got: %s", part, suggestion)
+		}
+	}
+}
+
+// TestManifestParseError tests the ManifestParseError type
+func TestManifestParseError(t *testing.T) {
+	originalErr := errors.New("yaml: line 5: mapping values are not allowed in this context")
+	err := &ManifestParseError{
+		Path: "/path/to/extension.yaml",
+		Err:  originalErr,
+	}
+
+	// Test Error() method
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "failed to parse manifest") {
+		t.Errorf("Error() should contain \"failed to parse manifest\", got: %s", errMsg)
+	}
+
+	if !strings.Contains(errMsg, "/path/to/extension.yaml") {
+		t.Errorf("Error() should contain path, got: %s", errMsg)
+	}
+
+	// Test Unwrap() method
+	unwrapped := err.Unwrap()
+	if unwrapped != originalErr {
+		t.Errorf("Unwrap() should return original error, got: %v", unwrapped)
+	}
+}
+
+// TestManifestValidationError tests the ManifestValidationError type
+func TestManifestValidationError(t *testing.T) {
+	err := &ManifestValidationError{
+		Path:          "/path/to/extension.yaml",
+		MissingFields: []string{"name", "version", "entry"},
+	}
+
+	// Test Error() method
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "invalid manifest") {
+		t.Errorf("Error() should contain \"invalid manifest\", got: %s", errMsg)
+	}
+
+	if !strings.Contains(errMsg, "name") || !strings.Contains(errMsg, "version") || !strings.Contains(errMsg, "entry") {
+		t.Errorf("Error() should contain all missing fields, got: %s", errMsg)
+	}
+
+	// Test Suggestion() method
+	suggestion := err.Suggestion()
+	expectedParts := []string{
+		"Manifest validation failed",
+		"Missing required fields:",
+		"• name",
+		"• version",
+		"• entry",
+		"Documentation:",
+	}
+
+	for _, part := range expectedParts {
+		if !strings.Contains(suggestion, part) {
+			t.Errorf("Suggestion() should contain %q, got: %s", part, suggestion)
+		}
+	}
+}
+
+// TestManifestValidation_MultipleErrors tests that all missing fields are reported
+func TestManifestValidation_MultipleErrors(t *testing.T) {
+	manifest := ExtensionManifest{
+		Name:        "",
+		Version:     "",
+		Description: "Has description",
+		Author:      "",
+		Repository:  "https://github.com/test/repo",
+		Entry:       "",
+	}
+
+	err := manifest.ValidateManifest()
+	if err == nil {
+		t.Fatal("expected validation error, got nil")
+	}
+
+	var valErr *ManifestValidationError
+	if !errors.As(err, &valErr) {
+		t.Fatalf("expected ManifestValidationError, got %T", err)
+	}
+
+	// Should have 4 missing fields: name, version, author, entry
+	expectedMissing := map[string]bool{
+		"name":    true,
+		"version": true,
+		"author":  true,
+		"entry":   true,
+	}
+
+	if len(valErr.MissingFields) != len(expectedMissing) {
+		t.Errorf("expected %d missing fields, got %d: %v",
+			len(expectedMissing), len(valErr.MissingFields), valErr.MissingFields)
+	}
+
+	for _, field := range valErr.MissingFields {
+		if !expectedMissing[field] {
+			t.Errorf("unexpected missing field: %s", field)
+		}
 	}
 }

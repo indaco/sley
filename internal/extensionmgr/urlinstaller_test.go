@@ -631,3 +631,525 @@ func TestRepoURL_HostChecks(t *testing.T) {
 		})
 	}
 }
+
+// TestParseRepoURL_VariousGitHosts tests URL parsing for various git hosting services
+func TestParseRepoURL_VariousGitHosts(t *testing.T) {
+	tests := []struct {
+		name      string
+		urlStr    string
+		wantHost  string
+		wantOwner string
+		wantRepo  string
+		wantErr   bool
+	}{
+		{
+			name:      "Bitbucket",
+			urlStr:    "https://bitbucket.org/user/repo",
+			wantHost:  "bitbucket.org",
+			wantOwner: "user",
+			wantRepo:  "repo",
+			wantErr:   false,
+		},
+		{
+			name:      "Self-hosted GitLab",
+			urlStr:    "https://gitlab.company.com/team/extension",
+			wantHost:  "gitlab.company.com",
+			wantOwner: "team",
+			wantRepo:  "extension",
+			wantErr:   false,
+		},
+		{
+			name:      "GitHub Enterprise",
+			urlStr:    "https://github.enterprise.com/org/project",
+			wantHost:  "github.enterprise.com",
+			wantOwner: "org",
+			wantRepo:  "project",
+			wantErr:   false,
+		},
+		{
+			name:      "Gitea instance",
+			urlStr:    "https://gitea.example.com/developer/tool",
+			wantHost:  "gitea.example.com",
+			wantOwner: "developer",
+			wantRepo:  "tool",
+			wantErr:   false,
+		},
+		{
+			name:      "Custom git server",
+			urlStr:    "https://git.example.org/team/app",
+			wantHost:  "git.example.org",
+			wantOwner: "team",
+			wantRepo:  "app",
+			wantErr:   false,
+		},
+		{
+			name:      "Self-hosted with port",
+			urlStr:    "https://git.company.com:8443/user/repo",
+			wantHost:  "git.company.com:8443",
+			wantOwner: "user",
+			wantRepo:  "repo",
+			wantErr:   false,
+		},
+		{
+			name:      "Bitbucket without protocol",
+			urlStr:    "bitbucket.org/workspace/repository",
+			wantHost:  "bitbucket.org",
+			wantOwner: "workspace",
+			wantRepo:  "repository",
+			wantErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRepoURL(tt.urlStr)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				return
+			}
+
+			if got.Host != tt.wantHost {
+				t.Errorf("ParseRepoURL() Host = %v, want %v", got.Host, tt.wantHost)
+			}
+			if got.Owner != tt.wantOwner {
+				t.Errorf("ParseRepoURL() Owner = %v, want %v", got.Owner, tt.wantOwner)
+			}
+			if got.Repo != tt.wantRepo {
+				t.Errorf("ParseRepoURL() Repo = %v, want %v", got.Repo, tt.wantRepo)
+			}
+		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* TABLE-DRIVEN TESTS FOR VERSION/BRANCH/COMMIT REF PARSING               */
+/* ------------------------------------------------------------------------- */
+
+// TestParseRepoURL_WithRef tests parsing URLs with version/branch/commit refs
+func TestParseRepoURL_WithRef(t *testing.T) {
+	tests := []struct {
+		name        string
+		urlStr      string
+		wantHost    string
+		wantOwner   string
+		wantRepo    string
+		wantSubdir  string
+		wantRef     string
+		wantErr     bool
+		wantErrText string
+	}{
+		{
+			name:       "URL with version tag",
+			urlStr:     "https://github.com/user/repo@v1.0.0",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "v1.0.0",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with branch name",
+			urlStr:     "https://github.com/user/repo@develop",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "develop",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with commit hash (short)",
+			urlStr:     "https://github.com/user/repo@abc123",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "abc123",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with commit hash (long)",
+			urlStr:     "https://github.com/user/repo@abc123def456789012345678901234567890",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "abc123def456789012345678901234567890",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with subdirectory and version tag",
+			urlStr:     "https://github.com/indaco/sley/contrib/extensions/changelog-generator@v2.0.0",
+			wantHost:   "github.com",
+			wantOwner:  "indaco",
+			wantRepo:   "sley",
+			wantSubdir: "contrib/extensions/changelog-generator",
+			wantRef:    "v2.0.0",
+			wantErr:    false,
+		},
+		{
+			name:       "URL without protocol with version",
+			urlStr:     "github.com/user/repo@v1.2.3",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "v1.2.3",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with main branch",
+			urlStr:     "github.com/user/repo@main",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "main",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with master branch",
+			urlStr:     "github.com/user/repo@master",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "master",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with ref containing slash (release branch)",
+			urlStr:     "github.com/user/repo@release/v1.0",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "release/v1.0",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with ref containing dash",
+			urlStr:     "github.com/user/repo@feature-branch",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "feature-branch",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with ref containing underscore",
+			urlStr:     "github.com/user/repo@feature_branch",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "feature_branch",
+			wantErr:    false,
+		},
+		{
+			name:       "GitLab URL with version",
+			urlStr:     "https://gitlab.com/org/project@v2.5.0",
+			wantHost:   "gitlab.com",
+			wantOwner:  "org",
+			wantRepo:   "project",
+			wantSubdir: "",
+			wantRef:    "v2.5.0",
+			wantErr:    false,
+		},
+		{
+			name:       "Bitbucket URL with branch",
+			urlStr:     "https://bitbucket.org/team/repo@develop",
+			wantHost:   "bitbucket.org",
+			wantOwner:  "team",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "develop",
+			wantErr:    false,
+		},
+		{
+			name:       "Self-hosted with version",
+			urlStr:     "https://git.company.com/team/ext@v1.0.0",
+			wantHost:   "git.company.com",
+			wantOwner:  "team",
+			wantRepo:   "ext",
+			wantSubdir: "",
+			wantRef:    "v1.0.0",
+			wantErr:    false,
+		},
+		{
+			name:        "URL with empty ref after @",
+			urlStr:      "github.com/user/repo@",
+			wantErr:     true,
+			wantErrText: "empty ref specified after @",
+		},
+		{
+			name:       "URL with .git suffix and version",
+			urlStr:     "https://github.com/user/repo.git@v1.0.0",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "v1.0.0",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with subdirectory and branch with slash",
+			urlStr:     "github.com/org/repo/extensions/my-ext@release/1.0",
+			wantHost:   "github.com",
+			wantOwner:  "org",
+			wantRepo:   "repo",
+			wantSubdir: "extensions/my-ext",
+			wantRef:    "release/1.0",
+			wantErr:    false,
+		},
+		{
+			name:       "URL without ref (backward compatibility)",
+			urlStr:     "github.com/user/repo",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantRef:    "",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRepoURL(tt.urlStr)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if tt.wantErrText != "" && !contains(err.Error(), tt.wantErrText) {
+					t.Errorf("Expected error containing %q, got %q", tt.wantErrText, err.Error())
+				}
+				return
+			}
+
+			if got.Host != tt.wantHost {
+				t.Errorf("ParseRepoURL() Host = %v, want %v", got.Host, tt.wantHost)
+			}
+			if got.Owner != tt.wantOwner {
+				t.Errorf("ParseRepoURL() Owner = %v, want %v", got.Owner, tt.wantOwner)
+			}
+			if got.Repo != tt.wantRepo {
+				t.Errorf("ParseRepoURL() Repo = %v, want %v", got.Repo, tt.wantRepo)
+			}
+			if got.Subdir != tt.wantSubdir {
+				t.Errorf("ParseRepoURL() Subdir = %q, want %q", got.Subdir, tt.wantSubdir)
+			}
+			if got.Ref != tt.wantRef {
+				t.Errorf("ParseRepoURL() Ref = %q, want %q", got.Ref, tt.wantRef)
+			}
+		})
+	}
+}
+
+// TestRepoURL_String_WithRef tests the String() method includes ref when present
+func TestRepoURL_String_WithRef(t *testing.T) {
+	tests := []struct {
+		name    string
+		repoURL *RepoURL
+		want    string
+	}{
+		{
+			name: "without ref",
+			repoURL: &RepoURL{
+				Host:  "github.com",
+				Owner: "user",
+				Repo:  "repo",
+			},
+			want: "user/repo",
+		},
+		{
+			name: "with version tag",
+			repoURL: &RepoURL{
+				Host:  "github.com",
+				Owner: "user",
+				Repo:  "repo",
+				Ref:   "v1.0.0",
+			},
+			want: "user/repo@v1.0.0",
+		},
+		{
+			name: "with branch",
+			repoURL: &RepoURL{
+				Host:  "github.com",
+				Owner: "user",
+				Repo:  "repo",
+				Ref:   "develop",
+			},
+			want: "user/repo@develop",
+		},
+		{
+			name: "with commit hash",
+			repoURL: &RepoURL{
+				Host:  "github.com",
+				Owner: "user",
+				Repo:  "repo",
+				Ref:   "abc123",
+			},
+			want: "user/repo@abc123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.repoURL.String()
+			if got != tt.want {
+				t.Errorf("String() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* TABLE-DRIVEN TESTS FOR SUBDIRECTORY PARSING                             */
+/* ------------------------------------------------------------------------- */
+
+// TestParseRepoURL_Subdirectory tests subdirectory parsing in repository URLs
+func TestParseRepoURL_Subdirectory(t *testing.T) {
+	tests := []struct {
+		name        string
+		urlStr      string
+		wantHost    string
+		wantOwner   string
+		wantRepo    string
+		wantSubdir  string
+		wantErr     bool
+		wantErrText string
+	}{
+		{
+			name:       "URL with single subdirectory",
+			urlStr:     "https://github.com/user/repo/extensions",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "extensions",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with multiple subdirectory levels",
+			urlStr:     "https://github.com/indaco/sley/contrib/extensions/changelog-generator",
+			wantHost:   "github.com",
+			wantOwner:  "indaco",
+			wantRepo:   "sley",
+			wantSubdir: "contrib/extensions/changelog-generator",
+			wantErr:    false,
+		},
+		{
+			name:       "URL without protocol with subdirectory",
+			urlStr:     "github.com/org/project/path/to/extension",
+			wantHost:   "github.com",
+			wantOwner:  "org",
+			wantRepo:   "project",
+			wantSubdir: "path/to/extension",
+			wantErr:    false,
+		},
+		{
+			name:       "GitLab URL with subdirectory",
+			urlStr:     "https://gitlab.com/group/repo/extensions/my-ext",
+			wantHost:   "gitlab.com",
+			wantOwner:  "group",
+			wantRepo:   "repo",
+			wantSubdir: "extensions/my-ext",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with .git suffix and subdirectory",
+			urlStr:     "https://github.com/user/repo.git/subdir",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "subdir",
+			wantErr:    false,
+		},
+		{
+			name:       "URL without subdirectory (backward compatibility)",
+			urlStr:     "https://github.com/user/repo",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with trailing slash and subdirectory",
+			urlStr:     "https://github.com/user/repo/subdir/",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "subdir",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with deep nested subdirectories",
+			urlStr:     "github.com/org/proj/a/b/c/d/e",
+			wantHost:   "github.com",
+			wantOwner:  "org",
+			wantRepo:   "proj",
+			wantSubdir: "a/b/c/d/e",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with subdirectory containing dashes",
+			urlStr:     "github.com/user/repo/my-extension-dir",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "my-extension-dir",
+			wantErr:    false,
+		},
+		{
+			name:       "URL with subdirectory containing underscores",
+			urlStr:     "github.com/user/repo/my_extension_dir",
+			wantHost:   "github.com",
+			wantOwner:  "user",
+			wantRepo:   "repo",
+			wantSubdir: "my_extension_dir",
+			wantErr:    false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseRepoURL(tt.urlStr)
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				if tt.wantErrText != "" && !contains(err.Error(), tt.wantErrText) {
+					t.Errorf("Expected error containing %q, got %q", tt.wantErrText, err.Error())
+				}
+				return
+			}
+
+			if got.Host != tt.wantHost {
+				t.Errorf("ParseRepoURL() Host = %v, want %v", got.Host, tt.wantHost)
+			}
+			if got.Owner != tt.wantOwner {
+				t.Errorf("ParseRepoURL() Owner = %v, want %v", got.Owner, tt.wantOwner)
+			}
+			if got.Repo != tt.wantRepo {
+				t.Errorf("ParseRepoURL() Repo = %v, want %v", got.Repo, tt.wantRepo)
+			}
+			if got.Subdir != tt.wantSubdir {
+				t.Errorf("ParseRepoURL() Subdir = %q, want %q", got.Subdir, tt.wantSubdir)
+			}
+		})
+	}
+}

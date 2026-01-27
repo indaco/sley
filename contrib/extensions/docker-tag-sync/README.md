@@ -18,6 +18,14 @@ Tags Docker images with the new version after successful version bumps.
 
 ## Installation
 
+Install directly from the sley repository:
+
+```bash
+sley extension install --url github.com/indaco/sley/contrib/extensions/docker-tag-sync
+```
+
+Or from a local clone:
+
 ```bash
 sley extension install --path ./contrib/extensions/docker-tag-sync
 ```

@@ -137,7 +137,8 @@ func TestExtensionLifecycle(t *testing.T) {
 	}
 
 	// Install the extension
-	if err := registerLocalExtension(extensionSrcDir, configPath, tmpDir); err != nil {
+	registrar := NewDefaultExtensionRegistrarInstance()
+	if err := registrar.Register(extensionSrcDir, configPath, tmpDir); err != nil {
 		t.Fatalf("failed to install extension: %v", err)
 	}
 

@@ -15,16 +15,34 @@ func installCmd() *cli.Command {
 		Usage: "Install an extension from a remote repo or local path",
 		Description: `Install an extension from a local path or remote Git repository.
 
-Supported URL formats:
+Supported URL formats (any git-accessible host):
   - https://github.com/user/repo
-  - https://gitlab.com/user/repo
-  - github.com/user/repo
-  - gitlab.com/user/repo
+  - https://github.com/user/repo@v1.0.0 (specific version)
+  - https://github.com/user/repo@develop (from branch)
+  - https://github.com/user/repo@abc123 (specific commit)
+  - github.com/user/repo/path/to/extension (with subdirectory)
+  - github.com/user/repo/path/to/extension@v2.0.0 (subdirectory with version)
+  - https://gitlab.com/user/repo (GitLab)
+  - https://git.example.com/user/repo (self-hosted)
 
 Examples:
+  # Install from local path
   sley extension install --path ./my-extension
+
+  # Install latest from default branch
   sley extension install --url https://github.com/user/sley-ext-changelog
-  sley extension install --url github.com/user/sley-ext-notify`,
+
+  # Install specific version
+  sley extension install --url github.com/user/sley-ext-changelog@v1.0.0
+
+  # Install from branch
+  sley extension install --url github.com/user/sley-ext-changelog@develop
+
+  # Install from subdirectory with version
+  sley extension install --url github.com/indaco/sley/contrib/extensions/changelog-generator@v2.0.0
+
+  # Install from self-hosted git
+  sley extension install --url https://git.company.com/team/extension@main`,
 		MutuallyExclusiveFlags: []cli.MutuallyExclusiveFlags{
 			{
 				Flags: [][]cli.Flag{
@@ -73,22 +91,14 @@ func runExtensionInstall(cmd *cli.Command) error {
 
 	// Handle local path installation
 	if localPath != "" {
-		// Auto-detect if the path looks like a URL
+		// Reject if URL is detected in --path flag
 		if extensionmgr.IsURL(localPath) {
-			// Validate git is available
-			if err := extensionmgr.ValidateGitAvailable(); err != nil {
-				return cli.Exit(fmt.Sprintf("Error: %v", err), 1)
-			}
-
-			// Install from URL
-			if err := extensionmgr.InstallFromURL(localPath, ".sley.yaml", extensionDirectory); err != nil {
-				return cli.Exit(fmt.Sprintf("Failed to install extension from URL: %v", err), 1)
-			}
-			return nil
+			return cli.Exit("URL detected in --path flag. Please use --url flag for remote installations.", 1)
 		}
 
 		// Proceed with normal extension registration from local path
-		if err := extensionmgr.RegisterLocalExtensionFn(localPath, ".sley.yaml", extensionDirectory); err != nil {
+		registrar := extensionmgr.NewDefaultExtensionRegistrarInstance()
+		if err := registrar.Register(localPath, ".sley.yaml", extensionDirectory); err != nil {
 			return cli.Exit(fmt.Sprintf("Failed to install extension: %v", err), 1)
 		}
 		return nil

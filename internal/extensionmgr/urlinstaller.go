@@ -9,22 +9,49 @@ import (
 	"strings"
 
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // RepoURL represents a parsed repository URL
 type RepoURL struct {
-	Host  string // github.com, gitlab.com, etc.
-	Owner string // user or organization
-	Repo  string // repository name
-	Raw   string // original URL
+	Host   string // github.com, gitlab.com, etc.
+	Owner  string // user or organization
+	Repo   string // repository name
+	Subdir string // optional subdirectory path within the repository
+	Ref    string // optional version tag, branch name, or commit hash
+	Raw    string // original URL
 }
 
-// ParseRepoURL parses various repository URL formats into a RepoURL struct
+// ParseRepoURL parses various repository URL formats into a RepoURL struct.
+// Supports version/branch/commit specification via @ separator:
+//   - github.com/user/repo@v1.0.0 (version tag)
+//   - github.com/user/repo@develop (branch)
+//   - github.com/user/repo@abc123 (commit hash)
+//   - github.com/user/repo/subdir@v1.0.0 (subdirectory with ref)
 func ParseRepoURL(urlStr string) (*RepoURL, error) {
 	// Trim whitespace
 	urlStr = strings.TrimSpace(urlStr)
 	if urlStr == "" {
 		return nil, fmt.Errorf("empty URL")
+	}
+
+	// Extract ref (version/branch/commit) if present before @ separator
+	// Split on @ to separate URL path from ref
+	var ref string
+	if idx := strings.LastIndex(urlStr, "@"); idx != -1 {
+		// Check if @ is part of the protocol (e.g., user@host for SSH)
+		// We only consider @ after :// or if no protocol is present
+		protocolEnd := strings.Index(urlStr, "://")
+		if protocolEnd == -1 || idx > protocolEnd {
+			// Extract ref after @
+			ref = strings.TrimSpace(urlStr[idx+1:])
+			urlStr = urlStr[:idx]
+
+			// Validate ref is not empty
+			if ref == "" {
+				return nil, fmt.Errorf("empty ref specified after @")
+			}
+		}
 	}
 
 	// Handle URLs without protocol
@@ -44,18 +71,29 @@ func ParseRepoURL(urlStr string) (*RepoURL, error) {
 
 	// Extract owner and repo from path
 	path := strings.TrimPrefix(parsed.Path, "/")
-	path = strings.TrimSuffix(path, ".git")
+	path = strings.TrimSuffix(path, "/")
 
 	parts := strings.Split(path, "/")
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid repository URL format: expected owner/repo")
 	}
 
+	// Remove .git suffix from repo name if present
+	repo := strings.TrimSuffix(parts[1], ".git")
+
+	// Extract subdirectory if present (anything beyond owner/repo)
+	var subdir string
+	if len(parts) > 2 {
+		subdir = strings.Join(parts[2:], "/")
+	}
+
 	return &RepoURL{
-		Host:  host,
-		Owner: parts[0],
-		Repo:  parts[1],
-		Raw:   urlStr,
+		Host:   host,
+		Owner:  parts[0],
+		Repo:   repo,
+		Subdir: subdir,
+		Ref:    ref,
+		Raw:    urlStr,
 	}, nil
 }
 
@@ -76,10 +114,14 @@ func (r *RepoURL) CloneURL() string {
 
 // String returns a human-readable representation
 func (r *RepoURL) String() string {
+	if r.Ref != "" {
+		return fmt.Sprintf("%s/%s@%s", r.Owner, r.Repo, r.Ref)
+	}
 	return fmt.Sprintf("%s/%s", r.Owner, r.Repo)
 }
 
-// CloneRepository clones a repository to a temporary directory
+// CloneRepository clones a repository to a temporary directory.
+// If repoURL.Ref is specified, clones that specific version/branch/commit.
 func CloneRepository(repoURL *RepoURL) (string, error) {
 	// Create temp directory
 	tempDir, err := os.MkdirTemp("", "sley-ext-*")
@@ -92,16 +134,31 @@ func CloneRepository(repoURL *RepoURL) (string, error) {
 	defer cancel()
 
 	cloneURL := repoURL.CloneURL()
-	cmd := exec.CommandContext(ctx, "git", "clone", "--depth", "1", cloneURL, tempDir)
+
+	// Build git clone command with optional ref (version/branch/commit)
+	args := []string{"clone", "--depth", "1"}
+
+	// Add --branch flag if ref is specified (works for tags, branches, and commits)
+	if repoURL.Ref != "" {
+		args = append(args, "--branch", repoURL.Ref)
+	}
+
+	args = append(args, cloneURL, tempDir)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		// Clean up temp dir on failure
 		_ = os.RemoveAll(tempDir)
+
+		// Handle timeout separately as it's a context error
 		if ctx.Err() == context.DeadlineExceeded {
 			return "", fmt.Errorf("git clone timeout after %v: %w\noutput: %s", core.TimeoutGit, err, string(output))
 		}
-		return "", fmt.Errorf("git clone failed: %w\noutput: %s", err, string(output))
+
+		// Parse git error output and provide helpful context
+		return "", FormatGitError(err, string(output), repoURL)
 	}
 
 	return tempDir, nil
@@ -115,13 +172,13 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 		return fmt.Errorf("failed to parse URL: %w", err)
 	}
 
-	// Validate that we support this host
-	if !repoURL.IsGitHubURL() && !repoURL.IsGitLabURL() {
-		return fmt.Errorf("unsupported repository host: %s (only github.com and gitlab.com are supported)", repoURL.Host)
+	// Clone the repository (any git-accessible host is supported)
+	cloneMsg := fmt.Sprintf("Cloning %s...", repoURL.String())
+	if repoURL.Ref != "" {
+		cloneMsg = fmt.Sprintf("Cloning %s@%s...", repoURL.String(), repoURL.Ref)
 	}
+	printer.PrintInfo(cloneMsg)
 
-	// Clone the repository
-	fmt.Printf("Cloning %s...\n", repoURL.String())
 	tempDir, err := CloneRepository(repoURL)
 	if err != nil {
 		return fmt.Errorf("failed to clone repository %s: %w", repoURL.String(), err)
@@ -130,13 +187,31 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 	// Clean up temp directory after installation
 	defer func() {
 		if err := os.RemoveAll(tempDir); err != nil {
-			fmt.Fprintf(os.Stderr, "Warning: failed to clean up temp directory %s: %v\n", tempDir, err)
+			printer.PrintWarning(fmt.Sprintf("Failed to clean up temp directory %s: %v", tempDir, err))
 		}
 	}()
 
-	// Install from the cloned directory
-	fmt.Printf("Installing extension from %s...\n", tempDir)
-	return registerLocalExtension(tempDir, configPath, extensionDirectory)
+	// Navigate to subdirectory if specified
+	extensionPath := tempDir
+	if repoURL.Subdir != "" {
+		extensionPath = fmt.Sprintf("%s/%s", tempDir, repoURL.Subdir)
+		if _, err := os.Stat(extensionPath); os.IsNotExist(err) {
+			return fmt.Errorf("subdirectory %q not found in repository %s", repoURL.Subdir, repoURL.String())
+		} else if err != nil {
+			return fmt.Errorf("failed to access subdirectory %q: %w", repoURL.Subdir, err)
+		}
+	}
+
+	// Install from the cloned directory (or subdirectory)
+	if repoURL.Subdir != "" {
+		printer.PrintInfo(fmt.Sprintf("Installing extension from %s (subdirectory: %s)...", repoURL.String(), repoURL.Subdir))
+	} else {
+		printer.PrintInfo(fmt.Sprintf("Installing extension from %s...", repoURL.String()))
+	}
+
+	// Register the extension using the default registrar
+	registrar := NewDefaultExtensionRegistrarInstance()
+	return registrar.Register(extensionPath, configPath, extensionDirectory)
 }
 
 // IsURL checks if a string looks like a URL (has a host and path)

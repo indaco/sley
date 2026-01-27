@@ -6,16 +6,22 @@ import (
 
 	"github.com/goccy/go-yaml"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/printer"
 )
 
-var (
-	marshalFunc            = yaml.Marshal
-	AddExtensionToConfigFn = AddExtensionToConfig
-)
+// DefaultConfigUpdater implements ConfigUpdater for updating extension configurations
+type DefaultConfigUpdater struct {
+	marshaler YAMLMarshaler
+}
 
-// AddExtensionToConfig appends an extension entry to the YAML config at the given path.
+// NewDefaultConfigUpdater creates a new DefaultConfigUpdater with the given marshaler
+func NewDefaultConfigUpdater(marshaler YAMLMarshaler) *DefaultConfigUpdater {
+	return &DefaultConfigUpdater{marshaler: marshaler}
+}
+
+// AddExtension appends an extension entry to the YAML config at the given path.
 // It avoids duplicates and preserves existing fields.
-func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
+func (u *DefaultConfigUpdater) AddExtension(path string, extension config.ExtensionConfig) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return fmt.Errorf("failed to read config %q: %w", path, err)
@@ -26,16 +32,19 @@ func AddExtensionToConfig(path string, extension config.ExtensionConfig) error {
 		return fmt.Errorf("failed to parse config %q: %w", path, err)
 	}
 
-	// Avoid duplicates
+	// Check for duplicates and inform user
 	for _, ext := range cfg.Extensions {
 		if ext.Name == extension.Name {
-			return nil
+			printer.PrintInfo(fmt.Sprintf("Extension %q is already installed at: %s", extension.Name, ext.Path))
+			printer.PrintInfo("To reinstall, remove it first:")
+			fmt.Printf("  sley extension remove --name %s\n", extension.Name)
+			return fmt.Errorf("extension %q already registered in configuration", extension.Name)
 		}
 	}
 
 	cfg.Extensions = append(cfg.Extensions, extension)
 
-	out, err := marshalFunc(cfg)
+	out, err := u.marshaler.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
 	}

@@ -1,160 +1,98 @@
 # sley Extensions
 
-This directory contains example extensions for sley. These extensions demonstrate how to build extensions in different languages and can be used as templates for your own.
+This directory contains example extensions demonstrating how to build sley extensions in different languages.
 
-For the complete extension authoring guide, see the [Extension Authoring Guide](https://sley.indaco.dev/extensions/#creating-an-extension).
-
-## Extensions vs Plugins
-
-sley provides two extensibility mechanisms:
-
-| Aspect            | Built-in Plugins     | Extensions                            |
-| ----------------- | -------------------- | ------------------------------------- |
-| **Language**      | Go (native)          | Any (Python, Bash, Go, JS, etc.)      |
-| **Performance**   | Fastest              | Varies by language                    |
-| **Dependencies**  | None                 | May require runtime (Python, Node.js) |
-| **Configuration** | `plugins:` section   | `extensions:` section                 |
-| **Use case**      | Production workflows | Custom integrations, examples         |
-
-**Recommendation:** Use built-in plugins when available. Use extensions for:
-
-- Custom integrations not covered by plugins
-- Learning how the extension system works
-- Prototyping before contributing a plugin
+> [!TIP]
+> For complete documentation, see the [Extensions Guide](https://sley.indaco.dev/extensions/) on the sley documentation website.
 
 ## Available Extensions
 
-### 1. docker-tag-sync (Bash)
+| Extension                               | Language | Hook      | Description                          |
+| --------------------------------------- | -------- | --------- | ------------------------------------ |
+| [commit-validator](./commit-validator/) | Python   | pre-bump  | Validates conventional commit format |
+| [docker-tag-sync](./docker-tag-sync/)   | Bash     | post-bump | Tags and pushes Docker images        |
 
-**Hook**: `post-bump`
-Tags and pushes Docker images with the new version.
+Each extension includes a complete `README.md` with usage examples and configuration options.
 
-Features:
+## Quick Install
 
-- Docker image tagging
-- Optional push to registry
-- Configurable image name
-
-[View Documentation](./docker-tag-sync/README.md)
-
----
-
-### 2. commit-validator (Python)
-
-**Hook**: `pre-bump`
-Validates commits follow conventional commit format.
-
-Features:
-
-- Validates commits since last tag
-- Configurable allowed types
-- Optional scope requirement
-- Blocks bump on invalid commits
-
-> [!NOTE]
-> This complements the `commitparser` plugin. While `commitparser` parses commits to infer bump type (permissive), `commit-validator` enforces strict format compliance (blocks on invalid).
-
-[View Documentation](./commit-validator/README.md)
-
----
-
-## Language Examples
-
-These extensions demonstrate different implementation languages:
-
-| Extension        | Language | Runtime | Startup Time |
-| ---------------- | -------- | ------- | ------------ |
-| docker-tag-sync  | Bash     | sh      | <10ms        |
-| commit-validator | Python 3 | python3 | ~50ms        |
-
-## Installing Extensions
-
-### From Local Path
+Install directly from this repository using subdirectory URLs:
 
 ```bash
+# Install commit-validator (Python)
+sley extension install --url github.com/indaco/sley/contrib/extensions/commit-validator
+
+# Install docker-tag-sync (Bash)
+sley extension install --url github.com/indaco/sley/contrib/extensions/docker-tag-sync
+```
+
+Or from a local clone:
+
+```bash
+sley extension install --path ./contrib/extensions/commit-validator
 sley extension install --path ./contrib/extensions/docker-tag-sync
 ```
 
-### From URL
-
-```bash
-sley extension install --url https://github.com/user/my-extension
-```
-
-### Configuration
-
-After installation, configure in `.sley.yaml`:
-
-```yaml
-extensions:
-  - name: docker-tag-sync
-    enabled: true
-    hooks:
-      - post-bump
-    config:
-      image: myapp
-      push: true
-```
-
-### Managing Extensions
+## Management
 
 ```bash
 # List installed extensions
 sley extension list
 
 # Remove an extension
-sley extension remove docker-tag-sync
+sley extension remove --name commit-validator
 ```
 
-## Plugin Integration
+## Documentation
 
-Extensions work seamlessly with built-in plugins for complete automation.
+For complete documentation, configuration examples, and troubleshooting:
 
-### Example: Strict Validation Workflow
+- **[Extension System Guide](https://sley.indaco.dev/extensions/)** - Complete extension system documentation
+- **[Creating Extensions](https://sley.indaco.dev/extensions/#creating-an-extension)** - Build your own extensions
+- **[Commit Validator](https://sley.indaco.dev/extensions/commit-validator.html)** - Commit validation extension docs
+- **[Docker Tag Sync](https://sley.indaco.dev/extensions/docker-tag-sync.html)** - Docker tagging extension docs
+- **[Plugin System](https://sley.indaco.dev/plugins/)** - Built-in plugins vs extensions comparison
 
-```yaml
-# .sley.yaml
-plugins:
-  commit-parser: true # Built-in commit analysis
-  tag-manager:
-    enabled: true
-    prefix: "v"
-  version-validator:
-    enabled: true
-    rules:
-      - type: require-even-minor
-        enabled: true
-      - type: max-prerelease-iterations
-        value: 10
+## Using These Examples
 
-extensions:
-  - name: commit-validator # Strict format validation
-    enabled: true
-    hooks: [pre-bump]
-    config:
-      require_scope: true
-```
+Each extension in this directory serves as a working example and template:
 
-```bash
-sley bump auto
-# 1. commit-validator: Blocks if commits are invalid
-# 2. version-validator: Validates version policies
-# 3. commitparser: Analyzes commits -> determines bump type
-# 4. Version bumped
-# 5. tag-manager: Creates git tag
-```
+- `extension.yaml` - Extension manifest with metadata
+- Implementation script - Executable hook script (Python, Bash, etc.)
+- `README.md` - Extension-specific documentation and configuration
 
-See the [Plugins documentation](https://sley.indaco.dev/plugins/) for detailed plugin documentation.
+Browse the source code to learn extension development patterns, or use them as starting points for your own extensions.
+
+## Extensions vs Plugins
+
+**When to use extensions:**
+
+- Custom organization-specific workflows
+- External tool integration (AWS CLI, curl, etc.)
+- Prototyping new features
+- Language-specific tooling
+
+**When to use plugins:**
+
+- Core versioning functionality
+- Performance-critical operations
+- Features with broad applicability
+
+See [Plugins vs Extensions](https://sley.indaco.dev/extensions/#when-to-use-extensions-vs-plugins) for detailed comparison.
 
 ## Contributing
 
 Want to contribute an extension?
 
 1. Follow the [Extension Authoring Guide](https://sley.indaco.dev/extensions/#creating-an-extension)
-2. Include comprehensive documentation
-3. Add tests to `test-extensions.sh`
+2. Include comprehensive documentation (README.md)
+3. Add usage examples
 4. Minimize external dependencies
+5. Test thoroughly
+6. Submit a pull request
+
+See [CONTRIBUTING.md](../../CONTRIBUTING.md) for general contribution guidelines.
 
 ## License
 
-All extensions in this directory are licensed under the same terms as sley.
+All extensions in this directory are licensed under the same terms as sley. See [LICENSE](../../LICENSE) for details.

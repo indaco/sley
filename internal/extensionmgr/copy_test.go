@@ -2,6 +2,7 @@ package extensionmgr
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -225,3 +226,230 @@ func (f fakeFileInfo) Mode() os.FileMode  { return 0 }
 func (f fakeFileInfo) ModTime() time.Time { return time.Now() }
 func (f fakeFileInfo) IsDir() bool        { return f.dir }
 func (f fakeFileInfo) Sys() any           { return nil }
+
+/* ------------------------------------------------------------------------- */
+/* TESTS FOR FILE SYSTEM ERROR CLASSIFICATION                              */
+/* ------------------------------------------------------------------------- */
+
+// TestClassifyFileCopyError tests error classification
+func TestClassifyFileCopyError(t *testing.T) {
+	tests := []struct {
+		name          string
+		err           error
+		src           string
+		dst           string
+		op            string
+		wantErrorType string
+		wantContains  []string
+	}{
+		{
+			name:          "permission error",
+			err:           os.ErrPermission,
+			src:           "/src/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "open",
+			wantErrorType: "*extensionmgr.FilePermissionError",
+			wantContains:  []string{"permission denied", "open", "/src/file.txt", "/dst/file.txt"},
+		},
+		{
+			name:          "not exist error",
+			err:           os.ErrNotExist,
+			src:           "/nonexistent/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "open",
+			wantErrorType: "generic",
+			wantContains:  []string{"source path not found", "/nonexistent/file.txt"},
+		},
+		{
+			name:          "disk full error",
+			err:           errors.New("write error: no space left on device"),
+			src:           "/src/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "copy",
+			wantErrorType: "*extensionmgr.DiskFullError",
+			wantContains:  []string{"no space left on device", "/dst/file.txt"},
+		},
+		{
+			name:          "disk full error alternate",
+			err:           errors.New("write failed: disk full"),
+			src:           "/src/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "create",
+			wantErrorType: "*extensionmgr.DiskFullError",
+			wantContains:  []string{"no space left on device", "/dst/file.txt"},
+		},
+		{
+			name:          "nil error returns nil",
+			err:           nil,
+			src:           "/src/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "copy",
+			wantErrorType: "nil",
+			wantContains:  []string{},
+		},
+		{
+			name:          "generic error",
+			err:           errors.New("some other error"),
+			src:           "/src/file.txt",
+			dst:           "/dst/file.txt",
+			op:            "copy",
+			wantErrorType: "generic",
+			wantContains:  []string{"failed to copy", "/src/file.txt", "/dst/file.txt"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := classifyFileCopyError(tt.err, tt.src, tt.dst, tt.op)
+
+			// Check nil case
+			if tt.wantErrorType == "nil" {
+				if got != nil {
+					t.Errorf("expected nil, got %v", got)
+				}
+				return
+			}
+
+			if got == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			// Check error type
+			gotType := fmt.Sprintf("%T", got)
+			if tt.wantErrorType != "generic" && !strings.Contains(gotType, tt.wantErrorType) {
+				t.Errorf("expected error type containing %q, got %q", tt.wantErrorType, gotType)
+			}
+
+			// Check error message contains expected strings
+			errMsg := got.Error()
+			for _, want := range tt.wantContains {
+				if !strings.Contains(errMsg, want) {
+					t.Errorf("expected error to contain %q, got: %s", want, errMsg)
+				}
+			}
+		})
+	}
+}
+
+// TestFilePermissionError tests the FilePermissionError type
+func TestFilePermissionError(t *testing.T) {
+	originalErr := errors.New("permission denied")
+	err := &FilePermissionError{
+		Src: "/src/file.txt",
+		Dst: "/dst/file.txt",
+		Op:  "open",
+		Err: originalErr,
+	}
+
+	// Test Error() method
+	errMsg := err.Error()
+	expectedParts := []string{"permission denied", "open", "/src/file.txt", "/dst/file.txt"}
+	for _, part := range expectedParts {
+		if !strings.Contains(errMsg, part) {
+			t.Errorf("Error() should contain %q, got: %s", part, errMsg)
+		}
+	}
+
+	// Test Unwrap() method
+	unwrapped := err.Unwrap()
+	if unwrapped != originalErr {
+		t.Errorf("Unwrap() should return original error, got: %v", unwrapped)
+	}
+}
+
+// TestDiskFullError tests the DiskFullError type
+func TestDiskFullError(t *testing.T) {
+	originalErr := errors.New("write failed")
+	err := &DiskFullError{
+		Path: "/dst/file.txt",
+		Err:  originalErr,
+	}
+
+	// Test Error() method
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "no space left on device") {
+		t.Errorf("Error() should contain \"no space left on device\", got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "/dst/file.txt") {
+		t.Errorf("Error() should contain path, got: %s", errMsg)
+	}
+
+	// Test Unwrap() method
+	unwrapped := err.Unwrap()
+	if unwrapped != originalErr {
+		t.Errorf("Unwrap() should return original error, got: %v", unwrapped)
+	}
+}
+
+// TestOSFileCopier_CopyFile_ErrorClassification tests error handling in CopyFile
+func TestOSFileCopier_CopyFile_ErrorClassification(t *testing.T) {
+	tests := []struct {
+		name          string
+		setupCopier   func() *OSFileCopier
+		wantErrorType string
+		wantContains  string
+	}{
+		{
+			name: "source file open permission error",
+			setupCopier: func() *OSFileCopier {
+				return &OSFileCopier{
+					openSrcFile: func(name string) (*os.File, error) {
+						return nil, os.ErrPermission
+					},
+				}
+			},
+			wantErrorType: "*extensionmgr.FilePermissionError",
+			wantContains:  "permission denied",
+		},
+		{
+			name: "source file not found",
+			setupCopier: func() *OSFileCopier {
+				return &OSFileCopier{
+					openSrcFile: func(name string) (*os.File, error) {
+						return nil, os.ErrNotExist
+					},
+				}
+			},
+			wantErrorType: "generic",
+			wantContains:  "source path not found",
+		},
+		{
+			name: "destination create permission error",
+			setupCopier: func() *OSFileCopier {
+				tmpFile, _ := os.CreateTemp("", "test-*")
+				defer tmpFile.Close()
+
+				return &OSFileCopier{
+					openSrcFile: func(name string) (*os.File, error) {
+						return tmpFile, nil
+					},
+					openDstFile: func(name string, flag int, perm os.FileMode) (*os.File, error) {
+						return nil, os.ErrPermission
+					},
+				}
+			},
+			wantErrorType: "*extensionmgr.FilePermissionError",
+			wantContains:  "permission denied",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			copier := tt.setupCopier()
+			err := copier.CopyFile("/src/test.txt", "/dst/test.txt", 0644)
+
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+
+			gotType := fmt.Sprintf("%T", err)
+			if tt.wantErrorType != "generic" && !strings.Contains(gotType, tt.wantErrorType) {
+				t.Errorf("expected error type containing %q, got %q", tt.wantErrorType, gotType)
+			}
+
+			if !strings.Contains(err.Error(), tt.wantContains) {
+				t.Errorf("expected error to contain %q, got: %v", tt.wantContains, err)
+			}
+		})
+	}
+}
