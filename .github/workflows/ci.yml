@@ -50,6 +50,7 @@ jobs:
           version: latest
           install-mode: binary
           skip-cache: false
+          install-only: true
 
       - name: Install Go tools
         run: |
