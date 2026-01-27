@@ -12,17 +12,16 @@ This extension validates that git commits follow the conventional commit format 
 
 ## Installation
 
-**From local path:**
+Install directly from the sley repository:
+
+```bash
+sley extension install --url github.com/indaco/sley/contrib/extensions/commit-validator
+```
+
+Or from a local clone:
 
 ```bash
 sley extension install --path ./contrib/extensions/commit-validator
-```
-
-**From URL (after cloning the repo):**
-
-```bash
-sley extension install --url https://github.com/indaco/sley
-# Then copy from contrib/extensions/commit-validator
 ```
 
 ## Usage
