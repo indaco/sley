@@ -166,7 +166,7 @@ func TestCLI_Command_InitializeVersionFilePermissionErrors(t *testing.T) {
 			cfg := &config.Config{Path: protectedPath}
 			appCli := testutils.BuildCLIForTests(
 				cfg.Path,
-				[]*cli.Command{Run(), bump.Run(cfg, plugins.NewPluginRegistry()), pre.Run(cfg)},
+				[]*cli.Command{Run(), bump.Run(cfg, plugins.NewPluginRegistry()), pre.Run(cfg, plugins.NewPluginRegistry())},
 			)
 
 			err := appCli.Run(context.Background(), append(tt.command, "--path", protectedPath))

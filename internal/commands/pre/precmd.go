@@ -8,9 +8,11 @@ import (
 
 	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/clix"
+	"github.com/indaco/sley/internal/commands/depsync"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
+	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/workspace"
@@ -18,7 +20,7 @@ import (
 )
 
 // Run returns the "pre" command.
-func Run(cfg *config.Config) *cli.Command {
+func Run(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
 	cmdFlags := []cli.Flag{
 		&cli.StringFlag{
 			Name:     "label",
@@ -38,13 +40,13 @@ func Run(cfg *config.Config) *cli.Command {
 		UsageText: "sley pre --label <label> [--inc] [--all] [--module name]",
 		Flags:     cmdFlags,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			return runPreCmd(ctx, cmd, cfg)
+			return runPreCmd(ctx, cmd, cfg, registry)
 		},
 	}
 }
 
 // runPreCmd sets or increments the pre-release label.
-func runPreCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
+func runPreCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry) error {
 	label := cmd.String("label")
 	isInc := cmd.Bool("inc")
 
@@ -56,15 +58,15 @@ func runPreCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error 
 
 	// Handle single-module mode
 	if execCtx.IsSingleModule() {
-		return runSingleModulePre(execCtx.Path, label, isInc)
+		return runSingleModulePre(execCtx.Path, label, isInc, registry)
 	}
 
 	// Handle multi-module mode
-	return runMultiModulePre(ctx, cmd, execCtx, label, isInc)
+	return runMultiModulePre(ctx, cmd, execCtx, label, isInc, registry)
 }
 
 // runSingleModulePre handles the single-module pre-release operation.
-func runSingleModulePre(path, label string, isInc bool) error {
+func runSingleModulePre(path, label string, isInc bool, registry *plugins.PluginRegistry) error {
 	// Auto-initialize if file doesn't exist
 	var version semver.SemVersion
 	version, err := semver.ReadVersion(path)
@@ -97,11 +99,17 @@ func runSingleModulePre(path, label string, isInc bool) error {
 	}
 
 	printer.PrintSuccess(fmt.Sprintf("Updated version from %s to %s", oldVersion, version.String()))
+
+	// Sync dependencies if configured
+	if err := depsync.SyncDependencies(registry, version, path); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 // runMultiModulePre handles the multi-module pre-release operation.
-func runMultiModulePre(ctx context.Context, cmd *cli.Command, execCtx *clix.ExecutionContext, label string, isInc bool) error {
+func runMultiModulePre(ctx context.Context, cmd *cli.Command, execCtx *clix.ExecutionContext, label string, isInc bool, registry *plugins.PluginRegistry) error {
 	fs := core.NewOSFileSystem()
 	operation := operations.NewPreOperation(fs, label, isInc)
 
@@ -145,12 +153,40 @@ func runMultiModulePre(ctx context.Context, cmd *cli.Command, execCtx *clix.Exec
 		fmt.Println(formatter.FormatResults(results))
 	}
 
+	// Sync dependencies if configured (use the first successful result's version)
+	if !workspace.HasErrors(results) && len(results) > 0 {
+		// Get the new version from the first successful result
+		for _, result := range results {
+			if result.Error == nil && result.NewVersion != "" {
+				parsedVersion, parseErr := semver.ParseVersion(result.NewVersion)
+				if parseErr == nil {
+					bumpedPaths := getBumpedModulePaths(results)
+					if syncErr := depsync.SyncDependencies(registry, parsedVersion, bumpedPaths...); syncErr != nil {
+						return syncErr
+					}
+				}
+				break
+			}
+		}
+	}
+
 	// Return error if any failures occurred
 	if workspace.HasErrors(results) {
 		return fmt.Errorf("%d module(s) failed", workspace.ErrorCount(results))
 	}
 
 	return nil
+}
+
+// getBumpedModulePaths extracts the paths of successfully bumped modules.
+func getBumpedModulePaths(results []workspace.ExecutionResult) []string {
+	var paths []string
+	for _, r := range results {
+		if r.Error == nil {
+			paths = append(paths, r.Module.Path)
+		}
+	}
+	return paths
 }
 
 // printQuietSummary prints a minimal summary of results.

@@ -62,7 +62,7 @@ func New(cfg *config.Config, registry *plugins.PluginRegistry) *urfavecli.Comman
 			show.Run(cfg),
 			set.Run(cfg),
 			bump.Run(cfg, registry),
-			pre.Run(cfg),
+			pre.Run(cfg, registry),
 			doctor.Run(cfg),
 			tag.Run(cfg),
 			changelog.Run(cfg),
