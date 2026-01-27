@@ -13,9 +13,10 @@ import (
 
 // ExtensionConfig holds configuration for external extensions.
 type ExtensionConfig struct {
-	Name    string `yaml:"name"`
-	Path    string `yaml:"path"`
-	Enabled bool   `yaml:"enabled"`
+	Name    string         `yaml:"name"`
+	Path    string         `yaml:"path"`
+	Enabled bool           `yaml:"enabled"`
+	Config  map[string]any `yaml:"config,omitempty"`
 }
 
 // PreReleaseHookConfig holds configuration for pre-release hooks.

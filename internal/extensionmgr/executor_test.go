@@ -786,6 +786,95 @@ func TestHookInput_NilPointers(t *testing.T) {
 	}
 }
 
+// TestHookInput_WithConfig tests HookInput with extension-specific config
+func TestHookInput_WithConfig(t *testing.T) {
+	config := map[string]any{
+		"repo":         "indaco/sley",
+		"strip-prefix": "v",
+		"timeout":      30,
+		"enabled":      true,
+	}
+
+	input := HookInput{
+		Hook:        "pre-bump",
+		Version:     "1.2.3",
+		ProjectRoot: "/test/project",
+		Config:      config,
+	}
+
+	data, err := json.Marshal(input)
+	if err != nil {
+		t.Fatalf("failed to marshal input: %v", err)
+	}
+
+	var decoded HookInput
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("failed to unmarshal input: %v", err)
+	}
+
+	if decoded.Config == nil {
+		t.Fatal("expected config to be present")
+	}
+
+	if decoded.Config["repo"] != "indaco/sley" {
+		t.Errorf("expected repo='indaco/sley', got %v", decoded.Config["repo"])
+	}
+	if decoded.Config["strip-prefix"] != "v" {
+		t.Errorf("expected strip-prefix='v', got %v", decoded.Config["strip-prefix"])
+	}
+	if decoded.Config["timeout"] != float64(30) { // JSON numbers decode as float64
+		t.Errorf("expected timeout=30, got %v", decoded.Config["timeout"])
+	}
+	if decoded.Config["enabled"] != true {
+		t.Errorf("expected enabled=true, got %v", decoded.Config["enabled"])
+	}
+}
+
+// TestScriptExecutor_Execute_WithConfig tests that config is passed to script
+func TestScriptExecutor_Execute_WithConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	scriptPath := filepath.Join(tmpDir, "test-script.sh")
+
+	// Script that extracts and echoes config values
+	script := `#!/bin/sh
+read input
+repo=$(echo "$input" | grep -o '"repo":"[^"]*"' | cut -d'"' -f4)
+strip_prefix=$(echo "$input" | grep -o '"strip-prefix":"[^"]*"' | cut -d'"' -f4)
+echo "{\"success\": true, \"message\": \"repo=$repo strip_prefix=$strip_prefix\"}"
+`
+
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create test script: %v", err)
+	}
+
+	executor := NewScriptExecutor()
+	input := HookInput{
+		Hook:        "pre-bump",
+		Version:     "1.2.3",
+		ProjectRoot: "/test/project",
+		Config: map[string]any{
+			"repo":         "indaco/sley",
+			"strip-prefix": "v",
+		},
+	}
+
+	ctx := context.Background()
+	output, err := executor.Execute(ctx, scriptPath, &input)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !output.Success {
+		t.Error("expected success=true")
+	}
+
+	// Verify the script received the config
+	expectedMsg := "repo=indaco/sley strip_prefix=v"
+	if output.Message != expectedMsg {
+		t.Errorf("expected message=%q, got %q", expectedMsg, output.Message)
+	}
+}
+
 // TestHookOutput_EmptyData tests HookOutput with nil data field
 func TestHookOutput_EmptyData(t *testing.T) {
 	output := HookOutput{

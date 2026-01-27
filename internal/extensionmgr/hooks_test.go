@@ -908,3 +908,223 @@ echo "{\"success\": true, \"message\": \"module_dir=$module_dir module_name=$mod
 		}
 	})
 }
+
+// TestExtensionHookRunner_RunHooks_WithConfig tests that extension config is passed to hooks
+func TestExtensionHookRunner_RunHooks_WithConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create extension manifest
+	manifestPath := filepath.Join(tmpDir, "extension.yaml")
+	manifest := `name: github-version-sync
+version: 1.0.0
+description: Test extension with config
+author: test
+repository: https://github.com/test/test
+entry: hook.sh
+hooks:
+  - pre-bump
+`
+	if err := os.WriteFile(manifestPath, []byte(manifest), 0644); err != nil {
+		t.Fatalf("failed to create manifest: %v", err)
+	}
+
+	// Create hook script that validates config is received
+	scriptPath := filepath.Join(tmpDir, "hook.sh")
+	script := `#!/bin/sh
+read input
+# Extract config fields from JSON input
+repo=$(echo "$input" | grep -o '"repo":"[^"]*"' | cut -d'"' -f4)
+strip_prefix=$(echo "$input" | grep -o '"strip-prefix":"[^"]*"' | cut -d'"' -f4)
+
+if [ -z "$repo" ]; then
+    echo '{"success": false, "message": "config.repo not found"}'
+    exit 1
+fi
+
+if [ -z "$strip_prefix" ]; then
+    echo '{"success": false, "message": "config.strip-prefix not found"}'
+    exit 1
+fi
+
+echo "{\"success\": true, \"message\": \"Config received: repo=$repo, strip-prefix=$strip_prefix\"}"
+`
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create script: %v", err)
+	}
+
+	cfg := &config.Config{
+		Extensions: []config.ExtensionConfig{
+			{
+				Name:    "github-version-sync",
+				Path:    tmpDir,
+				Enabled: true,
+				Config: map[string]any{
+					"repo":         "indaco/sley",
+					"strip-prefix": "v",
+				},
+			},
+		},
+	}
+
+	runner := NewExtensionHookRunner(cfg)
+	input := HookInput{
+		Hook:        string(PreBumpHook),
+		Version:     "1.2.3",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestExtensionHookRunner_RunHooks_WithoutConfig tests that hooks work without config
+func TestExtensionHookRunner_RunHooks_WithoutConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create extension manifest
+	manifestPath := filepath.Join(tmpDir, "extension.yaml")
+	manifest := `name: simple-ext
+version: 1.0.0
+description: Test extension without config
+author: test
+repository: https://github.com/test/test
+entry: hook.sh
+hooks:
+  - post-bump
+`
+	if err := os.WriteFile(manifestPath, []byte(manifest), 0644); err != nil {
+		t.Fatalf("failed to create manifest: %v", err)
+	}
+
+	// Create hook script that doesn't require config
+	scriptPath := filepath.Join(tmpDir, "hook.sh")
+	script := `#!/bin/sh
+read input
+echo '{"success": true, "message": "Hook executed without config"}'
+`
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
+		t.Fatalf("failed to create script: %v", err)
+	}
+
+	cfg := &config.Config{
+		Extensions: []config.ExtensionConfig{
+			{
+				Name:    "simple-ext",
+				Path:    tmpDir,
+				Enabled: true,
+				Config:  nil, // No config provided
+			},
+		},
+	}
+
+	runner := NewExtensionHookRunner(cfg)
+	input := HookInput{
+		Hook:        string(PostBumpHook),
+		Version:     "2.0.0",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+	err := runner.RunHooks(ctx, PostBumpHook, &input)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// TestExtensionHookRunner_RunHooks_MultipleExtensionsWithDifferentConfigs tests multiple extensions with different configs
+func TestExtensionHookRunner_RunHooks_MultipleExtensionsWithDifferentConfigs(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create first extension
+	ext1Dir := filepath.Join(tmpDir, "ext1")
+	if err := os.MkdirAll(ext1Dir, 0755); err != nil {
+		t.Fatalf("failed to create ext1 dir: %v", err)
+	}
+
+	manifest1 := `name: ext1
+version: 1.0.0
+description: Extension 1
+author: test
+repository: https://github.com/test/test
+entry: hook.sh
+hooks:
+  - pre-bump
+`
+	if err := os.WriteFile(filepath.Join(ext1Dir, "extension.yaml"), []byte(manifest1), 0644); err != nil {
+		t.Fatalf("failed to create manifest1: %v", err)
+	}
+
+	script1 := `#!/bin/sh
+read input
+key1=$(echo "$input" | grep -o '"key1":"[^"]*"' | cut -d'"' -f4)
+echo "{\"success\": true, \"message\": \"ext1: key1=$key1\"}"
+`
+	if err := os.WriteFile(filepath.Join(ext1Dir, "hook.sh"), []byte(script1), 0755); err != nil {
+		t.Fatalf("failed to create script1: %v", err)
+	}
+
+	// Create second extension
+	ext2Dir := filepath.Join(tmpDir, "ext2")
+	if err := os.MkdirAll(ext2Dir, 0755); err != nil {
+		t.Fatalf("failed to create ext2 dir: %v", err)
+	}
+
+	manifest2 := `name: ext2
+version: 1.0.0
+description: Extension 2
+author: test
+repository: https://github.com/test/test
+entry: hook.sh
+hooks:
+  - pre-bump
+`
+	if err := os.WriteFile(filepath.Join(ext2Dir, "extension.yaml"), []byte(manifest2), 0644); err != nil {
+		t.Fatalf("failed to create manifest2: %v", err)
+	}
+
+	script2 := `#!/bin/sh
+read input
+key2=$(echo "$input" | grep -o '"key2":"[^"]*"' | cut -d'"' -f4)
+echo "{\"success\": true, \"message\": \"ext2: key2=$key2\"}"
+`
+	if err := os.WriteFile(filepath.Join(ext2Dir, "hook.sh"), []byte(script2), 0755); err != nil {
+		t.Fatalf("failed to create script2: %v", err)
+	}
+
+	cfg := &config.Config{
+		Extensions: []config.ExtensionConfig{
+			{
+				Name:    "ext1",
+				Path:    ext1Dir,
+				Enabled: true,
+				Config: map[string]any{
+					"key1": "value1",
+				},
+			},
+			{
+				Name:    "ext2",
+				Path:    ext2Dir,
+				Enabled: true,
+				Config: map[string]any{
+					"key2": "value2",
+				},
+			},
+		},
+	}
+
+	runner := NewExtensionHookRunner(cfg)
+	input := HookInput{
+		Hook:        string(PreBumpHook),
+		Version:     "1.0.0",
+		ProjectRoot: "/test",
+	}
+
+	ctx := context.Background()
+	err := runner.RunHooks(ctx, PreBumpHook, &input)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}

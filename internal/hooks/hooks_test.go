@@ -178,6 +178,7 @@ func TestNewPreReleaseHookRunner_Defaults(t *testing.T) {
 	runner := NewPreReleaseHookRunner(nil, nil)
 	if runner == nil {
 		t.Fatal("NewPreReleaseHookRunner returned nil")
+		return
 	}
 	if runner.provider == nil {
 		t.Error("provider should not be nil")
