@@ -8,12 +8,12 @@ Syncs the `.version` file to the latest release from a GitHub repository before 
 - Configurable tag prefix stripping (e.g., `v1.2.3` -> `1.2.3`)
 - Optional GitHub token for private repos or higher rate limits
 - Support for GitHub Enterprise via custom API URL
-- Works with `jq` for robust JSON parsing, falls back to basic shell parsing
+- Works with `jq`/`jaq` for robust JSON parsing, falls back to basic shell parsing
 
 ## Requirements
 
 - `curl` (standard on most systems)
-- `jq` (recommended, but not required)
+- `jq` or `jaq` (recommended, but not required)
 
 ## Installation
 
@@ -31,23 +31,35 @@ sley extension install --path ./contrib/extensions/github-version-sync
 
 ## Configuration
 
-Add to your `.sley.yaml`:
+Add to your `.sley.yaml`. Extension settings are defined under the `config` key:
 
 ```yaml
 extensions:
-  github-version-sync:
-    # Required: GitHub repository in "owner/repo" format
-    repo: "owner/repo"
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      # Required: GitHub repository in "owner/repo" format
+      repo: owner/repo
 
-    # Optional: Prefix to strip from tag (default: "v")
-    strip-prefix: "v"
+      # Optional: Prefix to strip from tag (default: "v")
+      strip-prefix: v
 
-    # Optional: GitHub token for private repos or rate limits
-    github-token: ""
+      # Optional: GitHub token for private repos or rate limits
+      github-token: ""
 
-    # Optional: GitHub API URL for Enterprise (default: "https://api.github.com")
-    api-url: "https://api.github.com"
+      # Optional: GitHub API URL for Enterprise (default: "https://api.github.com")
+      api-url: https://api.github.com
 ```
+
+### Configuration Options
+
+All configuration options are specified under the `config` key and passed to the hook script as JSON:
+
+- **`repo`** (required): GitHub repository in "owner/repo" format
+- **`strip-prefix`** (optional): Prefix to strip from tag names (default: `"v"`)
+- **`github-token`** (optional): GitHub token for private repos or higher rate limits
+- **`api-url`** (optional): GitHub API URL for Enterprise instances (default: `"https://api.github.com"`)
 
 When using this extension, set `commit-parser: false` in your config. The extension sets the definitive version - no additional bump should be applied.
 
@@ -69,8 +81,11 @@ plugins:
     enabled: true
 
 extensions:
-  github-version-sync:
-    repo: "indaco/sley"
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: indaco/sley
 ```
 
 ```bash
@@ -85,19 +100,25 @@ For private repositories or to avoid rate limits:
 
 ```yaml
 extensions:
-  github-version-sync:
-    repo: "myorg/private-repo"
-    github-token: "${GITHUB_TOKEN}" # Use environment variable
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: myorg/private-repo
+      github-token: "${GITHUB_TOKEN}" # Use environment variable
 ```
 
 ### GitHub Enterprise
 
 ```yaml
 extensions:
-  github-version-sync:
-    repo: "myorg/myrepo"
-    api-url: "https://github.mycompany.com/api/v3"
-    github-token: "${GHE_TOKEN}"
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: myorg/myrepo
+      api-url: https://github.mycompany.com/api/v3
+      github-token: "${GHE_TOKEN}"
 ```
 
 ### Custom Tag Format
@@ -106,9 +127,12 @@ If the upstream repo uses tags without `v` prefix:
 
 ```yaml
 extensions:
-  github-version-sync:
-    repo: "some/repo"
-    strip-prefix: "" # Don't strip any prefix
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: some/repo
+      strip-prefix: "" # Don't strip any prefix
 ```
 
 ### Documentation Site Workflow
@@ -132,8 +156,11 @@ plugins:
         format: json
 
 extensions:
-  github-version-sync:
-    repo: "indaco/sley"
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: indaco/sley
 ```
 
 ```bash
@@ -166,10 +193,16 @@ The extension will fail (and block the bump) if:
 
 ### "GitHub API rate limit exceeded"
 
-GitHub limits unauthenticated requests to 60/hour. Set a token:
+GitHub limits unauthenticated requests to 60/hour. Set a token in your extension config:
 
 ```yaml
-github-token: "${GITHUB_TOKEN}"
+extensions:
+  - name: github-version-sync
+    path: .sley-extensions/github-version-sync
+    enabled: true
+    config:
+      repo: owner/repo
+      github-token: "${GITHUB_TOKEN}"
 ```
 
 Create a token at: https://github.com/settings/tokens
@@ -184,22 +217,22 @@ Create a token at: https://github.com/settings/tokens
 
 Ensure `commit-parser: false` is set. Otherwise, sley may recalculate and override the version.
 
-### Using with jq vs without
+### Using with jq/jaq vs without
 
-The extension works best with `jq` installed for robust JSON parsing:
+The extension works best with `jq` or `jaq` (a Rust alternative) installed for robust JSON parsing:
 
 ```bash
-# macOS
-brew install jq
+# jq
+brew install jq        # macOS
+apt-get install jq     # Ubuntu/Debian
+apk add jq             # Alpine
 
-# Ubuntu/Debian
-apt-get install jq
-
-# Alpine
-apk add jq
+# jaq (Rust alternative)
+brew install jaq       # macOS
+cargo install jaq      # via Cargo
 ```
 
-Without `jq`, basic shell parsing is used (works for simple cases).
+Without `jq` or `jaq`, basic shell parsing is used (works for simple cases).
 
 ## Use Cases
 
