@@ -16,6 +16,9 @@ import (
 // variable so tests can override it when running in temporary directories.
 var configFilePath = ".sley.yaml"
 
+// localExtensionsDir is the name of the local extensions directory.
+const localExtensionsDir = ".sley-extensions"
+
 // uninstallCmd returns the "uninstall" subcommand.
 func uninstallCmd() *cli.Command {
 	return &cli.Command{
@@ -63,13 +66,43 @@ func runExtensionUninstall(cmd *cli.Command) error {
 	isDeleteFolder := cmd.Bool("delete-folder")
 	if isDeleteFolder {
 		// Remove the extension directory from ".sley-extensions"
-		extensionDir := filepath.Join(".sley-extensions", extensionName)
+		extensionDir := filepath.Join(localExtensionsDir, extensionName)
 		if err := os.RemoveAll(extensionDir); err != nil {
 			return fmt.Errorf("failed to remove extension directory: %w", err)
 		}
+
+		// Clean up the local .sley-extensions directory if it is now empty.
+		// This only applies to the project-local directory, never the global
+		// ~/.sley-extensions directory.
+		if err := removeLocalExtensionsDirIfEmpty(localExtensionsDir); err != nil {
+			return fmt.Errorf("failed to clean up extensions directory: %w", err)
+		}
+
 		printer.PrintSuccess(fmt.Sprintf("Extension %q and its directory uninstalled successfully.", extensionName))
 	} else {
 		printer.PrintInfo(fmt.Sprintf("Extension %q uninstalled, but its directory is preserved.", extensionName))
+	}
+
+	return nil
+}
+
+// removeLocalExtensionsDirIfEmpty removes the given directory if it exists
+// and contains no entries. This is used to clean up the local
+// .sley-extensions directory after the last extension has been uninstalled.
+func removeLocalExtensionsDirIfEmpty(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Directory already gone; nothing to do.
+			return nil
+		}
+		return fmt.Errorf("failed to read directory %q: %w", dir, err)
+	}
+
+	if len(entries) == 0 {
+		if err := os.Remove(dir); err != nil {
+			return fmt.Errorf("failed to remove empty directory %q: %w", dir, err)
+		}
 	}
 
 	return nil

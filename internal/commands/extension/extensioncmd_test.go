@@ -345,19 +345,22 @@ func TestExtensionUninstallCmd_DeleteFolderVariants(t *testing.T) {
 	extensionName := "mock-extension"
 
 	tests := []struct {
-		name          string
-		deleteFolder  bool
-		expectDeleted bool
+		name                   string
+		deleteFolder           bool
+		expectDeleted          bool
+		expectParentDirRemoved bool
 	}{
 		{
-			name:          "delete-folder=false",
-			deleteFolder:  false,
-			expectDeleted: false,
+			name:                   "delete-folder=false",
+			deleteFolder:           false,
+			expectDeleted:          false,
+			expectParentDirRemoved: false,
 		},
 		{
-			name:          "delete-folder=true",
-			deleteFolder:  true,
-			expectDeleted: true,
+			name:                   "delete-folder=true",
+			deleteFolder:           true,
+			expectDeleted:          true,
+			expectParentDirRemoved: true, // only extension, so parent should be removed
 		},
 	}
 
@@ -390,6 +393,10 @@ func TestExtensionUninstallCmd_DeleteFolderVariants(t *testing.T) {
 			checkCLIOutput(t, output, extensionName, tt.deleteFolder)
 			checkExtensionDirDeleted(t, extensionDir, tt.expectDeleted)
 			checkExtensionRemovedFromConfig(t, configPath, extensionName)
+
+			// Verify the parent .sley-extensions directory is cleaned up
+			// when it becomes empty after deleting the last extension.
+			checkExtensionDirDeleted(t, extensionsRoot, tt.expectParentDirRemoved)
 		})
 	}
 }
@@ -457,6 +464,106 @@ func TestExtensionUninstallCmd_DeleteFolderFailure(t *testing.T) {
 		t.Errorf("expected error message to contain %q, got: %v", expectedMsg, cliErr)
 	}
 
+}
+
+func TestExtensionUninstallCmd_DeleteFolder_ParentDirKeptWhenNotEmpty(t *testing.T) {
+	extensionName := "mock-extension"
+
+	tmpDir := t.TempDir()
+	extensionsRoot := filepath.Join(tmpDir, ".sley-extensions")
+	extensionDir := filepath.Join(extensionsRoot, extensionName)
+	otherExtDir := filepath.Join(extensionsRoot, "other-extension")
+	configPath := filepath.Join(tmpDir, ".sley.yaml")
+
+	// Create both extension directories so parent is not empty after removal.
+	createExtensionDir(t, extensionDir)
+	createExtensionDir(t, otherExtDir)
+	writeConfigFile(t, configPath)
+
+	args := []string{"sley", "extension", "uninstall", "--name", extensionName, "--delete-folder"}
+
+	cfg := &config.Config{Path: configPath}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run()})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, args, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("CLI run failed: %v", err)
+	}
+
+	checkCLIOutput(t, output, extensionName, true)
+	checkExtensionDirDeleted(t, extensionDir, true)
+
+	// The parent .sley-extensions directory should still exist because
+	// "other-extension" is still present.
+	checkExtensionDirDeleted(t, extensionsRoot, false)
+}
+
+func TestRemoveLocalExtensionsDirIfEmpty(t *testing.T) {
+	tests := []struct {
+		name        string
+		setup       func(t *testing.T) string
+		expectExist bool
+		expectErr   bool
+	}{
+		{
+			name: "removes empty directory",
+			setup: func(t *testing.T) string {
+				t.Helper()
+				dir := filepath.Join(t.TempDir(), ".sley-extensions")
+				if err := os.Mkdir(dir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				return dir
+			},
+			expectExist: false,
+			expectErr:   false,
+		},
+		{
+			name: "keeps non-empty directory",
+			setup: func(t *testing.T) string {
+				t.Helper()
+				dir := filepath.Join(t.TempDir(), ".sley-extensions")
+				child := filepath.Join(dir, "some-extension")
+				if err := os.MkdirAll(child, 0755); err != nil {
+					t.Fatal(err)
+				}
+				return dir
+			},
+			expectExist: true,
+			expectErr:   false,
+		},
+		{
+			name: "no error for non-existent directory",
+			setup: func(t *testing.T) string {
+				t.Helper()
+				return filepath.Join(t.TempDir(), ".sley-extensions")
+			},
+			expectExist: false,
+			expectErr:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := tt.setup(t)
+			err := removeLocalExtensionsDirIfEmpty(dir)
+
+			if tt.expectErr && err == nil {
+				t.Fatal("expected error but got nil")
+			}
+			if !tt.expectErr && err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			_, statErr := os.Stat(dir)
+			exists := statErr == nil
+			if exists != tt.expectExist {
+				t.Errorf("directory exists = %v, want %v", exists, tt.expectExist)
+			}
+		})
+	}
 }
 
 func TestCLI_ExtensionUninstall_MissingName(t *testing.T) {
