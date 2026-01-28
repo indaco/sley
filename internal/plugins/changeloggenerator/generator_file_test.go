@@ -244,6 +244,52 @@ func TestMergeVersionedFiles(t *testing.T) {
 	}
 }
 
+func TestMergeVersionedFiles_SemanticOrder(t *testing.T) {
+	tmpDir, changesDir := setupTestChangesDir(t)
+
+	createVersionFiles(t, changesDir, map[string]string{
+		"v0.1.0.md":  "## v0.1.0\n\nFirst version\n",
+		"v0.1.2.md":  "## v0.1.2\n\nPatch release\n",
+		"v0.2.0.md":  "## v0.2.0\n\nSecond minor\n",
+		"v0.9.1.md":  "## v0.9.1\n\nNinth minor patch\n",
+		"v0.10.0.md": "## v0.10.0\n\nTenth minor\n",
+	})
+
+	changelogPath := filepath.Join(tmpDir, "CHANGELOG.md")
+	g := createTestGenerator(t, changesDir, changelogPath)
+
+	if err := g.MergeVersionedFiles(); err != nil {
+		t.Fatalf("merge failed: %v", err)
+	}
+
+	content := string(readChangelogContent(t, changelogPath))
+
+	// v0.10.0 must appear before v0.9.1 (not between v0.1.2 and v0.2.0)
+	pos010 := strings.Index(content, "## v0.10.0")
+	pos091 := strings.Index(content, "## v0.9.1")
+	pos020 := strings.Index(content, "## v0.2.0")
+	pos012 := strings.Index(content, "## v0.1.2")
+	pos010v := strings.Index(content, "## v0.1.0")
+
+	if pos010 == -1 || pos091 == -1 || pos020 == -1 || pos012 == -1 || pos010v == -1 {
+		t.Fatalf("not all versions found in merged content:\n%s", content)
+	}
+
+	// Correct descending order: v0.10.0 > v0.9.1 > v0.2.0 > v0.1.2 > v0.1.0
+	if pos010 > pos091 {
+		t.Errorf("v0.10.0 (pos %d) should appear before v0.9.1 (pos %d)", pos010, pos091)
+	}
+	if pos091 > pos020 {
+		t.Errorf("v0.9.1 (pos %d) should appear before v0.2.0 (pos %d)", pos091, pos020)
+	}
+	if pos020 > pos012 {
+		t.Errorf("v0.2.0 (pos %d) should appear before v0.1.2 (pos %d)", pos020, pos012)
+	}
+	if pos012 > pos010v {
+		t.Errorf("v0.1.2 (pos %d) should appear before v0.1.0 (pos %d)", pos012, pos010v)
+	}
+}
+
 func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
@@ -546,22 +592,145 @@ Some description about this project.
 }
 
 func TestSortVersionFiles(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []string
+		expected []string
+	}{
+		{
+			name: "basic ordering",
+			input: []string{
+				"/tmp/.changes/v0.1.0.md",
+				"/tmp/.changes/v1.0.0.md",
+				"/tmp/.changes/v0.9.0.md",
+			},
+			expected: []string{
+				"/tmp/.changes/v1.0.0.md",
+				"/tmp/.changes/v0.9.0.md",
+				"/tmp/.changes/v0.1.0.md",
+			},
+		},
+		{
+			name: "double digit minor version sorted semantically not lexicographically",
+			input: []string{
+				"/tmp/.changes/v0.1.0.md",
+				"/tmp/.changes/v0.1.2.md",
+				"/tmp/.changes/v0.2.0.md",
+				"/tmp/.changes/v0.10.0.md",
+				"/tmp/.changes/v0.9.1.md",
+			},
+			expected: []string{
+				"/tmp/.changes/v0.10.0.md",
+				"/tmp/.changes/v0.9.1.md",
+				"/tmp/.changes/v0.2.0.md",
+				"/tmp/.changes/v0.1.2.md",
+				"/tmp/.changes/v0.1.0.md",
+			},
+		},
+		{
+			name: "mixed major and minor versions",
+			input: []string{
+				"/tmp/.changes/v0.1.0.md",
+				"/tmp/.changes/v2.0.0.md",
+				"/tmp/.changes/v0.10.0.md",
+				"/tmp/.changes/v1.0.0.md",
+				"/tmp/.changes/v1.10.0.md",
+				"/tmp/.changes/v1.9.0.md",
+			},
+			expected: []string{
+				"/tmp/.changes/v2.0.0.md",
+				"/tmp/.changes/v1.10.0.md",
+				"/tmp/.changes/v1.9.0.md",
+				"/tmp/.changes/v1.0.0.md",
+				"/tmp/.changes/v0.10.0.md",
+				"/tmp/.changes/v0.1.0.md",
+			},
+		},
+		{
+			name: "single element",
+			input: []string{
+				"/tmp/.changes/v1.0.0.md",
+			},
+			expected: []string{
+				"/tmp/.changes/v1.0.0.md",
+			},
+		},
+		{
+			name:     "empty slice",
+			input:    []string{},
+			expected: []string{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Copy to avoid mutating test data
+			files := make([]string, len(tt.input))
+			copy(files, tt.input)
+
+			sortVersionFiles(files)
+
+			if len(files) != len(tt.expected) {
+				t.Fatalf("expected %d files, got %d", len(tt.expected), len(files))
+			}
+			for i, want := range tt.expected {
+				if files[i] != want {
+					t.Errorf("position %d: expected %s, got %s", i, want, files[i])
+				}
+			}
+		})
+	}
+}
+
+func TestSortVersionFiles_SemanticOrder_0_10_0(t *testing.T) {
+	// Regression test: v0.10.0 must sort AFTER v0.9.1 and not between v0.1.2 and v0.2.0.
+	// This was the original bug: lexicographic comparison treated "10" < "2" because
+	// "1" < "2" character-by-character.
 	files := []string{
-		"/tmp/.changes/v0.1.0.md",
-		"/tmp/.changes/v1.0.0.md",
-		"/tmp/.changes/v0.9.0.md",
+		"/tmp/.changes/v0.1.2.md",
+		"/tmp/.changes/v0.2.0.md",
+		"/tmp/.changes/v0.10.0.md",
+		"/tmp/.changes/v0.9.1.md",
 	}
 
 	sortVersionFiles(files)
 
-	// Should be in reverse order (newest first)
-	if files[0] != "/tmp/.changes/v1.0.0.md" {
-		t.Errorf("expected v1.0.0.md first, got %s", files[0])
+	// Newest first (descending semantic order)
+	expected := []string{
+		"/tmp/.changes/v0.10.0.md",
+		"/tmp/.changes/v0.9.1.md",
+		"/tmp/.changes/v0.2.0.md",
+		"/tmp/.changes/v0.1.2.md",
 	}
-	if files[1] != "/tmp/.changes/v0.9.0.md" {
-		t.Errorf("expected v0.9.0.md second, got %s", files[1])
+
+	for i, want := range expected {
+		if files[i] != want {
+			t.Errorf("position %d: expected %s, got %s", i, want, files[i])
+		}
 	}
-	if files[2] != "/tmp/.changes/v0.1.0.md" {
-		t.Errorf("expected v0.1.0.md third, got %s", files[2])
+}
+
+func TestExtractVersion(t *testing.T) {
+	tests := []struct {
+		path    string
+		wantStr string
+	}{
+		{"/tmp/.changes/v1.2.3.md", "1.2.3"},
+		{"/tmp/.changes/v0.10.0.md", "0.10.0"},
+		{"v0.1.0.md", "0.1.0"},
+		{"/some/path/v2.0.0-rc.1.md", "2.0.0-rc.1"},
+		// Unparseable returns zero value
+		{"/tmp/.changes/README.md", "0.0.0"},
+		{"/tmp/.changes/not-version.md", "0.0.0"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			v := extractVersion(tt.path)
+			got := v.String()
+			if got != tt.wantStr {
+				t.Errorf("extractVersion(%q) = %q, want %q", tt.path, got, tt.wantStr)
+			}
+		})
 	}
 }

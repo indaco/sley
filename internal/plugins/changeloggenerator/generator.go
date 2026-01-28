@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"text/template"
 
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/semver"
 )
 
 // Generator handles changelog content generation.
@@ -487,10 +489,24 @@ func (g *Generator) MergeVersionedFiles() error {
 
 // sortVersionFiles sorts version files by semantic version (newest first).
 func sortVersionFiles(files []string) {
-	// Simple reverse lexicographic sort (works for vX.Y.Z format)
-	for i := 1; i < len(files); i++ {
-		for j := i; j > 0 && files[j] > files[j-1]; j-- {
-			files[j], files[j-1] = files[j-1], files[j]
-		}
+	sort.Slice(files, func(i, j int) bool {
+		vi := extractVersion(files[i])
+		vj := extractVersion(files[j])
+		// Descending order: higher version first.
+		return vi.Compare(vj) > 0
+	})
+}
+
+// extractVersion parses a semantic version from a version file path.
+// It expects filenames like "v0.10.0.md" and strips the directory, "v" prefix,
+// and ".md" suffix before parsing. If parsing fails, it returns a zero-value
+// SemVersion so that unparseable filenames sort to the end.
+func extractVersion(path string) semver.SemVersion {
+	base := filepath.Base(path)             // "v0.10.0.md"
+	name := strings.TrimSuffix(base, ".md") // "v0.10.0"
+	v, err := semver.ParseVersion(name)
+	if err != nil {
+		return semver.SemVersion{}
 	}
+	return v
 }
