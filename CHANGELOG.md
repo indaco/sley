@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.10.0 - 2026-01-28
+
+### 🚀 Enhancements
+
+- **cli/extension:** add enable and disable subcommands ([0810e2d](https://github.com/indaco/sley/commit/0810e2d)) ([#200](https://github.com/indaco/sley/pull/200))
+- **contrib/extensions:** add github-version-sync extension ([f728594](https://github.com/indaco/sley/commit/f728594)) ([#192](https://github.com/indaco/sley/pull/192))
+- **extension:** add support for extension specific config ([4507483](https://github.com/indaco/sley/commit/4507483)) ([#194](https://github.com/indaco/sley/pull/194))
+- **extension:** subdirectory and version branch support ([d5cab2e](https://github.com/indaco/sley/commit/d5cab2e)) ([#193](https://github.com/indaco/sley/pull/193))
+- **pre:** add multi-module support for pre and bump pre commands ([97623dc](https://github.com/indaco/sley/commit/97623dc)) ([#191](https://github.com/indaco/sley/pull/191))
+- **discover:** support three versioning models in multi-module detection ([c2c75ce](https://github.com/indaco/sley/commit/c2c75ce)) ([#187](https://github.com/indaco/sley/pull/187))
+
+### 🩹 Fixes
+
+- **changelog:** use semantic versioning for merge sorting ([cf9ec08](https://github.com/indaco/sley/commit/cf9ec08)) ([#205](https://github.com/indaco/sley/pull/205))
+- **extensions:** remove empty .sley-extensions/ dir after last uninstall ([5a04d3a](https://github.com/indaco/sley/commit/5a04d3a)) ([#201](https://github.com/indaco/sley/pull/201))
+- **extensionmgr:** preserve YAML comments when removing extensions ([9d7f51b](https://github.com/indaco/sley/commit/9d7f51b)) ([#197](https://github.com/indaco/sley/pull/197))
+- **extensionmgr:** preserve YAML comments when adding extensions ([c7e999d](https://github.com/indaco/sley/commit/c7e999d)) ([#195](https://github.com/indaco/sley/pull/195))
+
+### 💅 Refactors
+
+- split large test files ([b80a17d](https://github.com/indaco/sley/commit/b80a17d)) ([#203](https://github.com/indaco/sley/pull/203))
+- **updater:** extract YAML parsing and fix replacement logic ([37b224d](https://github.com/indaco/sley/commit/37b224d)) ([#196](https://github.com/indaco/sley/pull/196))
+- split multimodule test files ([152644d](https://github.com/indaco/sley/commit/152644d)) ([#189](https://github.com/indaco/sley/pull/189))
+- **operations/bump:** add BumpPre and refactor bump logic into helpers ([18330d5](https://github.com/indaco/sley/commit/18330d5)) ([#190](https://github.com/indaco/sley/pull/190))
+- **depsync:** add centralized dependency sync and integrate it into bump commands ([b521fbc](https://github.com/indaco/sley/commit/b521fbc)) ([#188](https://github.com/indaco/sley/pull/188))
+
+### 📖 Documentation
+
+- **plugins:** move to the right folder ([923b9e7](https://github.com/indaco/sley/commit/923b9e7)) ([#186](https://github.com/indaco/sley/pull/186))
+- restore plugin configuration examples ([e411bc3](https://github.com/indaco/sley/commit/e411bc3)) ([#185](https://github.com/indaco/sley/pull/185))
+- **extensions:** update documentation links to sley.indaco.dev ([9c7a60f](https://github.com/indaco/sley/commit/9c7a60f)) ([#184](https://github.com/indaco/sley/pull/184))
+
+### 🏡 Chores
+
+- update devbox.lock file ([96f6470](https://github.com/indaco/sley/commit/96f6470)) ([#199](https://github.com/indaco/sley/pull/199))
+- **cli/extension:** use uninstall as main subcommand with remove as alias ([2460b0f](https://github.com/indaco/sley/commit/2460b0f)) ([#198](https://github.com/indaco/sley/pull/198))
+
+**Full Changelog:** [v0.9.1...v0.10.0](https://github.com/indaco/sley/compare/v0.9.1...v0.10.0)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.9.1 - 2026-01-26
 
 ### 🩹 Fixes
