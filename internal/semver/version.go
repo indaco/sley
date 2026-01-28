@@ -112,6 +112,36 @@ func ParseVersion(s string) (SemVersion, error) {
 	return SemVersion{Major: major, Minor: minor, Patch: patch, PreRelease: pre, Build: build}, nil
 }
 
+// Compare compares two semantic versions.
+// It returns -1 if v < other, 0 if v == other, and +1 if v > other.
+// Pre-release versions have lower precedence than the associated normal version
+// (e.g., 1.0.0-alpha < 1.0.0). Build metadata is ignored for comparison purposes.
+func (v SemVersion) Compare(other SemVersion) int {
+	if c := compareInt(v.Major, other.Major); c != 0 {
+		return c
+	}
+	if c := compareInt(v.Minor, other.Minor); c != 0 {
+		return c
+	}
+	if c := compareInt(v.Patch, other.Patch); c != 0 {
+		return c
+	}
+
+	// When major, minor, and patch are equal, a pre-release version has
+	// lower precedence than a normal version.
+	// Example: 1.0.0-alpha < 1.0.0
+	switch {
+	case v.PreRelease == "" && other.PreRelease == "":
+		return 0
+	case v.PreRelease == "":
+		return 1
+	case other.PreRelease == "":
+		return -1
+	default:
+		return comparePreRelease(v.PreRelease, other.PreRelease)
+	}
+}
+
 // BumpNext applies heuristic-based smart bump logic.
 // - If it's a pre-release (e.g., alpha.1, rc.1), it promotes to final version.
 // - If it's a final release, it bumps patch by default.
@@ -217,4 +247,81 @@ func isAllDigits(s string) bool {
 
 func formatPreReleaseWithSep(base string, num int, sep string) string {
 	return fmt.Sprintf("%s%s%d", base, sep, num)
+}
+
+func compareInt(a, b int) int {
+	switch {
+	case a < b:
+		return -1
+	case a > b:
+		return 1
+	default:
+		return 0
+	}
+}
+
+func comparePreRelease(a, b string) int {
+	aIDs := strings.Split(a, ".")
+	bIDs := strings.Split(b, ".")
+
+	n := min(len(aIDs), len(bIDs))
+	for i := range n {
+		if c := compareIdentifier(aIDs[i], bIDs[i]); c != 0 {
+			return c
+		}
+	}
+
+	// If equal so far, shorter list has lower precedence.
+	switch {
+	case len(aIDs) < len(bIDs):
+		return -1
+	case len(aIDs) > len(bIDs):
+		return 1
+	default:
+		return 0
+	}
+}
+
+func compareIdentifier(a, b string) int {
+	aNum, aIsNum := parseNumericIdentifier(a)
+	bNum, bIsNum := parseNumericIdentifier(b)
+
+	switch {
+	case aIsNum && bIsNum:
+		return compareInt(aNum, bNum)
+	case aIsNum && !bIsNum:
+		return -1 // numeric < non-numeric
+	case !aIsNum && bIsNum:
+		return 1
+	default:
+		// ASCII lexicographic
+		switch {
+		case a < b:
+			return -1
+		case a > b:
+			return 1
+		default:
+			return 0
+		}
+	}
+}
+
+// SemVer numeric identifiers: only digits, no leading zeros unless exactly "0".
+func parseNumericIdentifier(s string) (int, bool) {
+	if s == "" {
+		return 0, false
+	}
+	if len(s) > 1 && s[0] == '0' {
+		return 0, false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] < '0' || s[i] > '9' {
+			return 0, false
+		}
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, false
+	}
+	return n, true
 }

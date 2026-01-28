@@ -39,6 +39,294 @@ func TestSemVersion_String_WithBuildOnly(t *testing.T) {
 }
 
 /* ------------------------------------------------------------------------- */
+/* HELPER FUNCTIONS FOR COMPARISON                                           */
+/* ------------------------------------------------------------------------- */
+
+func Test_compareInt(t *testing.T) {
+	tests := []struct {
+		a, b int
+		want int
+	}{
+		{0, 0, 0},
+		{1, 1, 0},
+		{1, 2, -1},
+		{2, 1, 1},
+		{0, 1, -1},
+		{1, 0, 1},
+		{-1, 1, -1},
+		{1, -1, 1},
+		{100, 99, 1},
+		{99, 100, -1},
+	}
+
+	for _, tt := range tests {
+		got := compareInt(tt.a, tt.b)
+		if got != tt.want {
+			t.Errorf("compareInt(%d, %d) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func Test_parseNumericIdentifier(t *testing.T) {
+	tests := []struct {
+		input   string
+		wantNum int
+		wantOk  bool
+	}{
+		// Valid numeric identifiers
+		{"0", 0, true},
+		{"1", 1, true},
+		{"10", 10, true},
+		{"123", 123, true},
+
+		// Invalid: empty string
+		{"", 0, false},
+
+		// Invalid: leading zeros (per semver spec)
+		{"00", 0, false},
+		{"01", 0, false},
+		{"007", 0, false},
+
+		// Invalid: non-numeric
+		{"a", 0, false},
+		{"1a", 0, false},
+		{"a1", 0, false},
+		{"alpha", 0, false},
+		{"1.0", 0, false},
+		{"-1", 0, false},
+	}
+
+	for _, tt := range tests {
+		num, ok := parseNumericIdentifier(tt.input)
+		if ok != tt.wantOk {
+			t.Errorf("parseNumericIdentifier(%q) ok = %v, want %v", tt.input, ok, tt.wantOk)
+		}
+		if ok && num != tt.wantNum {
+			t.Errorf("parseNumericIdentifier(%q) = %d, want %d", tt.input, num, tt.wantNum)
+		}
+	}
+}
+
+func Test_compareIdentifier(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		// Both numeric: compare numerically
+		{"1", "2", -1},
+		{"2", "1", 1},
+		{"1", "1", 0},
+		{"2", "10", -1}, // numeric: 2 < 10
+		{"10", "2", 1},  // numeric: 10 > 2
+		{"10", "10", 0},
+		{"99", "100", -1},
+
+		// Numeric vs alphanumeric: numeric has lower precedence
+		{"1", "alpha", -1},
+		{"alpha", "1", 1},
+		{"0", "a", -1},
+		{"999", "a", -1},
+
+		// Both alphanumeric: compare lexicographically
+		{"alpha", "alpha", 0},
+		{"alpha", "beta", -1},
+		{"beta", "alpha", 1},
+		{"rc", "rc", 0},
+		{"a", "b", -1},
+		{"z", "a", 1},
+	}
+
+	for _, tt := range tests {
+		got := compareIdentifier(tt.a, tt.b)
+		if got != tt.want {
+			t.Errorf("compareIdentifier(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+func Test_comparePreRelease(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want int
+	}{
+		// Simple alphanumeric
+		{"alpha", "alpha", 0},
+		{"alpha", "beta", -1},
+		{"beta", "alpha", 1},
+
+		// Numeric identifiers compared numerically
+		{"rc.1", "rc.2", -1},
+		{"rc.2", "rc.1", 1},
+		{"rc.2", "rc.10", -1}, // 2 < 10 numerically (not lexicographically!)
+		{"rc.10", "rc.2", 1},
+		{"rc.10", "rc.10", 0},
+
+		// Mixed: alpha.1 vs alpha.2
+		{"alpha.1", "alpha.2", -1},
+		{"alpha.2", "alpha.1", 1},
+
+		// Different prefixes
+		{"alpha.1", "beta.1", -1},
+		{"beta.1", "alpha.1", 1},
+		{"alpha", "alpha.1", -1}, // shorter has lower precedence
+		{"alpha.1", "alpha", 1},
+
+		// Complex pre-release identifiers
+		{"1.0.0", "1.0.1", -1},
+		{"alpha.1.beta", "alpha.1.beta", 0},
+		{"alpha.1.beta", "alpha.1.gamma", -1},
+
+		// Numeric vs alphanumeric identifier
+		{"alpha.1", "alpha.beta", -1}, // 1 (numeric) < beta (alphanumeric)
+		{"alpha.beta", "alpha.1", 1},
+
+		// Edge cases
+		{"0", "0", 0},
+		{"0", "1", -1},
+		{"1", "0", 1},
+	}
+
+	for _, tt := range tests {
+		got := comparePreRelease(tt.a, tt.b)
+		if got != tt.want {
+			t.Errorf("comparePreRelease(%q, %q) = %d, want %d", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* VERSION COMPARISON                                                        */
+/* ------------------------------------------------------------------------- */
+
+func TestSemVersion_Compare(t *testing.T) {
+	tests := []struct {
+		name string
+		a    SemVersion
+		b    SemVersion
+		want int
+	}{
+		{
+			name: "equal versions",
+			a:    SemVersion{Major: 1, Minor: 2, Patch: 3},
+			b:    SemVersion{Major: 1, Minor: 2, Patch: 3},
+			want: 0,
+		},
+		{
+			name: "major less",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0},
+			b:    SemVersion{Major: 2, Minor: 0, Patch: 0},
+			want: -1,
+		},
+		{
+			name: "major greater",
+			a:    SemVersion{Major: 2, Minor: 0, Patch: 0},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0},
+			want: 1,
+		},
+		{
+			name: "minor less",
+			a:    SemVersion{Major: 1, Minor: 2, Patch: 0},
+			b:    SemVersion{Major: 1, Minor: 3, Patch: 0},
+			want: -1,
+		},
+		{
+			name: "minor greater",
+			a:    SemVersion{Major: 1, Minor: 3, Patch: 0},
+			b:    SemVersion{Major: 1, Minor: 2, Patch: 0},
+			want: 1,
+		},
+		{
+			name: "patch less",
+			a:    SemVersion{Major: 1, Minor: 2, Patch: 3},
+			b:    SemVersion{Major: 1, Minor: 2, Patch: 4},
+			want: -1,
+		},
+		{
+			name: "patch greater",
+			a:    SemVersion{Major: 1, Minor: 2, Patch: 4},
+			b:    SemVersion{Major: 1, Minor: 2, Patch: 3},
+			want: 1,
+		},
+		{
+			name: "0.10.0 greater than 0.9.1 (semantic, not lexicographic)",
+			a:    SemVersion{Major: 0, Minor: 10, Patch: 0},
+			b:    SemVersion{Major: 0, Minor: 9, Patch: 1},
+			want: 1,
+		},
+		{
+			name: "0.10.0 greater than 0.2.0 (semantic, not lexicographic)",
+			a:    SemVersion{Major: 0, Minor: 10, Patch: 0},
+			b:    SemVersion{Major: 0, Minor: 2, Patch: 0},
+			want: 1,
+		},
+		{
+			name: "pre-release less than release",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0},
+			want: -1,
+		},
+		{
+			name: "release greater than pre-release",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha"},
+			want: 1,
+		},
+		{
+			name: "alpha less than beta pre-release",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "beta"},
+			want: -1,
+		},
+		{
+			name: "equal pre-release",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.1"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.1"},
+			want: 0,
+		},
+		{
+			name: "rc.2 less than rc.10 (numeric comparison)",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.2"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.10"},
+			want: -1,
+		},
+		{
+			name: "rc.10 greater than rc.2 (numeric comparison)",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.10"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "rc.2"},
+			want: 1,
+		},
+		{
+			name: "alpha.1 less than alpha.beta (numeric < alphanumeric)",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.beta"},
+			want: -1,
+		},
+		{
+			name: "alpha less than alpha.1 (shorter has lower precedence)",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, PreRelease: "alpha.1"},
+			want: -1,
+		},
+		{
+			name: "build metadata ignored",
+			a:    SemVersion{Major: 1, Minor: 0, Patch: 0, Build: "build.1"},
+			b:    SemVersion{Major: 1, Minor: 0, Patch: 0, Build: "build.2"},
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.a.Compare(tt.b)
+			if got != tt.want {
+				t.Errorf("(%s).Compare(%s) = %d, want %d",
+					tt.a.String(), tt.b.String(), got, tt.want)
+			}
+		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
 /* VERSION FILE INITIALIZATION                                               */
 /* ------------------------------------------------------------------------- */
 
