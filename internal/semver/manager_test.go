@@ -118,7 +118,7 @@ func TestVersionManager_Initialize_WithoutGitTag(t *testing.T) {
 		t.Fatal("version file not created")
 	}
 
-	expected := "0.1.0\n"
+	expected := "0.0.0\n"
 	if string(data) != expected {
 		t.Errorf("expected default %q, got %q", expected, string(data))
 	}

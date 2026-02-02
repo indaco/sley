@@ -392,7 +392,7 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 		}
 	})
 
-	t.Run("file does not exist, fallback to default 0.1.0", func(t *testing.T) {
+	t.Run("file does not exist, fallback to default 0.0.0", func(t *testing.T) {
 		tmp := t.TempDir()
 		path := filepath.Join(tmp, ".version")
 
@@ -413,8 +413,8 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 		// Verify content
 		data, _ := os.ReadFile(path)
 		got := strings.TrimSpace(string(data))
-		if got != "0.1.0" {
-			t.Errorf("expected 0.1.0, got %q", got)
+		if got != "0.0.0" {
+			t.Errorf("expected 0.0.0, got %q", got)
 		}
 	})
 }
@@ -770,7 +770,7 @@ func TestInitialize_InvalidGitTagFormat(t *testing.T) {
 
 	data, _ := os.ReadFile(versionPath)
 	got := strings.TrimSpace(string(data))
-	want := "0.1.0"
+	want := "0.0.0"
 
 	if got != want {
 		t.Errorf("expected fallback version %q, got %q", want, got)

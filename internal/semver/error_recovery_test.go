@@ -210,7 +210,7 @@ func TestVersionManager_InitializeNewFile_Recovery(t *testing.T) {
 		t.Fatalf("failed to read initialized file: %v", err)
 	}
 
-	// Initialize creates version based on implementation (may start at 0.0.0 or 0.1.0)
+	// Initialize creates version based on implementation (starts at 0.0.0)
 	if version.Major != 0 {
 		t.Errorf("expected initial major version 0, got %d", version.Major)
 	}

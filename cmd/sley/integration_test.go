@@ -88,8 +88,8 @@ func TestIntegration_Init(t *testing.T) {
 		}
 
 		version := readVersionFile(t, dir)
-		if version != "0.1.0" {
-			t.Errorf("expected version 0.1.0, got %s", version)
+		if version != "0.0.0" {
+			t.Errorf("expected version 0.0.0, got %s", version)
 		}
 	})
 
@@ -109,8 +109,8 @@ func TestIntegration_Init(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to read custom version file: %v", err)
 		}
-		if strings.TrimSpace(string(data)) != "0.1.0" {
-			t.Errorf("expected version 0.1.0, got %s", string(data))
+		if strings.TrimSpace(string(data)) != "0.0.0" {
+			t.Errorf("expected version 0.0.0, got %s", string(data))
 		}
 	})
 }
@@ -163,8 +163,8 @@ func TestIntegration_Show(t *testing.T) {
 		}
 
 		// Should auto-initialize and show the version
-		if !strings.Contains(output, "0.1.0") {
-			t.Errorf("expected output to contain '0.1.0', got %q", output)
+		if !strings.Contains(output, "0.0.0") {
+			t.Errorf("expected output to contain '0.0.0', got %q", output)
 		}
 	})
 }
@@ -537,8 +537,8 @@ func TestIntegration_CustomPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("show failed: %v", err)
 	}
-	if output != "0.1.0" {
-		t.Errorf("expected 0.1.0, got %s", output)
+	if output != "0.0.0" {
+		t.Errorf("expected 0.0.0, got %s", output)
 	}
 
 	// Bump at custom path

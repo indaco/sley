@@ -422,9 +422,9 @@ func TestCLI_InitCommand_MigrateNoSources(t *testing.T) {
 	}
 
 	version := string(data)
-	// Should fall back to default (0.1.0)
-	if version != "0.1.0\n" {
-		t.Errorf("expected version '0.1.0\\n', got %q", version)
+	// Should fall back to default (0.0.0)
+	if version != "0.0.0\n" {
+		t.Errorf("expected version '0.0.0\\n', got %q", version)
 	}
 }
 

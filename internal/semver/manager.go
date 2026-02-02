@@ -61,13 +61,13 @@ func (m *VersionManager) Save(ctx context.Context, path string, version SemVersi
 }
 
 // Initialize creates a version file if it doesn't exist.
-// It tries to use the latest git tag, or falls back to 0.1.0.
+// It tries to use the latest git tag, or falls back to 0.0.0.
 func (m *VersionManager) Initialize(ctx context.Context, path string) error {
 	if _, err := m.fs.Stat(ctx, path); err == nil {
 		return nil // Already exists
 	}
 
-	version := SemVersion{Major: 0, Minor: 1, Patch: 0} // Default
+	version := SemVersion{Major: 0, Minor: 0, Patch: 0} // Default
 
 	if m.git != nil {
 		tag, err := m.git.DescribeTags(ctx)
