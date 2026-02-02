@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.11.0 - 2026-02-02
+
+### 🚀 Enhancements
+
+- **tui:** add configurable theme selection for CLI ([8246b5d](https://github.com/indaco/sley/commit/8246b5d)) ([#207](https://github.com/indaco/sley/pull/207))
+
+### 🩹 Fixes
+
+- **init:** change default version from 0.1.0 to 0.0.0 ([4eccb87](https://github.com/indaco/sley/commit/4eccb87)) ([#206](https://github.com/indaco/sley/pull/206))
+
+**Full Changelog:** [v0.10.0...v0.11.0](https://github.com/indaco/sley/compare/v0.10.0...v0.11.0)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.10.0 - 2026-01-28
 
 ### 🚀 Enhancements
