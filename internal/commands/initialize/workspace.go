@@ -22,7 +22,7 @@ type DiscoveredModule struct {
 // runWorkspaceInit initializes a monorepo/workspace configuration.
 func runWorkspaceInit(path string, yesFlag bool, templateFlag, enableFlag string, forceFlag bool) error {
 	// Step 1: Discover existing .version files in subdirectories
-	modules, err := discoverVersionFiles(".")
+	modules, err := discoverVersionFiles(path)
 	if err != nil {
 		return fmt.Errorf("failed to discover modules: %w", err)
 	}
@@ -227,7 +227,7 @@ func writePluginConfig(sb *strings.Builder, pluginName string) {
 }
 
 // printWorkspaceSuccessSummary prints the success message for workspace init.
-func printWorkspaceSuccessSummary(configCreated bool, plugins []string, modules []DiscoveredModule, ctx *ProjectContext) {
+func printWorkspaceSuccessSummary(configCreated bool, plugins []string, modules []DiscoveredModule, _ *ProjectContext) {
 	if configCreated {
 		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s and workspace configuration",
 			len(plugins), tui.Pluralize(len(plugins))))
