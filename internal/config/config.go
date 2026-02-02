@@ -27,10 +27,19 @@ type PreReleaseHookConfig struct {
 // Config is the main configuration structure for sley.
 type Config struct {
 	Path            string                            `yaml:"path"`
+	Theme           string                            `yaml:"theme,omitempty"`
 	Plugins         *PluginConfig                     `yaml:"plugins,omitempty"`
 	Extensions      []ExtensionConfig                 `yaml:"extensions,omitempty"`
 	PreReleaseHooks []map[string]PreReleaseHookConfig `yaml:"pre-release-hooks,omitempty"`
 	Workspace       *WorkspaceConfig                  `yaml:"workspace,omitempty"`
+}
+
+// GetTheme returns the configured theme name, defaulting to "sley" if not set.
+func (c *Config) GetTheme() string {
+	if c.Theme == "" {
+		return "sley"
+	}
+	return c.Theme
 }
 
 // FileOpener abstracts file opening operations for testability.

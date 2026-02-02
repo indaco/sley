@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/indaco/sley/internal/commands/bump"
 	"github.com/indaco/sley/internal/commands/changelog"
@@ -18,11 +20,15 @@ import (
 	"github.com/indaco/sley/internal/console"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
+	"github.com/indaco/sley/internal/tui"
 	"github.com/indaco/sley/internal/version"
 	urfavecli "github.com/urfave/cli/v3"
 )
 
-var noColorFlag bool
+var (
+	noColorFlag bool
+	themeFlag   string
+)
 
 // New builds and returns the root CLI command,
 // configuring all subcommands and flags for the sley cli.
@@ -50,10 +56,30 @@ func New(cfg *config.Config, registry *plugins.PluginRegistry) *urfavecli.Comman
 				Usage:       "Disable colored output",
 				Destination: &noColorFlag,
 			},
+			&urfavecli.StringFlag{
+				Name:        "theme",
+				Usage:       "TUI theme (sley, base, base16, catppuccin, charm, dracula)",
+				Value:       cfg.GetTheme(),
+				Destination: &themeFlag,
+			},
 		},
 		Before: func(ctx context.Context, cmd *urfavecli.Command) (context.Context, error) {
 			console.SetNoColor(noColorFlag)
 			printer.SetNoColor(noColorFlag)
+
+			// Theme priority: CLI flag > env var > config file > default
+			theme := themeFlag
+			if envTheme := os.Getenv("SLEY_THEME"); envTheme != "" && themeFlag == cfg.GetTheme() {
+				// Only use env var if CLI flag wasn't explicitly set
+				theme = envTheme
+			}
+
+			if theme != "" && !tui.IsValidTheme(theme) {
+				return ctx, fmt.Errorf("invalid theme %q: valid themes are %s",
+					theme, strings.Join(tui.ValidThemes, ", "))
+			}
+
+			tui.SetTheme(theme)
 			return ctx, nil
 		},
 		Commands: []*urfavecli.Command{
