@@ -40,12 +40,12 @@ func TestCLI_InitCommand_CreatesFile(t *testing.T) {
 	}
 
 	got := testutils.ReadTempVersionFile(t, tmp)
-	if got != "0.1.0" {
-		t.Errorf("expected version '0.1.0', got %q", got)
+	if got != "0.0.0" {
+		t.Errorf("expected version '0.0.0', got %q", got)
 	}
 
 	// With --yes flag, output includes config creation message
-	if !strings.Contains(output, fmt.Sprintf("Created %s with version 0.1.0", versionPath)) {
+	if !strings.Contains(output, fmt.Sprintf("Created %s with version 0.0.0", versionPath)) {
 		t.Errorf("expected output to contain version creation message, got: %q", output)
 	}
 }
@@ -822,7 +822,7 @@ func TestInitializeVersionFileWithMigration(t *testing.T) {
 			t.Error("expected file to be created")
 		}
 
-		// Should have default version (0.1.0 or from git tag)
+		// Should have default version (0.0.0 or from git tag)
 		data, _ := os.ReadFile(versionPath)
 		if string(data) == "" {
 			t.Error("expected version to be written")
