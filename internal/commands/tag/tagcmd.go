@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/indaco/sley/internal/cliflags"
+	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
@@ -35,6 +37,7 @@ func Run(cfg *config.Config) *cli.Command {
 	return &cli.Command{
 		Name:  "tag",
 		Usage: "Manage git tags for versions",
+		Flags: cliflags.MultiModuleFlags(),
 		Commands: []*cli.Command{
 			tc.createCmd(cfg),
 			tc.listCmd(cfg),
@@ -122,7 +125,7 @@ func (tc *TagCommand) deleteCmd(cfg *config.Config) *cli.Command {
 }
 
 // runCreateCmd creates a git tag for the current version.
-func (tc *TagCommand) runCreateCmd(_ context.Context, cmd *cli.Command, cfg *config.Config) error {
+func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
 	// Check if tag-manager plugin is enabled
 	if !isTagManagerEnabled(cfg) {
 		printer.PrintWarning("Warning: The tag-manager plugin is not enabled.")
@@ -137,7 +140,10 @@ func (tc *TagCommand) runCreateCmd(_ context.Context, cmd *cli.Command, cfg *con
 		fmt.Println("")
 	}
 
-	path := getVersionPath(cmd, cfg)
+	path, err := resolveVersionPath(ctx, cmd, cfg)
+	if err != nil {
+		return err
+	}
 
 	version, err := semver.ReadVersion(path)
 	if err != nil {
@@ -228,13 +234,17 @@ func (tc *TagCommand) runListCmd(_ context.Context, cmd *cli.Command, cfg *confi
 }
 
 // runPushCmd pushes a tag to remote.
-func (tc *TagCommand) runPushCmd(_ context.Context, cmd *cli.Command, cfg *config.Config) error {
+func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
 	var tagName string
 
 	if cmd.NArg() > 0 {
 		tagName = cmd.Args().Get(0)
 	} else {
-		path := getVersionPath(cmd, cfg)
+		path, err := resolveVersionPath(ctx, cmd, cfg)
+		if err != nil {
+			return err
+		}
+
 		version, err := semver.ReadVersion(path)
 		if err != nil {
 			return fmt.Errorf("failed to read version from %s: %w", path, err)
@@ -303,6 +313,32 @@ func isTagManagerEnabled(cfg *config.Config) bool {
 		return false
 	}
 	return cfg.Plugins.TagManager.Enabled
+}
+
+// resolveVersionPath uses clix.GetExecutionContext to properly detect multi-module
+// workspaces. In single-module mode it returns the resolved .version file path.
+// In multi-module mode it shows a TUI prompt so the user can choose which module's
+// version to use for the tag. When --all is passed, the first module is used
+// automatically. This ensures tag commands work correctly in monorepo projects
+// where getVersionPath would fall back to a missing root .version file.
+func resolveVersionPath(ctx context.Context, cmd *cli.Command, cfg *config.Config) (string, error) {
+	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg)
+	if err != nil {
+		return "", err
+	}
+
+	if execCtx.IsSingleModule() {
+		return execCtx.Path, nil
+	}
+
+	// Multi-module mode: use the selected module's .version file.
+	if len(execCtx.Modules) == 0 {
+		return "", fmt.Errorf("no modules found in workspace")
+	}
+
+	mod := execCtx.Modules[0]
+	printer.PrintInfo(fmt.Sprintf("Using version from module %q (%s)", mod.Name, mod.RelPath))
+	return mod.Path, nil
 }
 
 // getVersionPath returns the version file path from flags or config.

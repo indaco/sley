@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 run:
   tests: true
   timeout: 5m
@@ -92,6 +92,18 @@ linters:
       - path: \.go$
         linters:
           - prealloc
+      - path: internal/parser/
+        linters:
+          - revive
+        text: "avoid package names that conflict"
+      - path: internal/printer/
+        linters:
+          - revive
+        text: "avoid package names that conflict"
+      - path: internal/version/
+        linters:
+          - revive
+        text: "avoid package names that conflict"
     paths:
       - third_party$
       - builtin$
