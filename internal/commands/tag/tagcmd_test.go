@@ -6,11 +6,13 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/semver"
+	"github.com/indaco/sley/internal/testutils"
 	"github.com/urfave/cli/v3"
 )
 
@@ -1340,5 +1342,333 @@ func TestRunDeleteCmd_DeleteRemoteError(t *testing.T) {
 	err := app.Run(context.Background(), []string{"test", "delete", "v1.0.0", "--remote"})
 	if err == nil {
 		t.Error("runDeleteCmd() expected error for delete remote failure")
+	}
+}
+
+func TestRunCommand_HasMultiModuleFlags(t *testing.T) {
+	cfg := &config.Config{Path: ".version"}
+	cmd := Run(cfg)
+
+	// The tag command should now include multi-module flags
+	if len(cmd.Flags) == 0 {
+		t.Fatal("Run() expected tag command to have flags from MultiModuleFlags()")
+	}
+
+	expectedFlags := map[string]bool{
+		"all":               false,
+		"module":            false,
+		"modules":           false,
+		"pattern":           false,
+		"yes":               false,
+		"non-interactive":   false,
+		"parallel":          false,
+		"fail-fast":         false,
+		"continue-on-error": false,
+		"quiet":             false,
+		"format":            false,
+	}
+
+	for _, f := range cmd.Flags {
+		for _, name := range f.Names() {
+			if _, ok := expectedFlags[name]; ok {
+				expectedFlags[name] = true
+			}
+		}
+	}
+
+	for name, found := range expectedFlags {
+		if !found {
+			t.Errorf("Run() missing expected multi-module flag %q", name)
+		}
+	}
+}
+
+func TestResolveVersionPath_SingleModule(t *testing.T) {
+	tmpDir := t.TempDir()
+	versionFile := filepath.Join(tmpDir, ".version")
+	if err := os.WriteFile(versionFile, []byte("1.0.0\n"), 0644); err != nil {
+		t.Fatalf("failed to create version file: %v", err)
+	}
+
+	// When cfg.Path is explicitly set (not ".version"), resolveVersionPath
+	// should return SingleModuleMode via getSingleModuleFromFlags.
+	cfg := &config.Config{Path: versionFile}
+
+	cmd := &cli.Command{
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "path"},
+		},
+	}
+
+	path, err := resolveVersionPath(context.Background(), cmd, cfg)
+	if err != nil {
+		t.Fatalf("resolveVersionPath() unexpected error: %v", err)
+	}
+	if path != versionFile {
+		t.Errorf("resolveVersionPath() = %v, want %v", path, versionFile)
+	}
+}
+
+func TestResolveVersionPath_MultiModule(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create multi-module workspace
+	moduleA := filepath.Join(tmpDir, "module-a")
+	moduleB := filepath.Join(tmpDir, "module-b")
+	if err := os.MkdirAll(moduleA, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(moduleB, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	testutils.WriteTempVersionFile(t, moduleA, "2.3.4")
+	testutils.WriteTempVersionFile(t, moduleB, "2.3.4")
+
+	enabled := true
+	recursive := true
+	maxDepth := 10
+	cfg := &config.Config{
+		Path: ".version",
+		Workspace: &config.WorkspaceConfig{
+			Discovery: &config.DiscoveryConfig{
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
+			},
+		},
+	}
+
+	// Build a CLI app that has the multi-module flags (from tag parent command)
+	// plus the global --path flag, and an action that calls resolveVersionPath.
+	var resolvedPath string
+	var resolveErr error
+
+	app := &cli.Command{
+		Name: "sley",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "path",
+				Value: cfg.Path,
+			},
+			&cli.BoolFlag{Name: "strict"},
+		},
+		Commands: []*cli.Command{
+			{
+				Name:  "tag",
+				Flags: Run(cfg).Flags, // inherit the multi-module flags
+				Commands: []*cli.Command{
+					{
+						Name: "resolve",
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							resolvedPath, resolveErr = resolveVersionPath(ctx, cmd, cfg)
+							return resolveErr
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Change to tmpDir so workspace detection discovers modules
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+
+	err = app.Run(context.Background(), []string{"sley", "tag", "resolve", "--all"})
+	if err != nil {
+		t.Fatalf("resolveVersionPath() in multi-module mode returned error: %v", err)
+	}
+
+	// The resolved path should be a module's .version file, not the root
+	if resolvedPath == ".version" {
+		t.Error("resolveVersionPath() returned default '.version' instead of a module path")
+	}
+
+	// It should point to an actual file
+	if _, err := os.Stat(resolvedPath); err != nil {
+		t.Errorf("resolveVersionPath() returned path that doesn't exist: %v", resolvedPath)
+	}
+
+	// The version should be readable
+	v, err := semver.ReadVersion(resolvedPath)
+	if err != nil {
+		t.Fatalf("failed to read version from resolved path %s: %v", resolvedPath, err)
+	}
+	if v.String() != "2.3.4" {
+		t.Errorf("version from resolved path = %v, want 2.3.4", v.String())
+	}
+}
+
+func TestCLI_TagCreate_MultiModule(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create multi-module workspace
+	moduleA := filepath.Join(tmpDir, "module-a")
+	moduleB := filepath.Join(tmpDir, "module-b")
+	if err := os.MkdirAll(moduleA, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(moduleB, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	testutils.WriteTempVersionFile(t, moduleA, "3.0.0")
+	testutils.WriteTempVersionFile(t, moduleB, "3.0.0")
+
+	enabled := true
+	recursive := true
+	maxDepth := 10
+	cfg := &config.Config{
+		Path: ".version",
+		Workspace: &config.WorkspaceConfig{
+			Discovery: &config.DiscoveryConfig{
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
+			},
+		},
+	}
+
+	var createdTag string
+	mockOps := &mockGitTagOps{
+		tagExists: func(name string) (bool, error) {
+			return false, nil
+		},
+		createAnnotatedTag: func(name, message string) error {
+			createdTag = name
+			return nil
+		},
+	}
+	tc := NewTagCommand(mockOps)
+
+	appCli := &cli.Command{
+		Name: "sley",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "path",
+				Value: cfg.Path,
+			},
+			&cli.BoolFlag{Name: "strict"},
+		},
+		Commands: []*cli.Command{
+			func() *cli.Command {
+				cmd := Run(cfg)
+				// Replace the create subcommand with one that uses our mock
+				for i, sub := range cmd.Commands {
+					if sub.Name == "create" {
+						cmd.Commands[i] = tc.createCmd(cfg)
+					}
+				}
+				return cmd
+			}(),
+		},
+	}
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{"sley", "tag", "create", "--all"}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("Failed to capture stdout: %v", err)
+	}
+
+	if createdTag != "v3.0.0" {
+		t.Errorf("tag create in multi-module mode created tag = %v, want v3.0.0", createdTag)
+	}
+
+	// Output should mention which module the version was sourced from
+	if !strings.Contains(output, "Using version from module") {
+		t.Errorf("expected output to mention source module, got: %q", output)
+	}
+}
+
+func TestCLI_TagPush_MultiModule_NoArg(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create multi-module workspace
+	moduleA := filepath.Join(tmpDir, "module-a")
+	moduleB := filepath.Join(tmpDir, "module-b")
+	if err := os.MkdirAll(moduleA, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(moduleB, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	testutils.WriteTempVersionFile(t, moduleA, "4.0.0")
+	testutils.WriteTempVersionFile(t, moduleB, "4.0.0")
+
+	enabled := true
+	recursive := true
+	maxDepth := 10
+	cfg := &config.Config{
+		Path: ".version",
+		Workspace: &config.WorkspaceConfig{
+			Discovery: &config.DiscoveryConfig{
+				Enabled:        &enabled,
+				Recursive:      &recursive,
+				ModuleMaxDepth: &maxDepth,
+			},
+		},
+	}
+
+	var pushedTag string
+	mockOps := &mockGitTagOps{
+		tagExists: func(name string) (bool, error) {
+			return true, nil
+		},
+		pushTag: func(name string) error {
+			pushedTag = name
+			return nil
+		},
+	}
+	tc := NewTagCommand(mockOps)
+
+	appCli := &cli.Command{
+		Name: "sley",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:  "path",
+				Value: cfg.Path,
+			},
+			&cli.BoolFlag{Name: "strict"},
+		},
+		Commands: []*cli.Command{
+			func() *cli.Command {
+				cmd := Run(cfg)
+				// Replace the push subcommand with one that uses our mock
+				for i, sub := range cmd.Commands {
+					if sub.Name == "push" {
+						cmd.Commands[i] = tc.pushCmd(cfg)
+					}
+				}
+				return cmd
+			}(),
+		},
+	}
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{"sley", "tag", "push", "--all"}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("Failed to capture stdout: %v", err)
+	}
+
+	if pushedTag != "v4.0.0" {
+		t.Errorf("tag push in multi-module mode pushed tag = %v, want v4.0.0", pushedTag)
+	}
+
+	// Output should mention which module the version was sourced from
+	if !strings.Contains(output, "Using version from module") {
+		t.Errorf("expected output to mention source module, got: %q", output)
 	}
 }
