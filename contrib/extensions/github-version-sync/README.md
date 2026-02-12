@@ -243,5 +243,5 @@ Without `jq` or `jaq`, basic shell parsing is used (works for simple cases).
 ## See Also
 
 - [Extensions Overview](https://sley.indaco.dev/extensions/) - How extensions work
-- [dependency-check plugin](https://sley.indaco.dev/plugins/dependency-check) - Sync version to package.json
-- [tag-manager plugin](https://sley.indaco.dev/plugins/tag-manager) - Git tag automation
+- [dependency-check plugin](https://sley.indaco.dev/plugins/dependency-check.html) - Sync version to package.json
+- [tag-manager plugin](https://sley.indaco.dev/plugins/tag-manager.html) - Git tag automation
