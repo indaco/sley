@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.11.1 - 2026-02-12
+
+### 🩹 Fixes
+
+- **tag:** add multi-module workspace support ([c3a259b](https://github.com/indaco/sley/commit/c3a259b)) ([#209](https://github.com/indaco/sley/pull/209))
+
+### 📖 Documentation
+
+- **extensions:** fix links to doc pages on github-version-sync README ([7d5685e](https://github.com/indaco/sley/commit/7d5685e))
+
+**Full Changelog:** [v0.11.0...v0.11.1](https://github.com/indaco/sley/compare/v0.11.0...v0.11.1)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.11.0 - 2026-02-02
 
 ### 🚀 Enhancements
