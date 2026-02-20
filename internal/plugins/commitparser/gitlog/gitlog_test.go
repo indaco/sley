@@ -12,7 +12,7 @@ var fakeGitCommands = map[string]string{}
 func fakeExecCommand(command string, args ...string) *exec.Cmd {
 	cmdStr := command + " " + strings.Join(args, " ")
 	// println("[fakeExecCommand] registering mock:", cmdStr)
-	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", cmdStr)
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", cmdStr) //nolint:gosec // G702: standard test re-exec pattern
 
 	cmd.Env = append(os.Environ(),
 		"GO_TEST_HELPER_PROCESS=1",

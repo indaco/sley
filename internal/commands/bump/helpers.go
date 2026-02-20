@@ -191,7 +191,7 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 		var details strings.Builder
 		details.WriteString("version inconsistencies detected:\n")
 		for _, inc := range inconsistencies {
-			details.WriteString(fmt.Sprintf("  - %s\n", inc.String()))
+			fmt.Fprintf(&details, "  - %s\n", inc.String())
 		}
 		details.WriteString("\nRun with auto-sync enabled to fix automatically, or update files manually.")
 		return fmt.Errorf("%s", details.String())

@@ -52,7 +52,7 @@ func TestCLI_ShowCommand_Strict_MissingFile(t *testing.T) {
 		return
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_ShowCommand_Strict_MissingFile")
+	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_ShowCommand_Strict_MissingFile") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_SLEY_STRICT=1")
 	output, err := cmd.CombinedOutput()
 

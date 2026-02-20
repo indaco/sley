@@ -141,7 +141,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	if remote != nil && previousVersion != "" {
 		compareURL := buildCompareURL(remote, previousVersion, version)
 		if compareURL != "" {
-			sb.WriteString(fmt.Sprintf("**Full Changelog:** [%s...%s](%s)\n\n", previousVersion, version, compareURL))
+			fmt.Fprintf(&sb, "**Full Changelog:** [%s...%s](%s)\n\n", previousVersion, version, compareURL)
 		}
 	}
 
@@ -150,7 +150,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 		contributors := GetContributorsFn(commits)
 		if len(contributors) > 0 {
 			if g.config.Contributors.Icon != "" {
-				sb.WriteString(fmt.Sprintf("### %s Contributors\n\n", g.config.Contributors.Icon))
+				fmt.Fprintf(&sb, "### %s Contributors\n\n", g.config.Contributors.Icon)
 			} else {
 				sb.WriteString("### Contributors\n\n")
 			}

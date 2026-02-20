@@ -28,7 +28,7 @@ func (f *GitHubFormatter) FormatChangelog(
 
 	// Version header with "v" prefix (like grouped format)
 	date := time.Now().Format("2006-01-02")
-	sb.WriteString(fmt.Sprintf("## %s - %s\n\n", version, date))
+	fmt.Fprintf(&sb, "## %s - %s\n\n", version, date)
 
 	// Separate breaking changes from regular changes
 	var breakingChanges []*GroupedCommit
@@ -84,7 +84,7 @@ func formatGitHubCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
 
 	// Add scope if present (bold)
 	if c.Scope != "" {
-		sb.WriteString(fmt.Sprintf("**%s:** ", c.Scope))
+		fmt.Fprintf(&sb, "**%s:** ", c.Scope)
 	}
 
 	// Add description
@@ -93,12 +93,12 @@ func formatGitHubCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
 	// Add author attribution using extractUsername
 	username, _ := extractUsername(c.AuthorEmail, c.Author)
 	if username != "" {
-		sb.WriteString(fmt.Sprintf(" by @%s", username))
+		fmt.Fprintf(&sb, " by @%s", username)
 	}
 
 	// Add PR reference if present
 	if c.PRNumber != "" {
-		sb.WriteString(fmt.Sprintf(" in #%s", c.PRNumber))
+		fmt.Fprintf(&sb, " in #%s", c.PRNumber)
 	}
 
 	sb.WriteString("\n")

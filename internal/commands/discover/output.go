@@ -45,7 +45,7 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 
 	// Mode summary
 	modeStr := getModeDescription(result.Mode)
-	sb.WriteString(fmt.Sprintf("Project Type: %s\n", printer.Bold(modeStr)))
+	fmt.Fprintf(&sb, "Project Type: %s\n", printer.Bold(modeStr))
 	sb.WriteString("\n")
 
 	// Modules section
@@ -54,7 +54,7 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 		sb.WriteString("\n")
 		for _, m := range result.Modules {
 			status := printer.Success("✓")
-			sb.WriteString(fmt.Sprintf("  %s %s %s\n", status, m.RelPath, printer.Faint(fmt.Sprintf("(%s)", m.Version))))
+			fmt.Fprintf(&sb, "  %s %s %s\n", status, m.RelPath, printer.Faint(fmt.Sprintf("(%s)", m.Version)))
 		}
 		sb.WriteString("\n")
 	}
@@ -65,7 +65,7 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 		sb.WriteString("\n")
 		for _, m := range result.Manifests {
 			status := printer.Success("✓")
-			sb.WriteString(fmt.Sprintf("  %s %s %s\n", status, m.RelPath, printer.Faint(fmt.Sprintf("(%s: %s)", m.Description, m.Version))))
+			fmt.Fprintf(&sb, "  %s %s %s\n", status, m.RelPath, printer.Faint(fmt.Sprintf("(%s: %s)", m.Description, m.Version)))
 		}
 		sb.WriteString("\n")
 	}
@@ -76,8 +76,8 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 		sb.WriteString("\n")
 		for _, m := range result.Mismatches {
 			status := printer.Warning("⚠")
-			sb.WriteString(fmt.Sprintf("  %s %s: expected %s, found %s\n",
-				status, m.Source, m.ExpectedVersion, m.ActualVersion))
+			fmt.Fprintf(&sb, "  %s %s: expected %s, found %s\n",
+				status, m.Source, m.ExpectedVersion, m.ActualVersion)
 		}
 		sb.WriteString("\n")
 	}
@@ -87,7 +87,7 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 		sb.WriteString(printer.Info("Sync Candidates (for dependency-check plugin):"))
 		sb.WriteString("\n")
 		for _, c := range result.SyncCandidates {
-			sb.WriteString(fmt.Sprintf("  - %s %s\n", c.Path, printer.Faint(fmt.Sprintf("(%s)", c.Description))))
+			fmt.Fprintf(&sb, "  - %s %s\n", c.Path, printer.Faint(fmt.Sprintf("(%s)", c.Description)))
 		}
 		sb.WriteString("\n")
 	}
@@ -112,10 +112,10 @@ func (f *Formatter) formatTable(result *discovery.Result) string {
 	// Modules table
 	if len(result.Modules) > 0 {
 		sb.WriteString("Version Files:\n")
-		sb.WriteString(fmt.Sprintf("%-30s %-15s %-20s\n", "PATH", "VERSION", "MODULE"))
+		fmt.Fprintf(&sb, "%-30s %-15s %-20s\n", "PATH", "VERSION", "MODULE")
 		sb.WriteString(strings.Repeat("-", 65) + "\n")
 		for _, m := range result.Modules {
-			sb.WriteString(fmt.Sprintf("%-30s %-15s %-20s\n", m.RelPath, m.Version, m.Name))
+			fmt.Fprintf(&sb, "%-30s %-15s %-20s\n", m.RelPath, m.Version, m.Name)
 		}
 		sb.WriteString("\n")
 	}
@@ -123,10 +123,10 @@ func (f *Formatter) formatTable(result *discovery.Result) string {
 	// Manifests table
 	if len(result.Manifests) > 0 {
 		sb.WriteString("Manifest Files:\n")
-		sb.WriteString(fmt.Sprintf("%-30s %-15s %-25s\n", "PATH", "VERSION", "TYPE"))
+		fmt.Fprintf(&sb, "%-30s %-15s %-25s\n", "PATH", "VERSION", "TYPE")
 		sb.WriteString(strings.Repeat("-", 70) + "\n")
 		for _, m := range result.Manifests {
-			sb.WriteString(fmt.Sprintf("%-30s %-15s %-25s\n", m.RelPath, m.Version, m.Description))
+			fmt.Fprintf(&sb, "%-30s %-15s %-25s\n", m.RelPath, m.Version, m.Description)
 		}
 		sb.WriteString("\n")
 	}
@@ -134,10 +134,10 @@ func (f *Formatter) formatTable(result *discovery.Result) string {
 	// Mismatches table
 	if len(result.Mismatches) > 0 {
 		sb.WriteString("Version Mismatches:\n")
-		sb.WriteString(fmt.Sprintf("%-30s %-15s %-15s\n", "SOURCE", "EXPECTED", "ACTUAL"))
+		fmt.Fprintf(&sb, "%-30s %-15s %-15s\n", "SOURCE", "EXPECTED", "ACTUAL")
 		sb.WriteString(strings.Repeat("-", 60) + "\n")
 		for _, m := range result.Mismatches {
-			sb.WriteString(fmt.Sprintf("%-30s %-15s %-15s\n", m.Source, m.ExpectedVersion, m.ActualVersion))
+			fmt.Fprintf(&sb, "%-30s %-15s %-15s\n", m.Source, m.ExpectedVersion, m.ActualVersion)
 		}
 		sb.WriteString("\n")
 	}

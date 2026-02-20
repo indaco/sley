@@ -74,7 +74,7 @@ func GenerateConfigWithComments(path string, selectedPlugins []string) ([]byte, 
 	if len(selectedPlugins) > 0 {
 		buf.WriteString("# Enabled plugins:\n")
 		for _, name := range selectedPlugins {
-			buf.WriteString(fmt.Sprintf("#   - %s\n", name))
+			fmt.Fprintf(&buf, "#   - %s\n", name)
 		}
 		buf.WriteString("\n")
 	}
@@ -164,7 +164,7 @@ func GenerateConfigWithDiscovery(path string, selectedPlugins []string, syncCand
 	if len(selectedPlugins) > 0 {
 		buf.WriteString("# Enabled plugins:\n")
 		for _, name := range selectedPlugins {
-			buf.WriteString(fmt.Sprintf("#   - %s\n", name))
+			fmt.Fprintf(&buf, "#   - %s\n", name)
 		}
 		buf.WriteString("\n")
 	}

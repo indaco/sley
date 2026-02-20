@@ -318,7 +318,7 @@ func marshalConfigWithWorkspaceComments(cfg *config.Config, plugins []string) ([
 	if len(plugins) > 0 {
 		result.WriteString("# Enabled plugins:\n")
 		for _, name := range plugins {
-			result.WriteString(fmt.Sprintf("#   - %s\n", name))
+			fmt.Fprintf(&result, "#   - %s\n", name)
 		}
 		result.WriteString("\n")
 	}
@@ -605,7 +605,7 @@ func marshalConfigWithComments(cfg *config.Config, plugins []string) ([]byte, er
 	if len(plugins) > 0 {
 		result.WriteString("# Enabled plugins:\n")
 		for _, name := range plugins {
-			result.WriteString(fmt.Sprintf("#   - %s\n", name))
+			fmt.Fprintf(&result, "#   - %s\n", name)
 		}
 		result.WriteString("\n")
 	}
@@ -630,13 +630,13 @@ func (w *Workflow) generateDependencyCheckConfig(candidates []discovery.SyncCand
 	sb.WriteString("    files:\n")
 
 	for _, c := range candidates {
-		sb.WriteString(fmt.Sprintf("      - path: %s\n", c.Path))
-		sb.WriteString(fmt.Sprintf("        format: %s\n", c.Format.String()))
+		fmt.Fprintf(&sb, "      - path: %s\n", c.Path)
+		fmt.Fprintf(&sb, "        format: %s\n", c.Format.String())
 		if c.Field != "" {
-			sb.WriteString(fmt.Sprintf("        field: %s\n", c.Field))
+			fmt.Fprintf(&sb, "        field: %s\n", c.Field)
 		}
 		if c.Pattern != "" {
-			sb.WriteString(fmt.Sprintf("        pattern: '%s'\n", c.Pattern))
+			fmt.Fprintf(&sb, "        pattern: '%s'\n", c.Pattern)
 		}
 	}
 

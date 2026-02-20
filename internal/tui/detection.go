@@ -14,7 +14,7 @@ import (
 // This function is used to automatically skip TUI prompts in non-interactive contexts.
 func IsInteractive() bool {
 	// Check if stdout is a terminal
-	if !term.IsTerminal(int(os.Stdout.Fd())) {
+	if !term.IsTerminal(int(os.Stdout.Fd())) { //nolint:gosec // G115: fd is a small value, no overflow risk
 		return false
 	}
 
@@ -48,5 +48,5 @@ func IsInteractive() bool {
 // IsTTY checks if stdout is a terminal.
 // This is a lower-level check than IsInteractive.
 func IsTTY() bool {
-	return term.IsTerminal(int(os.Stdout.Fd()))
+	return term.IsTerminal(int(os.Stdout.Fd())) //nolint:gosec // G115: fd is a small value, no overflow risk
 }

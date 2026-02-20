@@ -19,7 +19,7 @@ func (e *ManifestNotFoundError) Error() string {
 func (e *ManifestNotFoundError) Suggestion() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Extension manifest not found at: %s\n\n", e.Path))
+	fmt.Fprintf(&sb, "Extension manifest not found at: %s\n\n", e.Path)
 	sb.WriteString("A valid extension.yaml file is required with these fields:\n\n")
 	sb.WriteString("  name: my-extension\n")
 	sb.WriteString("  version: 1.0.0\n")
@@ -63,10 +63,10 @@ func (e *ManifestValidationError) Error() string {
 func (e *ManifestValidationError) Suggestion() string {
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("Manifest validation failed: %s\n\n", e.Path))
+	fmt.Fprintf(&sb, "Manifest validation failed: %s\n\n", e.Path)
 	sb.WriteString("Missing required fields:\n")
 	for _, field := range e.MissingFields {
-		sb.WriteString(fmt.Sprintf("  • %s\n", field))
+		fmt.Fprintf(&sb, "  - %s\n", field)
 	}
 	sb.WriteString("\nAll extension manifests must include:\n")
 	sb.WriteString("  - name: Unique extension identifier\n")

@@ -158,7 +158,7 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 	if len(plugins) > 0 {
 		sb.WriteString("# Enabled plugins:\n")
 		for _, p := range plugins {
-			sb.WriteString(fmt.Sprintf("#   - %s\n", p))
+			fmt.Fprintf(&sb, "#   - %s\n", p)
 		}
 		sb.WriteString("\n")
 	}
@@ -180,7 +180,7 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 	sb.WriteString("    module_max_depth: 10\n")
 	sb.WriteString("    exclude:\n")
 	for _, pattern := range config.DefaultExcludePatterns {
-		sb.WriteString(fmt.Sprintf("      - %q\n", pattern))
+		fmt.Fprintf(&sb, "      - %q\n", pattern)
 	}
 
 	// If modules were discovered, add them as explicit modules
@@ -189,8 +189,8 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 		sb.WriteString("  # Discovered modules (uncomment to use explicit configuration)\n")
 		sb.WriteString("  # modules:\n")
 		for _, mod := range modules {
-			sb.WriteString(fmt.Sprintf("  #   - name: %s\n", mod.Name))
-			sb.WriteString(fmt.Sprintf("  #     path: %s\n", mod.RelPath))
+			fmt.Fprintf(&sb, "  #   - name: %s\n", mod.Name)
+			fmt.Fprintf(&sb, "  #     path: %s\n", mod.RelPath)
 		}
 	}
 

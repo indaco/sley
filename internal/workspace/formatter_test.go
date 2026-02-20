@@ -3,6 +3,7 @@ package workspace
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -351,7 +352,7 @@ func TestPluralize(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(string(rune(tt.count)), func(t *testing.T) {
+		t.Run(strconv.Itoa(tt.count), func(t *testing.T) {
 			got := pluralize(tt.count)
 			if got != tt.expected {
 				t.Errorf("pluralize(%d) = %q, want %q", tt.count, got, tt.expected)
