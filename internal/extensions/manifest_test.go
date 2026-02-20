@@ -413,9 +413,9 @@ func TestManifestValidationError(t *testing.T) {
 	expectedParts := []string{
 		"Manifest validation failed",
 		"Missing required fields:",
-		"• name",
-		"• version",
-		"• entry",
+		"- name",
+		"- version",
+		"- entry",
 		"Documentation:",
 	}
 

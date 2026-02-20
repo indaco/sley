@@ -90,7 +90,7 @@ func TestExtensionRegisterCmd_MissingPathArgument(t *testing.T) {
 	}
 
 	// Run the test with the custom environment variable to trigger the error condition
-	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionRegisterCmd_MissingPathArgument")
+	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionRegisterCmd_MissingPathArgument") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_SLEY_EXTENSION_MISSING_PATH=1")
 	output, err := cmd.CombinedOutput()
 
@@ -129,7 +129,7 @@ func TestExtensionInstallCmd_RegisterLocalExtensionError(t *testing.T) {
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionInstallCmd_RegisterLocalExtensionError")
+	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionInstallCmd_RegisterLocalExtensionError") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_EXTENSION_REGISTER_ERROR=1")
 	output, err := cmd.CombinedOutput()
 
@@ -160,7 +160,7 @@ func TestExtensionInstallCmd_URLInPathFlag(t *testing.T) {
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionInstallCmd_URLInPathFlag")
+	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionInstallCmd_URLInPathFlag") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_EXTENSION_URL_IN_PATH=1")
 	output, err := cmd.CombinedOutput()
 

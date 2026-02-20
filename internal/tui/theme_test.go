@@ -48,10 +48,10 @@ func TestSleyTheme(t *testing.T) {
 		// Verify help styles can render text (styles are configured)
 		shortKeyRendered := theme.Help.ShortKey.Render("key")
 		shortDescRendered := theme.Help.ShortDesc.Render("description")
-		shortSepRendered := theme.Help.ShortSeparator.Render(" • ")
+		shortSepRendered := theme.Help.ShortSeparator.Render(" - ")
 		fullKeyRendered := theme.Help.FullKey.Render("key")
 		fullDescRendered := theme.Help.FullDesc.Render("description")
-		fullSepRendered := theme.Help.FullSeparator.Render(" • ")
+		fullSepRendered := theme.Help.FullSeparator.Render(" - ")
 
 		// Verify all help styles can render non-empty output
 		if shortKeyRendered == "" {

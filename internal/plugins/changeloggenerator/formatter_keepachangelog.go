@@ -31,7 +31,7 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 	// Version header without "v" prefix, with brackets
 	date := time.Now().Format("2006-01-02")
 	versionNumber := strings.TrimPrefix(version, "v")
-	sb.WriteString(fmt.Sprintf("## [%s] - %s\n\n", versionNumber, date))
+	fmt.Fprintf(&sb, "## [%s] - %s\n\n", versionNumber, date)
 
 	// Regroup commits according to Keep a Changelog sections
 	sections := f.regroupCommits(grouped)
@@ -45,7 +45,7 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 			continue
 		}
 
-		sb.WriteString(fmt.Sprintf("### %s\n\n", sectionName))
+		fmt.Fprintf(&sb, "### %s\n\n", sectionName)
 
 		for _, c := range commits {
 			entry := formatCommitEntry(c, remote)

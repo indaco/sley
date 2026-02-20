@@ -25,7 +25,7 @@ func (f *GroupedFormatter) FormatChangelog(
 
 	// Version header with "v" prefix
 	date := time.Now().Format("2006-01-02")
-	sb.WriteString(fmt.Sprintf("## %s - %s\n\n", version, date))
+	fmt.Fprintf(&sb, "## %s - %s\n\n", version, date)
 
 	// Separate breaking changes from regular changes
 	var breakingChanges []*GroupedCommit
@@ -62,9 +62,9 @@ func (f *GroupedFormatter) FormatChangelog(
 		// Section header with optional icon
 		icon := commits[0].GroupIcon
 		if icon != "" {
-			sb.WriteString(fmt.Sprintf("### %s %s\n\n", icon, label))
+			fmt.Fprintf(&sb, "### %s %s\n\n", icon, label)
 		} else {
-			sb.WriteString(fmt.Sprintf("### %s\n\n", label))
+			fmt.Fprintf(&sb, "### %s\n\n", label)
 		}
 
 		// Commit entries
@@ -117,7 +117,7 @@ func formatCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
 
 	// Add scope if present
 	if c.Scope != "" {
-		sb.WriteString(fmt.Sprintf("**%s:** ", c.Scope))
+		fmt.Fprintf(&sb, "**%s:** ", c.Scope)
 	}
 
 	// Add description
@@ -126,12 +126,12 @@ func formatCommitEntry(c *GroupedCommit, remote *RemoteInfo) string {
 	// Add commit link (always) and PR link (if present)
 	if remote != nil {
 		commitURL := buildCommitURL(remote, c.ShortHash)
-		sb.WriteString(fmt.Sprintf(" ([%s](%s))", c.ShortHash, commitURL))
+		fmt.Fprintf(&sb, " ([%s](%s))", c.ShortHash, commitURL)
 
 		// Add PR link if present
 		if c.PRNumber != "" {
 			prURL := buildPRURL(remote, c.PRNumber)
-			sb.WriteString(fmt.Sprintf(" ([#%s](%s))", c.PRNumber, prURL))
+			fmt.Fprintf(&sb, " ([#%s](%s))", c.PRNumber, prURL)
 		}
 	}
 

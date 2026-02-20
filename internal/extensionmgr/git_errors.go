@@ -188,16 +188,16 @@ func (e *GitCloneError) Error() string {
 	}
 
 	// Main error message
-	sb.WriteString(fmt.Sprintf("Failed to clone repository: %s\n\n", repoID))
+	fmt.Fprintf(&sb, "Failed to clone repository: %s\n\n", repoID)
 
 	// Error category and message
-	sb.WriteString(fmt.Sprintf("Error: %s\n", e.ErrorInfo.Message))
+	fmt.Fprintf(&sb, "Error: %s\n", e.ErrorInfo.Message)
 
 	// Suggestions
 	if len(e.ErrorInfo.Suggestions) > 0 {
 		sb.WriteString("\nSuggestions:\n")
 		for _, suggestion := range e.ErrorInfo.Suggestions {
-			sb.WriteString(fmt.Sprintf("  • %s\n", suggestion))
+			fmt.Fprintf(&sb, "  - %s\n", suggestion)
 		}
 	}
 
@@ -223,7 +223,7 @@ func PrintGitError(err error) {
 			fmt.Println()
 			printer.PrintInfo("Suggestions:")
 			for _, suggestion := range gitErr.ErrorInfo.Suggestions {
-				fmt.Printf("  • %s\n", suggestion)
+				fmt.Printf("  - %s\n", suggestion)
 			}
 		}
 	} else {

@@ -126,7 +126,7 @@ func TestCLI_PreCommand_SaveVersionFails(t *testing.T) {
 		os.Exit(0) // Unexpected success
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_PreCommand_SaveVersionFails")
+	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_PreCommand_SaveVersionFails") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_SLEY_PRE_SAVE_FAIL=1")
 	output, err := cmd.CombinedOutput()
 

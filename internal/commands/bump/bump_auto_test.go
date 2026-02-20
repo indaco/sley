@@ -506,7 +506,7 @@ func TestCLI_BumpAutoCommand_InvalidLabel(t *testing.T) {
 		os.Exit(0) // shouldn't happen
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_BumpAutoCommand_InvalidLabel")
+	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_BumpAutoCommand_InvalidLabel") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_SLEY_BUMP_AUTO_INVALID_LABEL=1")
 	output, err := cmd.CombinedOutput()
 

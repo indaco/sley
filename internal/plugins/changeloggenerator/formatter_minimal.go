@@ -43,7 +43,7 @@ func (f *MinimalFormatter) FormatChangelog(
 	var sb strings.Builder
 
 	// Version header without date
-	sb.WriteString(fmt.Sprintf("## %s\n\n", version))
+	fmt.Fprintf(&sb, "## %s\n\n", version)
 
 	// Collect all commits from all groups into a flat list
 	var allCommits []*GroupedCommit
@@ -75,7 +75,7 @@ func formatMinimalCommitEntry(c *GroupedCommit) string {
 
 	// Determine the type abbreviation
 	typeAbbr := getTypeAbbreviation(c)
-	sb.WriteString(fmt.Sprintf("[%s] ", typeAbbr))
+	fmt.Fprintf(&sb, "[%s] ", typeAbbr)
 
 	// Add description
 	sb.WriteString(c.Description)

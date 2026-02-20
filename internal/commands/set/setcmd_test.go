@@ -78,7 +78,7 @@ func TestCLI_SetVersionCommand_MissingArgument(t *testing.T) {
 		os.Exit(0) // should not happen
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_SetVersionCommand_MissingArgument")
+	cmd := exec.Command(os.Args[0], "-test.run=TestCLI_SetVersionCommand_MissingArgument") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_SLEY_SET_MISSING_ARG=1")
 	output, err := cmd.CombinedOutput()
 

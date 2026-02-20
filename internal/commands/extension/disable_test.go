@@ -83,7 +83,7 @@ func TestExtensionDisableCmd_MissingName(t *testing.T) {
 		os.Exit(0)
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionDisableCmd_MissingName")
+	cmd := exec.Command(os.Args[0], "-test.run=TestExtensionDisableCmd_MissingName") //nolint:gosec // G702: standard test re-exec pattern
 	cmd.Env = append(os.Environ(), "TEST_EXTENSION_DISABLE_MISSING_NAME=1")
 	output, err := cmd.CombinedOutput()
 

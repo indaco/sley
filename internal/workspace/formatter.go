@@ -109,7 +109,7 @@ func (f *TextFormatter) FormatResults(results []ExecutionResult) string {
 
 	var sb strings.Builder
 	if f.operation != "" {
-		sb.WriteString(fmt.Sprintf("%s\n", f.operation))
+		fmt.Fprintf(&sb, "%s\n", f.operation)
 	}
 
 	successCount := 0
@@ -131,15 +131,15 @@ func (f *TextFormatter) FormatModuleList(modules []*Module) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Found %d module%s:\n", len(modules), pluralize(len(modules))))
+	fmt.Fprintf(&sb, "Found %d module%s:\n", len(modules), pluralize(len(modules)))
 
 	for _, mod := range modules {
-		sb.WriteString(fmt.Sprintf("  • %s", mod.Name))
+		fmt.Fprintf(&sb, "  - %s", mod.Name)
 		if mod.CurrentVersion != "" {
-			sb.WriteString(fmt.Sprintf(" (%s)", mod.CurrentVersion))
+			fmt.Fprintf(&sb, " (%s)", mod.CurrentVersion)
 		}
 		if mod.RelPath != "" {
-			sb.WriteString(fmt.Sprintf(" - %s", mod.RelPath))
+			fmt.Fprintf(&sb, " - %s", mod.RelPath)
 		}
 		sb.WriteString("\n")
 	}
@@ -340,7 +340,7 @@ func (f *TableFormatter) FormatResults(results []ExecutionResult) string {
 
 	var sb strings.Builder
 	if f.operation != "" {
-		sb.WriteString(fmt.Sprintf("%s\n\n", f.operation))
+		fmt.Fprintf(&sb, "%s\n\n", f.operation)
 	}
 
 	nameW, versionW, statusW, durationW := calculateResultColumnWidths(results)
@@ -348,7 +348,7 @@ func (f *TableFormatter) FormatResults(results []ExecutionResult) string {
 	divider := buildTableDivider(nameW, versionW, statusW, durationW)
 
 	sb.WriteString(divider)
-	sb.WriteString(fmt.Sprintf(headerFmt, "Module", "Version", "Status", "Duration"))
+	fmt.Fprintf(&sb, headerFmt, "Module", "Version", "Status", "Duration")
 	sb.WriteString(divider)
 
 	successCount := 0
@@ -358,7 +358,7 @@ func (f *TableFormatter) FormatResults(results []ExecutionResult) string {
 			status = "OK"
 			successCount++
 		}
-		sb.WriteString(fmt.Sprintf(headerFmt, result.Module.Name, formatResultVersion(result), status, formatDuration(result.Duration)))
+		fmt.Fprintf(&sb, headerFmt, result.Module.Name, formatResultVersion(result), status, formatDuration(result.Duration))
 	}
 	sb.WriteString(divider)
 
@@ -429,9 +429,9 @@ func (f *TableFormatter) FormatModuleList(modules []*Module) string {
 	headerFmt := fmt.Sprintf("| %%-%ds | %%-%ds | %%-%ds |\n", nameW, versionW, pathW)
 	divider := buildTableDivider(nameW, versionW, pathW)
 
-	sb.WriteString(fmt.Sprintf("Found %d module%s:\n\n", len(modules), pluralize(len(modules))))
+	fmt.Fprintf(&sb, "Found %d module%s:\n\n", len(modules), pluralize(len(modules)))
 	sb.WriteString(divider)
-	sb.WriteString(fmt.Sprintf(headerFmt, "Module", "Version", "Path"))
+	fmt.Fprintf(&sb, headerFmt, "Module", "Version", "Path")
 	sb.WriteString(divider)
 
 	for _, mod := range modules {
@@ -439,7 +439,7 @@ func (f *TableFormatter) FormatModuleList(modules []*Module) string {
 		if version == "" {
 			version = "-"
 		}
-		sb.WriteString(fmt.Sprintf(headerFmt, mod.Name, version, truncatePath(moduleDisplayPath(mod), pathW)))
+		fmt.Fprintf(&sb, headerFmt, mod.Name, version, truncatePath(moduleDisplayPath(mod), pathW))
 	}
 	sb.WriteString(divider)
 

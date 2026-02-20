@@ -523,13 +523,13 @@ func mockOpenFile(content string) func(string) (*os.File, error) {
 
 		if _, err := tmpFile.WriteString(content); err != nil {
 			tmpFile.Close()
-			os.Remove(tmpFile.Name())
+			os.Remove(tmpFile.Name()) //nolint:gosec // G703: path from os.CreateTemp is safe
 			return nil, err
 		}
 
 		if _, err := tmpFile.Seek(0, 0); err != nil {
 			tmpFile.Close()
-			os.Remove(tmpFile.Name())
+			os.Remove(tmpFile.Name()) //nolint:gosec // G703: path from os.CreateTemp is safe
 			return nil, err
 		}
 

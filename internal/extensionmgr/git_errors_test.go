@@ -376,8 +376,8 @@ func TestGitCloneError_Error(t *testing.T) {
 				"Failed to clone repository: user/repo",
 				"Error: Test error message",
 				"Suggestions:",
-				"• First suggestion",
-				"• Second suggestion",
+				"- First suggestion",
+				"- Second suggestion",
 			},
 		},
 		{
