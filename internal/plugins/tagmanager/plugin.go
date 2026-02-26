@@ -65,27 +65,34 @@ type Config struct {
 	// Supports placeholders: {version}, {tag}, {prefix}, {date}, {major}, {minor}, {patch}, {prerelease}, {build}
 	// Default: "Release {version}" for annotated/signed tags.
 	MessageTemplate string
+
+	// CommitMessageTemplate is a template for the commit message created before tagging.
+	// Only used when AutoCreate is true. Supports the same placeholders as MessageTemplate.
+	// Default: "chore(release): {tag}"
+	CommitMessageTemplate string
 }
 
 // DefaultConfig returns the default tag manager configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Enabled:         false,
-		AutoCreate:      false,
-		Prefix:          "v",
-		Annotate:        true,
-		Push:            false,
-		TagPrereleases:  false,
-		Sign:            false,
-		SigningKey:      "",
-		MessageTemplate: "Release {version}",
+		Enabled:               false,
+		AutoCreate:            false,
+		Prefix:                "v",
+		Annotate:              true,
+		Push:                  false,
+		TagPrereleases:        false,
+		Sign:                  false,
+		SigningKey:            "",
+		MessageTemplate:       "Release {version}",
+		CommitMessageTemplate: "chore(release): {tag}",
 	}
 }
 
 // TagManagerPlugin implements the TagManager interface.
 type TagManagerPlugin struct {
-	config *Config
-	gitOps core.GitTagOperations
+	config    *Config
+	gitOps    core.GitTagOperations
+	commitOps core.GitCommitOperations
 }
 
 // Ensure TagManagerPlugin implements TagManager.
@@ -98,23 +105,27 @@ func (p *TagManagerPlugin) Description() string {
 func (p *TagManagerPlugin) Version() string { return "v0.1.0" }
 
 // NewTagManager creates a new tag manager plugin with the given configuration.
-// Uses the default OSGitTagOperations for git operations.
+// Uses the default OSGitTagOperations and OSGitCommitOperations for git operations.
 func NewTagManager(cfg *Config) *TagManagerPlugin {
-	return NewTagManagerWithOps(cfg, NewOSGitTagOperations())
+	return NewTagManagerWithOps(cfg, NewOSGitTagOperations(), NewOSGitCommitOperations())
 }
 
 // NewTagManagerWithOps creates a new tag manager plugin with custom git operations.
 // This constructor enables dependency injection for testing.
-func NewTagManagerWithOps(cfg *Config, gitOps core.GitTagOperations) *TagManagerPlugin {
+func NewTagManagerWithOps(cfg *Config, gitOps core.GitTagOperations, commitOps core.GitCommitOperations) *TagManagerPlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
 	if gitOps == nil {
 		gitOps = NewOSGitTagOperations()
 	}
+	if commitOps == nil {
+		commitOps = NewOSGitCommitOperations()
+	}
 	return &TagManagerPlugin{
-		config: cfg,
-		gitOps: gitOps,
+		config:    cfg,
+		gitOps:    gitOps,
+		commitOps: commitOps,
 	}
 }
 
@@ -229,6 +240,66 @@ func (p *TagManagerPlugin) ValidateTagAvailable(version semver.SemVersion) error
 // This gates automatic tag validation and creation during bumps.
 func (p *TagManagerPlugin) IsAutoCreateEnabled() bool {
 	return p.config.Enabled && p.config.AutoCreate
+}
+
+// CommitChanges stages modified files and creates a commit before tagging.
+// It detects modified files via git status plus any explicitly provided extraFiles,
+// then commits with a message formatted from the CommitMessageTemplate.
+func (p *TagManagerPlugin) CommitChanges(version semver.SemVersion, extraFiles []string) error {
+	var filesToStage []string
+
+	// Start with explicitly provided files (e.g., the .version file path)
+	filesToStage = append(filesToStage, extraFiles...)
+
+	// Also detect any other modified files via git status
+	modified, err := p.commitOps.GetModifiedFiles()
+	if err != nil {
+		return fmt.Errorf("failed to detect modified files: %w", err)
+	}
+	filesToStage = append(filesToStage, modified...)
+
+	// Deduplicate files
+	filesToStage = deduplicateStrings(filesToStage)
+
+	if len(filesToStage) == 0 {
+		return nil
+	}
+
+	// Stage files
+	if err := p.commitOps.StageFiles(filesToStage...); err != nil {
+		return fmt.Errorf("failed to stage files: %w", err)
+	}
+
+	// Format commit message using template
+	template := p.config.CommitMessageTemplate
+	if template == "" {
+		template = "chore(release): {tag}"
+	}
+	data := NewTemplateData(version, p.config.Prefix)
+	message := FormatMessage(template, data)
+
+	// Create commit
+	if err := p.commitOps.Commit(message); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	return nil
+}
+
+// deduplicateStrings removes duplicate strings while preserving order.
+func deduplicateStrings(items []string) []string {
+	seen := make(map[string]bool, len(items))
+	result := make([]string, 0, len(items))
+	for _, item := range items {
+		if item == "" {
+			continue
+		}
+		if !seen[item] {
+			seen[item] = true
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 // GetConfig returns the plugin configuration.
