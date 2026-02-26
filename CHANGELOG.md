@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.11.3 - 2026-02-26
+
+### 🩹 Fixes
+
+- **tagmanager:** commit modified files before creating tag ([e101647](https://github.com/indaco/sley/commit/e101647)) ([#214](https://github.com/indaco/sley/pull/214))
+
+**Full Changelog:** [v0.11.2...v0.11.3](https://github.com/indaco/sley/compare/v0.11.2...v0.11.3)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.11.2 - 2026-02-26
 
 ### 🩹 Fixes
