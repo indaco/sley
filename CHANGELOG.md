@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.11.2 - 2026-02-26
+
+### 🩹 Fixes
+
+- **tag-manager:** require enabled plugin for sley tag commands ([70348e3](https://github.com/indaco/sley/commit/70348e3)) ([#212](https://github.com/indaco/sley/pull/212))
+
+### 🎨 Styling
+
+- resolve gosec and staticcheck lint warnings ([83857d2](https://github.com/indaco/sley/commit/83857d2)) ([#210](https://github.com/indaco/sley/pull/210))
+
+**Full Changelog:** [v0.11.1...v0.11.2](https://github.com/indaco/sley/compare/v0.11.1...v0.11.2)
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.11.1 - 2026-02-12
 
 ### 🩹 Fixes
