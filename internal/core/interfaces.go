@@ -133,6 +133,16 @@ type GitTagOperations interface {
 	DeleteRemoteTag(name string) error
 }
 
+// GitCommitOperations provides git staging and commit capabilities.
+type GitCommitOperations interface {
+	// StageFiles stages the specified files for commit (git add).
+	StageFiles(files ...string) error
+	// Commit creates a commit with the given message (git commit -m).
+	Commit(message string) error
+	// GetModifiedFiles returns files with uncommitted changes (git status --porcelain).
+	GetModifiedFiles() ([]string, error)
+}
+
 // GitCommitReader reads git commit information.
 type GitCommitReader interface {
 	// GetCommits returns commits between two references.
