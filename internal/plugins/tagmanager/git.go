@@ -184,6 +184,91 @@ func (g *OSGitTagOperations) DeleteRemoteTag(name string) error {
 	return nil
 }
 
+// OSGitCommitOperations implements core.GitCommitOperations using actual git commands.
+type OSGitCommitOperations struct {
+	execCommand func(name string, arg ...string) *exec.Cmd
+}
+
+// NewOSGitCommitOperations creates a new OSGitCommitOperations with the default exec.Command.
+func NewOSGitCommitOperations() *OSGitCommitOperations {
+	return &OSGitCommitOperations{
+		execCommand: exec.Command,
+	}
+}
+
+// Verify OSGitCommitOperations implements core.GitCommitOperations.
+var _ core.GitCommitOperations = (*OSGitCommitOperations)(nil)
+
+func (g *OSGitCommitOperations) StageFiles(files ...string) error {
+	if len(files) == 0 {
+		return nil
+	}
+	args := append([]string{"add", "--"}, files...)
+	cmd := g.execCommand("git", args...)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return fmt.Errorf("%s: %w", stderrMsg, err)
+		}
+		return fmt.Errorf("git add failed: %w", err)
+	}
+	return nil
+}
+
+func (g *OSGitCommitOperations) Commit(message string) error {
+	cmd := g.execCommand("git", "commit", "-m", message)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return fmt.Errorf("%s: %w", stderrMsg, err)
+		}
+		return fmt.Errorf("git commit failed: %w", err)
+	}
+	return nil
+}
+
+func (g *OSGitCommitOperations) GetModifiedFiles() ([]string, error) {
+	cmd := g.execCommand("git", "status", "--porcelain")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return nil, fmt.Errorf("%s: %w", stderrMsg, err)
+		}
+		return nil, fmt.Errorf("git status failed: %w", err)
+	}
+
+	output := strings.TrimSpace(stdout.String())
+	if output == "" {
+		return []string{}, nil
+	}
+
+	var files []string
+	for line := range strings.SplitSeq(output, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// git status --porcelain output format: "XY filename"
+		// The filename starts at position 3
+		if len(line) > 3 {
+			files = append(files, strings.TrimSpace(line[3:]))
+		} else if len(line) > 2 {
+			files = append(files, strings.TrimSpace(line[2:]))
+		}
+	}
+	return files, nil
+}
+
 // defaultGitTagOps is the default git tag operations instance used by package-level functions.
 var defaultGitTagOps = NewOSGitTagOperations()
 

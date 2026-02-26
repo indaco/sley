@@ -418,6 +418,62 @@ func (m *MockGitTagOperations) PushTag(name string) error {
 	return nil
 }
 
+// MockGitCommitOperations is a mock git commit operations for testing.
+type MockGitCommitOperations struct {
+	mu sync.Mutex
+
+	// Error responses for each operation
+	StageFilesErr  error
+	CommitErr      error
+	GetModifiedErr error
+
+	// Response values
+	ModifiedFiles []string
+
+	// Call tracking
+	StagedFiles      []string
+	CommitMessages   []string
+	GetModifiedCalls int
+}
+
+// NewMockGitCommitOperations creates a new MockGitCommitOperations.
+func NewMockGitCommitOperations() *MockGitCommitOperations {
+	return &MockGitCommitOperations{
+		StagedFiles:    make([]string, 0),
+		CommitMessages: make([]string, 0),
+	}
+}
+
+func (m *MockGitCommitOperations) StageFiles(files ...string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.StageFilesErr != nil {
+		return m.StageFilesErr
+	}
+	m.StagedFiles = append(m.StagedFiles, files...)
+	return nil
+}
+
+func (m *MockGitCommitOperations) Commit(message string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.CommitErr != nil {
+		return m.CommitErr
+	}
+	m.CommitMessages = append(m.CommitMessages, message)
+	return nil
+}
+
+func (m *MockGitCommitOperations) GetModifiedFiles() ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.GetModifiedCalls++
+	if m.GetModifiedErr != nil {
+		return nil, m.GetModifiedErr
+	}
+	return m.ModifiedFiles, nil
+}
+
 // MockGitCommitReader is a mock git commit reader for testing.
 type MockGitCommitReader struct {
 	mu sync.Mutex

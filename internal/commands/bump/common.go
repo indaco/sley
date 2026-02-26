@@ -90,8 +90,8 @@ func executeSingleModuleBump(
 		return err
 	}
 
-	// Create tag after successful bump
-	return createTagAfterBump(registry, newVersion, params.bumpType)
+	// Commit (if auto-commit enabled) and create tag after successful bump
+	return commitAndTagAfterBump(registry, newVersion, params.bumpType, execCtx.Path)
 }
 
 // executePreBumpValidations runs all validation checks before performing a bump.

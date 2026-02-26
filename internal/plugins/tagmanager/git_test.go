@@ -441,3 +441,169 @@ func TestNewOSGitTagOperations(t *testing.T) {
 		t.Error("execCommand should not be nil")
 	}
 }
+
+// createTestGitCommitOps creates an OSGitCommitOperations with a custom exec.Command for testing.
+func createTestGitCommitOps(mockExec func(name string, args ...string) *exec.Cmd) *OSGitCommitOperations {
+	return &OSGitCommitOperations{
+		execCommand: mockExec,
+	}
+}
+
+func TestNewOSGitCommitOperations(t *testing.T) {
+	ops := NewOSGitCommitOperations()
+	if ops == nil {
+		t.Fatal("NewOSGitCommitOperations() returned nil")
+	}
+	if ops.execCommand == nil {
+		t.Error("execCommand should not be nil")
+	}
+}
+
+func TestOSGitCommitOperations_StageFiles(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			if name != "git" {
+				t.Errorf("expected git command, got %s", name)
+			}
+			if len(args) < 3 || args[0] != "add" || args[1] != "--" {
+				t.Errorf("unexpected args: %v", args)
+			}
+			return exec.Command("true")
+		})
+
+		err := ops.StageFiles("file1.txt", "file2.txt")
+		if err != nil {
+			t.Errorf("StageFiles() error = %v", err)
+		}
+	})
+
+	t.Run("empty files", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			t.Error("exec should not be called for empty files")
+			return exec.Command("true")
+		})
+
+		err := ops.StageFiles()
+		if err != nil {
+			t.Errorf("StageFiles() error = %v", err)
+		}
+	})
+
+	t.Run("error with stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("sh", "-c", "echo 'pathspec not found' >&2 && exit 1")
+		})
+
+		err := ops.StageFiles("nonexistent.txt")
+		if err == nil {
+			t.Error("StageFiles() expected error")
+		}
+	})
+
+	t.Run("error without stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("false")
+		})
+
+		err := ops.StageFiles("file.txt")
+		if err == nil {
+			t.Error("StageFiles() expected error")
+		}
+	})
+}
+
+func TestOSGitCommitOperations_Commit(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			if name != "git" {
+				t.Errorf("expected git command, got %s", name)
+			}
+			if len(args) < 3 || args[0] != "commit" || args[1] != "-m" {
+				t.Errorf("unexpected args: %v", args)
+			}
+			if args[2] != "chore(release): v1.0.0" {
+				t.Errorf("unexpected message: %s", args[2])
+			}
+			return exec.Command("true")
+		})
+
+		err := ops.Commit("chore(release): v1.0.0")
+		if err != nil {
+			t.Errorf("Commit() error = %v", err)
+		}
+	})
+
+	t.Run("error with stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("sh", "-c", "echo 'nothing to commit' >&2 && exit 1")
+		})
+
+		err := ops.Commit("some message")
+		if err == nil {
+			t.Error("Commit() expected error")
+		}
+	})
+
+	t.Run("error without stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("false")
+		})
+
+		err := ops.Commit("some message")
+		if err == nil {
+			t.Error("Commit() expected error")
+		}
+	})
+}
+
+func TestOSGitCommitOperations_GetModifiedFiles(t *testing.T) {
+	t.Run("files modified", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("printf", " M file1.txt\n?? file2.txt\nM  file3.txt")
+		})
+
+		files, err := ops.GetModifiedFiles()
+		if err != nil {
+			t.Errorf("GetModifiedFiles() error = %v", err)
+		}
+		if len(files) != 3 {
+			t.Errorf("GetModifiedFiles() returned %d files, want 3: %v", len(files), files)
+		}
+	})
+
+	t.Run("no modified files", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("echo", "")
+		})
+
+		files, err := ops.GetModifiedFiles()
+		if err != nil {
+			t.Errorf("GetModifiedFiles() error = %v", err)
+		}
+		if len(files) != 0 {
+			t.Errorf("GetModifiedFiles() returned %d files, want 0", len(files))
+		}
+	})
+
+	t.Run("error with stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("sh", "-c", "echo 'not a git repo' >&2 && exit 128")
+		})
+
+		_, err := ops.GetModifiedFiles()
+		if err == nil {
+			t.Error("GetModifiedFiles() expected error")
+		}
+	})
+
+	t.Run("error without stderr", func(t *testing.T) {
+		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+			return exec.Command("false")
+		})
+
+		_, err := ops.GetModifiedFiles()
+		if err == nil {
+			t.Error("GetModifiedFiles() expected error")
+		}
+	})
+}

@@ -328,23 +328,6 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 
-	t.Run("enabled plugin creates tag successfully", func(t *testing.T) {
-		plugin := tagmanager.NewTagManager(&tagmanager.Config{
-			Enabled:    true,
-			AutoCreate: true,
-			Prefix:     "v",
-		})
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return plugin }
-
-		// Mock CreateTag to succeed
-		registry := plugins.NewPluginRegistry()
-		err := createTagAfterBump(registry, version, "patch")
-		// This will fail in test environment without git, but we're testing the code path
-		if err != nil && !strings.Contains(err.Error(), "failed to create tag") {
-			t.Errorf("unexpected error type: %v", err)
-		}
-	})
-
 	t.Run("disabled plugin returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
 		plugin := tagmanager.NewTagManager(&tagmanager.Config{

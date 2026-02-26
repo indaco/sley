@@ -48,6 +48,11 @@ type TagManagerConfig struct {
 	// Supports placeholders: {version}, {tag}, {prefix}, {date}, {major}, {minor}, {patch}, {prerelease}, {build}
 	// Default: "Release {version}" for annotated/signed tags.
 	MessageTemplate string `yaml:"message-template,omitempty"`
+
+	// CommitMessageTemplate is a template for the commit message created before tagging
+	// when auto-create is enabled. Supports the same placeholders as message-template.
+	// Default: "chore(release): {tag}".
+	CommitMessageTemplate string `yaml:"commit-message-template,omitempty" json:"commit-message-template,omitempty"`
 }
 
 // GetAutoCreate returns the auto-create setting with default false.
@@ -98,6 +103,14 @@ func (c *TagManagerConfig) GetMessageTemplate() string {
 		return "Release {version}"
 	}
 	return c.MessageTemplate
+}
+
+// GetCommitMessageTemplate returns the commit message template with default "chore(release): {tag}".
+func (c *TagManagerConfig) GetCommitMessageTemplate() string {
+	if c.CommitMessageTemplate == "" {
+		return "chore(release): {tag}"
+	}
+	return c.CommitMessageTemplate
 }
 
 // VersionValidatorConfig holds configuration for the version validator plugin.
