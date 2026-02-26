@@ -102,6 +102,13 @@ func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVe
 
 // createTagAfterBump creates a git tag for the version if tag manager is enabled.
 func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string) error {
+	return commitAndTagAfterBump(registry, version, bumpType, "")
+}
+
+// commitAndTagAfterBump commits bump-modified files and creates a git tag.
+// When auto-create is enabled, it stages and commits the bumpedPath and any other
+// modified files before creating the tag so the tag points to the correct release commit.
+func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string, bumpedPath string) error {
 	tm := registry.GetTagManager()
 	if tm == nil {
 		return nil
@@ -113,6 +120,17 @@ func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVers
 		return nil
 	}
 
+	// Commit bump-modified files before creating the tag
+	var extraFiles []string
+	if bumpedPath != "" {
+		extraFiles = []string{bumpedPath}
+	}
+	if err := plugin.CommitChanges(version, extraFiles); err != nil {
+		return fmt.Errorf("failed to commit release changes: %w", err)
+	}
+	printer.PrintSuccess(fmt.Sprintf("Committed release changes for %s", version.String()))
+
+	// Create tag on the new commit
 	message := fmt.Sprintf("Release %s (%s bump)", version.String(), bumpType)
 	if err := tm.CreateTag(version, message); err != nil {
 		return fmt.Errorf("failed to create tag: %w", err)
