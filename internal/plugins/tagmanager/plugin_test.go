@@ -114,7 +114,7 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 			mockOps := &MockGitTagOperations{
 				TagExistsFn: tt.mockFn,
 			}
-			tm := NewTagManagerWithOps(nil, mockOps)
+			tm := NewTagManagerWithOps(nil, mockOps, nil)
 
 			got, err := tm.TagExists(tt.version)
 			if (err != nil) != tt.wantErr {
@@ -156,7 +156,7 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 					return tt.exists, nil
 				},
 			}
-			tm := NewTagManagerWithOps(nil, mockOps)
+			tm := NewTagManagerWithOps(nil, mockOps, nil)
 
 			err := tm.ValidateTagAvailable(tt.version)
 			if (err != nil) != tt.wantErr {
@@ -248,7 +248,7 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 				},
 			}
 
-			tm := NewTagManagerWithOps(tt.cfg, mockOps)
+			tm := NewTagManagerWithOps(tt.cfg, mockOps, nil)
 			err := tm.CreateTag(tt.version, tt.message)
 
 			if (err != nil) != tt.wantErr {
@@ -317,7 +317,7 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 			}
 
 			cfg := &Config{Prefix: tt.prefix}
-			tm := NewTagManagerWithOps(cfg, mockOps)
+			tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 			got, err := tm.GetLatestTag()
 			if (err != nil) != tt.wantErr {
@@ -417,7 +417,7 @@ func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
 		},
 	}
 
-	tm := NewTagManagerWithOps(nil, mockOps)
+	tm := NewTagManagerWithOps(nil, mockOps, nil)
 	err := tm.ValidateTagAvailable(semver.SemVersion{Major: 1, Minor: 0, Patch: 0})
 
 	if err == nil {
@@ -439,7 +439,7 @@ func TestTagManagerPlugin_CreateTag_PushError(t *testing.T) {
 	}
 
 	cfg := &Config{Enabled: true, AutoCreate: true, Prefix: "v", Annotate: true, Push: true}
-	tm := NewTagManagerWithOps(cfg, mockOps)
+	tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 	err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "Release 1.0.0")
 
@@ -678,7 +678,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Sign:            true,
 			MessageTemplate: "Release {version}",
 		}
-		tm := NewTagManagerWithOps(cfg, mockOps)
+		tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -718,7 +718,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Sign:       true,
 			SigningKey: "ABC123DEF456",
 		}
-		tm := NewTagManagerWithOps(cfg, mockOps)
+		tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -749,7 +749,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 			Prefix:     "v",
 			Sign:       true,
 		}
-		tm := NewTagManagerWithOps(cfg, mockOps)
+		tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 		err := tm.CreateTag(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, "")
 
@@ -813,7 +813,7 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 				Annotate:        true,
 				MessageTemplate: tt.template,
 			}
-			tm := NewTagManagerWithOps(cfg, mockOps)
+			tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 			err := tm.CreateTag(tt.version, "")
 
@@ -847,7 +847,7 @@ func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.
 		Annotate:        true,
 		MessageTemplate: "Template message {version}",
 	}
-	tm := NewTagManagerWithOps(cfg, mockOps)
+	tm := NewTagManagerWithOps(cfg, mockOps, nil)
 
 	// Explicit message should override template
 	explicitMessage := "Custom explicit message"
@@ -910,12 +910,271 @@ func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
 
 func TestNewTagManagerWithOps_NilGitOps(t *testing.T) {
 	// When gitOps is nil, it should default to OSGitTagOperations
-	tm := NewTagManagerWithOps(nil, nil)
+	tm := NewTagManagerWithOps(nil, nil, nil)
 
 	if tm == nil {
 		t.Fatal("NewTagManagerWithOps() returned nil")
 	}
 	if tm.gitOps == nil {
 		t.Error("NewTagManagerWithOps() should set default gitOps when nil")
+	}
+	if tm.commitOps == nil {
+		t.Error("NewTagManagerWithOps() should set default commitOps when nil")
+	}
+}
+
+func TestDefaultConfig_CommitMessageTemplateDefault(t *testing.T) {
+	cfg := DefaultConfig()
+
+	if cfg.CommitMessageTemplate != "chore(release): {tag}" {
+		t.Errorf("DefaultConfig().CommitMessageTemplate = %q, want %q", cfg.CommitMessageTemplate, "chore(release): {tag}")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_AutoDetect(t *testing.T) {
+	var stagedFiles []string
+
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{"CHANGELOG.md", "package.json"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			stagedFiles = files
+			return nil
+		},
+		CommitFn: func(message string) error {
+			return nil
+		},
+	}
+
+	cfg := &Config{
+		Enabled:               true,
+		AutoCreate:            true,
+		Prefix:                "v",
+		CommitMessageTemplate: "release: {version}",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
+	err := tm.CommitChanges(version, []string{".version"})
+	if err != nil {
+		t.Errorf("CommitChanges() error = %v", err)
+	}
+
+	// Should include extraFiles + auto-detected files
+	if len(stagedFiles) != 3 {
+		t.Errorf("CommitChanges() staged %d files, want 3: %v", len(stagedFiles), stagedFiles)
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_Deduplication(t *testing.T) {
+	var stagedFiles []string
+
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{".version", "other.txt"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			stagedFiles = files
+			return nil
+		},
+		CommitFn: func(message string) error {
+			return nil
+		},
+	}
+
+	cfg := &Config{
+		Enabled:               true,
+		AutoCreate:            true,
+		Prefix:                "v",
+		CommitMessageTemplate: "chore(release): {tag}",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
+	// extraFiles includes .version, which also appears in auto-detected files
+	err := tm.CommitChanges(version, []string{".version"})
+	if err != nil {
+		t.Errorf("CommitChanges() error = %v", err)
+	}
+
+	// Should deduplicate .version
+	if len(stagedFiles) != 2 {
+		t.Errorf("CommitChanges() staged %d files, want 2 (deduplicated): %v", len(stagedFiles), stagedFiles)
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_StageError(t *testing.T) {
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{"file.txt"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			return errors.New("staging failed")
+		},
+	}
+
+	cfg := &Config{
+		Enabled:    true,
+		AutoCreate: true,
+		Prefix:     "v",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	err := tm.CommitChanges(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, nil)
+	if err == nil {
+		t.Error("CommitChanges() expected error when staging fails")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_CommitError(t *testing.T) {
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{"file.txt"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			return nil
+		},
+		CommitFn: func(message string) error {
+			return errors.New("commit failed")
+		},
+	}
+
+	cfg := &Config{
+		Enabled:    true,
+		AutoCreate: true,
+		Prefix:     "v",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	err := tm.CommitChanges(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, nil)
+	if err == nil {
+		t.Error("CommitChanges() expected error when commit fails")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_GetModifiedError(t *testing.T) {
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return nil, errors.New("git status failed")
+		},
+	}
+
+	cfg := &Config{
+		Enabled:    true,
+		AutoCreate: true,
+		Prefix:     "v",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	err := tm.CommitChanges(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, nil)
+	if err == nil {
+		t.Error("CommitChanges() expected error when GetModifiedFiles fails")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_NoFilesToStage(t *testing.T) {
+	stageCalled := false
+	commitCalled := false
+
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			stageCalled = true
+			return nil
+		},
+		CommitFn: func(message string) error {
+			commitCalled = true
+			return nil
+		},
+	}
+
+	cfg := &Config{
+		Enabled:    true,
+		AutoCreate: true,
+		Prefix:     "v",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	// No extra files and no modified files detected
+	err := tm.CommitChanges(semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, nil)
+	if err != nil {
+		t.Errorf("CommitChanges() error = %v", err)
+	}
+	if stageCalled {
+		t.Error("CommitChanges() should not call StageFiles when no files to stage")
+	}
+	if commitCalled {
+		t.Error("CommitChanges() should not call Commit when no files to stage")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_DefaultTemplate(t *testing.T) {
+	var commitMessage string
+
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{"file.txt"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			return nil
+		},
+		CommitFn: func(message string) error {
+			commitMessage = message
+			return nil
+		},
+	}
+
+	cfg := &Config{
+		Enabled:               true,
+		AutoCreate:            true,
+		Prefix:                "v",
+		CommitMessageTemplate: "", // empty means use default
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	version := semver.SemVersion{Major: 3, Minor: 1, Patch: 0}
+	err := tm.CommitChanges(version, nil)
+	if err != nil {
+		t.Errorf("CommitChanges() error = %v", err)
+	}
+	if commitMessage != "chore(release): v3.1.0" {
+		t.Errorf("CommitChanges() commit message = %q, want %q", commitMessage, "chore(release): v3.1.0")
+	}
+}
+
+func TestTagManagerPlugin_CommitChanges_CustomTemplate(t *testing.T) {
+	var commitMessage string
+
+	mockCommitOps := &MockGitCommitOperations{
+		GetModifiedFilesFn: func() ([]string, error) {
+			return []string{"file.txt"}, nil
+		},
+		StageFilesFn: func(files ...string) error {
+			return nil
+		},
+		CommitFn: func(message string) error {
+			commitMessage = message
+			return nil
+		},
+	}
+
+	cfg := &Config{
+		Enabled:               true,
+		AutoCreate:            true,
+		Prefix:                "v",
+		CommitMessageTemplate: "bump: {version} ({major}.{minor}.{patch})",
+	}
+	tm := NewTagManagerWithOps(cfg, nil, mockCommitOps)
+
+	version := semver.SemVersion{Major: 2, Minor: 5, Patch: 1}
+	err := tm.CommitChanges(version, nil)
+	if err != nil {
+		t.Errorf("CommitChanges() error = %v", err)
+	}
+	if commitMessage != "bump: 2.5.1 (2.5.1)" {
+		t.Errorf("CommitChanges() commit message = %q, want %q", commitMessage, "bump: 2.5.1 (2.5.1)")
 	}
 }
