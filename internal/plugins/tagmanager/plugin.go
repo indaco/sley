@@ -225,8 +225,9 @@ func (p *TagManagerPlugin) ValidateTagAvailable(version semver.SemVersion) error
 	return nil
 }
 
-// IsEnabled returns whether auto-create is enabled.
-func (p *TagManagerPlugin) IsEnabled() bool {
+// IsAutoCreateEnabled returns whether the plugin is enabled with auto-create on.
+// This gates automatic tag validation and creation during bumps.
+func (p *TagManagerPlugin) IsAutoCreateEnabled() bool {
 	return p.config.Enabled && p.config.AutoCreate
 }
 
@@ -240,7 +241,7 @@ func (p *TagManagerPlugin) GetConfig() *Config {
 // - The version is a stable release (no pre-release), or
 // - The version is a pre-release and TagPrereleases is true.
 func (p *TagManagerPlugin) ShouldCreateTag(version semver.SemVersion) bool {
-	if !p.IsEnabled() {
+	if !p.IsAutoCreateEnabled() {
 		return false
 	}
 

@@ -332,7 +332,7 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 	}
 }
 
-func TestTagManagerPlugin_IsEnabled(t *testing.T) {
+func TestTagManagerPlugin_IsAutoCreateEnabled(t *testing.T) {
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -358,8 +358,8 @@ func TestTagManagerPlugin_IsEnabled(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tm := NewTagManager(tt.cfg)
-			if got := tm.IsEnabled(); got != tt.want {
-				t.Errorf("IsEnabled() = %v, want %v", got, tt.want)
+			if got := tm.IsAutoCreateEnabled(); got != tt.want {
+				t.Errorf("IsAutoCreateEnabled() = %v, want %v", got, tt.want)
 			}
 		})
 	}

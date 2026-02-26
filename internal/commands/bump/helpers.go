@@ -92,7 +92,7 @@ func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVe
 
 	// Check if the plugin is enabled and auto-create is on
 	if plugin, ok := tm.(*tagmanager.TagManagerPlugin); ok {
-		if !plugin.IsEnabled() {
+		if !plugin.IsAutoCreateEnabled() {
 			return nil
 		}
 	}
@@ -109,7 +109,7 @@ func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVers
 
 	// Check if the plugin is enabled and auto-create is on
 	plugin, ok := tm.(*tagmanager.TagManagerPlugin)
-	if !ok || !plugin.IsEnabled() {
+	if !ok || !plugin.IsAutoCreateEnabled() {
 		return nil
 	}
 
