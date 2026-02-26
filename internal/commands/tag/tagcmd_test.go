@@ -712,6 +712,91 @@ func TestIsTagManagerEnabled(t *testing.T) {
 	}
 }
 
+func TestRequireTagManagerEnabled(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name:    "nil config",
+			cfg:     nil,
+			wantErr: true,
+		},
+		{
+			name:    "nil plugins",
+			cfg:     &config.Config{},
+			wantErr: true,
+		},
+		{
+			name: "disabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					TagManager: &config.TagManagerConfig{Enabled: false},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "enabled",
+			cfg: &config.Config{
+				Plugins: &config.PluginConfig{
+					TagManager: &config.TagManagerConfig{Enabled: true},
+				},
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := requireTagManagerEnabled(tt.cfg)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("requireTagManagerEnabled() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr && err != nil {
+				if !strings.Contains(err.Error(), "tag-manager plugin is not enabled") {
+					t.Errorf("requireTagManagerEnabled() error message = %q, want it to contain 'tag-manager plugin is not enabled'", err.Error())
+				}
+			}
+		})
+	}
+}
+
+func TestTagCommand_BeforeHookBlocksSubcommands(t *testing.T) {
+	// Verify that running any tag subcommand via Run() fails when plugin is disabled.
+	cfg := &config.Config{
+		Path: ".version",
+		// No tag-manager plugin configured.
+	}
+
+	app := &cli.Command{
+		Name:      "sley",
+		Writer:    io.Discard,
+		ErrWriter: io.Discard,
+		Commands:  []*cli.Command{Run(cfg)},
+	}
+
+	subcommands := [][]string{
+		{"sley", "tag", "list"},
+		{"sley", "tag", "create"},
+		{"sley", "tag", "push", "v1.0.0"},
+		{"sley", "tag", "delete", "v1.0.0"},
+	}
+
+	for _, args := range subcommands {
+		t.Run(strings.Join(args[1:], " "), func(t *testing.T) {
+			err := app.Run(context.Background(), args)
+			if err == nil {
+				t.Errorf("expected error for %v when tag-manager is not enabled", args)
+			}
+			if err != nil && !strings.Contains(err.Error(), "tag-manager plugin is not enabled") {
+				t.Errorf("unexpected error for %v: %v", args, err)
+			}
+		})
+	}
+}
+
 func TestRunCommand(t *testing.T) {
 	cfg := &config.Config{
 		Path: ".version",
@@ -1530,6 +1615,11 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 	maxDepth := 10
 	cfg := &config.Config{
 		Path: ".version",
+		Plugins: &config.PluginConfig{
+			TagManager: &config.TagManagerConfig{
+				Enabled: true,
+			},
+		},
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
 				Enabled:        &enabled,
@@ -1612,6 +1702,11 @@ func TestCLI_TagPush_MultiModule_NoArg(t *testing.T) {
 	maxDepth := 10
 	cfg := &config.Config{
 		Path: ".version",
+		Plugins: &config.PluginConfig{
+			TagManager: &config.TagManagerConfig{
+				Enabled: true,
+			},
+		},
 		Workspace: &config.WorkspaceConfig{
 			Discovery: &config.DiscoveryConfig{
 				Enabled:        &enabled,

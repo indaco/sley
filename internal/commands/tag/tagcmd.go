@@ -38,6 +38,9 @@ func Run(cfg *config.Config) *cli.Command {
 		Name:  "tag",
 		Usage: "Manage git tags for versions",
 		Flags: cliflags.MultiModuleFlags(),
+		Before: func(_ context.Context, _ *cli.Command) (context.Context, error) {
+			return requireTagManagerEnabled(cfg)
+		},
 		Commands: []*cli.Command{
 			tc.createCmd(cfg),
 			tc.listCmd(cfg),
@@ -126,20 +129,6 @@ func (tc *TagCommand) deleteCmd(cfg *config.Config) *cli.Command {
 
 // runCreateCmd creates a git tag for the current version.
 func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
-	// Check if tag-manager plugin is enabled
-	if !isTagManagerEnabled(cfg) {
-		printer.PrintWarning("Warning: The tag-manager plugin is not enabled.")
-		printer.PrintInfo("To enable it, add the following to your .sley.yaml:")
-		fmt.Println("")
-		fmt.Println("  plugins:")
-		fmt.Println("    tag-manager:")
-		fmt.Println("      enabled: true")
-		fmt.Println("      auto-create: false  # Disable auto-tagging during bump")
-		fmt.Println("")
-		printer.PrintInfo("Proceeding with tag creation using default settings...")
-		fmt.Println("")
-	}
-
 	path, err := resolveVersionPath(ctx, cmd, cfg)
 	if err != nil {
 		return err
@@ -313,6 +302,15 @@ func isTagManagerEnabled(cfg *config.Config) bool {
 		return false
 	}
 	return cfg.Plugins.TagManager.Enabled
+}
+
+// requireTagManagerEnabled returns an error if the tag-manager plugin is not enabled.
+// Used as a Before hook on the parent "tag" command to gate all subcommands.
+func requireTagManagerEnabled(cfg *config.Config) (context.Context, error) {
+	if isTagManagerEnabled(cfg) {
+		return context.Background(), nil
+	}
+	return nil, fmt.Errorf("tag-manager plugin is not enabled\n\n  Enable it in your .sley.yaml:\n\n    plugins:\n      tag-manager:\n        enabled: true\n\n  See: https://sley.indaco.dev/plugins/tag-manager")
 }
 
 // resolveVersionPath uses clix.GetExecutionContext to properly detect multi-module
