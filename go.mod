@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/huh v0.8.0
-	github.com/charmbracelet/huh/spinner v0.0.0-20251215014908-6f7d32faaff3
+	github.com/charmbracelet/huh/spinner v0.0.0-20260223110133-9dc45e34a40b
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/goccy/go-yaml v1.19.2
 	github.com/muesli/termenv v0.16.0
