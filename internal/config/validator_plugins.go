@@ -3,26 +3,17 @@ package config
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 )
 
 // validateYAMLSyntax checks if the config file is valid YAML.
 func (v *Validator) validateYAMLSyntax(ctx context.Context) {
 	if v.configPath == "" {
-		// No config file, use defaults
 		v.addValidation("YAML Syntax", true, "No .sley.yaml file found, using defaults", false)
 		return
 	}
 
-	// Check if file exists
-	if _, err := v.fs.Stat(ctx, v.configPath); err != nil {
-		if os.IsNotExist(err) {
-			v.addValidation("YAML Syntax", true, "No .sley.yaml file found, using defaults", false)
-		} else {
-			v.addValidation("YAML Syntax", false, fmt.Sprintf("Failed to access config file: %v", err), false)
-		}
+	if !v.validateFileExists(ctx, "YAML Syntax", "Config file", v.configPath) {
 		return
 	}
 
@@ -37,26 +28,13 @@ func (v *Validator) validatePluginConfigs(ctx context.Context) {
 		return
 	}
 
-	// Validate tag-manager plugin
 	v.validateTagManagerConfig()
-
-	// Validate version-validator plugin
 	v.validateVersionValidatorConfig()
-
-	// Validate dependency-check plugin
 	v.validateDependencyCheckConfig(ctx)
-
-	// Validate changelog-parser plugin
 	v.validateChangelogParserConfig(ctx)
-
-	// Validate changelog-generator plugin
 	v.validateChangelogGeneratorConfig()
-
-	// Validate release-gate plugin
 	v.validateReleaseGateConfig()
-
-	// Validate audit-log plugin
-	v.validateAuditLogConfig(ctx)
+	v.validateAuditLogConfig()
 }
 
 // validateTagManagerConfig validates the tag-manager plugin configuration.
@@ -65,12 +43,8 @@ func (v *Validator) validateTagManagerConfig() {
 		return
 	}
 
-	cfg := v.cfg.Plugins.TagManager
-
-	// Validate prefix pattern (should be a valid tag prefix)
-	prefix := cfg.GetPrefix()
+	prefix := v.cfg.Plugins.TagManager.GetPrefix()
 	if prefix != "" {
-		// Check if prefix contains invalid characters
 		if containsInvalidTagChars(prefix) {
 			v.addValidation("Plugin: tag-manager", false,
 				fmt.Sprintf("Invalid prefix '%s': contains whitespace or path separators", prefix), false)
@@ -204,35 +178,17 @@ func (v *Validator) validateDependencyCheckConfig(ctx context.Context) {
 	}
 
 	for i, file := range cfg.Files {
-		// Check if file exists
-		filePath := file.Path
-		if !filepath.IsAbs(filePath) {
-			filePath = filepath.Join(v.rootDir, filePath)
-		}
+		label := fmt.Sprintf("File %d", i+1)
 
-		if _, err := v.fs.Stat(ctx, filePath); err != nil {
-			if os.IsNotExist(err) {
-				v.addValidation("Plugin: dependency-check", false,
-					fmt.Sprintf("File %d: '%s' does not exist", i+1, file.Path), false)
-			} else {
-				v.addValidation("Plugin: dependency-check", false,
-					fmt.Sprintf("File %d: cannot access '%s': %v", i+1, file.Path, err), false)
-			}
-			continue
-		}
+		v.validateFileExists(ctx, "Plugin: dependency-check", label, file.Path)
 
-		// Validate format
 		if !validFormats[file.Format] {
 			v.addValidation("Plugin: dependency-check", false,
 				fmt.Sprintf("File %d: unknown format '%s'", i+1, file.Format), false)
 		}
 
-		// Validate regex pattern if format is regex
 		if file.Format == "regex" && file.Pattern != "" {
-			if _, err := regexp.Compile(file.Pattern); err != nil {
-				v.addValidation("Plugin: dependency-check", false,
-					fmt.Sprintf("File %d: invalid regex pattern: %v", i+1, err), false)
-			}
+			v.validateRegex("Plugin: dependency-check", fmt.Sprintf("File %d", i+1), file.Pattern)
 		}
 	}
 
@@ -248,28 +204,19 @@ func (v *Validator) validateChangelogParserConfig(ctx context.Context) {
 
 	cfg := v.cfg.Plugins.ChangelogParser
 
-	// Validate changelog file path
-	changelogPath := cfg.GetPath()
-	if !filepath.IsAbs(changelogPath) {
-		changelogPath = filepath.Join(v.rootDir, changelogPath)
-	}
-
-	if _, err := v.fs.Stat(ctx, changelogPath); err != nil {
-		if os.IsNotExist(err) {
-			v.addValidation("Plugin: changelog-parser", false,
-				fmt.Sprintf("Changelog file '%s' does not exist", cfg.GetPath()), false)
-		} else {
-			v.addValidation("Plugin: changelog-parser", false,
-				fmt.Sprintf("Cannot access changelog file: %v", err), false)
-		}
+	if !v.validateFileExists(ctx, "Plugin: changelog-parser", fmt.Sprintf("Changelog file '%s'", cfg.GetPath()), cfg.GetPath()) {
 		return
 	}
 
 	// Validate priority setting
-	if cfg.Priority != "" && cfg.Priority != "changelog" && cfg.Priority != "commits" {
-		v.addValidation("Plugin: changelog-parser", false,
-			fmt.Sprintf("Invalid priority '%s': must be 'changelog' or 'commits'", cfg.Priority), false)
-		return
+	if cfg.Priority != "" {
+		validPriorities := map[string]bool{
+			"changelog": true,
+			"commits":   true,
+		}
+		if !v.validateEnum("Plugin: changelog-parser", "priority", cfg.Priority, validPriorities) {
+			return
+		}
 	}
 
 	// Validate format setting
@@ -281,9 +228,7 @@ func (v *Validator) validateChangelogParserConfig(ctx context.Context) {
 		"auto":           true,
 		"":               true,
 	}
-	if !validFormats[cfg.Format] {
-		v.addValidation("Plugin: changelog-parser", false,
-			fmt.Sprintf("Invalid format '%s': must be 'keepachangelog', 'grouped', 'github', 'minimal', or 'auto'", cfg.Format), false)
+	if !v.validateEnum("Plugin: changelog-parser", "format", cfg.Format, validFormats) {
 		return
 	}
 
@@ -300,41 +245,29 @@ func (v *Validator) validateChangelogGeneratorConfig() {
 	cfg := v.cfg.Plugins.ChangelogGenerator
 
 	// Validate mode
-	mode := cfg.GetMode()
 	validModes := map[string]bool{
 		"versioned": true,
 		"unified":   true,
 		"both":      true,
 	}
-	if !validModes[mode] {
-		v.addValidation("Plugin: changelog-generator", false,
-			fmt.Sprintf("Invalid mode '%s': must be 'versioned', 'unified', or 'both'", mode), false)
-	}
+	v.validateEnum("Plugin: changelog-generator", "mode", cfg.GetMode(), validModes)
 
 	// Validate format
-	format := cfg.GetFormat()
 	validFormats := map[string]bool{
 		"grouped":        true,
 		"keepachangelog": true,
 		"github":         true,
 		"minimal":        true,
 	}
-	if !validFormats[format] {
-		v.addValidation("Plugin: changelog-generator", false,
-			fmt.Sprintf("Invalid format '%s': must be 'grouped', 'keepachangelog', 'github', or 'minimal'", format), false)
-	}
+	v.validateEnum("Plugin: changelog-generator", "format", cfg.GetFormat(), validFormats)
 
 	// Validate merge-after
-	mergeAfter := cfg.GetMergeAfter()
 	validMergeAfter := map[string]bool{
 		"immediate": true,
 		"manual":    true,
 		"prompt":    true,
 	}
-	if !validMergeAfter[mergeAfter] {
-		v.addValidation("Plugin: changelog-generator", false,
-			fmt.Sprintf("Invalid merge-after '%s': must be 'immediate', 'manual', or 'prompt'", mergeAfter), false)
-	}
+	v.validateEnum("Plugin: changelog-generator", "merge-after", cfg.GetMergeAfter(), validMergeAfter)
 
 	// Validate repository config
 	if cfg.Repository != nil {
@@ -343,14 +276,11 @@ func (v *Validator) validateChangelogGeneratorConfig() {
 
 	// Validate exclude patterns
 	for i, pattern := range cfg.ExcludePatterns {
-		if _, err := regexp.Compile(pattern); err != nil {
-			v.addValidation("Plugin: changelog-generator", false,
-				fmt.Sprintf("Exclude pattern %d: invalid regex: %v", i+1, err), false)
-		}
+		v.validateRegex("Plugin: changelog-generator", fmt.Sprintf("Exclude pattern %d", i+1), pattern)
 	}
 
 	v.addValidation("Plugin: changelog-generator", true,
-		fmt.Sprintf("Mode: %s, Format: %s", mode, format), false)
+		fmt.Sprintf("Mode: %s, Format: %s", cfg.GetMode(), cfg.GetFormat()), false)
 }
 
 // validateRepositoryConfig validates repository configuration for changelog generator.
@@ -364,9 +294,8 @@ func (v *Validator) validateRepositoryConfig(repo *RepositoryConfig) {
 		"custom":    true,
 	}
 
-	if repo.Provider != "" && !validProviders[repo.Provider] {
-		v.addValidation("Plugin: changelog-generator", false,
-			fmt.Sprintf("Invalid repository provider '%s'", repo.Provider), false)
+	if repo.Provider != "" {
+		v.validateEnum("Plugin: changelog-generator", "repository provider", repo.Provider, validProviders)
 	}
 
 	// If provider is custom, require host
@@ -384,7 +313,6 @@ func (v *Validator) validateReleaseGateConfig() {
 
 	cfg := v.cfg.Plugins.ReleaseGate
 
-	// Check for conflicting branch configurations
 	if len(cfg.AllowedBranches) > 0 && len(cfg.BlockedBranches) > 0 {
 		v.addValidation("Plugin: release-gate", true,
 			"Both allowed and blocked branches configured (blocked takes precedence)", true)
@@ -395,19 +323,20 @@ func (v *Validator) validateReleaseGateConfig() {
 }
 
 // validateAuditLogConfig validates the audit-log plugin configuration.
-func (v *Validator) validateAuditLogConfig(_ context.Context) {
+func (v *Validator) validateAuditLogConfig() {
 	if v.cfg.Plugins.AuditLog == nil || !v.cfg.Plugins.AuditLog.Enabled {
 		return
 	}
 
 	cfg := v.cfg.Plugins.AuditLog
 
-	// Validate format
+	validFormats := map[string]bool{
+		"json": true,
+		"yaml": true,
+	}
+
 	format := cfg.GetFormat()
-	if format != "json" && format != "yaml" {
-		v.addValidation("Plugin: audit-log", false,
-			fmt.Sprintf("Invalid format '%s': must be 'json' or 'yaml'", format), false)
-	} else {
+	if v.validateEnum("Plugin: audit-log", "format", format, validFormats) {
 		v.addValidation("Plugin: audit-log", true,
 			fmt.Sprintf("Audit log format: %s", format), false)
 	}
