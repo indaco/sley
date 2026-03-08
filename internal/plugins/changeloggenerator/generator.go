@@ -380,7 +380,7 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 	// Normalize: trim trailing whitespace and ensure single trailing newline
 	finalContent = strings.TrimRight(finalContent, "\n\r\t ") + "\n"
 
-	if err := os.WriteFile(path, []byte(finalContent), core.PermPublicRead); err != nil {
+	if err := os.WriteFile(path, []byte(finalContent), core.PermPublicRead); err != nil { //nolint:gosec // G703: path is the changelog file path from plugin config
 		return fmt.Errorf("failed to write changelog %q: %w", path, err)
 	}
 
