@@ -77,7 +77,7 @@ func (w *osFileWriter) WriteFile(file *os.File, data []byte) (int, error) {
 type yamlMarshaler struct{}
 
 func (m *yamlMarshaler) Marshal(v any) ([]byte, error) {
-	return yaml.Marshal(v)
+	return yaml.MarshalWithOptions(v, yaml.Indent(2), yaml.IndentSequence(true))
 }
 
 // NewConfigSaver creates a ConfigSaver with the given dependencies.

@@ -616,7 +616,7 @@ func marshalConfigWithComments(cfg *config.Config, plugins []string) ([]byte, er
 
 // marshalToYAML marshals a config to YAML bytes.
 func marshalToYAML(cfg *config.Config) ([]byte, error) {
-	return yaml.Marshal(cfg)
+	return yaml.MarshalWithOptions(cfg, yaml.Indent(2), yaml.IndentSequence(true))
 }
 
 // generateDependencyCheckConfig generates YAML configuration for dependency-check.
