@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,7 +69,20 @@ func discoverVersionFiles(root string) ([]DiscoveredModule, error) {
 		"__pycache__":  true,
 	}
 
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	// Resolve the scan directory: if root is a file path, use its parent directory.
+	scanDir := root
+	if info, statErr := os.Stat(root); statErr != nil || !info.IsDir() {
+		scanDir = filepath.Dir(root)
+	}
+
+	// Use root-scoped API to prevent symlink TOCTOU traversal (gosec G122).
+	rootDir, err := os.OpenRoot(scanDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open root directory: %w", err)
+	}
+	defer rootDir.Close()
+
+	err = filepath.WalkDir(scanDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil // Skip inaccessible directories
 		}
@@ -85,17 +99,20 @@ func discoverVersionFiles(root string) ([]DiscoveredModule, error) {
 		if d.Name() == ".version" {
 			// Skip root .version file
 			dir := filepath.Dir(path)
-			if dir == "." || dir == root {
+			if dir == "." || dir == scanDir {
 				return nil
 			}
 
-			relPath, _ := filepath.Rel(root, path)
+			relPath, _ := filepath.Rel(scanDir, path)
 			moduleName := filepath.Base(dir)
 
-			// Read current version
+			// Read current version using root-scoped file access
 			version := ""
-			if data, err := os.ReadFile(path); err == nil {
-				version = strings.TrimSpace(string(data))
+			if f, openErr := rootDir.Open(relPath); openErr == nil {
+				if data, readErr := io.ReadAll(f); readErr == nil {
+					version = strings.TrimSpace(string(data))
+				}
+				f.Close()
 			}
 
 			modules = append(modules, DiscoveredModule{

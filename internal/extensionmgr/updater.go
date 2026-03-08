@@ -64,7 +64,7 @@ func (u *DefaultConfigUpdater) AddExtension(path string, extension config.Extens
 		result = original + "\n" + replacement + "\n"
 	}
 
-	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil {
+	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil { //nolint:gosec // G703: path is the config file path resolved by the config loader
 		return fmt.Errorf("failed to write config %q: %w", path, err)
 	}
 	return nil
@@ -117,7 +117,7 @@ func (u *DefaultConfigUpdater) RemoveExtension(path string, extensionName string
 		return fmt.Errorf("extensions section not found in config file %q", path)
 	}
 
-	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil {
+	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil { //nolint:gosec // G703: path is the config file path resolved by the config loader
 		return fmt.Errorf("failed to write config %q: %w", path, err)
 	}
 	return nil
@@ -167,7 +167,7 @@ func (u *DefaultConfigUpdater) SetExtensionEnabled(path string, extensionName st
 		return fmt.Errorf("extensions section not found in config file %q", path)
 	}
 
-	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil {
+	if err := os.WriteFile(path, []byte(result), config.ConfigFilePerm); err != nil { //nolint:gosec // G703: path is the config file path resolved by the config loader
 		return fmt.Errorf("failed to write config %q: %w", path, err)
 	}
 	return nil

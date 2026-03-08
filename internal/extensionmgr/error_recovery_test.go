@@ -112,6 +112,7 @@ echo '{"version": "1.0.0"}'
 
 	executor := NewScriptExecutorWithTimeout(30 * time.Second)
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	input := &HookInput{
 		Hook:        "test",

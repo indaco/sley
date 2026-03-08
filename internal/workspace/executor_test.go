@@ -228,6 +228,7 @@ func TestExecutor_Run_ContextCancellation(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	op := &mockOperation{
 		name: "test",

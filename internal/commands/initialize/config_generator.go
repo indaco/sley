@@ -58,8 +58,8 @@ func GenerateConfigWithComments(path string, selectedPlugins []string) ([]byte, 
 
 	cfg.Plugins = pluginsCfg
 
-	// Marshal to YAML
-	data, err := yaml.Marshal(cfg)
+	// Marshal to YAML with proper indentation
+	data, err := yaml.MarshalWithOptions(cfg, yaml.Indent(2), yaml.IndentSequence(true))
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal config: %w", err)
 	}
@@ -148,8 +148,8 @@ func GenerateConfigWithDiscovery(path string, selectedPlugins []string, syncCand
 
 	cfg.Plugins = pluginsCfg
 
-	// Marshal to YAML
-	data, err := yaml.Marshal(cfg)
+	// Marshal to YAML with proper indentation
+	data, err := yaml.MarshalWithOptions(cfg, yaml.Indent(2), yaml.IndentSequence(true))
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal config: %w", err)
 	}
