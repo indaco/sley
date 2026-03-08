@@ -47,16 +47,9 @@ func (v *Validator) Validate(ctx context.Context) ([]ValidationResult, error) {
 	// Reset validations
 	v.validations = make([]ValidationResult, 0)
 
-	// Validate YAML syntax (by trying to load it)
 	v.validateYAMLSyntax(ctx)
-
-	// Validate plugin configurations
 	v.validatePluginConfigs(ctx)
-
-	// Validate workspace configuration
 	v.validateWorkspaceConfig(ctx)
-
-	// Validate extension configurations
 	v.validateExtensionConfigs(ctx)
 
 	return v.validations, nil
