@@ -12,7 +12,7 @@ import (
 
 func TestNewBumpOperation(t *testing.T) {
 	fs := core.NewMockFileSystem()
-	op := NewBumpOperation(fs, BumpPatch, "alpha", "build123", true)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "alpha", "build123", true)
 
 	if op == nil {
 		t.Fatal("NewBumpOperation returned nil")
@@ -20,6 +20,9 @@ func TestNewBumpOperation(t *testing.T) {
 	}
 	if op.fs == nil {
 		t.Error("fs is nil")
+	}
+	if op.bumper == nil {
+		t.Error("bumper is nil")
 	}
 	if op.bumpType != BumpPatch {
 		t.Errorf("bumpType = %v, want %v", op.bumpType, BumpPatch)
@@ -39,7 +42,7 @@ func TestBumpOperation_Execute_Patch(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpPatch, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -70,7 +73,7 @@ func TestBumpOperation_Execute_Minor(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpMinor, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpMinor, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -101,7 +104,7 @@ func TestBumpOperation_Execute_Major(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpMajor, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpMajor, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -132,7 +135,7 @@ func TestBumpOperation_Execute_Release(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-beta.1+build.123\n"))
 
-	op := NewBumpOperation(fs, BumpRelease, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpRelease, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -182,7 +185,7 @@ func TestBumpOperation_Execute_Auto(t *testing.T) {
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
-			op := NewBumpOperation(fs, BumpAuto, "", "", false)
+			op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpAuto, "", "", false)
 			mod := &workspace.Module{
 				Name: "test",
 				Path: "/test/.version",
@@ -210,7 +213,7 @@ func TestBumpOperation_Execute_WithPreRelease(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpPatch, "alpha.1", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "alpha.1", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -237,7 +240,7 @@ func TestBumpOperation_Execute_WithMetadata(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpPatch, "", "build.456", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "build.456", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -303,7 +306,7 @@ func TestBumpOperation_Execute_PreserveMetadata(t *testing.T) {
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
-			op := NewBumpOperation(fs, BumpPatch, "", tt.newMetadata, tt.preserveMetadata)
+			op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", tt.newMetadata, tt.preserveMetadata)
 			mod := &workspace.Module{
 				Name: "test",
 				Path: "/test/.version",
@@ -331,7 +334,7 @@ func TestBumpOperation_Execute_ContextCancellation(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpPatch, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -353,7 +356,7 @@ func TestBumpOperation_Execute_ContextTimeout(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpPatch, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -374,7 +377,7 @@ func TestBumpOperation_Execute_ReadError(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	// Don't set any file, so read will fail
 
-	op := NewBumpOperation(fs, BumpPatch, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -387,20 +390,27 @@ func TestBumpOperation_Execute_ReadError(t *testing.T) {
 	}
 }
 
+// mockErrorBumper is a VersionBumper that always returns errors.
+type mockErrorBumper struct {
+	err error
+}
+
+func (m mockErrorBumper) BumpNext(_ semver.SemVersion) (semver.SemVersion, error) {
+	return semver.SemVersion{}, m.err
+}
+
+func (m mockErrorBumper) BumpByLabel(_ semver.SemVersion, _ string) (semver.SemVersion, error) {
+	return semver.SemVersion{}, m.err
+}
+
 func TestBumpOperation_Execute_AutoBumpError(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	// Save original BumpNextFunc and restore after test
-	originalBumpNextFunc := semver.BumpNextFunc
-	defer func() { semver.BumpNextFunc = originalBumpNextFunc }()
+	// Use a mock bumper that returns an error
+	bumper := mockErrorBumper{err: context.DeadlineExceeded}
 
-	// Override BumpNextFunc to return an error
-	semver.BumpNextFunc = func(v semver.SemVersion) (semver.SemVersion, error) {
-		return semver.SemVersion{}, context.DeadlineExceeded
-	}
-
-	op := NewBumpOperation(fs, BumpAuto, "", "", false)
+	op := NewBumpOperation(fs, bumper, BumpAuto, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -417,7 +427,7 @@ func TestBumpOperation_Execute_UnknownBumpType(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
-	op := NewBumpOperation(fs, BumpType("unknown"), "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpType("unknown"), "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -437,7 +447,7 @@ func TestBumpOperation_Execute_SaveError(t *testing.T) {
 	// Inject write error - this will be checked when Save is called
 	fs.WriteErr = context.DeadlineExceeded
 
-	op := NewBumpOperation(fs, BumpPatch, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -492,7 +502,7 @@ func TestBumpOperation_Name(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := core.NewMockFileSystem()
-			op := NewBumpOperation(fs, tt.bumpType, "", "", false)
+			op := NewBumpOperation(fs, semver.NewDefaultBumper(), tt.bumpType, "", "", false)
 
 			name := op.Name()
 			if name != tt.expected {
@@ -540,7 +550,7 @@ func TestBumpOperation_Execute_Pre_IncrementExisting(t *testing.T) {
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
-			op := NewBumpOperation(fs, BumpPre, tt.label, "", false)
+			op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPre, tt.label, "", false)
 			mod := &workspace.Module{
 				Name: "test",
 				Path: "/test/.version",
@@ -596,7 +606,7 @@ func TestBumpOperation_Execute_Pre_WithLabel(t *testing.T) {
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
-			op := NewBumpOperation(fs, BumpPre, tt.label, "", false)
+			op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPre, tt.label, "", false)
 			mod := &workspace.Module{
 				Name: "test",
 				Path: "/test/.version",
@@ -625,7 +635,7 @@ func TestBumpOperation_Execute_Pre_NoExistingPreRelease(t *testing.T) {
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
 	// BumpPre with no label and no existing pre-release should fail
-	op := NewBumpOperation(fs, BumpPre, "", "", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPre, "", "", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -642,7 +652,7 @@ func TestBumpOperation_Execute_Pre_PreserveMetadata(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-rc.1+build.99\n"))
 
-	op := NewBumpOperation(fs, BumpPre, "", "", true)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPre, "", "", true)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",
@@ -669,7 +679,7 @@ func TestBumpOperation_Execute_Pre_WithNewMetadata(t *testing.T) {
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-rc.1\n"))
 
-	op := NewBumpOperation(fs, BumpPre, "", "ci.456", false)
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPre, "", "ci.456", false)
 	mod := &workspace.Module{
 		Name: "test",
 		Path: "/test/.version",

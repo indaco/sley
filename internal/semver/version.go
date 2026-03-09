@@ -35,14 +35,6 @@ var (
 	// errInvalidVersion is returned when a version string does not conform
 	// to the expected semantic version format.
 	errInvalidVersion = errors.New("invalid version format")
-
-	// BumpNextFunc is a function variable for performing heuristic-based version bumps.
-	// It defaults to BumpNext but can be overridden in tests to simulate errors.
-	BumpNextFunc = BumpNext
-
-	// BumpByLabelFunc is a function variable for bumping a version using an explicit label (patch, minor, major).
-	// It defaults to BumpByLabel but can be overridden in tests to simulate errors.
-	BumpByLabelFunc = BumpByLabel
 )
 
 // String returns the string representation of the semantic version.

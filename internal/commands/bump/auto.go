@@ -20,6 +20,12 @@ import (
 var (
 	tryInferBumpTypeFromCommitParserPluginFn    = tryInferBumpTypeFromCommitParserPlugin
 	tryInferBumpTypeFromChangelogParserPluginFn = tryInferBumpTypeFromChangelogParserPlugin
+
+	// newVersionBumper creates the VersionBumper used for auto bump operations.
+	// Tests can override this to inject mock bumpers.
+	newVersionBumper = func() semver.VersionBumper {
+		return semver.NewDefaultBumper()
+	}
 )
 
 // autoCmd returns the "auto" subcommand.
@@ -155,7 +161,8 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 		return fmt.Errorf("failed to read version: %w", err)
 	}
 
-	next, err := getNextVersion(registry, current, label, disableInfer, since, until, isPreserveMeta)
+	bumper := newVersionBumper()
+	next, err := getNextVersion(bumper, registry, current, label, disableInfer, since, until, isPreserveMeta)
 	if err != nil {
 		return err
 	}
@@ -213,6 +220,7 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 // commit inference, or default bump logic. It returns an error if bumping fails
 // or if an invalid label is specified.
 func getNextVersion(
+	bumper semver.VersionBumper,
 	registry *plugins.PluginRegistry,
 	current semver.SemVersion,
 	label string,
@@ -225,7 +233,7 @@ func getNextVersion(
 
 	switch label {
 	case "patch", "minor", "major":
-		next, err = semver.BumpByLabelFunc(current, label)
+		next, err = bumper.BumpByLabel(current, label)
 		if err != nil {
 			return semver.SemVersion{}, fmt.Errorf("failed to bump version with label: %w", err)
 		}
@@ -244,7 +252,7 @@ func getNextVersion(
 				if current.PreRelease != "" {
 					return promotePreRelease(current, preserveMeta), nil
 				}
-				next, err = semver.BumpByLabelFunc(current, inferred)
+				next, err = bumper.BumpByLabel(current, inferred)
 				if err != nil {
 					return semver.SemVersion{}, fmt.Errorf("failed to bump inferred version: %w", err)
 				}
@@ -252,7 +260,7 @@ func getNextVersion(
 			}
 		}
 
-		next, err = semver.BumpNextFunc(current)
+		next, err = bumper.BumpNext(current)
 		if err != nil {
 			return semver.SemVersion{}, fmt.Errorf("failed to determine next version: %w", err)
 		}
