@@ -41,6 +41,11 @@ func loadExtensionManifest(dir string) (*ExtensionManifest, error) {
 
 	if err := manifest.ValidateManifest(); err != nil {
 		// If it's already our custom error type, add the path
+		var versionErr *SchemaVersionError
+		if errors.As(err, &versionErr) {
+			versionErr.Path = manifestPath
+			return nil, versionErr
+		}
 		var valErr *ManifestValidationError
 		if errors.As(err, &valErr) {
 			valErr.Path = manifestPath

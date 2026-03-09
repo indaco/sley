@@ -5,6 +5,38 @@ import (
 	"strings"
 )
 
+const (
+	// CurrentSchemaVersion is the latest manifest schema version supported by this build.
+	CurrentSchemaVersion = 1
+
+	// DefaultSchemaVersion is used when the schema_version field is omitted (backward compat).
+	DefaultSchemaVersion = 1
+)
+
+// SchemaVersionError indicates the manifest requires a newer schema version than supported.
+type SchemaVersionError struct {
+	Path         string
+	Found        int
+	MaxSupported int
+}
+
+func (e *SchemaVersionError) Error() string {
+	return fmt.Sprintf("manifest at %s requires schema version %d, but this build only supports up to version %d",
+		e.Path, e.Found, e.MaxSupported)
+}
+
+// Suggestion returns guidance on resolving the version mismatch
+func (e *SchemaVersionError) Suggestion() string {
+	var sb strings.Builder
+
+	fmt.Fprintf(&sb, "Manifest schema version %d is not supported (max: %d).\n\n", e.Found, e.MaxSupported)
+	sb.WriteString("Please upgrade sley to a newer version that supports this manifest schema:\n\n")
+	sb.WriteString("  go install github.com/indaco/sley@latest\n\n")
+	sb.WriteString("Documentation: https://sley.indaco.dev/extensions/index.html\n")
+
+	return sb.String()
+}
+
 // ManifestNotFoundError indicates that an extension.yaml file is missing
 type ManifestNotFoundError struct {
 	Path string
@@ -21,6 +53,7 @@ func (e *ManifestNotFoundError) Suggestion() string {
 
 	fmt.Fprintf(&sb, "Extension manifest not found at: %s\n\n", e.Path)
 	sb.WriteString("A valid extension.yaml file is required with these fields:\n\n")
+	sb.WriteString("  schema_version: 1\n")
 	sb.WriteString("  name: my-extension\n")
 	sb.WriteString("  version: 1.0.0\n")
 	sb.WriteString("  description: Brief description of what this extension does\n")
@@ -92,18 +125,39 @@ func (e *ManifestValidationError) Suggestion() string {
 // - Entry: Path to the executable script or binary (relative to extension directory)
 // - Hooks: List of hook points this extension supports (optional)
 type ExtensionManifest struct {
-	Name        string   `yaml:"name"`
-	Version     string   `yaml:"version"`
-	Description string   `yaml:"description"`
-	Author      string   `yaml:"author"`
-	Repository  string   `yaml:"repository"`
-	Entry       string   `yaml:"entry"`
-	Hooks       []string `yaml:"hooks,omitempty"`
+	SchemaVersion int      `yaml:"schema_version,omitempty"`
+	Name          string   `yaml:"name"`
+	Version       string   `yaml:"version"`
+	Description   string   `yaml:"description"`
+	Author        string   `yaml:"author"`
+	Repository    string   `yaml:"repository"`
+	Entry         string   `yaml:"entry"`
+	Hooks         []string `yaml:"hooks,omitempty"`
 }
 
-// ValidateManifest ensures all required fields are present.
+// ValidateManifest ensures all required fields are present and the manifest version is supported.
 // Returns an error listing all missing fields if validation fails.
 func (m *ExtensionManifest) ValidateManifest() error {
+	// Default omitted schema_version to DefaultSchemaVersion
+	if m.SchemaVersion == 0 {
+		m.SchemaVersion = DefaultSchemaVersion
+	}
+
+	// Reject negative or otherwise invalid schema versions
+	if m.SchemaVersion < 1 {
+		return &ManifestValidationError{
+			MissingFields: []string{"schema_version (must be >= 1)"},
+		}
+	}
+
+	// Reject schema versions newer than what this build supports
+	if m.SchemaVersion > CurrentSchemaVersion {
+		return &SchemaVersionError{
+			Found:        m.SchemaVersion,
+			MaxSupported: CurrentSchemaVersion,
+		}
+	}
+
 	var missingFields []string
 
 	if m.Name == "" {

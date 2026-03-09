@@ -349,6 +349,7 @@ func TestManifestNotFoundError(t *testing.T) {
 	suggestion := err.Suggestion()
 	expectedParts := []string{
 		"Extension manifest not found",
+		"schema_version:",
 		"name:",
 		"version:",
 		"description:",
@@ -423,6 +424,131 @@ func TestManifestValidationError(t *testing.T) {
 		if !strings.Contains(suggestion, part) {
 			t.Errorf("Suggestion() should contain %q, got: %s", part, suggestion)
 		}
+	}
+}
+
+// TestSchemaVersionError tests the SchemaVersionError type
+func TestSchemaVersionError(t *testing.T) {
+	err := &SchemaVersionError{
+		Path:         "/path/to/extension.yaml",
+		Found:        99,
+		MaxSupported: 1,
+	}
+
+	// Test Error() method
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "schema version 99") {
+		t.Errorf("Error() should contain found version, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "up to version 1") {
+		t.Errorf("Error() should contain max supported version, got: %s", errMsg)
+	}
+	if !strings.Contains(errMsg, "/path/to/extension.yaml") {
+		t.Errorf("Error() should contain path, got: %s", errMsg)
+	}
+
+	// Test Suggestion() method
+	suggestion := err.Suggestion()
+	expectedParts := []string{
+		"not supported",
+		"upgrade sley",
+		"go install",
+		"Documentation:",
+	}
+	for _, part := range expectedParts {
+		if !strings.Contains(suggestion, part) {
+			t.Errorf("Suggestion() should contain %q, got: %s", part, suggestion)
+		}
+	}
+}
+
+// TestSchemaVersion_Validation tests schema_version field behavior
+func TestSchemaVersion_Validation(t *testing.T) {
+	base := ExtensionManifest{
+		Name:        "test-ext",
+		Version:     "1.0.0",
+		Description: "Test extension",
+		Author:      "Author",
+		Repository:  "https://github.com/test/repo",
+		Entry:       "hook.sh",
+	}
+
+	tests := []struct {
+		name          string
+		schemaVersion int
+		wantErr       bool
+		wantErrType   string // "version" or "validation"
+		wantDefault   int    // expected SchemaVersion after validation
+	}{
+		{
+			name:          "omitted defaults to 1",
+			schemaVersion: 0,
+			wantErr:       false,
+			wantDefault:   DefaultSchemaVersion,
+		},
+		{
+			name:          "explicit version 1 accepted",
+			schemaVersion: 1,
+			wantErr:       false,
+			wantDefault:   1,
+		},
+		{
+			name:          "future version 99 rejected",
+			schemaVersion: 99,
+			wantErr:       true,
+			wantErrType:   "version",
+		},
+		{
+			name:          "negative version rejected",
+			schemaVersion: -1,
+			wantErr:       true,
+			wantErrType:   "validation",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := base
+			m.SchemaVersion = tt.schemaVersion
+
+			err := m.ValidateManifest()
+
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateManifest() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if tt.wantErr {
+				switch tt.wantErrType {
+				case "version":
+					var vErr *SchemaVersionError
+					if !errors.As(err, &vErr) {
+						t.Errorf("expected SchemaVersionError, got %T: %v", err, err)
+					}
+				case "validation":
+					var valErr *ManifestValidationError
+					if !errors.As(err, &valErr) {
+						t.Errorf("expected ManifestValidationError, got %T: %v", err, err)
+					}
+				}
+			} else if m.SchemaVersion != tt.wantDefault {
+				t.Errorf("expected SchemaVersion %d, got %d", tt.wantDefault, m.SchemaVersion)
+			}
+		})
+	}
+}
+
+// TestSchemaVersionConstants tests that constants are consistent
+func TestSchemaVersionConstants(t *testing.T) {
+	if CurrentSchemaVersion < 1 {
+		t.Errorf("CurrentSchemaVersion should be >= 1, got %d", CurrentSchemaVersion)
+	}
+	if DefaultSchemaVersion < 1 {
+		t.Errorf("DefaultSchemaVersion should be >= 1, got %d", DefaultSchemaVersion)
+	}
+	if DefaultSchemaVersion > CurrentSchemaVersion {
+		t.Errorf("DefaultSchemaVersion (%d) should not exceed CurrentSchemaVersion (%d)",
+			DefaultSchemaVersion, CurrentSchemaVersion)
 	}
 }
 

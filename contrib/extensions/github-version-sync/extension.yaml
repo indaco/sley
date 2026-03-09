@@ -1,3 +1,4 @@
+schema_version: 1
 name: github-version-sync
 version: 1.0.0
 description: Syncs the .version file to the latest release from a GitHub repository

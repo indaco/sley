@@ -1,3 +1,4 @@
+schema_version: 1
 name: docker-tag-sync
 version: 1.0.0
 description: Tags and optionally pushes Docker images with the new version after bumps
