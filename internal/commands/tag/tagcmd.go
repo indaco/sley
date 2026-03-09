@@ -143,7 +143,7 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 	prefix := tmConfig.Prefix
 	tagName := prefix + version.String()
 
-	exists, err := tc.gitOps.TagExists(tagName)
+	exists, err := tc.gitOps.TagExists(ctx, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to check tag existence: %w", err)
 	}
@@ -157,7 +157,7 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 		message = tagmanager.FormatMessage(tmConfig.MessageTemplate, data)
 	}
 
-	if err := tc.createTag(tagName, message, tmConfig); err != nil {
+	if err := tc.createTag(ctx, tagName, message, tmConfig); err != nil {
 		return err
 	}
 
@@ -165,7 +165,7 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 
 	shouldPush := cmd.Bool("push") || tmConfig.Push
 	if shouldPush {
-		if err := tc.gitOps.PushTag(tagName); err != nil {
+		if err := tc.gitOps.PushTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to push tag: %w", err)
 		}
 		printer.PrintSuccess(fmt.Sprintf("Pushed tag %s to remote", tagName))
@@ -175,18 +175,18 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 }
 
 // createTag creates a tag based on the configuration.
-func (tc *TagCommand) createTag(tagName, message string, cfg *tagmanager.Config) error {
+func (tc *TagCommand) createTag(ctx context.Context, tagName, message string, cfg *tagmanager.Config) error {
 	switch {
 	case cfg.Sign:
-		if err := tc.gitOps.CreateSignedTag(tagName, message, cfg.SigningKey); err != nil {
+		if err := tc.gitOps.CreateSignedTag(ctx, tagName, message, cfg.SigningKey); err != nil {
 			return fmt.Errorf("failed to create signed tag: %w", err)
 		}
 	case cfg.Annotate:
-		if err := tc.gitOps.CreateAnnotatedTag(tagName, message); err != nil {
+		if err := tc.gitOps.CreateAnnotatedTag(ctx, tagName, message); err != nil {
 			return fmt.Errorf("failed to create annotated tag: %w", err)
 		}
 	default:
-		if err := tc.gitOps.CreateLightweightTag(tagName); err != nil {
+		if err := tc.gitOps.CreateLightweightTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to create lightweight tag: %w", err)
 		}
 	}
@@ -194,11 +194,11 @@ func (tc *TagCommand) createTag(tagName, message string, cfg *tagmanager.Config)
 }
 
 // runListCmd lists existing version tags.
-func (tc *TagCommand) runListCmd(_ context.Context, cmd *cli.Command, cfg *config.Config) error {
+func (tc *TagCommand) runListCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
 	prefix := getTagPrefix(cfg)
 	pattern := prefix + "*"
 
-	tags, err := tc.gitOps.ListTags(pattern)
+	tags, err := tc.gitOps.ListTags(ctx, pattern)
 	if err != nil {
 		return fmt.Errorf("failed to list tags: %w", err)
 	}
@@ -243,7 +243,7 @@ func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *con
 		tagName = prefix + version.String()
 	}
 
-	exists, err := tc.gitOps.TagExists(tagName)
+	exists, err := tc.gitOps.TagExists(ctx, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to check tag existence: %w", err)
 	}
@@ -251,7 +251,7 @@ func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *con
 		return fmt.Errorf("tag %s does not exist locally", tagName)
 	}
 
-	if err := tc.gitOps.PushTag(tagName); err != nil {
+	if err := tc.gitOps.PushTag(ctx, tagName); err != nil {
 		return fmt.Errorf("failed to push tag: %w", err)
 	}
 
@@ -260,14 +260,14 @@ func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *con
 }
 
 // runDeleteCmd deletes a git tag.
-func (tc *TagCommand) runDeleteCmd(_ context.Context, cmd *cli.Command, _ *config.Config) error {
+func (tc *TagCommand) runDeleteCmd(ctx context.Context, cmd *cli.Command, _ *config.Config) error {
 	if cmd.NArg() < 1 {
 		return cli.Exit("missing required tag name argument", 1)
 	}
 
 	tagName := cmd.Args().Get(0)
 
-	exists, err := tc.gitOps.TagExists(tagName)
+	exists, err := tc.gitOps.TagExists(ctx, tagName)
 	if err != nil {
 		return fmt.Errorf("failed to check tag existence: %w", err)
 	}
@@ -275,13 +275,13 @@ func (tc *TagCommand) runDeleteCmd(_ context.Context, cmd *cli.Command, _ *confi
 		return fmt.Errorf("tag %s does not exist locally", tagName)
 	}
 
-	if err := tc.gitOps.DeleteTag(tagName); err != nil {
+	if err := tc.gitOps.DeleteTag(ctx, tagName); err != nil {
 		return fmt.Errorf("failed to delete local tag: %w", err)
 	}
 	printer.PrintSuccess(fmt.Sprintf("Deleted local tag %s", tagName))
 
 	if cmd.Bool("remote") {
-		if err := tc.gitOps.DeleteRemoteTag(tagName); err != nil {
+		if err := tc.gitOps.DeleteRemoteTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to delete remote tag: %w", err)
 		}
 		printer.PrintSuccess(fmt.Sprintf("Deleted remote tag %s", tagName))

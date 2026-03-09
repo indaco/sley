@@ -3,6 +3,7 @@ package bump
 import (
 	"testing"
 
+	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -12,21 +13,22 @@ import (
 
 // mockTagManager implements tagmanager.TagManager for testing
 type mockTagManager struct {
-	validateErr error
-	createErr   error
+	validateErr       error
+	createErr         error
+	autoCreateEnabled bool
 }
 
-func (m *mockTagManager) Name() string                                    { return "mock-tag-manager" }
-func (m *mockTagManager) Description() string                             { return "mock tag manager" }
-func (m *mockTagManager) Version() string                                 { return "1.0.0" }
-func (m *mockTagManager) ValidateTagAvailable(v semver.SemVersion) error  { return m.validateErr }
-func (m *mockTagManager) CreateTag(v semver.SemVersion, msg string) error { return m.createErr }
-func (m *mockTagManager) FormatTagName(v semver.SemVersion) string        { return "v" + v.String() }
-func (m *mockTagManager) TagExists(v semver.SemVersion) (bool, error)     { return false, nil }
-func (m *mockTagManager) PushTag(v semver.SemVersion) error               { return nil }
-func (m *mockTagManager) DeleteTag(v semver.SemVersion) error             { return nil }
-func (m *mockTagManager) GetLatestTag() (semver.SemVersion, error)        { return semver.SemVersion{}, nil }
-func (m *mockTagManager) ListTags() ([]string, error)                     { return nil, nil }
+func (m *mockTagManager) Name() string                                        { return "mock-tag-manager" }
+func (m *mockTagManager) Description() string                                 { return "mock tag manager" }
+func (m *mockTagManager) Version() string                                     { return "1.0.0" }
+func (m *mockTagManager) ValidateTagAvailable(v semver.SemVersion) error      { return m.validateErr }
+func (m *mockTagManager) CreateTag(v semver.SemVersion, msg string) error     { return m.createErr }
+func (m *mockTagManager) FormatTagName(v semver.SemVersion) string            { return "v" + v.String() }
+func (m *mockTagManager) TagExists(v semver.SemVersion) (bool, error)         { return false, nil }
+func (m *mockTagManager) GetLatestTag() (semver.SemVersion, error)            { return semver.SemVersion{}, nil }
+func (m *mockTagManager) IsAutoCreateEnabled() bool                           { return m.autoCreateEnabled }
+func (m *mockTagManager) GetConfig() *tagmanager.Config                       { return tagmanager.DefaultConfig() }
+func (m *mockTagManager) CommitChanges(_ semver.SemVersion, _ []string) error { return nil }
 
 // mockVersionValidator implements versionvalidator.VersionValidator for testing
 type mockVersionValidator struct {
@@ -40,6 +42,7 @@ func (m *mockVersionValidator) Validate(newV, prevV semver.SemVersion, bumpType 
 	return m.validateErr
 }
 func (m *mockVersionValidator) ValidateSet(v semver.SemVersion) error { return nil }
+func (m *mockVersionValidator) IsEnabled() bool                       { return true }
 
 // mockReleaseGate implements releasegate.ReleaseGate for testing
 type mockReleaseGate struct {
@@ -52,6 +55,7 @@ func (m *mockReleaseGate) Version() string     { return "1.0.0" }
 func (m *mockReleaseGate) ValidateRelease(newV, prevV semver.SemVersion, bumpType string) error {
 	return m.validateErr
 }
+func (m *mockReleaseGate) IsEnabled() bool { return true }
 
 /* ------------------------------------------------------------------------- */
 /* HELPER FUNCTION TESTS                                                     */

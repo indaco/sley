@@ -14,6 +14,7 @@ type ReleaseGate interface {
 	Description() string
 	Version() string
 	ValidateRelease(newVersion, previousVersion semver.SemVersion, bumpType string) error
+	IsEnabled() bool
 }
 
 // ReleaseGatePlugin implements the ReleaseGate interface.

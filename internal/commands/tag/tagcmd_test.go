@@ -18,76 +18,76 @@ import (
 
 // mockGitTagOps is a mock implementation of core.GitTagOperations for testing.
 type mockGitTagOps struct {
-	tagExists          func(name string) (bool, error)
-	listTags           func(pattern string) ([]string, error)
-	pushTag            func(name string) error
-	deleteTag          func(name string) error
-	deleteRemoteTag    func(name string) error
-	createAnnotatedTag func(name, message string) error
-	createLightweight  func(name string) error
-	createSignedTag    func(name, message, keyID string) error
-	getLatestTag       func() (string, error)
+	tagExists          func(ctx context.Context, name string) (bool, error)
+	listTags           func(ctx context.Context, pattern string) ([]string, error)
+	pushTag            func(ctx context.Context, name string) error
+	deleteTag          func(ctx context.Context, name string) error
+	deleteRemoteTag    func(ctx context.Context, name string) error
+	createAnnotatedTag func(ctx context.Context, name, message string) error
+	createLightweight  func(ctx context.Context, name string) error
+	createSignedTag    func(ctx context.Context, name, message, keyID string) error
+	getLatestTag       func(ctx context.Context) (string, error)
 }
 
-func (m *mockGitTagOps) TagExists(name string) (bool, error) {
+func (m *mockGitTagOps) TagExists(ctx context.Context, name string) (bool, error) {
 	if m.tagExists != nil {
-		return m.tagExists(name)
+		return m.tagExists(ctx, name)
 	}
 	return false, nil
 }
 
-func (m *mockGitTagOps) ListTags(pattern string) ([]string, error) {
+func (m *mockGitTagOps) ListTags(ctx context.Context, pattern string) ([]string, error) {
 	if m.listTags != nil {
-		return m.listTags(pattern)
+		return m.listTags(ctx, pattern)
 	}
 	return []string{}, nil
 }
 
-func (m *mockGitTagOps) PushTag(name string) error {
+func (m *mockGitTagOps) PushTag(ctx context.Context, name string) error {
 	if m.pushTag != nil {
-		return m.pushTag(name)
+		return m.pushTag(ctx, name)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) DeleteTag(name string) error {
+func (m *mockGitTagOps) DeleteTag(ctx context.Context, name string) error {
 	if m.deleteTag != nil {
-		return m.deleteTag(name)
+		return m.deleteTag(ctx, name)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) DeleteRemoteTag(name string) error {
+func (m *mockGitTagOps) DeleteRemoteTag(ctx context.Context, name string) error {
 	if m.deleteRemoteTag != nil {
-		return m.deleteRemoteTag(name)
+		return m.deleteRemoteTag(ctx, name)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) CreateAnnotatedTag(name, message string) error {
+func (m *mockGitTagOps) CreateAnnotatedTag(ctx context.Context, name, message string) error {
 	if m.createAnnotatedTag != nil {
-		return m.createAnnotatedTag(name, message)
+		return m.createAnnotatedTag(ctx, name, message)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) CreateLightweightTag(name string) error {
+func (m *mockGitTagOps) CreateLightweightTag(ctx context.Context, name string) error {
 	if m.createLightweight != nil {
-		return m.createLightweight(name)
+		return m.createLightweight(ctx, name)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) CreateSignedTag(name, message, keyID string) error {
+func (m *mockGitTagOps) CreateSignedTag(ctx context.Context, name, message, keyID string) error {
 	if m.createSignedTag != nil {
-		return m.createSignedTag(name, message, keyID)
+		return m.createSignedTag(ctx, name, message, keyID)
 	}
 	return nil
 }
 
-func (m *mockGitTagOps) GetLatestTag() (string, error) {
+func (m *mockGitTagOps) GetLatestTag(ctx context.Context) (string, error) {
 	if m.getLatestTag != nil {
-		return m.getLatestTag()
+		return m.getLatestTag(ctx)
 	}
 	return "", nil
 }
@@ -396,7 +396,7 @@ func TestRunCreateCmd_TagAlreadyExists(t *testing.T) {
 	}
 
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
 	}
@@ -432,10 +432,10 @@ func TestRunCreateCmd_Success(t *testing.T) {
 
 	var createdTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			createdTag = name
 			return nil
 		},
@@ -465,7 +465,7 @@ func TestRunCreateCmd_Success(t *testing.T) {
 
 func TestRunListCmd(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		listTags: func(pattern string) ([]string, error) {
+		listTags: func(ctx context.Context, pattern string) ([]string, error) {
 			return []string{"v1.0.0", "v2.0.0", "v1.5.0"}, nil
 		},
 	}
@@ -494,10 +494,10 @@ func TestRunListCmd(t *testing.T) {
 func TestRunPushCmd_TagExists(t *testing.T) {
 	var pushedTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			pushedTag = name
 			return nil
 		},
@@ -527,7 +527,7 @@ func TestRunPushCmd_TagExists(t *testing.T) {
 
 func TestRunPushCmd_TagNotExists(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
 	}
@@ -554,10 +554,10 @@ func TestRunPushCmd_TagNotExists(t *testing.T) {
 func TestRunDeleteCmd_TagExists(t *testing.T) {
 	var deletedTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		deleteTag: func(name string) error {
+		deleteTag: func(ctx context.Context, name string) error {
 			deletedTag = name
 			return nil
 		},
@@ -590,7 +590,7 @@ func TestRunDeleteCmd_TagExists(t *testing.T) {
 
 func TestRunDeleteCmd_TagNotExists(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
 	}
@@ -620,14 +620,14 @@ func TestRunDeleteCmd_TagNotExists(t *testing.T) {
 func TestRunDeleteCmd_WithRemote(t *testing.T) {
 	var deletedLocal, deletedRemote string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		deleteTag: func(name string) error {
+		deleteTag: func(ctx context.Context, name string) error {
 			deletedLocal = name
 			return nil
 		},
-		deleteRemoteTag: func(name string) error {
+		deleteRemoteTag: func(ctx context.Context, name string) error {
 			deletedRemote = name
 			return nil
 		},
@@ -841,7 +841,7 @@ func TestRunCommand(t *testing.T) {
 func TestCreateTag_Signed(t *testing.T) {
 	var signedTag, signedMessage, signedKeyID string
 	mockOps := &mockGitTagOps{
-		createSignedTag: func(name, message, keyID string) error {
+		createSignedTag: func(ctx context.Context, name, message, keyID string) error {
 			signedTag = name
 			signedMessage = message
 			signedKeyID = keyID
@@ -855,7 +855,7 @@ func TestCreateTag_Signed(t *testing.T) {
 		SigningKey: "ABC123",
 	}
 
-	err := tc.createTag("v1.0.0", "Release 1.0.0", cfg)
+	err := tc.createTag(context.Background(), "v1.0.0", "Release 1.0.0", cfg)
 	if err != nil {
 		t.Errorf("createTag() unexpected error: %v", err)
 	}
@@ -873,7 +873,7 @@ func TestCreateTag_Signed(t *testing.T) {
 func TestCreateTag_Lightweight(t *testing.T) {
 	var lightweightTag string
 	mockOps := &mockGitTagOps{
-		createLightweight: func(name string) error {
+		createLightweight: func(ctx context.Context, name string) error {
 			lightweightTag = name
 			return nil
 		},
@@ -885,7 +885,7 @@ func TestCreateTag_Lightweight(t *testing.T) {
 		Annotate: false,
 	}
 
-	err := tc.createTag("v1.0.0", "ignored message", cfg)
+	err := tc.createTag(context.Background(), "v1.0.0", "ignored message", cfg)
 	if err != nil {
 		t.Errorf("createTag() unexpected error: %v", err)
 	}
@@ -896,7 +896,7 @@ func TestCreateTag_Lightweight(t *testing.T) {
 
 func TestCreateTag_SignedError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		createSignedTag: func(name, message, keyID string) error {
+		createSignedTag: func(ctx context.Context, name, message, keyID string) error {
 			return fmt.Errorf("gpg signing failed")
 		},
 	}
@@ -904,7 +904,7 @@ func TestCreateTag_SignedError(t *testing.T) {
 
 	cfg := &tagmanager.Config{Sign: true}
 
-	err := tc.createTag("v1.0.0", "Release", cfg)
+	err := tc.createTag(context.Background(), "v1.0.0", "Release", cfg)
 	if err == nil {
 		t.Error("createTag() expected error for signed tag failure")
 	}
@@ -912,7 +912,7 @@ func TestCreateTag_SignedError(t *testing.T) {
 
 func TestCreateTag_AnnotatedError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			return fmt.Errorf("annotated tag failed")
 		},
 	}
@@ -920,7 +920,7 @@ func TestCreateTag_AnnotatedError(t *testing.T) {
 
 	cfg := &tagmanager.Config{Sign: false, Annotate: true}
 
-	err := tc.createTag("v1.0.0", "Release", cfg)
+	err := tc.createTag(context.Background(), "v1.0.0", "Release", cfg)
 	if err == nil {
 		t.Error("createTag() expected error for annotated tag failure")
 	}
@@ -928,7 +928,7 @@ func TestCreateTag_AnnotatedError(t *testing.T) {
 
 func TestCreateTag_LightweightError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		createLightweight: func(name string) error {
+		createLightweight: func(ctx context.Context, name string) error {
 			return fmt.Errorf("lightweight tag failed")
 		},
 	}
@@ -936,7 +936,7 @@ func TestCreateTag_LightweightError(t *testing.T) {
 
 	cfg := &tagmanager.Config{Sign: false, Annotate: false}
 
-	err := tc.createTag("v1.0.0", "ignored", cfg)
+	err := tc.createTag(context.Background(), "v1.0.0", "ignored", cfg)
 	if err == nil {
 		t.Error("createTag() expected error for lightweight tag failure")
 	}
@@ -944,7 +944,7 @@ func TestCreateTag_LightweightError(t *testing.T) {
 
 func TestRunListCmd_Empty(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		listTags: func(pattern string) ([]string, error) {
+		listTags: func(ctx context.Context, pattern string) ([]string, error) {
 			return []string{}, nil
 		},
 	}
@@ -966,7 +966,7 @@ func TestRunListCmd_Empty(t *testing.T) {
 
 func TestRunListCmd_Error(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		listTags: func(pattern string) ([]string, error) {
+		listTags: func(ctx context.Context, pattern string) ([]string, error) {
 			return nil, fmt.Errorf("git error")
 		},
 	}
@@ -986,7 +986,7 @@ func TestRunListCmd_Error(t *testing.T) {
 
 func TestRunListCmd_WithLimit(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		listTags: func(pattern string) ([]string, error) {
+		listTags: func(ctx context.Context, pattern string) ([]string, error) {
 			return []string{"v3.0.0", "v2.0.0", "v1.0.0"}, nil
 		},
 	}
@@ -1022,10 +1022,10 @@ func TestRunPushCmd_NoArg(t *testing.T) {
 
 	var pushedTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			pushedTag = name
 			return nil
 		},
@@ -1087,7 +1087,7 @@ func TestRunPushCmd_VersionReadError(t *testing.T) {
 
 func TestRunPushCmd_TagExistsError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, fmt.Errorf("git error")
 		},
 	}
@@ -1113,10 +1113,10 @@ func TestRunPushCmd_TagExistsError(t *testing.T) {
 
 func TestRunPushCmd_PushError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			return fmt.Errorf("push failed")
 		},
 	}
@@ -1149,14 +1149,14 @@ func TestRunCreateCmd_WithPush(t *testing.T) {
 
 	var createdTag, pushedTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			createdTag = name
 			return nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			pushedTag = name
 			return nil
 		},
@@ -1202,13 +1202,13 @@ func TestRunCreateCmd_PushError(t *testing.T) {
 	}
 
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			return nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			return fmt.Errorf("push failed")
 		},
 	}
@@ -1247,7 +1247,7 @@ func TestRunCreateCmd_TagExistsError(t *testing.T) {
 	}
 
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, fmt.Errorf("git error")
 		},
 	}
@@ -1277,10 +1277,10 @@ func TestRunCreateCmd_CreateTagError(t *testing.T) {
 	}
 
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			return fmt.Errorf("create tag failed")
 		},
 	}
@@ -1336,7 +1336,7 @@ func TestRunDeleteCmd_MissingArg(t *testing.T) {
 
 func TestRunDeleteCmd_TagExistsError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, fmt.Errorf("git error")
 		},
 	}
@@ -1365,10 +1365,10 @@ func TestRunDeleteCmd_TagExistsError(t *testing.T) {
 
 func TestRunDeleteCmd_DeleteLocalError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		deleteTag: func(name string) error {
+		deleteTag: func(ctx context.Context, name string) error {
 			return fmt.Errorf("delete failed")
 		},
 	}
@@ -1397,13 +1397,13 @@ func TestRunDeleteCmd_DeleteLocalError(t *testing.T) {
 
 func TestRunDeleteCmd_DeleteRemoteError(t *testing.T) {
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		deleteTag: func(name string) error {
+		deleteTag: func(ctx context.Context, name string) error {
 			return nil
 		},
-		deleteRemoteTag: func(name string) error {
+		deleteRemoteTag: func(ctx context.Context, name string) error {
 			return fmt.Errorf("remote delete failed")
 		},
 	}
@@ -1631,10 +1631,10 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 
 	var createdTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		createAnnotatedTag: func(name, message string) error {
+		createAnnotatedTag: func(ctx context.Context, name, message string) error {
 			createdTag = name
 			return nil
 		},
@@ -1718,10 +1718,10 @@ func TestCLI_TagPush_MultiModule_NoArg(t *testing.T) {
 
 	var pushedTag string
 	mockOps := &mockGitTagOps{
-		tagExists: func(name string) (bool, error) {
+		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return true, nil
 		},
-		pushTag: func(name string) error {
+		pushTag: func(ctx context.Context, name string) error {
 			pushedTag = name
 			return nil
 		},

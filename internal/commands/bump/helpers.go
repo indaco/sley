@@ -11,10 +11,6 @@ import (
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/auditlog"
 	"github.com/indaco/sley/internal/plugins/changeloggenerator"
-	"github.com/indaco/sley/internal/plugins/dependencycheck"
-	"github.com/indaco/sley/internal/plugins/releasegate"
-	"github.com/indaco/sley/internal/plugins/tagmanager"
-	"github.com/indaco/sley/internal/plugins/versionvalidator"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 )
@@ -90,11 +86,8 @@ func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVe
 		return nil
 	}
 
-	// Check if the plugin is enabled and auto-create is on
-	if plugin, ok := tm.(*tagmanager.TagManagerPlugin); ok {
-		if !plugin.IsAutoCreateEnabled() {
-			return nil
-		}
+	if !tm.IsAutoCreateEnabled() {
+		return nil
 	}
 
 	return tm.ValidateTagAvailable(version)
@@ -114,9 +107,7 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 		return nil
 	}
 
-	// Check if the plugin is enabled and auto-create is on
-	plugin, ok := tm.(*tagmanager.TagManagerPlugin)
-	if !ok || !plugin.IsAutoCreateEnabled() {
+	if !tm.IsAutoCreateEnabled() {
 		return nil
 	}
 
@@ -125,7 +116,7 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 	if bumpedPath != "" {
 		extraFiles = []string{bumpedPath}
 	}
-	if err := plugin.CommitChanges(version, extraFiles); err != nil {
+	if err := tm.CommitChanges(version, extraFiles); err != nil {
 		return fmt.Errorf("failed to commit release changes: %w", err)
 	}
 	printer.PrintSuccess(fmt.Sprintf("Committed release changes for %s", version.String()))
@@ -139,7 +130,7 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 	tagName := tm.FormatTagName(version)
 	printer.PrintSuccess(fmt.Sprintf("Created tag: %s", tagName))
 
-	if plugin.GetConfig().Push {
+	if tm.GetConfig().Push {
 		printer.PrintSuccess(fmt.Sprintf("Pushed tag: %s", tagName))
 	}
 
@@ -154,11 +145,8 @@ func validateVersionPolicy(registry *plugins.PluginRegistry, newVersion, previou
 		return nil
 	}
 
-	// Check if the plugin is enabled
-	if plugin, ok := vv.(*versionvalidator.VersionValidatorPlugin); ok {
-		if !plugin.IsEnabled() {
-			return nil
-		}
+	if !vv.IsEnabled() {
+		return nil
 	}
 
 	return vv.Validate(newVersion, previousVersion, bumpType)
@@ -172,11 +160,8 @@ func validateReleaseGate(registry *plugins.PluginRegistry, newVersion, previousV
 		return nil
 	}
 
-	// Check if the plugin is enabled
-	if plugin, ok := rg.(*releasegate.ReleaseGatePlugin); ok {
-		if !plugin.IsEnabled() {
-			return nil
-		}
+	if !rg.IsEnabled() {
+		return nil
 	}
 
 	return rg.ValidateRelease(newVersion, previousVersion, bumpType)
@@ -190,8 +175,7 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 		return nil
 	}
 
-	plugin, ok := dc.(*dependencycheck.DependencyCheckerPlugin)
-	if !ok || !plugin.IsEnabled() {
+	if !dc.IsEnabled() {
 		return nil
 	}
 
@@ -202,7 +186,7 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 
 	if len(inconsistencies) > 0 {
 		// If auto-sync is enabled, skip the error - inconsistencies will be fixed after the bump
-		if plugin.GetConfig().AutoSync {
+		if dc.GetConfig().AutoSync {
 			return nil
 		}
 
@@ -226,8 +210,7 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 		return nil
 	}
 
-	plugin, ok := cg.(*changeloggenerator.ChangelogGeneratorPlugin)
-	if !ok || !plugin.IsEnabled() {
+	if !cg.IsEnabled() {
 		return nil
 	}
 
@@ -245,15 +228,15 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 		return fmt.Errorf("failed to generate changelog: %w", err)
 	}
 
-	mode := plugin.GetConfig().Mode
-	switch mode {
+	cfg := cg.GetConfig()
+	switch cfg.Mode {
 	case "versioned":
-		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md", plugin.GetConfig().ChangesDir, versionStr))
+		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md", cfg.ChangesDir, versionStr))
 	case "unified":
-		printer.PrintSuccess(fmt.Sprintf("Updated changelog: %s", plugin.GetConfig().ChangelogPath))
+		printer.PrintSuccess(fmt.Sprintf("Updated changelog: %s", cfg.ChangelogPath))
 	case "both":
 		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md and %s",
-			plugin.GetConfig().ChangesDir, versionStr, plugin.GetConfig().ChangelogPath))
+			cfg.ChangesDir, versionStr, cfg.ChangelogPath))
 	}
 
 	return nil
@@ -267,8 +250,7 @@ func recordAuditLogEntry(registry *plugins.PluginRegistry, version, previousVers
 		return nil
 	}
 
-	plugin, ok := al.(*auditlog.AuditLogPlugin)
-	if !ok || !plugin.IsEnabled() {
+	if !al.IsEnabled() {
 		return nil
 	}
 

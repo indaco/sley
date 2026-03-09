@@ -17,6 +17,7 @@ type VersionValidator interface {
 	Version() string
 	Validate(newVersion, previousVersion semver.SemVersion, bumpType string) error
 	ValidateSet(version semver.SemVersion) error
+	IsEnabled() bool
 }
 
 // RuleType defines the type of validation rule.
