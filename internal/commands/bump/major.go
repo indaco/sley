@@ -34,8 +34,7 @@ func runBumpMajor(ctx context.Context, cmd *cli.Command, cfg *config.Config, reg
 		return err
 	}
 
-	params := extractBumpParams(cmd, "major")
-	params.versionCalc = makeMajorCalculator(params.pre, params.meta, params.preserveMeta)
+	params := extractBumpParams(cmd, "major", operations.BumpMajor)
 
-	return executeStandardBump(ctx, cmd, cfg, registry, params, operations.BumpMajor)
+	return executeStandardBump(ctx, cmd, cfg, registry, params)
 }

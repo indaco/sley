@@ -103,8 +103,8 @@ func TestCLI_BumpReleaseCommand_SaveVersionFails(t *testing.T) {
 		t.Fatal("expected error due to save failure, got nil")
 	}
 
-	if !strings.Contains(err.Error(), "failed to save version") {
-		t.Errorf("expected error message to contain 'failed to save version', got: %v", err)
+	if !strings.Contains(err.Error(), "failed to write version") {
+		t.Errorf("expected error message to contain 'failed to write version', got: %v", err)
 	}
 }
 

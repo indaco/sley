@@ -2,19 +2,17 @@ package bump
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/commands/depsync"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/urfave/cli/v3"
 )
-
-// versionCalculator is a function that calculates the new version from the previous version.
-// It receives the previous version and returns the new version.
-type versionCalculator func(prev semver.SemVersion) semver.SemVersion
 
 // bumpParams holds all parameters needed for a bump operation.
 type bumpParams struct {
@@ -23,11 +21,12 @@ type bumpParams struct {
 	preserveMeta bool
 	skipHooks    bool
 	bumpType     string
-	versionCalc  versionCalculator
+	opBumpType   operations.BumpType
 }
 
 // executeSingleModuleBump is the unified execution pipeline for single-module bump operations.
-// It handles all common logic: validation, hooks, update, and post-actions.
+// It delegates version calculation and writing to operations.BumpOperation,
+// the same implementation used by multi-module bumps, ensuring consistent behavior.
 func executeSingleModuleBump(
 	ctx context.Context,
 	cmd *cli.Command,
@@ -41,57 +40,55 @@ func executeSingleModuleBump(
 		return err
 	}
 
-	// Read current version
-	previousVersion, err := semver.ReadVersion(execCtx.Path)
+	// Create BumpOperation - the same path used by multi-module bumps
+	fs := core.NewOSFileSystem()
+	bumper := newVersionBumper()
+	op := operations.NewBumpOperation(
+		fs, bumper, params.opBumpType,
+		params.pre, params.meta, params.preserveMeta,
+	)
+
+	// Preview: calculate new version without writing
+	result, err := op.Preview(ctx, execCtx.Path)
 	if err != nil {
 		return err
 	}
 
-	// Calculate new version using the provided calculator
-	newVersion := params.versionCalc(previousVersion)
-
-	// Apply pre-release and build metadata
-	newVersion.Build = calculateNewBuild(params.meta, params.preserveMeta, previousVersion.Build)
-
 	// Run pre-bump extension hooks first - extensions may set up state that plugins need to validate
-	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, newVersion.String(), previousVersion.String(), params.bumpType, params.skipHooks); err != nil {
+	if err := runPreBumpExtensionHooks(ctx, cfg, execCtx.Path, result.NewVersion.String(), result.PreviousVersion.String(), params.bumpType, params.skipHooks); err != nil {
 		return err
 	}
 
-	// Re-read the current version in case an extension modified the .version file
-	// (e.g., an extension that fetches the latest release from GitHub and updates .version)
+	// Re-preview in case an extension modified the .version file
 	if !params.skipHooks {
-		previousVersion, err = semver.ReadVersion(execCtx.Path)
+		result, err = op.Preview(ctx, execCtx.Path)
 		if err != nil {
 			return err
 		}
-		// Recalculate the new version based on the potentially updated previous version
-		newVersion = params.versionCalc(previousVersion)
-		newVersion.Build = calculateNewBuild(params.meta, params.preserveMeta, previousVersion.Build)
 	}
 
 	// Execute all pre-bump validations after extensions have run
-	if err := executePreBumpValidations(registry, newVersion, previousVersion, params.bumpType); err != nil {
+	if err := executePreBumpValidations(registry, result.NewVersion, result.PreviousVersion, params.bumpType); err != nil {
 		return err
 	}
 
-	// Update the version file
-	if err := semver.UpdateVersion(execCtx.Path, params.bumpType, params.pre, params.meta, params.preserveMeta); err != nil {
-		return err
+	// Write the new version using BumpOperation
+	if err := op.Write(ctx, execCtx.Path, result.NewVersion); err != nil {
+		return fmt.Errorf("failed to write version: %w", err)
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, newVersion, previousVersion, params.bumpType, execCtx.Path); err != nil {
+	if err := executePostBumpActions(registry, result.NewVersion, result.PreviousVersion, params.bumpType, execCtx.Path); err != nil {
 		return err
 	}
 
 	// Run post-bump extension hooks
-	if err := runPostBumpExtensionHooks(ctx, cfg, execCtx.Path, previousVersion.String(), params.bumpType, params.skipHooks); err != nil {
+	if err := runPostBumpExtensionHooks(ctx, cfg, execCtx.Path, result.PreviousVersion.String(), params.bumpType, params.skipHooks); err != nil {
 		return err
 	}
 
 	// Commit (if auto-commit enabled) and create tag after successful bump
-	return commitAndTagAfterBump(registry, newVersion, params.bumpType, execCtx.Path)
+	return commitAndTagAfterBump(registry, result.NewVersion, params.bumpType, execCtx.Path)
 }
 
 // executePreBumpValidations runs all validation checks before performing a bump.
@@ -135,50 +132,15 @@ func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previo
 	return recordAuditLogEntry(registry, newVersion, previousVersion, bumpType)
 }
 
-// makePatchCalculator returns a version calculator for patch bumps.
-func makePatchCalculator(pre, meta string, preserveMeta bool) versionCalculator {
-	return func(prev semver.SemVersion) semver.SemVersion {
-		next := prev
-		next.Patch++
-		next.PreRelease = pre
-		next.Build = calculateNewBuild(meta, preserveMeta, prev.Build)
-		return next
-	}
-}
-
-// makeMinorCalculator returns a version calculator for minor bumps.
-func makeMinorCalculator(pre, meta string, preserveMeta bool) versionCalculator {
-	return func(prev semver.SemVersion) semver.SemVersion {
-		next := prev
-		next.Minor++
-		next.Patch = 0
-		next.PreRelease = pre
-		next.Build = calculateNewBuild(meta, preserveMeta, prev.Build)
-		return next
-	}
-}
-
-// makeMajorCalculator returns a version calculator for major bumps.
-func makeMajorCalculator(pre, meta string, preserveMeta bool) versionCalculator {
-	return func(prev semver.SemVersion) semver.SemVersion {
-		next := prev
-		next.Major++
-		next.Minor = 0
-		next.Patch = 0
-		next.PreRelease = pre
-		next.Build = calculateNewBuild(meta, preserveMeta, prev.Build)
-		return next
-	}
-}
-
 // extractBumpParams extracts common bump parameters from CLI command.
-func extractBumpParams(cmd *cli.Command, bumpType string) bumpParams {
+func extractBumpParams(cmd *cli.Command, bumpType string, opBumpType operations.BumpType) bumpParams {
 	return bumpParams{
 		pre:          cmd.String("pre"),
 		meta:         cmd.String("meta"),
 		preserveMeta: cmd.Bool("preserve-meta"),
 		skipHooks:    cmd.Bool("skip-hooks"),
 		bumpType:     bumpType,
+		opBumpType:   opBumpType,
 	}
 }
 
@@ -190,7 +152,6 @@ func executeStandardBump(
 	cfg *config.Config,
 	registry *plugins.PluginRegistry,
 	params bumpParams,
-	multiModuleOp operations.BumpType,
 ) error {
 	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg)
 	if err != nil {
@@ -199,7 +160,7 @@ func executeStandardBump(
 
 	if !execCtx.IsSingleModule() {
 		// Multi-module mode delegates to runMultiModuleBump
-		return runMultiModuleBump(ctx, cmd, execCtx, registry, multiModuleOp, params.pre, params.meta, params.preserveMeta)
+		return runMultiModuleBump(ctx, cmd, execCtx, registry, params.opBumpType, params.pre, params.meta, params.preserveMeta)
 	}
 
 	// Single-module mode uses the unified executor

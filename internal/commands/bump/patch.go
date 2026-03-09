@@ -34,8 +34,7 @@ func runBumpPatch(ctx context.Context, cmd *cli.Command, cfg *config.Config, reg
 		return err
 	}
 
-	params := extractBumpParams(cmd, "patch")
-	params.versionCalc = makePatchCalculator(params.pre, params.meta, params.preserveMeta)
+	params := extractBumpParams(cmd, "patch", operations.BumpPatch)
 
-	return executeStandardBump(ctx, cmd, cfg, registry, params, operations.BumpPatch)
+	return executeStandardBump(ctx, cmd, cfg, registry, params)
 }
