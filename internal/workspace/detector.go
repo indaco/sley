@@ -173,7 +173,7 @@ func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, roo
 		return nil, nil
 	}
 
-	var modules []*Module
+	modules := make([]*Module, 0, len(entries)/2)
 
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
@@ -287,7 +287,7 @@ func (d *Detector) loadExplicitModules(ctx context.Context, root string) ([]*Mod
 		return nil, nil
 	}
 
-	var modules []*Module
+	modules := make([]*Module, 0, len(d.cfg.Workspace.Modules))
 	for _, moduleConfig := range d.cfg.Workspace.Modules {
 		// Check for context cancellation during iteration
 		if err := ctx.Err(); err != nil {

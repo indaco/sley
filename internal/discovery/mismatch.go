@@ -94,7 +94,7 @@ func GetUniqueVersions(result *Result) []string {
 		return nil
 	}
 
-	versionSet := make(map[string]struct{})
+	versionSet := make(map[string]struct{}, len(result.Modules)+len(result.Manifests))
 
 	// Collect versions from modules
 	for _, m := range result.Modules {
@@ -150,7 +150,7 @@ func GetVersionSummary(result *Result) []VersionSummary {
 		return nil
 	}
 
-	versionMap := make(map[string][]string)
+	versionMap := make(map[string][]string, len(result.Modules)+len(result.Manifests))
 
 	// Collect versions from modules
 	for _, m := range result.Modules {
