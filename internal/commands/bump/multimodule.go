@@ -26,7 +26,8 @@ func runMultiModuleBump(
 	preserveMetadata bool,
 ) error {
 	fs := core.NewOSFileSystem()
-	operation := operations.NewBumpOperation(fs, bumpType, preRelease, metadata, preserveMetadata)
+	bumper := newVersionBumper()
+	operation := operations.NewBumpOperation(fs, bumper, bumpType, preRelease, metadata, preserveMetadata)
 
 	// Create executor with options from flags
 	parallel := cmd.Bool("parallel")

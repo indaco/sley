@@ -248,16 +248,36 @@ func TestCLI_BumpAutoCmd_PromotePreReleaseWithPreserveMeta(t *testing.T) {
 	}
 }
 
+// mockBumper is a VersionBumper for testing that returns configurable results.
+type mockBumper struct {
+	bumpNextErr    error
+	bumpByLabelErr error
+}
+
+func (m mockBumper) BumpNext(v semver.SemVersion) (semver.SemVersion, error) {
+	if m.bumpNextErr != nil {
+		return semver.SemVersion{}, m.bumpNextErr
+	}
+	return semver.BumpNext(v)
+}
+
+func (m mockBumper) BumpByLabel(v semver.SemVersion, label string) (semver.SemVersion, error) {
+	if m.bumpByLabelErr != nil {
+		return semver.SemVersion{}, m.bumpByLabelErr
+	}
+	return semver.BumpByLabel(v, label)
+}
+
 func TestCLI_BumpAutoCmd_InferredBumpFails(t *testing.T) {
 	tmp := t.TempDir()
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3")
 
-	originalBumpByLabel := semver.BumpByLabelFunc
+	originalBumperFactory := newVersionBumper
 	originalInferFunc := tryInferBumpTypeFromCommitParserPluginFn
 
-	// Force BumpByLabelFunc to fail
-	semver.BumpByLabelFunc = func(v semver.SemVersion, label string) (semver.SemVersion, error) {
-		return semver.SemVersion{}, fmt.Errorf("forced inferred bump failure")
+	// Force BumpByLabel to fail via mock bumper
+	newVersionBumper = func() semver.VersionBumper {
+		return mockBumper{bumpByLabelErr: fmt.Errorf("forced inferred bump failure")}
 	}
 
 	// Force inference to return something
@@ -266,7 +286,7 @@ func TestCLI_BumpAutoCmd_InferredBumpFails(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		semver.BumpByLabelFunc = originalBumpByLabel
+		newVersionBumper = originalBumperFactory
 		tryInferBumpTypeFromCommitParserPluginFn = originalInferFunc
 	})
 
@@ -435,12 +455,12 @@ func TestCLI_BumpAutoCmd_BumpNextFails(t *testing.T) {
 	tmp := t.TempDir()
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3")
 
-	original := semver.BumpNextFunc
-	semver.BumpNextFunc = func(v semver.SemVersion) (semver.SemVersion, error) {
-		return semver.SemVersion{}, fmt.Errorf("forced BumpNext failure")
+	originalBumperFactory := newVersionBumper
+	newVersionBumper = func() semver.VersionBumper {
+		return mockBumper{bumpNextErr: fmt.Errorf("forced BumpNext failure")}
 	}
 	t.Cleanup(func() {
-		semver.BumpNextFunc = original
+		newVersionBumper = originalBumperFactory
 	})
 
 	// Prepare and run the CLI command
@@ -524,12 +544,12 @@ func TestCLI_BumpAutoCmd_BumpByLabelFails(t *testing.T) {
 	tmp := t.TempDir()
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3")
 
-	original := semver.BumpByLabelFunc
-	semver.BumpByLabelFunc = func(v semver.SemVersion, label string) (semver.SemVersion, error) {
-		return semver.SemVersion{}, fmt.Errorf("boom")
+	originalBumperFactory := newVersionBumper
+	newVersionBumper = func() semver.VersionBumper {
+		return mockBumper{bumpByLabelErr: fmt.Errorf("boom")}
 	}
 	t.Cleanup(func() {
-		semver.BumpByLabelFunc = original
+		newVersionBumper = originalBumperFactory
 	})
 
 	// Prepare and run the CLI command
@@ -652,7 +672,8 @@ func TestGetNextVersion(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			registry := plugins.NewPluginRegistry()
-			result, err := getNextVersion(registry, tt.current, tt.label, tt.disableInfer, "", "", false)
+			bumper := semver.NewDefaultBumper()
+			result, err := getNextVersion(bumper, registry, tt.current, tt.label, tt.disableInfer, "", "", false)
 			if tt.expectError {
 				if err == nil {
 					t.Error("expected error, got nil")

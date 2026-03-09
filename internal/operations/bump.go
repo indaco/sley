@@ -25,6 +25,7 @@ const (
 // BumpOperation performs a version bump on a module.
 type BumpOperation struct {
 	fs               core.FileSystem
+	bumper           semver.VersionBumper
 	bumpType         BumpType
 	preRelease       string
 	metadata         string
@@ -32,9 +33,10 @@ type BumpOperation struct {
 }
 
 // NewBumpOperation creates a new bump operation.
-func NewBumpOperation(fs core.FileSystem, bumpType BumpType, preRelease, metadata string, preserveMetadata bool) *BumpOperation {
+func NewBumpOperation(fs core.FileSystem, bumper semver.VersionBumper, bumpType BumpType, preRelease, metadata string, preserveMetadata bool) *BumpOperation {
 	return &BumpOperation{
 		fs:               fs,
+		bumper:           bumper,
 		bumpType:         bumpType,
 		preRelease:       preRelease,
 		metadata:         metadata,
@@ -135,7 +137,7 @@ func (op *BumpOperation) bumpRelease(current semver.SemVersion) semver.SemVersio
 }
 
 func (op *BumpOperation) bumpAuto(current semver.SemVersion) (semver.SemVersion, error) {
-	newVer, err := semver.BumpNextFunc(current)
+	newVer, err := op.bumper.BumpNext(current)
 	if err != nil {
 		return semver.SemVersion{}, fmt.Errorf("auto bump failed: %w", err)
 	}
