@@ -36,6 +36,56 @@ entry: actions.json
 	if m.Name != "test" {
 		t.Errorf("expected name 'test', got %q", m.Name)
 	}
+	// Omitted schema_version should default to 1
+	if m.SchemaVersion != DefaultSchemaVersion {
+		t.Errorf("expected SchemaVersion %d, got %d", DefaultSchemaVersion, m.SchemaVersion)
+	}
+}
+
+func TestLoadExtensionManifest_WithSchemaVersion(t *testing.T) {
+	dir := t.TempDir()
+	content := `
+schema_version: 1
+name: test
+version: 0.1.0
+description: test plugin
+author: me
+repository: https://example.com/repo
+entry: actions.json
+`
+	writeExtensionYAML(t, dir, content)
+
+	m, err := LoadExtensionManifestFn(dir)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if m.SchemaVersion != 1 {
+		t.Errorf("expected SchemaVersion 1, got %d", m.SchemaVersion)
+	}
+}
+
+func TestLoadExtensionManifest_UnsupportedSchemaVersion(t *testing.T) {
+	dir := t.TempDir()
+	content := `
+schema_version: 99
+name: test
+version: 0.1.0
+description: test plugin
+author: me
+repository: https://example.com/repo
+entry: actions.json
+`
+	writeExtensionYAML(t, dir, content)
+
+	_, err := LoadExtensionManifestFn(dir)
+	if err == nil {
+		t.Fatal("expected error for unsupported manifest version, got nil")
+	}
+
+	var vErr *SchemaVersionError
+	if !errors.As(err, &vErr) {
+		t.Errorf("expected SchemaVersionError, got %T: %v", err, err)
+	}
 }
 
 func TestLoadExtensionManifest_MissingFile(t *testing.T) {
