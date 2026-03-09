@@ -349,17 +349,25 @@ type MockGitTagOperations struct {
 	// Error responses for each operation
 	CreateAnnotatedTagErr   error
 	CreateLightweightTagErr error
+	CreateSignedTagErr      error
 	TagExistsErr            error
 	GetLatestTagErr         error
 	PushTagErr              error
+	ListTagsErr             error
+	DeleteTagErr            error
+	DeleteRemoteTagErr      error
 
 	// Response values
 	TagExistsResult  bool
 	GetLatestTagName string
+	ListTagsResult   []string
 
 	// Call tracking
-	CreatedTags []string
-	PushedTags  []string
+	CreatedTags    []string
+	PushedTags     []string
+	DeletedTags    []string
+	DeletedRemote  []string
+	ListTagsCalled bool
 }
 
 // NewMockGitTagOperations creates a new MockGitTagOperations.
@@ -415,6 +423,46 @@ func (m *MockGitTagOperations) PushTag(name string) error {
 		return m.PushTagErr
 	}
 	m.PushedTags = append(m.PushedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) CreateSignedTag(name, message, keyID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.CreateSignedTagErr != nil {
+		return m.CreateSignedTagErr
+	}
+	m.CreatedTags = append(m.CreatedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) ListTags(pattern string) ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.ListTagsCalled = true
+	if m.ListTagsErr != nil {
+		return nil, m.ListTagsErr
+	}
+	return m.ListTagsResult, nil
+}
+
+func (m *MockGitTagOperations) DeleteTag(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.DeleteTagErr != nil {
+		return m.DeleteTagErr
+	}
+	m.DeletedTags = append(m.DeletedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) DeleteRemoteTag(name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.DeleteRemoteTagErr != nil {
+		return m.DeleteRemoteTagErr
+	}
+	m.DeletedRemote = append(m.DeletedRemote, name)
 	return nil
 }
 
