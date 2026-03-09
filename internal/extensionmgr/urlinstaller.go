@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/indaco/sley/internal/core"
@@ -194,7 +195,11 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 	// Navigate to subdirectory if specified
 	extensionPath := tempDir
 	if repoURL.Subdir != "" {
-		extensionPath = fmt.Sprintf("%s/%s", tempDir, repoURL.Subdir)
+		// Reject subdirectory paths with traversal components
+		if strings.Contains(filepath.Clean(repoURL.Subdir), "..") {
+			return fmt.Errorf("invalid subdirectory %q: path traversal not allowed", repoURL.Subdir)
+		}
+		extensionPath = filepath.Join(tempDir, repoURL.Subdir)
 		if _, err := os.Stat(extensionPath); os.IsNotExist(err) {
 			return fmt.Errorf("subdirectory %q not found in repository %s", repoURL.Subdir, repoURL.String())
 		} else if err != nil {
