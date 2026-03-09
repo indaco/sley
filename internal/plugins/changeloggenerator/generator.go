@@ -18,6 +18,10 @@ type Generator struct {
 	config    *Config
 	remote    *RemoteInfo
 	formatter Formatter
+
+	// Template caches to avoid re-parsing on every contributor entry.
+	cachedContribTmpl    *template.Template
+	cachedNewContribTmpl *template.Template
 }
 
 // NewGenerator creates a new changelog generator.
@@ -198,12 +202,17 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 		format = "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
 	}
 
-	// Parse and execute template
-	tmpl, err := template.New("contributor").Parse(format)
-	if err != nil {
-		// Fallback on template error
-		fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
-		return
+	// Parse and execute template (use cached template if available)
+	tmpl := g.cachedContribTmpl
+	if tmpl == nil {
+		var parseErr error
+		tmpl, parseErr = template.New("contributor").Parse(format)
+		if parseErr != nil {
+			// Fallback on template error
+			fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
+			return
+		}
+		g.cachedContribTmpl = tmpl
 	}
 
 	data := contributorTemplateData{
@@ -267,12 +276,17 @@ func (g *Generator) writeNewContributorEntry(sb *strings.Builder, nc *NewContrib
 		format = g.getDefaultNewContributorFormat(remote)
 	}
 
-	// Parse and execute template
-	tmpl, err := template.New("newContributor").Parse(format)
-	if err != nil {
-		// Fallback on template error
-		g.writeNewContributorFallback(sb, nc, remote)
-		return
+	// Parse and execute template (use cached template if available)
+	tmpl := g.cachedNewContribTmpl
+	if tmpl == nil {
+		var parseErr error
+		tmpl, parseErr = template.New("newContributor").Parse(format)
+		if parseErr != nil {
+			// Fallback on template error
+			g.writeNewContributorFallback(sb, nc, remote)
+			return
+		}
+		g.cachedNewContribTmpl = tmpl
 	}
 
 	data := newContributorTemplateData{
