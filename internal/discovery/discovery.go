@@ -251,7 +251,7 @@ func (s *Service) shouldExclude(name, path string, excludes []string) bool {
 // Excluded directories (node_modules, vendor, .git, etc.) are skipped.
 func (s *Service) discoverAllManifests(ctx context.Context, root string, maxDepth int) ([]ManifestSource, error) {
 	var manifests []ManifestSource
-	seen := make(map[string]bool) // Track visited paths to avoid duplicates
+	seen := make(map[string]bool, 64) // Track visited paths to avoid duplicates
 	excludes := s.cfg.GetExcludePatterns()
 
 	// Helper function to walk directories recursively

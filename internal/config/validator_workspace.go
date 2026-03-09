@@ -53,7 +53,7 @@ func (v *Validator) validateExplicitModules(ctx context.Context) {
 	modules := v.cfg.Workspace.Modules
 
 	// Check for duplicate module names
-	names := make(map[string]bool)
+	names := make(map[string]bool, len(modules))
 	for i, mod := range modules {
 		if names[mod.Name] {
 			v.addValidation("Workspace: Modules", false,

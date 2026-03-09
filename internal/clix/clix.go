@@ -361,7 +361,7 @@ func filterModulesByName(modules []*workspace.Module, name string) []*workspace.
 
 // filterModulesBySelection filters modules based on user selection.
 func filterModulesBySelection(modules []*workspace.Module, selected []string) []*workspace.Module {
-	selectedMap := make(map[string]bool)
+	selectedMap := make(map[string]bool, len(selected))
 	for _, name := range selected {
 		selectedMap[name] = true
 	}
@@ -383,7 +383,7 @@ func filterModulesByNames(modules []*workspace.Module, names []string) []*worksp
 	}
 
 	// Build a set of names for O(1) lookup
-	nameSet := make(map[string]bool)
+	nameSet := make(map[string]bool, len(names))
 	for _, name := range names {
 		// Handle comma-separated values within a single argument
 		for n := range strings.SplitSeq(name, ",") {

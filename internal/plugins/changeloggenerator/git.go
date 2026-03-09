@@ -207,8 +207,8 @@ type Contributor struct {
 
 // getContributors extracts unique contributors from commits.
 func getContributors(commits []CommitInfo) []Contributor {
-	seen := make(map[string]bool)
-	contributors := make([]Contributor, 0)
+	seen := make(map[string]bool, len(commits))
+	contributors := make([]Contributor, 0, len(commits))
 
 	for _, c := range commits {
 		key := c.AuthorEmail
@@ -317,7 +317,7 @@ func getNewContributors(commits []CommitInfo, previousVersion string) ([]NewCont
 	}
 
 	// Track which usernames we've already processed in this release
-	seenInRelease := make(map[string]bool)
+	seenInRelease := make(map[string]bool, len(commits))
 	var newContributors []NewContributor
 
 	for _, commit := range commits {
