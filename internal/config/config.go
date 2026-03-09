@@ -166,6 +166,12 @@ func loadConfig() (*Config, error) {
 		cfg.Path = ".version"
 	}
 
+	// Reject paths with directory traversal from config file
+	cleanCfgPath := filepath.Clean(cfg.Path)
+	if strings.Contains(cleanCfgPath, "..") {
+		return nil, fmt.Errorf("invalid path in config: path traversal not allowed, use absolute path instead")
+	}
+
 	if cfg.Plugins == nil {
 		cfg.Plugins = &PluginConfig{CommitParser: true}
 	}
