@@ -124,7 +124,7 @@ func (c *Config) GetExcludePatterns() []string {
 	// Add configured patterns if they differ from defaults
 	if c.Workspace != nil && c.Workspace.Discovery != nil && len(c.Workspace.Discovery.Exclude) > 0 {
 		// Use a map to avoid duplicates
-		seen := make(map[string]bool)
+		seen := make(map[string]bool, len(DefaultExcludePatterns)+len(c.Workspace.Discovery.Exclude))
 		for _, p := range DefaultExcludePatterns {
 			seen[p] = true
 		}
