@@ -21,12 +21,11 @@ func SyncDependencies(registry *plugins.PluginRegistry, version semver.SemVersio
 		return nil
 	}
 
-	plugin, ok := dc.(*dependencycheck.DependencyCheckerPlugin)
-	if !ok || !plugin.IsEnabled() || !plugin.GetConfig().AutoSync {
+	if !dc.IsEnabled() || !dc.GetConfig().AutoSync {
 		return nil
 	}
 
-	files := plugin.GetConfig().Files
+	files := dc.GetConfig().Files
 	if len(files) == 0 {
 		return nil
 	}

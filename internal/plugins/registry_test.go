@@ -9,6 +9,7 @@ import (
 	"github.com/indaco/sley/internal/plugins/changelogparser"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
 	"github.com/indaco/sley/internal/plugins/releasegate"
+	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/plugins/versionvalidator"
 	"github.com/indaco/sley/internal/semver"
 )
@@ -36,10 +37,10 @@ func (m *mockTagManager) GetLatestTag() (semver.SemVersion, error) {
 func (m *mockTagManager) ValidateTagAvailable(version semver.SemVersion) error {
 	return nil
 }
-func (m *mockTagManager) FormatTagName(version semver.SemVersion) string { return "v1.0.0" }
-func (m *mockTagManager) PushTag(version semver.SemVersion) error        { return nil }
-func (m *mockTagManager) DeleteTag(version semver.SemVersion) error      { return nil }
-func (m *mockTagManager) ListTags() ([]string, error)                    { return nil, nil }
+func (m *mockTagManager) FormatTagName(version semver.SemVersion) string      { return "v1.0.0" }
+func (m *mockTagManager) IsAutoCreateEnabled() bool                           { return false }
+func (m *mockTagManager) GetConfig() *tagmanager.Config                       { return tagmanager.DefaultConfig() }
+func (m *mockTagManager) CommitChanges(_ semver.SemVersion, _ []string) error { return nil }
 
 func TestPluginRegistry_CommitParser(t *testing.T) {
 	t.Run("register and get", func(t *testing.T) {

@@ -54,7 +54,7 @@ func TestValidateTagAvailable(t *testing.T) {
 
 	t.Run("mock tag manager returns validation error", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		mock := &mockTagManager{validateErr: fmt.Errorf("tag exists")}
+		mock := &mockTagManager{validateErr: fmt.Errorf("tag exists"), autoCreateEnabled: true}
 		if err := registry.RegisterTagManager(mock); err != nil {
 			t.Fatalf("failed to register tag manager: %v", err)
 		}
@@ -654,7 +654,7 @@ func TestSingleModuleBump_ValidateTagAvailableFails(t *testing.T) {
 	// Create a tag manager that fails validation
 	cfg := &config.Config{Path: versionPath}
 	registry := plugins.NewPluginRegistry()
-	mock := &mockTagManager{validateErr: fmt.Errorf("tag already exists")}
+	mock := &mockTagManager{validateErr: fmt.Errorf("tag already exists"), autoCreateEnabled: true}
 	if err := registry.RegisterTagManager(mock); err != nil {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}

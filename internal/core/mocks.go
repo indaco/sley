@@ -375,10 +375,11 @@ func NewMockGitTagOperations() *MockGitTagOperations {
 	return &MockGitTagOperations{
 		CreatedTags: make([]string, 0),
 		PushedTags:  make([]string, 0),
+		DeletedTags: make([]string, 0),
 	}
 }
 
-func (m *MockGitTagOperations) CreateAnnotatedTag(name, message string) error {
+func (m *MockGitTagOperations) CreateAnnotatedTag(ctx context.Context, name, message string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.CreateAnnotatedTagErr != nil {
@@ -388,7 +389,7 @@ func (m *MockGitTagOperations) CreateAnnotatedTag(name, message string) error {
 	return nil
 }
 
-func (m *MockGitTagOperations) CreateLightweightTag(name string) error {
+func (m *MockGitTagOperations) CreateLightweightTag(ctx context.Context, name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.CreateLightweightTagErr != nil {
@@ -398,35 +399,7 @@ func (m *MockGitTagOperations) CreateLightweightTag(name string) error {
 	return nil
 }
 
-func (m *MockGitTagOperations) TagExists(name string) (bool, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.TagExistsErr != nil {
-		return false, m.TagExistsErr
-	}
-	return m.TagExistsResult, nil
-}
-
-func (m *MockGitTagOperations) GetLatestTag() (string, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.GetLatestTagErr != nil {
-		return "", m.GetLatestTagErr
-	}
-	return m.GetLatestTagName, nil
-}
-
-func (m *MockGitTagOperations) PushTag(name string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.PushTagErr != nil {
-		return m.PushTagErr
-	}
-	m.PushedTags = append(m.PushedTags, name)
-	return nil
-}
-
-func (m *MockGitTagOperations) CreateSignedTag(name, message, keyID string) error {
+func (m *MockGitTagOperations) CreateSignedTag(ctx context.Context, name, message, keyID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.CreateSignedTagErr != nil {
@@ -436,7 +409,35 @@ func (m *MockGitTagOperations) CreateSignedTag(name, message, keyID string) erro
 	return nil
 }
 
-func (m *MockGitTagOperations) ListTags(pattern string) ([]string, error) {
+func (m *MockGitTagOperations) TagExists(ctx context.Context, name string) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.TagExistsErr != nil {
+		return false, m.TagExistsErr
+	}
+	return m.TagExistsResult, nil
+}
+
+func (m *MockGitTagOperations) GetLatestTag(ctx context.Context) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetLatestTagErr != nil {
+		return "", m.GetLatestTagErr
+	}
+	return m.GetLatestTagName, nil
+}
+
+func (m *MockGitTagOperations) PushTag(ctx context.Context, name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.PushTagErr != nil {
+		return m.PushTagErr
+	}
+	m.PushedTags = append(m.PushedTags, name)
+	return nil
+}
+
+func (m *MockGitTagOperations) ListTags(ctx context.Context, pattern string) ([]string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.ListTagsCalled = true
@@ -446,7 +447,7 @@ func (m *MockGitTagOperations) ListTags(pattern string) ([]string, error) {
 	return m.ListTagsResult, nil
 }
 
-func (m *MockGitTagOperations) DeleteTag(name string) error {
+func (m *MockGitTagOperations) DeleteTag(ctx context.Context, name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.DeleteTagErr != nil {
@@ -456,7 +457,7 @@ func (m *MockGitTagOperations) DeleteTag(name string) error {
 	return nil
 }
 
-func (m *MockGitTagOperations) DeleteRemoteTag(name string) error {
+func (m *MockGitTagOperations) DeleteRemoteTag(ctx context.Context, name string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.DeleteRemoteTagErr != nil {
@@ -492,7 +493,7 @@ func NewMockGitCommitOperations() *MockGitCommitOperations {
 	}
 }
 
-func (m *MockGitCommitOperations) StageFiles(files ...string) error {
+func (m *MockGitCommitOperations) StageFiles(ctx context.Context, files ...string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.StageFilesErr != nil {
@@ -502,7 +503,7 @@ func (m *MockGitCommitOperations) StageFiles(files ...string) error {
 	return nil
 }
 
-func (m *MockGitCommitOperations) Commit(message string) error {
+func (m *MockGitCommitOperations) Commit(ctx context.Context, message string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.CommitErr != nil {
@@ -512,7 +513,7 @@ func (m *MockGitCommitOperations) Commit(message string) error {
 	return nil
 }
 
-func (m *MockGitCommitOperations) GetModifiedFiles() ([]string, error) {
+func (m *MockGitCommitOperations) GetModifiedFiles(ctx context.Context) ([]string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.GetModifiedCalls++

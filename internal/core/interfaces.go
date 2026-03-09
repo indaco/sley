@@ -105,42 +105,42 @@ type MarshalUnmarshaler interface {
 // GitTagOperations abstracts git tag operations for testability.
 type GitTagOperations interface {
 	// CreateAnnotatedTag creates an annotated git tag with the given name and message.
-	CreateAnnotatedTag(name, message string) error
+	CreateAnnotatedTag(ctx context.Context, name, message string) error
 
 	// CreateLightweightTag creates a lightweight git tag with the given name.
-	CreateLightweightTag(name string) error
+	CreateLightweightTag(ctx context.Context, name string) error
 
 	// CreateSignedTag creates a GPG-signed git tag with the given name, message, and optional key ID.
 	// If keyID is empty, git uses the default signing key from user.signingkey config.
-	CreateSignedTag(name, message, keyID string) error
+	CreateSignedTag(ctx context.Context, name, message, keyID string) error
 
 	// TagExists checks if a git tag with the given name exists.
-	TagExists(name string) (bool, error)
+	TagExists(ctx context.Context, name string) (bool, error)
 
 	// GetLatestTag returns the most recent semver tag from git.
-	GetLatestTag() (string, error)
+	GetLatestTag(ctx context.Context) (string, error)
 
 	// PushTag pushes a specific tag to the remote.
-	PushTag(name string) error
+	PushTag(ctx context.Context, name string) error
 
 	// ListTags returns all git tags matching a pattern.
-	ListTags(pattern string) ([]string, error)
+	ListTags(ctx context.Context, pattern string) ([]string, error)
 
 	// DeleteTag deletes a local git tag.
-	DeleteTag(name string) error
+	DeleteTag(ctx context.Context, name string) error
 
 	// DeleteRemoteTag deletes a tag from the remote repository.
-	DeleteRemoteTag(name string) error
+	DeleteRemoteTag(ctx context.Context, name string) error
 }
 
 // GitCommitOperations provides git staging and commit capabilities.
 type GitCommitOperations interface {
 	// StageFiles stages the specified files for commit (git add).
-	StageFiles(files ...string) error
+	StageFiles(ctx context.Context, files ...string) error
 	// Commit creates a commit with the given message (git commit -m).
-	Commit(message string) error
+	Commit(ctx context.Context, message string) error
 	// GetModifiedFiles returns files with uncommitted changes (git status --porcelain).
-	GetModifiedFiles() ([]string, error)
+	GetModifiedFiles(ctx context.Context) ([]string, error)
 }
 
 // GitCommitReader reads git commit information.

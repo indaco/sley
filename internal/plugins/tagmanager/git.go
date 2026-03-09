@@ -2,6 +2,7 @@ package tagmanager
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -11,21 +12,21 @@ import (
 
 // OSGitTagOperations implements core.GitTagOperations using actual git commands.
 type OSGitTagOperations struct {
-	execCommand func(name string, arg ...string) *exec.Cmd
+	execCommandContext func(ctx context.Context, name string, arg ...string) *exec.Cmd
 }
 
-// NewOSGitTagOperations creates a new OSGitTagOperations with the default exec.Command.
+// NewOSGitTagOperations creates a new OSGitTagOperations with the default exec.CommandContext.
 func NewOSGitTagOperations() *OSGitTagOperations {
 	return &OSGitTagOperations{
-		execCommand: exec.Command,
+		execCommandContext: exec.CommandContext,
 	}
 }
 
 // Verify OSGitTagOperations implements core.GitTagOperations.
 var _ core.GitTagOperations = (*OSGitTagOperations)(nil)
 
-func (g *OSGitTagOperations) CreateAnnotatedTag(name, message string) error {
-	cmd := g.execCommand("git", "tag", "-a", name, "-m", message)
+func (g *OSGitTagOperations) CreateAnnotatedTag(ctx context.Context, name, message string) error {
+	cmd := g.execCommandContext(ctx, "git", "tag", "-a", name, "-m", message)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -39,8 +40,8 @@ func (g *OSGitTagOperations) CreateAnnotatedTag(name, message string) error {
 	return nil
 }
 
-func (g *OSGitTagOperations) CreateLightweightTag(name string) error {
-	cmd := g.execCommand("git", "tag", name)
+func (g *OSGitTagOperations) CreateLightweightTag(ctx context.Context, name string) error {
+	cmd := g.execCommandContext(ctx, "git", "tag", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -54,7 +55,7 @@ func (g *OSGitTagOperations) CreateLightweightTag(name string) error {
 	return nil
 }
 
-func (g *OSGitTagOperations) CreateSignedTag(name, message, keyID string) error {
+func (g *OSGitTagOperations) CreateSignedTag(ctx context.Context, name, message, keyID string) error {
 	var args []string
 	if keyID != "" {
 		args = []string{"tag", "-s", "-u", keyID, name, "-m", message}
@@ -62,7 +63,7 @@ func (g *OSGitTagOperations) CreateSignedTag(name, message, keyID string) error 
 		args = []string{"tag", "-s", name, "-m", message}
 	}
 
-	cmd := g.execCommand("git", args...)
+	cmd := g.execCommandContext(ctx, "git", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -76,8 +77,8 @@ func (g *OSGitTagOperations) CreateSignedTag(name, message, keyID string) error 
 	return nil
 }
 
-func (g *OSGitTagOperations) TagExists(name string) (bool, error) {
-	cmd := g.execCommand("git", "tag", "-l", name)
+func (g *OSGitTagOperations) TagExists(ctx context.Context, name string) (bool, error) {
+	cmd := g.execCommandContext(ctx, "git", "tag", "-l", name)
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 
@@ -90,8 +91,8 @@ func (g *OSGitTagOperations) TagExists(name string) (bool, error) {
 	return output == name, nil
 }
 
-func (g *OSGitTagOperations) GetLatestTag() (string, error) {
-	cmd := g.execCommand("git", "describe", "--tags", "--abbrev=0")
+func (g *OSGitTagOperations) GetLatestTag(ctx context.Context) (string, error) {
+	cmd := g.execCommandContext(ctx, "git", "describe", "--tags", "--abbrev=0")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -112,8 +113,8 @@ func (g *OSGitTagOperations) GetLatestTag() (string, error) {
 	return tag, nil
 }
 
-func (g *OSGitTagOperations) PushTag(name string) error {
-	cmd := g.execCommand("git", "push", "origin", name)
+func (g *OSGitTagOperations) PushTag(ctx context.Context, name string) error {
+	cmd := g.execCommandContext(ctx, "git", "push", "origin", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -127,13 +128,13 @@ func (g *OSGitTagOperations) PushTag(name string) error {
 	return nil
 }
 
-func (g *OSGitTagOperations) ListTags(pattern string) ([]string, error) {
+func (g *OSGitTagOperations) ListTags(ctx context.Context, pattern string) ([]string, error) {
 	args := []string{"tag", "-l"}
 	if pattern != "" {
 		args = append(args, pattern)
 	}
 
-	cmd := g.execCommand("git", args...)
+	cmd := g.execCommandContext(ctx, "git", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -154,8 +155,8 @@ func (g *OSGitTagOperations) ListTags(pattern string) ([]string, error) {
 	return strings.Split(output, "\n"), nil
 }
 
-func (g *OSGitTagOperations) DeleteTag(name string) error {
-	cmd := g.execCommand("git", "tag", "-d", name)
+func (g *OSGitTagOperations) DeleteTag(ctx context.Context, name string) error {
+	cmd := g.execCommandContext(ctx, "git", "tag", "-d", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -169,8 +170,8 @@ func (g *OSGitTagOperations) DeleteTag(name string) error {
 	return nil
 }
 
-func (g *OSGitTagOperations) DeleteRemoteTag(name string) error {
-	cmd := g.execCommand("git", "push", "origin", "--delete", name)
+func (g *OSGitTagOperations) DeleteRemoteTag(ctx context.Context, name string) error {
+	cmd := g.execCommandContext(ctx, "git", "push", "origin", "--delete", name)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -186,25 +187,25 @@ func (g *OSGitTagOperations) DeleteRemoteTag(name string) error {
 
 // OSGitCommitOperations implements core.GitCommitOperations using actual git commands.
 type OSGitCommitOperations struct {
-	execCommand func(name string, arg ...string) *exec.Cmd
+	execCommandContext func(ctx context.Context, name string, arg ...string) *exec.Cmd
 }
 
-// NewOSGitCommitOperations creates a new OSGitCommitOperations with the default exec.Command.
+// NewOSGitCommitOperations creates a new OSGitCommitOperations with the default exec.CommandContext.
 func NewOSGitCommitOperations() *OSGitCommitOperations {
 	return &OSGitCommitOperations{
-		execCommand: exec.Command,
+		execCommandContext: exec.CommandContext,
 	}
 }
 
 // Verify OSGitCommitOperations implements core.GitCommitOperations.
 var _ core.GitCommitOperations = (*OSGitCommitOperations)(nil)
 
-func (g *OSGitCommitOperations) StageFiles(files ...string) error {
+func (g *OSGitCommitOperations) StageFiles(ctx context.Context, files ...string) error {
 	if len(files) == 0 {
 		return nil
 	}
 	args := append([]string{"add", "--"}, files...)
-	cmd := g.execCommand("git", args...)
+	cmd := g.execCommandContext(ctx, "git", args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -218,8 +219,8 @@ func (g *OSGitCommitOperations) StageFiles(files ...string) error {
 	return nil
 }
 
-func (g *OSGitCommitOperations) Commit(message string) error {
-	cmd := g.execCommand("git", "commit", "-m", message)
+func (g *OSGitCommitOperations) Commit(ctx context.Context, message string) error {
+	cmd := g.execCommandContext(ctx, "git", "commit", "-m", message)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -233,8 +234,8 @@ func (g *OSGitCommitOperations) Commit(message string) error {
 	return nil
 }
 
-func (g *OSGitCommitOperations) GetModifiedFiles() ([]string, error) {
-	cmd := g.execCommand("git", "status", "--porcelain")
+func (g *OSGitCommitOperations) GetModifiedFiles(ctx context.Context) ([]string, error) {
+	cmd := g.execCommandContext(ctx, "git", "status", "--porcelain")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -274,10 +275,10 @@ var defaultGitTagOps = NewOSGitTagOperations()
 
 // ListTags returns all git tags matching a pattern (package-level convenience function).
 func ListTags(pattern string) ([]string, error) {
-	return defaultGitTagOps.ListTags(pattern)
+	return defaultGitTagOps.ListTags(context.Background(), pattern)
 }
 
 // DeleteTag deletes a local git tag (package-level convenience function).
 func DeleteTag(name string) error {
-	return defaultGitTagOps.DeleteTag(name)
+	return defaultGitTagOps.DeleteTag(context.Background(), name)
 }

@@ -1,6 +1,7 @@
 package tagmanager
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -76,14 +77,14 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 	tests := []struct {
 		name    string
 		version semver.SemVersion
-		mockFn  func(string) (bool, error)
+		mockFn  func(ctx context.Context, name string) (bool, error)
 		want    bool
 		wantErr bool
 	}{
 		{
 			name:    "tag exists",
 			version: semver.SemVersion{Major: 1, Minor: 0, Patch: 0},
-			mockFn: func(name string) (bool, error) {
+			mockFn: func(ctx context.Context, name string) (bool, error) {
 				return true, nil
 			},
 			want:    true,
@@ -92,7 +93,7 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 		{
 			name:    "tag does not exist",
 			version: semver.SemVersion{Major: 2, Minor: 0, Patch: 0},
-			mockFn: func(name string) (bool, error) {
+			mockFn: func(ctx context.Context, name string) (bool, error) {
 				return false, nil
 			},
 			want:    false,
@@ -101,7 +102,7 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 		{
 			name:    "error checking tag",
 			version: semver.SemVersion{Major: 3, Minor: 0, Patch: 0},
-			mockFn: func(name string) (bool, error) {
+			mockFn: func(ctx context.Context, name string) (bool, error) {
 				return false, errors.New("git error")
 			},
 			want:    false,
@@ -152,7 +153,7 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockOps := &MockGitTagOperations{
-				TagExistsFn: func(name string) (bool, error) {
+				TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 					return tt.exists, nil
 				},
 			}
@@ -231,18 +232,18 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 			pushCalled := false
 
 			mockOps := &MockGitTagOperations{
-				TagExistsFn: func(name string) (bool, error) {
+				TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 					return tt.tagExists, nil
 				},
-				CreateAnnotatedTagFn: func(name, msg string) error {
+				CreateAnnotatedTagFn: func(ctx context.Context, name, msg string) error {
 					annotatedCalled = true
 					return tt.createErr
 				},
-				CreateLightweightTagFn: func(name string) error {
+				CreateLightweightTagFn: func(ctx context.Context, name string) error {
 					lightweightCalled = true
 					return tt.createErr
 				},
-				PushTagFn: func(name string) error {
+				PushTagFn: func(ctx context.Context, name string) error {
 					pushCalled = true
 					return tt.pushErr
 				},
@@ -311,7 +312,7 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockOps := &MockGitTagOperations{
-				GetLatestTagFn: func() (string, error) {
+				GetLatestTagFn: func(ctx context.Context) (string, error) {
 					return tt.mockTag, tt.mockErr
 				},
 			}
@@ -412,7 +413,7 @@ func TestTagManagerPlugin_GetConfig(t *testing.T) {
 
 func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
 	mockOps := &MockGitTagOperations{
-		TagExistsFn: func(name string) (bool, error) {
+		TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 			return false, errors.New("git error")
 		},
 	}
@@ -427,13 +428,13 @@ func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
 
 func TestTagManagerPlugin_CreateTag_PushError(t *testing.T) {
 	mockOps := &MockGitTagOperations{
-		TagExistsFn: func(name string) (bool, error) {
+		TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		CreateAnnotatedTagFn: func(name, msg string) error {
+		CreateAnnotatedTagFn: func(ctx context.Context, name, msg string) error {
 			return nil
 		},
-		PushTagFn: func(name string) error {
+		PushTagFn: func(ctx context.Context, name string) error {
 			return errors.New("push failed")
 		},
 	}
@@ -660,10 +661,10 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 		var capturedKeyID string
 
 		mockOps := &MockGitTagOperations{
-			TagExistsFn: func(name string) (bool, error) {
+			TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 				return false, nil
 			},
-			CreateSignedTagFn: func(name, msg, keyID string) error {
+			CreateSignedTagFn: func(ctx context.Context, name, msg, keyID string) error {
 				signedCalled = true
 				capturedMessage = msg
 				capturedKeyID = keyID
@@ -701,10 +702,10 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 		var capturedKeyID string
 
 		mockOps := &MockGitTagOperations{
-			TagExistsFn: func(name string) (bool, error) {
+			TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 				return false, nil
 			},
-			CreateSignedTagFn: func(name, msg, keyID string) error {
+			CreateSignedTagFn: func(ctx context.Context, name, msg, keyID string) error {
 				signedCalled = true
 				capturedKeyID = keyID
 				return nil
@@ -735,10 +736,10 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 
 	t.Run("signed tag error", func(t *testing.T) {
 		mockOps := &MockGitTagOperations{
-			TagExistsFn: func(name string) (bool, error) {
+			TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 				return false, nil
 			},
-			CreateSignedTagFn: func(name, msg, keyID string) error {
+			CreateSignedTagFn: func(ctx context.Context, name, msg, keyID string) error {
 				return errors.New("gpg signing failed")
 			},
 		}
@@ -797,10 +798,10 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 			var capturedMessage string
 
 			mockOps := &MockGitTagOperations{
-				TagExistsFn: func(name string) (bool, error) {
+				TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 					return false, nil
 				},
-				CreateAnnotatedTagFn: func(name, msg string) error {
+				CreateAnnotatedTagFn: func(ctx context.Context, name, msg string) error {
 					capturedMessage = msg
 					return nil
 				},
@@ -831,10 +832,10 @@ func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.
 	var capturedMessage string
 
 	mockOps := &MockGitTagOperations{
-		TagExistsFn: func(name string) (bool, error) {
+		TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
-		CreateAnnotatedTagFn: func(name, msg string) error {
+		CreateAnnotatedTagFn: func(ctx context.Context, name, msg string) error {
 			capturedMessage = msg
 			return nil
 		},
@@ -935,14 +936,14 @@ func TestTagManagerPlugin_CommitChanges_AutoDetect(t *testing.T) {
 	var stagedFiles []string
 
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"CHANGELOG.md", "package.json"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			stagedFiles = files
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			return nil
 		},
 	}
@@ -971,14 +972,14 @@ func TestTagManagerPlugin_CommitChanges_Deduplication(t *testing.T) {
 	var stagedFiles []string
 
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{".version", "other.txt"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			stagedFiles = files
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			return nil
 		},
 	}
@@ -1006,10 +1007,10 @@ func TestTagManagerPlugin_CommitChanges_Deduplication(t *testing.T) {
 
 func TestTagManagerPlugin_CommitChanges_StageError(t *testing.T) {
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			return errors.New("staging failed")
 		},
 	}
@@ -1029,13 +1030,13 @@ func TestTagManagerPlugin_CommitChanges_StageError(t *testing.T) {
 
 func TestTagManagerPlugin_CommitChanges_CommitError(t *testing.T) {
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			return errors.New("commit failed")
 		},
 	}
@@ -1055,7 +1056,7 @@ func TestTagManagerPlugin_CommitChanges_CommitError(t *testing.T) {
 
 func TestTagManagerPlugin_CommitChanges_GetModifiedError(t *testing.T) {
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return nil, errors.New("git status failed")
 		},
 	}
@@ -1078,14 +1079,14 @@ func TestTagManagerPlugin_CommitChanges_NoFilesToStage(t *testing.T) {
 	commitCalled := false
 
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			stageCalled = true
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			commitCalled = true
 			return nil
 		},
@@ -1115,13 +1116,13 @@ func TestTagManagerPlugin_CommitChanges_DefaultTemplate(t *testing.T) {
 	var commitMessage string
 
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			commitMessage = message
 			return nil
 		},
@@ -1149,13 +1150,13 @@ func TestTagManagerPlugin_CommitChanges_CustomTemplate(t *testing.T) {
 	var commitMessage string
 
 	mockCommitOps := &MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			commitMessage = message
 			return nil
 		},

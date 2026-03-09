@@ -1,21 +1,22 @@
 package tagmanager
 
 import (
+	"context"
 	"os/exec"
 	"slices"
 	"testing"
 )
 
-// createTestGitTagOps creates an OSGitTagOperations with a custom exec.Command for testing.
-func createTestGitTagOps(mockExec func(name string, args ...string) *exec.Cmd) *OSGitTagOperations {
+// createTestGitTagOps creates an OSGitTagOperations with a custom exec.CommandContext for testing.
+func createTestGitTagOps(mockExec func(ctx context.Context, name string, args ...string) *exec.Cmd) *OSGitTagOperations {
 	return &OSGitTagOperations{
-		execCommand: mockExec,
+		execCommandContext: mockExec,
 	}
 }
 
 func TestOSGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			// Verify correct arguments
 			if name != "git" {
 				t.Errorf("expected git command, got %s", name)
@@ -26,18 +27,18 @@ func TestOSGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 			return exec.Command("true")
 		})
 
-		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag(context.Background(), "v1.0.0", "Release 1.0.0")
 		if err != nil {
 			t.Errorf("CreateAnnotatedTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'tag already exists' >&2 && exit 1")
 		})
 
-		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag(context.Background(), "v1.0.0", "Release 1.0.0")
 		if err == nil {
 			t.Error("CreateAnnotatedTag() expected error")
 		}
@@ -47,11 +48,11 @@ func TestOSGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
+		err := ops.CreateAnnotatedTag(context.Background(), "v1.0.0", "Release 1.0.0")
 		if err == nil {
 			t.Error("CreateAnnotatedTag() expected error")
 		}
@@ -60,36 +61,36 @@ func TestOSGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 
 func TestOSGitTagOperations_CreateLightweightTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 2 || args[0] != "tag" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
 		})
 
-		err := ops.CreateLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("CreateLightweightTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'error' >&2 && exit 1")
 		})
 
-		err := ops.CreateLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("CreateLightweightTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.CreateLightweightTag("v1.0.0")
+		err := ops.CreateLightweightTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("CreateLightweightTag() expected error")
 		}
@@ -97,7 +98,7 @@ func TestOSGitTagOperations_CreateLightweightTag(t *testing.T) {
 }
 
 func TestOSGitTagOperations_CreateSignedTag_WithoutKey(t *testing.T) {
-	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+	ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		if name != "git" {
 			t.Errorf("expected git command, got %s", name)
 		}
@@ -110,14 +111,14 @@ func TestOSGitTagOperations_CreateSignedTag_WithoutKey(t *testing.T) {
 		return exec.Command("true")
 	})
 
-	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	err := ops.CreateSignedTag(context.Background(), "v1.0.0", "Release 1.0.0", "")
 	if err != nil {
 		t.Errorf("CreateSignedTag() error = %v", err)
 	}
 }
 
 func TestOSGitTagOperations_CreateSignedTag_WithKey(t *testing.T) {
-	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+	ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		if name != "git" {
 			t.Errorf("expected git command, got %s", name)
 		}
@@ -127,18 +128,18 @@ func TestOSGitTagOperations_CreateSignedTag_WithKey(t *testing.T) {
 		return exec.Command("true")
 	})
 
-	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "ABC123")
+	err := ops.CreateSignedTag(context.Background(), "v1.0.0", "Release 1.0.0", "ABC123")
 	if err != nil {
 		t.Errorf("CreateSignedTag() error = %v", err)
 	}
 }
 
 func TestOSGitTagOperations_CreateSignedTag_ErrorWithStderr(t *testing.T) {
-	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+	ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		return exec.Command("sh", "-c", "echo 'gpg: signing failed: No secret key' >&2 && exit 1")
 	})
 
-	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	err := ops.CreateSignedTag(context.Background(), "v1.0.0", "Release 1.0.0", "")
 	if err == nil {
 		t.Error("CreateSignedTag() expected error")
 	}
@@ -148,11 +149,11 @@ func TestOSGitTagOperations_CreateSignedTag_ErrorWithStderr(t *testing.T) {
 }
 
 func TestOSGitTagOperations_CreateSignedTag_ErrorWithoutStderr(t *testing.T) {
-	ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+	ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 		return exec.Command("false")
 	})
 
-	err := ops.CreateSignedTag("v1.0.0", "Release 1.0.0", "")
+	err := ops.CreateSignedTag(context.Background(), "v1.0.0", "Release 1.0.0", "")
 	if err == nil {
 		t.Error("CreateSignedTag() expected error")
 	}
@@ -160,11 +161,11 @@ func TestOSGitTagOperations_CreateSignedTag_ErrorWithoutStderr(t *testing.T) {
 
 func TestOSGitTagOperations_TagExists(t *testing.T) {
 	t.Run("tag exists", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "v1.0.0")
 		})
 
-		exists, err := ops.TagExists("v1.0.0")
+		exists, err := ops.TagExists(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("TagExists() error = %v", err)
 		}
@@ -174,11 +175,11 @@ func TestOSGitTagOperations_TagExists(t *testing.T) {
 	})
 
 	t.Run("tag does not exist", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
 		})
 
-		exists, err := ops.TagExists("v1.0.0")
+		exists, err := ops.TagExists(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("TagExists() error = %v", err)
 		}
@@ -188,11 +189,11 @@ func TestOSGitTagOperations_TagExists(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		_, err := ops.TagExists("v1.0.0")
+		_, err := ops.TagExists(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("TagExists() expected error")
 		}
@@ -201,11 +202,11 @@ func TestOSGitTagOperations_TagExists(t *testing.T) {
 
 func TestOSGitTagOperations_GetLatestTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "v1.2.3")
 		})
 
-		tag, err := ops.GetLatestTag()
+		tag, err := ops.GetLatestTag(context.Background())
 		if err != nil {
 			t.Errorf("GetLatestTag() error = %v", err)
 		}
@@ -215,33 +216,33 @@ func TestOSGitTagOperations_GetLatestTag(t *testing.T) {
 	})
 
 	t.Run("empty output", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
 		})
 
-		_, err := ops.GetLatestTag()
+		_, err := ops.GetLatestTag(context.Background())
 		if err == nil {
 			t.Error("GetLatestTag() expected error for empty output")
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'fatal: No names found' >&2 && exit 128")
 		})
 
-		_, err := ops.GetLatestTag()
+		_, err := ops.GetLatestTag(context.Background())
 		if err == nil {
 			t.Error("GetLatestTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		_, err := ops.GetLatestTag()
+		_, err := ops.GetLatestTag(context.Background())
 		if err == nil {
 			t.Error("GetLatestTag() expected error")
 		}
@@ -250,36 +251,36 @@ func TestOSGitTagOperations_GetLatestTag(t *testing.T) {
 
 func TestOSGitTagOperations_PushTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 3 || args[0] != "push" || args[1] != "origin" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
 		})
 
-		err := ops.PushTag("v1.0.0")
+		err := ops.PushTag(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("PushTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'remote rejected' >&2 && exit 1")
 		})
 
-		err := ops.PushTag("v1.0.0")
+		err := ops.PushTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("PushTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.PushTag("v1.0.0")
+		err := ops.PushTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("PushTag() expected error")
 		}
@@ -288,11 +289,11 @@ func TestOSGitTagOperations_PushTag(t *testing.T) {
 
 func TestOSGitTagOperations_ListTags(t *testing.T) {
 	t.Run("list all tags", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("printf", "v1.0.0\nv1.1.0\nv2.0.0")
 		})
 
-		tags, err := ops.ListTags("")
+		tags, err := ops.ListTags(context.Background(), "")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -302,7 +303,7 @@ func TestOSGitTagOperations_ListTags(t *testing.T) {
 	})
 
 	t.Run("list with pattern", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			// Verify pattern is passed
 			if len(args) < 3 || args[2] != "v1.*" {
 				t.Errorf("expected pattern v1.*, got args: %v", args)
@@ -310,7 +311,7 @@ func TestOSGitTagOperations_ListTags(t *testing.T) {
 			return exec.Command("printf", "v1.0.0\nv1.1.0")
 		})
 
-		tags, err := ops.ListTags("v1.*")
+		tags, err := ops.ListTags(context.Background(), "v1.*")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -320,11 +321,11 @@ func TestOSGitTagOperations_ListTags(t *testing.T) {
 	})
 
 	t.Run("empty result", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
 		})
 
-		tags, err := ops.ListTags("nonexistent*")
+		tags, err := ops.ListTags(context.Background(), "nonexistent*")
 		if err != nil {
 			t.Errorf("ListTags() error = %v", err)
 		}
@@ -334,22 +335,22 @@ func TestOSGitTagOperations_ListTags(t *testing.T) {
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'git error' >&2 && exit 1")
 		})
 
-		_, err := ops.ListTags("")
+		_, err := ops.ListTags(context.Background(), "")
 		if err == nil {
 			t.Error("ListTags() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		_, err := ops.ListTags("")
+		_, err := ops.ListTags(context.Background(), "")
 		if err == nil {
 			t.Error("ListTags() expected error")
 		}
@@ -358,36 +359,36 @@ func TestOSGitTagOperations_ListTags(t *testing.T) {
 
 func TestOSGitTagOperations_DeleteTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 3 || args[0] != "tag" || args[1] != "-d" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
 		})
 
-		err := ops.DeleteTag("v1.0.0")
+		err := ops.DeleteTag(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("DeleteTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'tag not found' >&2 && exit 1")
 		})
 
-		err := ops.DeleteTag("v1.0.0")
+		err := ops.DeleteTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("DeleteTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.DeleteTag("v1.0.0")
+		err := ops.DeleteTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("DeleteTag() expected error")
 		}
@@ -396,36 +397,36 @@ func TestOSGitTagOperations_DeleteTag(t *testing.T) {
 
 func TestOSGitTagOperations_DeleteRemoteTag(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" || len(args) < 4 || args[0] != "push" || args[1] != "origin" || args[2] != "--delete" {
 				t.Errorf("unexpected command: %s %v", name, args)
 			}
 			return exec.Command("true")
 		})
 
-		err := ops.DeleteRemoteTag("v1.0.0")
+		err := ops.DeleteRemoteTag(context.Background(), "v1.0.0")
 		if err != nil {
 			t.Errorf("DeleteRemoteTag() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'remote ref not found' >&2 && exit 1")
 		})
 
-		err := ops.DeleteRemoteTag("v1.0.0")
+		err := ops.DeleteRemoteTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("DeleteRemoteTag() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitTagOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitTagOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.DeleteRemoteTag("v1.0.0")
+		err := ops.DeleteRemoteTag(context.Background(), "v1.0.0")
 		if err == nil {
 			t.Error("DeleteRemoteTag() expected error")
 		}
@@ -437,15 +438,15 @@ func TestNewOSGitTagOperations(t *testing.T) {
 	if ops == nil {
 		t.Fatal("NewOSGitTagOperations() returned nil")
 	}
-	if ops.execCommand == nil {
-		t.Error("execCommand should not be nil")
+	if ops.execCommandContext == nil {
+		t.Error("execCommandContext should not be nil")
 	}
 }
 
-// createTestGitCommitOps creates an OSGitCommitOperations with a custom exec.Command for testing.
-func createTestGitCommitOps(mockExec func(name string, args ...string) *exec.Cmd) *OSGitCommitOperations {
+// createTestGitCommitOps creates an OSGitCommitOperations with a custom exec.CommandContext for testing.
+func createTestGitCommitOps(mockExec func(ctx context.Context, name string, args ...string) *exec.Cmd) *OSGitCommitOperations {
 	return &OSGitCommitOperations{
-		execCommand: mockExec,
+		execCommandContext: mockExec,
 	}
 }
 
@@ -454,14 +455,14 @@ func TestNewOSGitCommitOperations(t *testing.T) {
 	if ops == nil {
 		t.Fatal("NewOSGitCommitOperations() returned nil")
 	}
-	if ops.execCommand == nil {
-		t.Error("execCommand should not be nil")
+	if ops.execCommandContext == nil {
+		t.Error("execCommandContext should not be nil")
 	}
 }
 
 func TestOSGitCommitOperations_StageFiles(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" {
 				t.Errorf("expected git command, got %s", name)
 			}
@@ -471,41 +472,41 @@ func TestOSGitCommitOperations_StageFiles(t *testing.T) {
 			return exec.Command("true")
 		})
 
-		err := ops.StageFiles("file1.txt", "file2.txt")
+		err := ops.StageFiles(context.Background(), "file1.txt", "file2.txt")
 		if err != nil {
 			t.Errorf("StageFiles() error = %v", err)
 		}
 	})
 
 	t.Run("empty files", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			t.Error("exec should not be called for empty files")
 			return exec.Command("true")
 		})
 
-		err := ops.StageFiles()
+		err := ops.StageFiles(context.Background())
 		if err != nil {
 			t.Errorf("StageFiles() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'pathspec not found' >&2 && exit 1")
 		})
 
-		err := ops.StageFiles("nonexistent.txt")
+		err := ops.StageFiles(context.Background(), "nonexistent.txt")
 		if err == nil {
 			t.Error("StageFiles() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.StageFiles("file.txt")
+		err := ops.StageFiles(context.Background(), "file.txt")
 		if err == nil {
 			t.Error("StageFiles() expected error")
 		}
@@ -514,7 +515,7 @@ func TestOSGitCommitOperations_StageFiles(t *testing.T) {
 
 func TestOSGitCommitOperations_Commit(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			if name != "git" {
 				t.Errorf("expected git command, got %s", name)
 			}
@@ -527,29 +528,29 @@ func TestOSGitCommitOperations_Commit(t *testing.T) {
 			return exec.Command("true")
 		})
 
-		err := ops.Commit("chore(release): v1.0.0")
+		err := ops.Commit(context.Background(), "chore(release): v1.0.0")
 		if err != nil {
 			t.Errorf("Commit() error = %v", err)
 		}
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'nothing to commit' >&2 && exit 1")
 		})
 
-		err := ops.Commit("some message")
+		err := ops.Commit(context.Background(), "some message")
 		if err == nil {
 			t.Error("Commit() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		err := ops.Commit("some message")
+		err := ops.Commit(context.Background(), "some message")
 		if err == nil {
 			t.Error("Commit() expected error")
 		}
@@ -558,11 +559,11 @@ func TestOSGitCommitOperations_Commit(t *testing.T) {
 
 func TestOSGitCommitOperations_GetModifiedFiles(t *testing.T) {
 	t.Run("files modified", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("printf", " M file1.txt\n?? file2.txt\nM  file3.txt")
 		})
 
-		files, err := ops.GetModifiedFiles()
+		files, err := ops.GetModifiedFiles(context.Background())
 		if err != nil {
 			t.Errorf("GetModifiedFiles() error = %v", err)
 		}
@@ -572,11 +573,11 @@ func TestOSGitCommitOperations_GetModifiedFiles(t *testing.T) {
 	})
 
 	t.Run("no modified files", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("echo", "")
 		})
 
-		files, err := ops.GetModifiedFiles()
+		files, err := ops.GetModifiedFiles(context.Background())
 		if err != nil {
 			t.Errorf("GetModifiedFiles() error = %v", err)
 		}
@@ -586,22 +587,22 @@ func TestOSGitCommitOperations_GetModifiedFiles(t *testing.T) {
 	})
 
 	t.Run("error with stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'not a git repo' >&2 && exit 128")
 		})
 
-		_, err := ops.GetModifiedFiles()
+		_, err := ops.GetModifiedFiles(context.Background())
 		if err == nil {
 			t.Error("GetModifiedFiles() expected error")
 		}
 	})
 
 	t.Run("error without stderr", func(t *testing.T) {
-		ops := createTestGitCommitOps(func(name string, args ...string) *exec.Cmd {
+		ops := createTestGitCommitOps(func(ctx context.Context, name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
 
-		_, err := ops.GetModifiedFiles()
+		_, err := ops.GetModifiedFiles(context.Background())
 		if err == nil {
 			t.Error("GetModifiedFiles() expected error")
 		}

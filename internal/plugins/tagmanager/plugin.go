@@ -1,6 +1,7 @@
 package tagmanager
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/indaco/sley/internal/core"
@@ -27,6 +28,15 @@ type TagManager interface {
 
 	// FormatTagName formats a version as a tag name.
 	FormatTagName(version semver.SemVersion) string
+
+	// IsAutoCreateEnabled returns whether the plugin is enabled with auto-create on.
+	IsAutoCreateEnabled() bool
+
+	// GetConfig returns the plugin configuration.
+	GetConfig() *Config
+
+	// CommitChanges stages modified files and creates a commit before tagging.
+	CommitChanges(version semver.SemVersion, extraFiles []string) error
 }
 
 // Config holds configuration for the tag manager plugin.
@@ -158,27 +168,28 @@ func (p *TagManagerPlugin) CreateTag(version semver.SemVersion, message string) 
 	}
 
 	// Create the tag based on configuration
+	ctx := context.TODO()
 	switch {
 	case p.config.Sign:
 		// GPG-signed tag (implies annotated)
-		if err := p.gitOps.CreateSignedTag(tagName, message, p.config.SigningKey); err != nil {
+		if err := p.gitOps.CreateSignedTag(ctx, tagName, message, p.config.SigningKey); err != nil {
 			return fmt.Errorf("failed to create signed tag: %w", err)
 		}
 	case p.config.Annotate:
 		// Annotated tag (not signed)
-		if err := p.gitOps.CreateAnnotatedTag(tagName, message); err != nil {
+		if err := p.gitOps.CreateAnnotatedTag(ctx, tagName, message); err != nil {
 			return fmt.Errorf("failed to create annotated tag: %w", err)
 		}
 	default:
 		// Lightweight tag (no message)
-		if err := p.gitOps.CreateLightweightTag(tagName); err != nil {
+		if err := p.gitOps.CreateLightweightTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to create lightweight tag: %w", err)
 		}
 	}
 
 	// Optionally push the tag
 	if p.config.Push {
-		if err := p.gitOps.PushTag(tagName); err != nil {
+		if err := p.gitOps.PushTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to push tag: %w", err)
 		}
 	}
@@ -199,12 +210,12 @@ func (p *TagManagerPlugin) FormatTagMessage(version semver.SemVersion) string {
 // TagExists checks if a tag for the given version already exists.
 func (p *TagManagerPlugin) TagExists(version semver.SemVersion) (bool, error) {
 	tagName := p.FormatTagName(version)
-	return p.gitOps.TagExists(tagName)
+	return p.gitOps.TagExists(context.TODO(), tagName)
 }
 
 // GetLatestTag returns the latest semver tag from git.
 func (p *TagManagerPlugin) GetLatestTag() (semver.SemVersion, error) {
-	tag, err := p.gitOps.GetLatestTag()
+	tag, err := p.gitOps.GetLatestTag(context.TODO())
 	if err != nil {
 		return semver.SemVersion{}, err
 	}
@@ -252,7 +263,8 @@ func (p *TagManagerPlugin) CommitChanges(version semver.SemVersion, extraFiles [
 	filesToStage = append(filesToStage, extraFiles...)
 
 	// Also detect any other modified files via git status
-	modified, err := p.commitOps.GetModifiedFiles()
+	ctx := context.TODO()
+	modified, err := p.commitOps.GetModifiedFiles(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to detect modified files: %w", err)
 	}
@@ -266,7 +278,7 @@ func (p *TagManagerPlugin) CommitChanges(version semver.SemVersion, extraFiles [
 	}
 
 	// Stage files
-	if err := p.commitOps.StageFiles(filesToStage...); err != nil {
+	if err := p.commitOps.StageFiles(ctx, filesToStage...); err != nil {
 		return fmt.Errorf("failed to stage files: %w", err)
 	}
 
@@ -279,7 +291,7 @@ func (p *TagManagerPlugin) CommitChanges(version semver.SemVersion, extraFiles [
 	message := FormatMessage(template, data)
 
 	// Create commit
-	if err := p.commitOps.Commit(message); err != nil {
+	if err := p.commitOps.Commit(ctx, message); err != nil {
 		return fmt.Errorf("failed to commit: %w", err)
 	}
 

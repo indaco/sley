@@ -1,6 +1,7 @@
 package bump
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"testing"
@@ -50,18 +51,18 @@ func TestCommitAndTagAfterBump_Success(t *testing.T) {
 		Prefix:     "v",
 		Annotate:   true,
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn: func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error {
+		TagExistsFn: func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error {
 			createdTag = name
 			return nil
 		},
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{}, nil },
-		StageFilesFn: func(files ...string) error {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{}, nil },
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			stagedFiles = append(stagedFiles, files...)
 			return nil
 		},
-		CommitFn: func(message string) error {
+		CommitFn: func(ctx context.Context, message string) error {
 			commitMsg = message
 			return nil
 		},
@@ -97,17 +98,17 @@ func TestCommitAndTagAfterBump_WithModifiedFiles(t *testing.T) {
 		Prefix:     "v",
 		Annotate:   true,
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn:          func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error { return nil },
+		TagExistsFn:          func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error { return nil },
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"CHANGELOG.md", "package.json"}, nil
 		},
-		StageFilesFn: func(files ...string) error {
+		StageFilesFn: func(ctx context.Context, files ...string) error {
 			stagedFiles = append(stagedFiles, files...)
 			return nil
 		},
-		CommitFn: func(message string) error { return nil },
+		CommitFn: func(ctx context.Context, message string) error { return nil },
 	})
 
 	registry := plugins.NewPluginRegistry()
@@ -132,9 +133,9 @@ func TestCommitAndTagAfterBump_CommitFails(t *testing.T) {
 		AutoCreate: true,
 		Prefix:     "v",
 	}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{}, nil },
-		StageFilesFn:       func(files ...string) error { return nil },
-		CommitFn:           func(message string) error { return fmt.Errorf("commit failed") },
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{}, nil },
+		StageFilesFn:       func(ctx context.Context, files ...string) error { return nil },
+		CommitFn:           func(ctx context.Context, message string) error { return fmt.Errorf("commit failed") },
 	})
 
 	registry := plugins.NewPluginRegistry()
@@ -159,12 +160,12 @@ func TestCommitAndTagAfterBump_TagCreationFails(t *testing.T) {
 		Prefix:     "v",
 		Annotate:   true,
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn:          func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error { return fmt.Errorf("tag creation failed") },
+		TagExistsFn:          func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error { return fmt.Errorf("tag creation failed") },
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{}, nil },
-		StageFilesFn:       func(files ...string) error { return nil },
-		CommitFn:           func(message string) error { return nil },
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{}, nil },
+		StageFilesFn:       func(ctx context.Context, files ...string) error { return nil },
+		CommitFn:           func(ctx context.Context, message string) error { return nil },
 	})
 
 	registry := plugins.NewPluginRegistry()
@@ -189,12 +190,12 @@ func TestCommitAndTagAfterBump_WithoutBumpedPath(t *testing.T) {
 		Prefix:     "v",
 		Annotate:   true,
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn:          func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error { return nil },
+		TagExistsFn:          func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error { return nil },
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{".version"}, nil },
-		StageFilesFn:       func(files ...string) error { return nil },
-		CommitFn:           func(message string) error { return nil },
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{".version"}, nil },
+		StageFilesFn:       func(ctx context.Context, files ...string) error { return nil },
+		CommitFn:           func(ctx context.Context, message string) error { return nil },
 	})
 
 	registry := plugins.NewPluginRegistry()
@@ -220,16 +221,16 @@ func TestCommitAndTagAfterBump_WithPush(t *testing.T) {
 		Annotate:   true,
 		Push:       true,
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn:          func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error { return nil },
-		PushTagFn: func(name string) error {
+		TagExistsFn:          func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error { return nil },
+		PushTagFn: func(ctx context.Context, name string) error {
 			pushedTag = name
 			return nil
 		},
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{}, nil },
-		StageFilesFn:       func(files ...string) error { return nil },
-		CommitFn:           func(message string) error { return nil },
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{}, nil },
+		StageFilesFn:       func(ctx context.Context, files ...string) error { return nil },
+		CommitFn:           func(ctx context.Context, message string) error { return nil },
 	})
 
 	registry := plugins.NewPluginRegistry()
@@ -257,12 +258,12 @@ func TestCommitAndTagAfterBump_CustomCommitMessageTemplate(t *testing.T) {
 		Annotate:              true,
 		CommitMessageTemplate: "release: bump to {version}",
 	}, &tagmanager.MockGitTagOperations{
-		TagExistsFn:          func(name string) (bool, error) { return false, nil },
-		CreateAnnotatedTagFn: func(name, message string) error { return nil },
+		TagExistsFn:          func(ctx context.Context, name string) (bool, error) { return false, nil },
+		CreateAnnotatedTagFn: func(ctx context.Context, name, message string) error { return nil },
 	}, &tagmanager.MockGitCommitOperations{
-		GetModifiedFilesFn: func() ([]string, error) { return []string{}, nil },
-		StageFilesFn:       func(files ...string) error { return nil },
-		CommitFn: func(message string) error {
+		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) { return []string{}, nil },
+		StageFilesFn:       func(ctx context.Context, files ...string) error { return nil },
+		CommitFn: func(ctx context.Context, message string) error {
 			commitMsg = message
 			return nil
 		},

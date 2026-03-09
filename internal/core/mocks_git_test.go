@@ -86,8 +86,9 @@ func TestMockGitClient_CloneError(t *testing.T) {
 
 func TestMockGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 	mock := NewMockGitTagOperations()
+	ctx := context.Background()
 
-	err := mock.CreateAnnotatedTag("v1.0.0", "Release 1.0.0")
+	err := mock.CreateAnnotatedTag(ctx, "v1.0.0", "Release 1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -97,7 +98,7 @@ func TestMockGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 
 	// Test with error
 	mock.CreateAnnotatedTagErr = errors.New("tag error")
-	err = mock.CreateAnnotatedTag("v1.0.1", "msg")
+	err = mock.CreateAnnotatedTag(ctx, "v1.0.1", "msg")
 	if err == nil || err.Error() != "tag error" {
 		t.Errorf("expected 'tag error', got %v", err)
 	}
@@ -105,8 +106,9 @@ func TestMockGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 
 func TestMockGitTagOperations_CreateLightweightTag(t *testing.T) {
 	mock := NewMockGitTagOperations()
+	ctx := context.Background()
 
-	err := mock.CreateLightweightTag("v2.0.0")
+	err := mock.CreateLightweightTag(ctx, "v2.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,17 +118,38 @@ func TestMockGitTagOperations_CreateLightweightTag(t *testing.T) {
 
 	// Test with error
 	mock.CreateLightweightTagErr = errors.New("lightweight tag error")
-	err = mock.CreateLightweightTag("v2.0.1")
+	err = mock.CreateLightweightTag(ctx, "v2.0.1")
 	if err == nil || err.Error() != "lightweight tag error" {
 		t.Errorf("expected 'lightweight tag error', got %v", err)
 	}
 }
 
+func TestMockGitTagOperations_CreateSignedTag(t *testing.T) {
+	mock := NewMockGitTagOperations()
+	ctx := context.Background()
+
+	err := mock.CreateSignedTag(ctx, "v1.0.0", "Release 1.0.0", "ABCD1234")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(mock.CreatedTags) != 1 || mock.CreatedTags[0] != "v1.0.0" {
+		t.Errorf("expected tag v1.0.0 in CreatedTags, got %v", mock.CreatedTags)
+	}
+
+	// Test with error
+	mock.CreateSignedTagErr = errors.New("signed tag error")
+	err = mock.CreateSignedTag(ctx, "v1.0.1", "msg", "KEY123")
+	if err == nil || err.Error() != "signed tag error" {
+		t.Errorf("expected 'signed tag error', got %v", err)
+	}
+}
+
 func TestMockGitTagOperations_TagExists(t *testing.T) {
 	mock := NewMockGitTagOperations()
+	ctx := context.Background()
 
 	mock.TagExistsResult = true
-	exists, err := mock.TagExists("v1.0.0")
+	exists, err := mock.TagExists(ctx, "v1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -135,7 +158,7 @@ func TestMockGitTagOperations_TagExists(t *testing.T) {
 	}
 
 	mock.TagExistsResult = false
-	exists, err = mock.TagExists("v9.9.9")
+	exists, err = mock.TagExists(ctx, "v9.9.9")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -145,7 +168,7 @@ func TestMockGitTagOperations_TagExists(t *testing.T) {
 
 	// Test with error
 	mock.TagExistsErr = errors.New("tag exists error")
-	_, err = mock.TagExists("v1.0.0")
+	_, err = mock.TagExists(ctx, "v1.0.0")
 	if err == nil || err.Error() != "tag exists error" {
 		t.Errorf("expected 'tag exists error', got %v", err)
 	}
@@ -153,9 +176,10 @@ func TestMockGitTagOperations_TagExists(t *testing.T) {
 
 func TestMockGitTagOperations_GetLatestTag(t *testing.T) {
 	mock := NewMockGitTagOperations()
+	ctx := context.Background()
 
 	mock.GetLatestTagName = "v3.0.0"
-	tag, err := mock.GetLatestTag()
+	tag, err := mock.GetLatestTag(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -165,7 +189,7 @@ func TestMockGitTagOperations_GetLatestTag(t *testing.T) {
 
 	// Test with error
 	mock.GetLatestTagErr = errors.New("no tags")
-	_, err = mock.GetLatestTag()
+	_, err = mock.GetLatestTag(ctx)
 	if err == nil || err.Error() != "no tags" {
 		t.Errorf("expected 'no tags', got %v", err)
 	}
@@ -173,8 +197,9 @@ func TestMockGitTagOperations_GetLatestTag(t *testing.T) {
 
 func TestMockGitTagOperations_PushTag(t *testing.T) {
 	mock := NewMockGitTagOperations()
+	ctx := context.Background()
 
-	err := mock.PushTag("v1.0.0")
+	err := mock.PushTag(ctx, "v1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -184,9 +209,67 @@ func TestMockGitTagOperations_PushTag(t *testing.T) {
 
 	// Test with error
 	mock.PushTagErr = errors.New("push error")
-	err = mock.PushTag("v1.0.1")
+	err = mock.PushTag(ctx, "v1.0.1")
 	if err == nil || err.Error() != "push error" {
 		t.Errorf("expected 'push error', got %v", err)
+	}
+}
+
+func TestMockGitTagOperations_ListTags(t *testing.T) {
+	mock := NewMockGitTagOperations()
+	ctx := context.Background()
+
+	mock.ListTagsResult = []string{"v1.0.0", "v1.1.0", "v2.0.0"}
+	tags, err := mock.ListTags(ctx, "v*")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(tags) != 3 {
+		t.Errorf("expected 3 tags, got %d", len(tags))
+	}
+
+	// Test with error
+	mock.ListTagsErr = errors.New("list tags error")
+	_, err = mock.ListTags(ctx, "v*")
+	if err == nil || err.Error() != "list tags error" {
+		t.Errorf("expected 'list tags error', got %v", err)
+	}
+}
+
+func TestMockGitTagOperations_DeleteTag(t *testing.T) {
+	mock := NewMockGitTagOperations()
+	ctx := context.Background()
+
+	err := mock.DeleteTag(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(mock.DeletedTags) != 1 || mock.DeletedTags[0] != "v1.0.0" {
+		t.Errorf("expected deleted tag v1.0.0, got %v", mock.DeletedTags)
+	}
+
+	// Test with error
+	mock.DeleteTagErr = errors.New("delete tag error")
+	err = mock.DeleteTag(ctx, "v1.0.1")
+	if err == nil || err.Error() != "delete tag error" {
+		t.Errorf("expected 'delete tag error', got %v", err)
+	}
+}
+
+func TestMockGitTagOperations_DeleteRemoteTag(t *testing.T) {
+	mock := NewMockGitTagOperations()
+	ctx := context.Background()
+
+	err := mock.DeleteRemoteTag(ctx, "v1.0.0")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Test with error
+	mock.DeleteRemoteTagErr = errors.New("delete remote tag error")
+	err = mock.DeleteRemoteTag(ctx, "v1.0.1")
+	if err == nil || err.Error() != "delete remote tag error" {
+		t.Errorf("expected 'delete remote tag error', got %v", err)
 	}
 }
 
