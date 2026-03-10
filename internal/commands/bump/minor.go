@@ -34,8 +34,7 @@ func runBumpMinor(ctx context.Context, cmd *cli.Command, cfg *config.Config, reg
 		return err
 	}
 
-	params := extractBumpParams(cmd, "minor")
-	params.versionCalc = makeMinorCalculator(params.pre, params.meta, params.preserveMeta)
+	params := extractBumpParams(cmd, "minor", operations.BumpMinor)
 
-	return executeStandardBump(ctx, cmd, cfg, registry, params, operations.BumpMinor)
+	return executeStandardBump(ctx, cmd, cfg, registry, params)
 }

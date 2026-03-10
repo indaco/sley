@@ -169,7 +169,7 @@ func (m *VersionManager) UpdatePreRelease(ctx context.Context, path string, labe
 			return fmt.Errorf("current version has no pre-release; use --label to specify one")
 		}
 		// Extract base label and increment
-		base := extractPreReleaseBase(version.PreRelease)
+		base := ExtractPreReleaseBase(version.PreRelease)
 		version.PreRelease = IncrementPreRelease(version.PreRelease, base)
 	}
 
@@ -182,9 +182,9 @@ func (m *VersionManager) UpdatePreRelease(ctx context.Context, path string, labe
 	return m.Save(ctx, path, version)
 }
 
-// extractPreReleaseBase extracts the base label from a pre-release string.
+// ExtractPreReleaseBase extracts the base label from a pre-release string.
 // e.g., "rc.1" -> "rc", "beta.2" -> "beta", "alpha" -> "alpha", "rc1" -> "rc"
-func extractPreReleaseBase(pre string) string {
+func ExtractPreReleaseBase(pre string) string {
 	// First, check for dot followed by a number
 	for i := len(pre) - 1; i >= 0; i-- {
 		if pre[i] == '.' {

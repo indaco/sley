@@ -170,7 +170,7 @@ func (op *BumpOperation) calculatePreRelease(current semver.SemVersion) (string,
 		return semver.IncrementPreRelease(current.PreRelease, op.preRelease), nil
 	}
 	if current.PreRelease != "" {
-		base := extractPreReleaseBase(current.PreRelease)
+		base := semver.ExtractPreReleaseBase(current.PreRelease)
 		return semver.IncrementPreRelease(current.PreRelease, base), nil
 	}
 	return "", fmt.Errorf("current version has no pre-release; use --label to specify one")
@@ -198,38 +198,52 @@ func (op *BumpOperation) Name() string {
 	return fmt.Sprintf("bump %s", op.bumpType)
 }
 
-// extractPreReleaseBase extracts the base label from a pre-release string.
-// e.g., "rc.1" -> "rc", "beta.2" -> "beta", "alpha" -> "alpha", "rc1" -> "rc"
-func extractPreReleaseBase(pre string) string {
-	// First, check for dot followed by a number
-	for i := len(pre) - 1; i >= 0; i-- {
-		if pre[i] == '.' {
-			// Check if everything after the dot is numeric
-			suffix := pre[i+1:]
-			isNumeric := true
-			for _, c := range suffix {
-				if c < '0' || c > '9' {
-					isNumeric = false
-					break
-				}
-			}
-			if isNumeric && len(suffix) > 0 {
-				return pre[:i]
-			}
-		}
+// BumpResult holds the result of a version bump calculation.
+type BumpResult struct {
+	PreviousVersion semver.SemVersion
+	NewVersion      semver.SemVersion
+}
+
+// Preview calculates the new version without writing it.
+// This allows callers to inspect the result for hooks and validation
+// before committing the write via Write().
+func (op *BumpOperation) Preview(ctx context.Context, path string) (BumpResult, error) {
+	select {
+	case <-ctx.Done():
+		return BumpResult{}, ctx.Err()
+	default:
 	}
 
-	// Check for trailing digits without dot (e.g., "rc1" -> "rc")
-	lastNonDigit := -1
-	for i := len(pre) - 1; i >= 0; i-- {
-		if pre[i] < '0' || pre[i] > '9' {
-			lastNonDigit = i
-			break
-		}
-	}
-	if lastNonDigit >= 0 && lastNonDigit < len(pre)-1 {
-		return pre[:lastNonDigit+1]
+	vm := semver.NewVersionManager(op.fs, nil)
+	currentVer, err := vm.Read(ctx, path)
+	if err != nil {
+		return BumpResult{}, fmt.Errorf("failed to read version from %s: %w", path, err)
 	}
 
-	return pre
+	newVer, err := op.calculateNewVersion(currentVer)
+	if err != nil {
+		return BumpResult{}, err
+	}
+
+	if op.bumpType != BumpPre {
+		op.applyPreReleaseAndMetadata(&newVer, currentVer)
+	}
+
+	return BumpResult{
+		PreviousVersion: currentVer,
+		NewVersion:      newVer,
+	}, nil
+}
+
+// Write saves the given version to the specified path.
+// Used after Preview() when the caller has completed hooks and validation.
+func (op *BumpOperation) Write(ctx context.Context, path string, version semver.SemVersion) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	vm := semver.NewVersionManager(op.fs, nil)
+	return vm.Save(ctx, path, version)
 }

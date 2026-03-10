@@ -723,10 +723,150 @@ func TestExtractPreReleaseBase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			result := extractPreReleaseBase(tt.input)
+			result := semver.ExtractPreReleaseBase(tt.input)
 			if result != tt.expected {
-				t.Errorf("extractPreReleaseBase(%q) = %q, want %q", tt.input, result, tt.expected)
+				t.Errorf("ExtractPreReleaseBase(%q) = %q, want %q", tt.input, result, tt.expected)
 			}
 		})
+	}
+}
+
+func TestBumpOperation_Preview_ReturnsVersionsWithoutWriting(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
+
+	ctx := context.Background()
+	result, err := op.Preview(ctx, "/test/.version")
+	if err != nil {
+		t.Fatalf("Preview failed: %v", err)
+	}
+
+	if result.PreviousVersion.String() != "1.2.3" {
+		t.Errorf("PreviousVersion = %q, want %q", result.PreviousVersion.String(), "1.2.3")
+	}
+	if result.NewVersion.String() != "1.2.4" {
+		t.Errorf("NewVersion = %q, want %q", result.NewVersion.String(), "1.2.4")
+	}
+
+	// Verify file was NOT modified
+	data, ok := fs.GetFile("/test/.version")
+	if !ok {
+		t.Fatal("version file not found")
+	}
+	if string(data) != "1.2.3\n" {
+		t.Errorf("file was modified by Preview: got %q, want %q", string(data), "1.2.3\n")
+	}
+}
+
+func TestBumpOperation_Preview_Minor(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpMinor, "", "", false)
+
+	result, err := op.Preview(context.Background(), "/test/.version")
+	if err != nil {
+		t.Fatalf("Preview failed: %v", err)
+	}
+
+	if result.NewVersion.String() != "1.3.0" {
+		t.Errorf("NewVersion = %q, want %q", result.NewVersion.String(), "1.3.0")
+	}
+}
+
+func TestBumpOperation_Preview_ContextCancellation(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := op.Preview(ctx, "/test/.version")
+	if err == nil {
+		t.Fatal("expected context cancellation error, got nil")
+	}
+}
+
+func TestBumpOperation_Preview_ReadError(t *testing.T) {
+	fs := core.NewMockFileSystem()
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
+
+	_, err := op.Preview(context.Background(), "/test/.version")
+	if err == nil {
+		t.Fatal("expected read error, got nil")
+	}
+}
+
+func TestBumpOperation_Write(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
+	newVer := semver.SemVersion{Major: 1, Minor: 2, Patch: 4}
+
+	err := op.Write(context.Background(), "/test/.version", newVer)
+	if err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	data, ok := fs.GetFile("/test/.version")
+	if !ok {
+		t.Fatal("version file not found")
+	}
+	if string(data) != "1.2.4\n" {
+		t.Errorf("version = %q, want %q", string(data), "1.2.4\n")
+	}
+}
+
+func TestBumpOperation_Write_ContextCancellation(t *testing.T) {
+	fs := core.NewMockFileSystem()
+	fs.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err := op.Write(ctx, "/test/.version", semver.SemVersion{Major: 1, Minor: 2, Patch: 4})
+	if err == nil {
+		t.Fatal("expected context cancellation error, got nil")
+	}
+}
+
+func TestBumpOperation_PreviewThenWrite_EqualsExecute(t *testing.T) {
+	fs1 := core.NewMockFileSystem()
+	fs1.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	fs2 := core.NewMockFileSystem()
+	fs2.SetFile("/test/.version", []byte("1.2.3\n"))
+
+	ctx := context.Background()
+
+	// Path 1: Preview + Write
+	op1 := NewBumpOperation(fs1, semver.NewDefaultBumper(), BumpMinor, "alpha", "build.1", false)
+	result, err := op1.Preview(ctx, "/test/.version")
+	if err != nil {
+		t.Fatalf("Preview failed: %v", err)
+	}
+	if err := op1.Write(ctx, "/test/.version", result.NewVersion); err != nil {
+		t.Fatalf("Write failed: %v", err)
+	}
+
+	// Path 2: Execute
+	op2 := NewBumpOperation(fs2, semver.NewDefaultBumper(), BumpMinor, "alpha", "build.1", false)
+	mod := &workspace.Module{Name: "test", Path: "/test/.version"}
+	if err := op2.Execute(ctx, mod); err != nil {
+		t.Fatalf("Execute failed: %v", err)
+	}
+
+	data1, _ := fs1.GetFile("/test/.version")
+	data2, _ := fs2.GetFile("/test/.version")
+	if string(data1) != string(data2) {
+		t.Errorf("Preview+Write = %q, Execute = %q", string(data1), string(data2))
 	}
 }
