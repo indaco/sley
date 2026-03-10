@@ -1,87 +1,46 @@
 #!/usr/bin/env bash
-# Common utilities for all scripts
-# This file provides shared functionality across all shell scripts in the project
+# common.sh - Shared utilities for sley CLI scripts
+# Auto-loads logger.sh and provides common functions
 
-# -------- Auto-detect and load logger --------
-# This works from any script location in the project
+set -euo pipefail
 
-# Function to find the scripts directory from any location
+# Find the scripts directory (works from any location)
 find_scripts_dir() {
-    local current_dir="$1"
-    while [ "$current_dir" != "/" ]; do
-        if [ -d "$current_dir/scripts" ] && [ -f "$current_dir/scripts/lib/logger.sh" ]; then
-            echo "$current_dir/scripts"
-            return 0
-        fi
-        current_dir="$(dirname "$current_dir")"
-    done
-    return 1
+    local dir
+    dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+    # If we're in lib/, go up one level
+    if [[ "$(basename "$dir")" == "lib" ]]; then
+        dir="$(dirname "$dir")"
+    fi
+
+    echo "$dir"
 }
 
-# Auto-load logger utility
+# Load logger if not already loaded
 load_logger() {
-    # Try to determine scripts directory relative to current script
-    local script_path
-    if [ -n "${BASH_SOURCE[0]}" ]; then
-        script_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    else
-        script_path="$(pwd)"
+    if ! declare -f log_info >/dev/null 2>&1; then
+        local scripts_dir
+        scripts_dir="$(find_scripts_dir)"
+        # shellcheck source=logger.sh
+        source "${scripts_dir}/lib/logger.sh"
     fi
-
-    # Find scripts directory
-    local scripts_dir
-    scripts_dir="$(find_scripts_dir "$script_path")"
-
-    if [ -z "$scripts_dir" ]; then
-        echo "ERROR: Could not locate scripts/lib/logger.sh" >&2
-        exit 1
-    fi
-
-    # Source the logger
-    # shellcheck source=logger.sh
-    . "$scripts_dir/lib/logger.sh"
-
-    # Export scripts directory for other uses
-    export SCRIPTS_DIR="$scripts_dir"
 }
 
 # -------- Shared Utility Functions --------
 
-# Check if a command exists
-require_command() {
-    local cmd="$1"
-    local install_msg="${2:-Install $cmd}"
+# Install a Go tool if not already present
+install_go_tool() {
+    local name="$1"
+    local pkg="$2"
 
-    if ! command -v "$cmd" >/dev/null 2>&1; then
-        log_error "$cmd not found"
-        log_faint "$install_msg"
-        exit 1
+    if command_exists "$name"; then
+        log_faint "$name already installed"
+    else
+        log_info "Installing $name..."
+        go install "$pkg" && log_success "$name installed" || log_warning "Failed to install $name"
     fi
 }
 
-# Check if a directory exists
-require_directory() {
-    local dir="$1"
-    local create_msg="${2:-Create directory: $dir}"
-
-    if [ ! -d "$dir" ]; then
-        log_error "Directory not found: $dir"
-        log_faint "$create_msg"
-        exit 1
-    fi
-}
-
-# Check if a file exists
-require_file() {
-    local file="$1"
-    local create_msg="${2:-Create file: $file}"
-
-    if [ ! -f "$file" ]; then
-        log_error "File not found: $file"
-        log_faint "$create_msg"
-        exit 1
-    fi
-}
-
-# Automatically load logger when this file is sourced
+# Auto-load logger on source
 load_logger

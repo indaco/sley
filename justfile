@@ -32,6 +32,21 @@ buildflags := "-trimpath"
 default:
     @just --list
 
+# === Build Recipes ===
+
+# Build the binary with optimizations (reduced size)
+build:
+    @. {{ logger }} && log_info "Building optimized binary..."
+    mkdir -p {{ build_dir }}
+    {{ gobuild }} {{ buildflags }} -ldflags="{{ ldflags }}" -o {{ build_dir }}/{{ app_name }} ./{{ cmd_dir }}
+    @. {{ logger }} && log_info "Binary size:"
+    @ls -lh {{ build_dir }}/{{ app_name }} | awk '{print "  " $5}'
+
+# Install the binary using Go install
+install: check test-force
+    @. {{ logger }} && log_info "Install the binary using Go install"
+    cd {{ cmd_dir }} && {{ go }} install {{ buildflags }} -ldflags="{{ ldflags }}" .
+
 # Clean and build
 all: clean build
 
@@ -42,15 +57,17 @@ clean:
     rm -f coverage.out coverage.html
     {{ goclean }} -cache
 
+# === Code Quality ===
+
+# Format code
+fmt:
+    @. {{ logger }} && log_info "Running fmt and gofumpt"
+    {{ go }} fmt ./...
+
 # Run go-modernize with auto-fix
 modernize:
     @. {{ logger }} && log_info "Running go-modernize"
     modernize --fix ./...
-
-# Run govulncheck
-security-scan:
-    @. {{ logger }} && log_info "Running govulncheck"
-    govulncheck ./...
 
 # Run golangci-lint
 lint:
@@ -61,6 +78,26 @@ lint:
 reportcard:
     @. {{ logger }} && log_info "Running goreportcard-cli"
     goreportcard-cli -v
+
+# Run govulncheck
+security-scan:
+    @. {{ logger }} && log_info "Running govulncheck"
+    govulncheck ./...
+
+# Run modernize, lint, and reportcard
+check: fmt modernize lint reportcard
+
+# Run go mod tidy
+tidy:
+    @. {{ logger }} && log_info "Running go mod tidy"
+    {{ go }} mod tidy
+
+# Run go mod download
+deps:
+    @. {{ logger }} && log_info "Running go mod download"
+    {{ go }} mod download
+
+# === Test Recipes ===
 
 # Run all tests and print code coverage value
 test:
@@ -85,18 +122,10 @@ test-race:
     @. {{ logger }} && log_info "Running tests with race detector"
     {{ go }} test -race $({{ go }} list ./... | grep -Ev 'internal/testutils')
 
-# Run modernize, lint, and reportcard
-check: modernize lint reportcard
+# === Utilities ===
 
-# Build the binary with optimizations (reduced size)
-build:
-    @. {{ logger }} && log_info "Building optimized binary..."
-    mkdir -p {{ build_dir }}
-    {{ gobuild }} {{ buildflags }} -ldflags="{{ ldflags }}" -o {{ build_dir }}/{{ app_name }} ./{{ cmd_dir }}
-    @. {{ logger }} && log_info "Binary size:"
-    @ls -lh {{ build_dir }}/{{ app_name }} | awk '{print "  " $5}'
-
-# Install the binary using Go install
-install: check test-force
-    @. {{ logger }} && log_info "Install the binary using Go install"
-    cd {{ cmd_dir }} && {{ go }} install {{ buildflags }} -ldflags="{{ ldflags }}" .
+# Update dependencies
+deps-update:
+    @. {{ logger }} && log_info "Running go update deps"
+    {{ go }} get -u ./...
+    {{ go }} mod tidy

@@ -1,96 +1,93 @@
 #!/usr/bin/env bash
-# devbox-init.sh  -  one-time setup for local dev environments
+# devbox-init.sh - Development environment setup for sley CLI
+# Called automatically by devbox shell init_hook
+
 set -eu
 
-# -------- Config --------
-. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/lib/common.sh
+# Load common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "${SCRIPT_DIR}/lib/common.sh"
 
-# -------- Start --------
-h1 'Welcome to the sley devbox!'
+h1 "sley CLI - Development Environment Setup"
 
-log_default ""
+# === Go Dependencies ===
+h2 "Go Dependencies"
 
-# Go dependencies and tools
-log_info 'Setting up Go dependencies and tools...'
-if [ -f "go.mod" ]; then
-  log_info 'Downloading Go modules...'
-  (go mod download)
-  log_success 'Go modules downloaded'
+if command_exists go; then
+    if [ -f "go.mod" ]; then
+        log_info "Downloading Go modules..."
+        go mod download
+        log_success "Go modules downloaded"
+    else
+        log_warning "go.mod not found - skipping Go module download"
+    fi
 else
-  log_warning 'go.mod not found - skipping Go module download'
+    log_warning "Go not found, skipping module download"
 fi
 
-if command -v go >/dev/null 2>&1; then
-  log_info 'Installing Go tools...'
+# === Go Tools ===
+h2 "Go Tools"
 
-  if go install golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest; then
-    log_success 'go-modernize installed'
-  else
-    log_warning 'Failed to install go-modernize'
-  fi
+if command_exists go; then
+    install_go_tool "modernize" "golang.org/x/tools/gopls/internal/analysis/modernize/cmd/modernize@latest"
+    install_go_tool "govulncheck" "golang.org/x/vuln/cmd/govulncheck@latest"
 
-  if go install golang.org/x/vuln/cmd/govulncheck@latest; then
-    log_success 'govulncheck installed'
-  else
-    log_warning 'Failed to install govulncheck'
-  fi
-
-  # goreportcard-cli requires manual installation:
-  # git clone https://github.com/gojp/goreportcard.git && cd goreportcard && make install && go install ./cmd/goreportcard-cli
-  if command -v goreportcard-cli >/dev/null 2>&1; then
-    log_success 'goreportcard-cli already installed'
-  else
-    log_faint 'goreportcard-cli not installed (optional) - see: https://github.com/gojp/goreportcard'
-  fi
+    # goreportcard-cli requires manual installation:
+    # git clone https://github.com/gojp/goreportcard.git && cd goreportcard && make install && go install ./cmd/goreportcard-cli
+    if command_exists goreportcard-cli; then
+        log_faint "goreportcard-cli already installed"
+    else
+        log_faint "goreportcard-cli not installed (optional) - see: https://github.com/gojp/goreportcard"
+    fi
 else
-  log_warning 'Go not available - skipping Go tools installation'
+    log_warning "Go not available - skipping Go tools installation"
 fi
 
-log_default ""
+# === Git Hooks ===
+h2 "Git Hooks"
 
-# Git hooks (prek)
-log_info 'Setting up Git hooks with prek...'
 # Ensure custom hooks are executable
-if [ -f scripts/githooks/commit-msg ]; then
-  chmod +x scripts/githooks/commit-msg
-fi
-if [ -f scripts/githooks/pre-push ]; then
-  chmod +x scripts/githooks/pre-push
-fi
-log_success 'Custom hooks made executable'
+for hook in scripts/githooks/commit-msg scripts/githooks/pre-push; do
+    if [ -f "$hook" ]; then
+        chmod +x "$hook"
+    fi
+done
+log_success "Custom hooks made executable"
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if command -v prek >/dev/null 2>&1; then
-    # Install prek hooks for commit-msg and pre-push stages
-    if prek install --hook-type commit-msg --hook-type pre-push; then
-      log_success 'prek hooks installed (commit-msg, pre-push)'
+    if command_exists prek; then
+        log_info "Installing git hooks via prek..."
+        prek install --hook-type commit-msg --hook-type pre-push && log_success "Git hooks installed (commit-msg, pre-push)" || log_warning "Failed to install git hooks"
     else
-      log_warning 'Failed to install prek hooks'
+        log_warning "prek not found - run: cargo install prek"
     fi
-  else
-    log_warning 'prek not installed - run: cargo install prek'
-  fi
 else
-  log_warning 'not a git repository - skipping hooks installation'
+    log_warning "Not a git repository - skipping hooks installation"
 fi
 
+# === Summary ===
+h1 "Setup Complete"
+
 log_default ""
-# Helpful commands
-h3 'Available just commands:'
-cat <<'TXT'
-  just help        - Show help message
-  just all         - Clean and build
-  just clean       - Clean the build directory and Go cache
-  just test        - Run all tests and generate coverage report
-  just test-force  - Clean go tests cache and run all tests
-  just modernize   - Run go-modernize with auto-fix
-  just check       - Run modernize, lint, and test
-  just lint        - Run golangci-lint
-  just build       - Build the binary to build/sley
-  just install     - Install the binary using Go install
-
-Quick start: `just check` to run all quality checks!
-TXT
-
-# End
-printf '\n%s\n\n' '===================================='
+log_info "Available commands:"
+log_faint "  just build          - Build the binary with optimizations (reduced size)"
+log_faint "  just install        - Install the binary using Go install"
+log_faint "  just clean          - Clean the build directory and Go cache"
+log_faint "  just all            - Clean and build"
+log_faint "  just fmt            - Format code"
+log_faint "  just modernize      - Run go-modernize with auto-fix"
+log_faint "  just lint           - Run golangci-lint"
+log_faint "  just reportcard     - Run goreportcard-cli"
+log_faint "  just check          - Run modernize, lint, and reportcard"
+log_faint "  just security-scan  - Run govulncheck"
+log_faint "  just test           - Run all tests and print code coverage value"
+log_faint "  just test-force     - Clean go tests cache and run all tests"
+log_faint "  just test-coverage  - Run all tests and generate coverage report"
+log_faint "  just test-race      - Run all tests with race detector"
+log_faint "  just deps           - Run go mod download"
+log_faint "  just deps-update    - Update dependencies"
+log_faint "  just tidy           - Run go mod tidy"
+log_default ""
+log_faint "Quick start: just check to run all quality checks!"
+log_default ""
