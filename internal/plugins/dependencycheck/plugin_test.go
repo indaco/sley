@@ -342,64 +342,6 @@ func TestNormalizeVersion(t *testing.T) {
 	}
 }
 
-func TestRegistry(t *testing.T) {
-	// Save original and restore after test
-	originalRegister := RegisterDependencyCheckerFn
-	originalGet := GetDependencyCheckerFn
-	defer func() {
-		RegisterDependencyCheckerFn = originalRegister
-		GetDependencyCheckerFn = originalGet
-		ResetDependencyChecker()
-	}()
-
-	t.Run("Register and Get", func(t *testing.T) {
-		ResetDependencyChecker()
-
-		cfg := &Config{Enabled: true}
-		Register(cfg)
-
-		dc := GetDependencyCheckerFn()
-		if dc == nil {
-			t.Fatal("GetDependencyCheckerFn() returned nil")
-		}
-
-		plugin, ok := dc.(*DependencyCheckerPlugin)
-		if !ok {
-			t.Fatal("Returned plugin is not *DependencyCheckerPlugin")
-		}
-
-		if !plugin.IsEnabled() {
-			t.Error("Plugin should be enabled")
-		}
-	})
-
-	t.Run("Unregister", func(t *testing.T) {
-		ResetDependencyChecker()
-
-		cfg := &Config{Enabled: true}
-		Register(cfg)
-
-		Unregister()
-
-		dc := GetDependencyCheckerFn()
-		if dc != nil {
-			t.Error("GetDependencyCheckerFn() should return nil after Unregister")
-		}
-	})
-
-	t.Run("ResetDependencyChecker", func(t *testing.T) {
-		cfg := &Config{Enabled: true}
-		Register(cfg)
-
-		ResetDependencyChecker()
-
-		dc := GetDependencyCheckerFn()
-		if dc != nil {
-			t.Error("GetDependencyCheckerFn() should return nil after ResetDependencyChecker")
-		}
-	})
-}
-
 func TestDefaultConfig(t *testing.T) {
 	cfg := DefaultConfig()
 

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/plugins"
@@ -86,131 +85,106 @@ func TestCLI_BumpCommand_AutoInitFeedback(t *testing.T) {
 	}
 }
 
+// errorHook is a PreReleaseHook that always returns an error.
+type errorHook struct{}
+
+func (errorHook) HookName() string { return "error-hook" }
+func (errorHook) Run(_ context.Context) error {
+	return fmt.Errorf("mock pre-release hooks error")
+}
+
 func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 
 	tests := []struct {
 		name        string
 		args        []string
-		override    func() func() // returns restore function
+		setup       func(t *testing.T, tmpDir string)
 		expectedErr string
 	}{
 		{
-			name: "patch - FromCommand fails",
-			args: []string{"sley", "bump", "patch"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
+			name: "patch - FromCommand fails (strict + missing file)",
+			args: []string{"sley", "bump", "patch", "--strict"},
+			setup: func(t *testing.T, tmpDir string) {
+				// Do NOT create .version file so strict mode fails
 			},
-			expectedErr: "mock FromCommand error",
+			expectedErr: "version file not found",
 		},
 		{
 			name: "patch - RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "patch"},
-			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+			setup: func(t *testing.T, tmpDir string) {
+				testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				t.Cleanup(func() { hooks.ResetPreReleaseHooks() })
 			},
 			expectedErr: "mock pre-release hooks error",
 		},
 		{
-			name: "minor - FromCommand fails",
-			args: []string{"sley", "bump", "minor"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
-			},
-			expectedErr: "mock FromCommand error",
+			name:        "minor - FromCommand fails (strict + missing file)",
+			args:        []string{"sley", "bump", "minor", "--strict"},
+			setup:       func(t *testing.T, tmpDir string) {},
+			expectedErr: "version file not found",
 		},
 		{
 			name: "minor - RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "minor"},
-			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+			setup: func(t *testing.T, tmpDir string) {
+				testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				t.Cleanup(func() { hooks.ResetPreReleaseHooks() })
 			},
 			expectedErr: "mock pre-release hooks error",
 		},
 		{
-			name: "major - FromCommand fails",
-			args: []string{"sley", "bump", "major"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
-			},
-			expectedErr: "mock FromCommand error",
+			name:        "major - FromCommand fails (strict + missing file)",
+			args:        []string{"sley", "bump", "major", "--strict"},
+			setup:       func(t *testing.T, tmpDir string) {},
+			expectedErr: "version file not found",
 		},
 		{
 			name: "major - RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "major"},
-			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+			setup: func(t *testing.T, tmpDir string) {
+				testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				t.Cleanup(func() { hooks.ResetPreReleaseHooks() })
 			},
 			expectedErr: "mock pre-release hooks error",
 		},
 		{
-			name: "auto - FromCommand fails",
-			args: []string{"sley", "bump", "auto"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
-			},
-			expectedErr: "mock FromCommand error",
+			name:        "auto - FromCommand fails (strict + missing file)",
+			args:        []string{"sley", "bump", "auto", "--strict"},
+			setup:       func(t *testing.T, tmpDir string) {},
+			expectedErr: "version file not found",
 		},
 		{
 			name: "auto - RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "auto"},
-			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+			setup: func(t *testing.T, tmpDir string) {
+				testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				t.Cleanup(func() { hooks.ResetPreReleaseHooks() })
 			},
 			expectedErr: "mock pre-release hooks error",
 		},
 		{
-			name: "release - FromCommand fails",
-			args: []string{"sley", "bump", "release"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
-			},
-			expectedErr: "mock FromCommand error",
+			name:        "release - FromCommand fails (strict + missing file)",
+			args:        []string{"sley", "bump", "release", "--strict"},
+			setup:       func(t *testing.T, tmpDir string) {},
+			expectedErr: "version file not found",
 		},
 		{
 			name: "release - RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "release"},
-			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+			setup: func(t *testing.T, tmpDir string) {
+				testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				t.Cleanup(func() { hooks.ResetPreReleaseHooks() })
 			},
 			expectedErr: "mock pre-release hooks error",
 		},
@@ -220,10 +194,8 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			versionPath := filepath.Join(tmpDir, ".version")
-			testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 
-			restore := tt.override()
-			defer restore()
+			tt.setup(t, tmpDir)
 
 			cfg := &config.Config{Path: versionPath}
 			registry := plugins.NewPluginRegistry()

@@ -36,7 +36,7 @@ func executeSingleModuleBump(
 	params bumpParams,
 ) error {
 	// Validate command context
-	if _, err := clix.FromCommandFn(cmd); err != nil {
+	if _, err := clix.FromCommand(cmd); err != nil {
 		return err
 	}
 

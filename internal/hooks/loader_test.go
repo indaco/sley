@@ -23,7 +23,7 @@ func TestLoadPreReleaseHooksFromConfig(t *testing.T) {
 		},
 	}
 
-	err := LoadPreReleaseHooksFromConfigFn(cfg)
+	err := LoadPreReleaseHooksFromConfig(cfg)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestLoadPreReleaseHooksFromConfig_NilConfig(t *testing.T) {
 	ResetPreReleaseHooks()
 	t.Cleanup(func() { ResetPreReleaseHooks() })
 
-	err := LoadPreReleaseHooksFromConfigFn(nil)
+	err := LoadPreReleaseHooksFromConfig(nil)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestLoadPreReleaseHooksFromConfig_NilPreReleaseHooks(t *testing.T) {
 		PreReleaseHooks: nil,
 	}
 
-	err := LoadPreReleaseHooksFromConfigFn(cfg)
+	err := LoadPreReleaseHooksFromConfig(cfg)
 	if err != nil {
 		t.Fatalf("expected no error, got: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestLoadPreReleaseHooksFromConfig_SkipMissingCommand(t *testing.T) {
 	}
 
 	output, err := testutils.CaptureStdout(func() {
-		err := LoadPreReleaseHooksFromConfigFn(cfg)
+		err := LoadPreReleaseHooksFromConfig(cfg)
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}

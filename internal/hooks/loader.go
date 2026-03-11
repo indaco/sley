@@ -6,9 +6,8 @@ import (
 	"github.com/indaco/sley/internal/config"
 )
 
-var LoadPreReleaseHooksFromConfigFn = loadPreReleaseHooksFromConfig
-
-func loadPreReleaseHooksFromConfig(cfg *config.Config) error {
+// LoadPreReleaseHooksFromConfig loads pre-release hooks from the configuration.
+func LoadPreReleaseHooksFromConfig(cfg *config.Config) error {
 	if cfg == nil || cfg.PreReleaseHooks == nil {
 		return nil
 	}

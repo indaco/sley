@@ -91,7 +91,7 @@ func verifyConfigUpdated(t *testing.T, configPath string) *config.Config {
 		t.Error("config file is empty")
 	}
 
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("failed to load config: %v", err)
 	}

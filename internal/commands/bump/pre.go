@@ -53,7 +53,7 @@ func runBumpPre(ctx context.Context, cmd *cli.Command, cfg *config.Config, regis
 	isPreserveMeta := cmd.Bool("preserve-meta")
 	isSkipHooks := cmd.Bool("skip-hooks")
 
-	if err := hooks.RunPreReleaseHooksFn(ctx, isSkipHooks); err != nil {
+	if err := hooks.RunPreReleaseHooks(ctx, isSkipHooks); err != nil {
 		return err
 	}
 

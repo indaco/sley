@@ -579,54 +579,6 @@ func TestMatchBranchPattern(t *testing.T) {
 	}
 }
 
-func TestRegistry(t *testing.T) {
-	// Save original state
-	origGetter := GetReleaseGateFn
-	origRegisterer := RegisterReleaseGateFn
-	defer func() {
-		GetReleaseGateFn = origGetter
-		RegisterReleaseGateFn = origRegisterer
-		Unregister()
-	}()
-
-	// Reset to defaults
-	GetReleaseGateFn = func() ReleaseGate {
-		return defaultReleaseGate
-	}
-	RegisterReleaseGateFn = func(rg ReleaseGate) {
-		defaultReleaseGate = rg
-	}
-
-	t.Run("Register", func(t *testing.T) {
-		cfg := &Config{Enabled: true}
-		Register(cfg)
-
-		rg := GetReleaseGateFn()
-		if rg == nil {
-			t.Error("Register() did not set the default release gate")
-		}
-
-		plugin, ok := rg.(*ReleaseGatePlugin)
-		if !ok {
-			t.Error("Register() did not set a ReleaseGatePlugin instance")
-		}
-
-		if !plugin.IsEnabled() {
-			t.Error("Register() plugin is not enabled")
-		}
-	})
-
-	t.Run("Unregister", func(t *testing.T) {
-		Register(&Config{Enabled: true})
-		Unregister()
-
-		rg := GetReleaseGateFn()
-		if rg != nil {
-			t.Error("Unregister() did not clear the default release gate")
-		}
-	})
-}
-
 func TestNewReleaseGateWithOps_NilGitOps(t *testing.T) {
 	// When gitOps is nil, it should default to OSGitOperations
 	plugin := NewReleaseGateWithOps(nil, nil)

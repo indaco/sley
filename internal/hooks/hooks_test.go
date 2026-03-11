@@ -94,7 +94,7 @@ func TestRunPreReleaseHooks(t *testing.T) {
 			}
 
 			ctx := context.Background()
-			err := runPreReleaseHooks(ctx, tt.skip)
+			err := RunPreReleaseHooks(ctx, tt.skip)
 
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("expected error=%v, got error=%v", tt.wantErr, err != nil)

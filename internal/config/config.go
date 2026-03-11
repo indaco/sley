@@ -127,14 +127,15 @@ func (s *ConfigSaver) SaveTo(cfg *Config, configFile string) error {
 // defaultConfigSaver is the default ConfigSaver instance for backward compatibility.
 var defaultConfigSaver = NewConfigSaver(nil, nil, nil)
 
-// LoadConfigFn and SaveConfigFn are kept for backward compatibility during migration.
-// They delegate to the interface-based implementations.
-var (
-	LoadConfigFn = loadConfig
-	SaveConfigFn = func(cfg *Config) error {
-		return defaultConfigSaver.Save(cfg)
-	}
-)
+// LoadConfig loads the configuration from environment, YAML file, or defaults.
+func LoadConfig() (*Config, error) {
+	return loadConfig()
+}
+
+// SaveConfig saves the configuration to the default config file.
+func SaveConfig(cfg *Config) error {
+	return defaultConfigSaver.Save(cfg)
+}
 
 func loadConfig() (*Config, error) {
 	// Highest priority: ENV variable

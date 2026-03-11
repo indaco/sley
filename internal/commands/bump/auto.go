@@ -91,7 +91,7 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 	disableInfer := isNoInferFlag || (cfg != nil && cfg.Plugins != nil && !cfg.Plugins.CommitParser)
 
 	// Run pre-release hooks first (before any version operations)
-	if err := hooks.RunPreReleaseHooksFn(ctx, isSkipHooks); err != nil {
+	if err := hooks.RunPreReleaseHooks(ctx, isSkipHooks); err != nil {
 		return err
 	}
 
@@ -152,7 +152,7 @@ func determineBumpType(registry *plugins.PluginRegistry, label string, disableIn
 
 // runSingleModuleAuto handles the single-module auto bump operation.
 func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, path, label, meta, since, until string, isPreserveMeta, disableInfer, skipHooks bool) error {
-	if _, err := clix.FromCommandFn(cmd); err != nil {
+	if _, err := clix.FromCommand(cmd); err != nil {
 		return err
 	}
 

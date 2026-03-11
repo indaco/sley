@@ -80,29 +80,37 @@ extensions:
 }
 
 func TestExtensionListCmd_LoadConfigError(t *testing.T) {
-	// Create a mock of the LoadConfig function that returns an error
-	originalLoadConfig := config.LoadConfigFn
-	defer func() {
-		// Restore the original LoadConfig function after the test
-		config.LoadConfigFn = originalLoadConfig
-	}()
-
-	// Mock the LoadConfig function to simulate an error
-	config.LoadConfigFn = func() (*config.Config, error) {
-		return nil, fmt.Errorf("failed to load configuration")
-	}
-
-	// Set up a temporary directory for the config file (not used here, since LoadConfig will fail)
+	// Create a directory with an invalid .sley.yaml to trigger a real load error
 	tmpDir := t.TempDir()
 
+	// Write an invalid YAML file that will cause a parse error
+	invalidYAML := ": this is invalid yaml"
+	if err := os.WriteFile(filepath.Join(tmpDir, ".sley.yaml"), []byte(invalidYAML), 0644); err != nil {
+		t.Fatalf("failed to write invalid config: %v", err)
+	}
+
+	// Change to the temp directory so LoadConfig finds the invalid .sley.yaml
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("failed to get working directory: %v", err)
+	}
+	if err := os.Chdir(tmpDir); err != nil {
+		t.Fatalf("failed to chdir: %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+
 	// Prepare and run the CLI command
-	cfg := &config.Config{Path: tmpDir}
+	cfg := &config.Config{Path: filepath.Join(tmpDir, ".version")}
 	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run()})
 
-	// Capture the output of the plugin list command again
+	// Capture the output of the extension list command
 	output, err := testutils.CaptureStdout(func() {
 		err := appCli.Run(context.Background(), []string{"sley", "extension", "list"})
-		// Capture the actual error during execution
+		// The command prints the error and returns nil
 		if err != nil {
 			t.Fatalf("Expected no error, got: %v", err)
 		}

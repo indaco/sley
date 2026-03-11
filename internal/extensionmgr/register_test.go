@@ -201,7 +201,7 @@ func TestRegisterLocalExtension_DefaultConfigPathUsed_CurrentWorkingDir(t *testi
 	}
 
 	// Ensure the config file has the extension registered
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestRegisterLocalExtension_DefaultConfigPathUsed_OtherDir(t *testing.T) {
 	}
 
 	// Ensure the config file has the extension registered
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)
 	}
@@ -308,7 +308,7 @@ func TestRegisterLocalExtension_DotExtensionDir(t *testing.T) {
 	}
 
 	// Ensure the config file has the extension registered
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)
 	}
@@ -567,7 +567,7 @@ func verifyConfigHasOneExtension(t *testing.T, configPath, expectedPath string) 
 	}
 
 	// Load config
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)
 	}

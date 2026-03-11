@@ -17,7 +17,7 @@ func TestLoadConfig(t *testing.T) {
 		os.Setenv("SLEY_PATH", "env-defined/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
-		cfg, err := LoadConfigFn()
+		cfg, err := LoadConfig()
 		checkError(t, err, false)
 		checkConfigNil(t, cfg, false)
 		checkConfigPath(t, cfg, false, "env-defined/.version")
@@ -27,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 		os.Setenv("SLEY_PATH", "../../../etc/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
-		cfg, err := LoadConfigFn()
+		cfg, err := LoadConfig()
 		checkError(t, err, true)
 		checkConfigNil(t, cfg, true)
 		if err != nil && err.Error() != "invalid SLEY_PATH: path traversal not allowed, use absolute path instead" {
@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 		os.Setenv("SLEY_PATH", "/tmp/project/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
-		cfg, err := LoadConfigFn()
+		cfg, err := LoadConfig()
 		checkError(t, err, false)
 		checkConfigNil(t, cfg, false)
 		checkConfigPath(t, cfg, false, "/tmp/project/.version")
@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 		content := "path: ./my-folder/.version\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, false)
 			checkConfigPath(t, cfg, false, "./my-folder/.version")
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("missing file fallback", func(t *testing.T) {
 		tmpDir := t.TempDir()
 		runInTempDir(t, filepath.Join(tmpDir, "dummy"), func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, true)
 		})
@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		content := "{}\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, false)
 			checkConfigPath(t, cfg, false, ".version")
@@ -80,7 +80,7 @@ func TestLoadConfig(t *testing.T) {
 		content := "not_yaml::: true"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, true)
 			checkConfigNil(t, cfg, true)
 		})
@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 		content := ": this is invalid"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, true)
 			checkConfigNil(t, cfg, true)
 		})
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 			if err := os.Mkdir(".sley.yaml", 0755); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, true)
 			checkConfigNil(t, cfg, true)
 		})
@@ -118,7 +118,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 		content := "path: .version\ntheme: dracula\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, false)
 			if cfg.Theme != "dracula" {
@@ -131,7 +131,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 		content := "path: .version\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, false)
 			if cfg.Theme != "" {
@@ -144,7 +144,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 		content := "path: .version\ntheme: \"\"\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			checkError(t, err, false)
 			checkConfigNil(t, cfg, false)
 			if cfg.Theme != "" {

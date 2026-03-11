@@ -101,7 +101,7 @@ extensions:
 	}
 
 	// Ensure the config file still has only one plugin
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		t.Fatalf("expected no error loading config, got: %v", err)
 	}
