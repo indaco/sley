@@ -696,13 +696,16 @@ func TestGetNextVersion(t *testing.T) {
 func TestBumpAuto_CallsCreateTagAfterBump_WithEnabledTagManager(t *testing.T) {
 	version := semver.SemVersion{Major: 99, Minor: 88, Patch: 77}
 
-	// Create an enabled tag manager plugin
-	plugin := tagmanager.NewTagManager(&tagmanager.Config{
+	// Create an enabled tag manager plugin with mock git operations
+	// to avoid creating real tags in the working repository.
+	mockGitOps := &tagmanager.MockGitTagOperations{}
+	mockCommitOps := &tagmanager.MockGitCommitOperations{}
+	plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 		Enabled:    true,
 		AutoCreate: true,
 		Prefix:     "v",
 		Annotate:   true,
-	})
+	}, mockGitOps, mockCommitOps)
 
 	registry := plugins.NewPluginRegistry()
 	if err := registry.RegisterTagManager(plugin); err != nil {
@@ -748,10 +751,10 @@ func TestBumpAuto_SkipsTagCreation_WhenTagManagerDisabled(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 
-	plugin := tagmanager.NewTagManager(&tagmanager.Config{
+	plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 		Enabled:    false,
 		AutoCreate: false,
-	})
+	}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{})
 
 	cfg := &config.Config{Path: versionPath}
 	registry := plugins.NewPluginRegistry()
@@ -803,11 +806,14 @@ func TestBumpAuto_TagCreatedWithCorrectParameters(t *testing.T) {
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 4}
 
 	t.Run("calls createTagAfterBump with auto bump type", func(t *testing.T) {
-		plugin := tagmanager.NewTagManager(&tagmanager.Config{
+		// Use mock git operations to avoid creating real tags.
+		mockGitOps := &tagmanager.MockGitTagOperations{}
+		mockCommitOps := &tagmanager.MockGitCommitOperations{}
+		plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 			Enabled:    true,
 			AutoCreate: true,
 			Prefix:     "v",
-		})
+		}, mockGitOps, mockCommitOps)
 
 		registry := plugins.NewPluginRegistry()
 		if err := registry.RegisterTagManager(plugin); err != nil {
@@ -829,10 +835,10 @@ func TestBumpAuto_TagCreatedWithCorrectParameters(t *testing.T) {
 	})
 
 	t.Run("returns nil when tag manager is disabled", func(t *testing.T) {
-		plugin := tagmanager.NewTagManager(&tagmanager.Config{
+		plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 			Enabled:    false,
 			AutoCreate: false,
-		})
+		}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{})
 
 		registry := plugins.NewPluginRegistry()
 		if err := registry.RegisterTagManager(plugin); err != nil {
@@ -850,10 +856,10 @@ func TestBumpAuto_TagCreation_OnPreReleasePromotion(t *testing.T) {
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "2.0.0-rc.1")
 
-	plugin := tagmanager.NewTagManager(&tagmanager.Config{
+	plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 		Enabled:    false,
 		AutoCreate: false,
-	})
+	}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{})
 
 	cfg := &config.Config{Path: versionPath}
 	registry := plugins.NewPluginRegistry()
@@ -891,10 +897,10 @@ func TestBumpAuto_InferredMinorBump_WithTagManager(t *testing.T) {
 		return "minor"
 	}
 
-	plugin := tagmanager.NewTagManager(&tagmanager.Config{
+	plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 		Enabled:    false,
 		AutoCreate: false,
-	})
+	}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{})
 
 	cfg := &config.Config{Path: versionPath, Plugins: &config.PluginConfig{CommitParser: true}}
 	registry := plugins.NewPluginRegistry()
