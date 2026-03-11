@@ -252,9 +252,9 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 
 	t.Run("disabled plugin returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		plugin := tagmanager.NewTagManager(&tagmanager.Config{
+		plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 			Enabled: false,
-		})
+		}, &tagmanager.MockGitTagOperations{}, &tagmanager.MockGitCommitOperations{})
 		if err := registry.RegisterTagManager(plugin); err != nil {
 			t.Fatalf("failed to register tag manager: %v", err)
 		}
