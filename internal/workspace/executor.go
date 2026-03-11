@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -127,6 +128,7 @@ func (e *Executor) runParallel(ctx context.Context, modules []*Module, op Operat
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 	var firstError error
+	var failed atomic.Bool
 
 	// Create a context that we can cancel if fail-fast is triggered
 	execCtx, cancel := context.WithCancel(ctx)
@@ -138,25 +140,20 @@ func (e *Executor) runParallel(ctx context.Context, modules []*Module, op Operat
 		go func(idx int, module *Module) {
 			defer wg.Done()
 
-			// Check if we should skip due to fail-fast
-			if e.failFast {
-				mu.Lock()
-				if firstError != nil {
-					mu.Unlock()
-					return
-				}
-				mu.Unlock()
+			// Check if we should skip due to fail-fast (lock-free)
+			if e.failFast && failed.Load() {
+				return
 			}
 
 			result := e.executeOperation(execCtx, module, op)
 
-			mu.Lock()
 			results[idx] = result
-			if e.failFast && !result.Success && firstError == nil {
+			if e.failFast && !result.Success && failed.CompareAndSwap(false, true) {
+				mu.Lock()
 				firstError = result.Error
+				mu.Unlock()
 				cancel() // Cancel all other operations
 			}
-			mu.Unlock()
 		}(i, mod)
 	}
 

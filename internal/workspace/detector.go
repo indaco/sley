@@ -173,7 +173,7 @@ func (d *Detector) scanDirectory(ctx context.Context, dir string, depth int, roo
 		return nil, nil
 	}
 
-	modules := make([]*Module, 0, len(entries)/2)
+	modules := make([]*Module, 0, len(entries))
 
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
