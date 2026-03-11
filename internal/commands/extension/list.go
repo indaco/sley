@@ -23,7 +23,7 @@ func listCmd() *cli.Command {
 
 // runExtensionList lists installed extensions.
 func runExtensionList() error {
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		printer.PrintError(fmt.Sprintf("failed to load configuration: %v", err))
 		return nil

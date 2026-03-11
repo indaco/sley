@@ -77,19 +77,3 @@ func TestCommitParser_Parse(t *testing.T) {
 		})
 	}
 }
-
-func TestRegisterCommitParser(t *testing.T) {
-	called := false
-
-	original := RegisterCommitParserFn
-	RegisterCommitParserFn = func(_ CommitParser) {
-		called = true
-	}
-	defer func() { RegisterCommitParserFn = original }()
-
-	Register()
-
-	if !called {
-		t.Errorf("expected RegisterCommitParser to be called")
-	}
-}

@@ -617,36 +617,6 @@ func TestVersionValidatorPlugin_GetConfig(t *testing.T) {
 	}
 }
 
-func TestRegister(t *testing.T) {
-	Unregister()
-	defer Unregister()
-
-	cfg := &Config{Enabled: true}
-	Register(cfg)
-
-	vv := GetVersionValidatorFn()
-	if vv == nil {
-		t.Fatal("Register() should register the version validator")
-	}
-	if vv.Name() != "version-validator" {
-		t.Errorf("Register() vv.Name() = %q, want %q", vv.Name(), "version-validator")
-	}
-}
-
-func TestUnregister(t *testing.T) {
-	Register(&Config{Enabled: true})
-
-	if vv := GetVersionValidatorFn(); vv == nil {
-		t.Fatal("Expected version validator to be registered")
-	}
-
-	Unregister()
-
-	if vv := GetVersionValidatorFn(); vv != nil {
-		t.Error("Unregister() should clear the registered validator")
-	}
-}
-
 func TestVersionValidatorPlugin_InvalidRegexPattern(t *testing.T) {
 	cfg := &Config{
 		Enabled: true,

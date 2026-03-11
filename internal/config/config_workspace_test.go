@@ -60,7 +60,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -81,7 +81,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -101,7 +101,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -145,7 +145,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -173,7 +173,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -216,7 +216,7 @@ func TestConfig_WorkspaceDefaults(t *testing.T) {
 		yamlContent := `path: .version`
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -239,7 +239,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -262,7 +262,7 @@ workspace:
 `
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
-			cfg, err := LoadConfigFn()
+			cfg, err := LoadConfig()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

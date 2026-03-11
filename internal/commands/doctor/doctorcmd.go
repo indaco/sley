@@ -201,7 +201,7 @@ func printConfigValidationSummary(results []config.ValidationResult) {
 
 // runSingleModuleValidate handles the single-module validate operation.
 func runSingleModuleValidate(cmd *cli.Command, path string) error {
-	if _, err := clix.FromCommandFn(cmd); err != nil {
+	if _, err := clix.FromCommand(cmd); err != nil {
 		return err
 	}
 

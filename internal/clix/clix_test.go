@@ -90,7 +90,7 @@ func TestFromCommand(t *testing.T) {
 		cfg := &config.Config{Path: tmpFile}
 		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{})
 
-		created, err := FromCommandFn(appCli)
+		created, err := FromCommand(appCli)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -106,7 +106,7 @@ func TestFromCommand(t *testing.T) {
 		cfg := &config.Config{Path: targetPath}
 		appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{})
 
-		created, err := FromCommandFn(appCli)
+		created, err := FromCommand(appCli)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

@@ -140,7 +140,7 @@ func TestCLI_PreCommand_SaveVersionFails(t *testing.T) {
 }
 
 // TestCLI_PreCommand_FromCommandFails is obsolete - the pre command now uses
-// GetExecutionContext instead of FromCommandFn, and auto-initializes missing files.
+// GetExecutionContext instead of FromCommand, and auto-initializes missing files.
 // Keeping this as a placeholder for potential future execution context error testing.
 
 /* ------------------------------------------------------------------------- */

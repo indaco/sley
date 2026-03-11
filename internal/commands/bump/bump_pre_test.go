@@ -2,12 +2,10 @@ package bump
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/hooks"
 	"github.com/indaco/sley/internal/plugins"
@@ -86,26 +84,12 @@ func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
 		expectedErr string
 	}{
 		{
-			name: "FromCommand fails",
-			args: []string{"sley", "bump", "pre", "--label", "rc"},
-			override: func() func() {
-				original := clix.FromCommandFn
-				clix.FromCommandFn = func(cmd *cli.Command) (bool, error) {
-					return false, fmt.Errorf("mock FromCommand error")
-				}
-				return func() { clix.FromCommandFn = original }
-			},
-			expectedErr: "mock FromCommand error",
-		},
-		{
 			name: "RunPreReleaseHooks fails",
 			args: []string{"sley", "bump", "pre", "--label", "rc"},
 			override: func() func() {
-				original := hooks.RunPreReleaseHooksFn
-				hooks.RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
-					return fmt.Errorf("mock pre-release hooks error")
-				}
-				return func() { hooks.RunPreReleaseHooksFn = original }
+				hooks.ResetPreReleaseHooks()
+				hooks.RegisterPreReleaseHook(errorHook{})
+				return func() { hooks.ResetPreReleaseHooks() }
 			},
 			expectedErr: "mock pre-release hooks error",
 		},

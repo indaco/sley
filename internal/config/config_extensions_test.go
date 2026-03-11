@@ -121,9 +121,9 @@ extensions: []
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if (err != nil) != tt.wantErr {
-					t.Fatalf("LoadConfigFn() error = %v, wantErr = %v", err, tt.wantErr)
+					t.Fatalf("LoadConfig() error = %v, wantErr = %v", err, tt.wantErr)
 				}
 				if !tt.wantErr && cfg != nil {
 					tt.check(t, cfg)
@@ -195,9 +195,9 @@ func TestSaveConfig_WithExtensions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tmp := t.TempDir()
 			runInTempDir(t, filepath.Join(tmp, "dummy"), func() {
-				err := SaveConfigFn(tt.cfg)
+				err := SaveConfig(tt.cfg)
 				if (err != nil) != tt.wantErr {
-					t.Fatalf("SaveConfigFn() error = %v, wantErr = %v", err, tt.wantErr)
+					t.Fatalf("SaveConfig() error = %v, wantErr = %v", err, tt.wantErr)
 				}
 
 				if !tt.wantErr {
@@ -208,7 +208,7 @@ func TestSaveConfig_WithExtensions(t *testing.T) {
 					}
 
 					// Reload and verify
-					reloaded, err := LoadConfigFn()
+					reloaded, err := LoadConfig()
 					if err != nil {
 						t.Fatalf("failed to reload config: %v", err)
 					}

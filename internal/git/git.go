@@ -10,21 +10,16 @@ import (
 	"github.com/indaco/sley/internal/core"
 )
 
-// Function variables to allow mocking
-var (
-	CloneOrUpdate = DefaultCloneOrUpdate
-	UpdateRepo    = DefaultUpdateRepo
-	CloneRepoFunc = CloneRepo
-)
-
-func DefaultCloneOrUpdate(ctx context.Context, repoURL, repoPath string) error {
+// CloneOrUpdate clones a repository if it doesn't exist, or updates it if it does.
+func CloneOrUpdate(ctx context.Context, repoURL, repoPath string) error {
 	if IsValidGitRepo(repoPath) {
 		return UpdateRepo(ctx, repoPath)
 	}
-	return CloneRepoFunc(ctx, repoURL, repoPath)
+	return CloneRepo(ctx, repoURL, repoPath)
 }
 
-func DefaultUpdateRepo(ctx context.Context, repoPath string) error {
+// UpdateRepo pulls the latest changes in an existing repository.
+func UpdateRepo(ctx context.Context, repoPath string) error {
 	// Apply default timeout if context has no deadline
 	if _, hasDeadline := ctx.Deadline(); !hasDeadline {
 		var cancel context.CancelFunc

@@ -19,7 +19,7 @@ func main() {
 }
 
 func runCLI(args []string) error {
-	cfg, err := config.LoadConfigFn()
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func runCLI(args []string) error {
 	registry := plugins.NewPluginRegistry()
 	plugins.RegisterBuiltinPlugins(cfg, registry)
 
-	if err := hooks.LoadPreReleaseHooksFromConfigFn(cfg); err != nil {
+	if err := hooks.LoadPreReleaseHooksFromConfig(cfg); err != nil {
 		return fmt.Errorf("failed to load pre-release hooks: %w", err)
 	}
 

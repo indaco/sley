@@ -289,7 +289,7 @@ plugins:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
@@ -387,7 +387,7 @@ plugins:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
@@ -484,7 +484,7 @@ extensions:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if err != nil {
 					t.Fatalf("unexpected error loading legacy config: %v", err)
 				}
@@ -700,7 +700,7 @@ plugins:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
@@ -779,7 +779,7 @@ plugins:
 		t.Run(tt.name, func(t *testing.T) {
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
-				cfg, err := LoadConfigFn()
+				cfg, err := LoadConfig()
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}

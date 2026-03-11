@@ -16,11 +16,9 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var FromCommandFn = fromCommand
-
-// fromCommand extracts the --path and --strict flags from a cli.Command,
+// FromCommand extracts the --path and --strict flags from a cli.Command,
 // and passes them to GetOrInitVersionFile.
-func fromCommand(cmd *cli.Command) (bool, error) {
+func FromCommand(cmd *cli.Command) (bool, error) {
 	return GetOrInitVersionFile(cmd.String("path"), cmd.Bool("strict"))
 }
 

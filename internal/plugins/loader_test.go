@@ -4,19 +4,10 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/plugins/auditlog"
-	"github.com/indaco/sley/internal/plugins/changeloggenerator"
-	"github.com/indaco/sley/internal/plugins/changelogparser"
-	"github.com/indaco/sley/internal/plugins/commitparser"
-	"github.com/indaco/sley/internal/plugins/dependencycheck"
-	"github.com/indaco/sley/internal/plugins/releasegate"
-	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/plugins/versionvalidator"
 )
 
 func TestRegisterConfiguredPlugins_WithCommitParser(t *testing.T) {
-	commitparser.ResetCommitParser()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			CommitParser: true,
@@ -37,8 +28,6 @@ func TestRegisterConfiguredPlugins_WithCommitParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
-	commitparser.ResetCommitParser()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			CommitParser: false,
@@ -54,8 +43,6 @@ func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_NilConfig(t *testing.T) {
-	commitparser.ResetCommitParser()
-
 	registry := NewPluginRegistry()
 	RegisterBuiltinPlugins(nil, registry)
 
@@ -65,8 +52,6 @@ func TestRegisterConfiguredPlugins_NilConfig(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_NilPluginsField(t *testing.T) {
-	commitparser.ResetCommitParser()
-
 	cfg := &config.Config{
 		Plugins: nil, // explicit nil
 	}
@@ -80,9 +65,6 @@ func TestRegisterConfiguredPlugins_NilPluginsField(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithTagManager(t *testing.T) {
-	tagmanager.ResetTagManager()
-	defer tagmanager.ResetTagManager()
-
 	autoCreate := true
 	annotate := true
 	cfg := &config.Config{
@@ -111,9 +93,6 @@ func TestRegisterConfiguredPlugins_WithTagManager(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_TagManagerDisabled(t *testing.T) {
-	tagmanager.ResetTagManager()
-	defer tagmanager.ResetTagManager()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			TagManager: &config.TagManagerConfig{
@@ -131,9 +110,6 @@ func TestRegisterConfiguredPlugins_TagManagerDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_TagManagerNil(t *testing.T) {
-	tagmanager.ResetTagManager()
-	defer tagmanager.ResetTagManager()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			TagManager: nil,
@@ -149,9 +125,6 @@ func TestRegisterConfiguredPlugins_TagManagerNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithVersionValidator(t *testing.T) {
-	versionvalidator.Unregister()
-	defer versionvalidator.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: &config.VersionValidatorConfig{
@@ -178,9 +151,6 @@ func TestRegisterConfiguredPlugins_WithVersionValidator(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_VersionValidatorDisabled(t *testing.T) {
-	versionvalidator.Unregister()
-	defer versionvalidator.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: &config.VersionValidatorConfig{
@@ -198,9 +168,6 @@ func TestRegisterConfiguredPlugins_VersionValidatorDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_VersionValidatorNil(t *testing.T) {
-	versionvalidator.Unregister()
-	defer versionvalidator.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: nil,
@@ -262,15 +229,6 @@ func TestConvertValidationRules_Empty(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AllPlugins(t *testing.T) {
-	commitparser.ResetCommitParser()
-	tagmanager.ResetTagManager()
-	versionvalidator.Unregister()
-	defer func() {
-		commitparser.ResetCommitParser()
-		tagmanager.ResetTagManager()
-		versionvalidator.Unregister()
-	}()
-
 	autoCreate := true
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
@@ -301,9 +259,6 @@ func TestRegisterConfiguredPlugins_AllPlugins(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithDependencyCheck(t *testing.T) {
-	dependencycheck.ResetDependencyChecker()
-	defer dependencycheck.ResetDependencyChecker()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: &config.DependencyCheckConfig{
@@ -330,9 +285,6 @@ func TestRegisterConfiguredPlugins_WithDependencyCheck(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DependencyCheckDisabled(t *testing.T) {
-	dependencycheck.ResetDependencyChecker()
-	defer dependencycheck.ResetDependencyChecker()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: &config.DependencyCheckConfig{
@@ -350,9 +302,6 @@ func TestRegisterConfiguredPlugins_DependencyCheckDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DependencyCheckNil(t *testing.T) {
-	dependencycheck.ResetDependencyChecker()
-	defer dependencycheck.ResetDependencyChecker()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: nil,
@@ -368,9 +317,6 @@ func TestRegisterConfiguredPlugins_DependencyCheckNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithChangelogParser(t *testing.T) {
-	changelogparser.ResetChangelogParser()
-	defer changelogparser.ResetChangelogParser()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: &config.ChangelogParserConfig{
@@ -397,9 +343,6 @@ func TestRegisterConfiguredPlugins_WithChangelogParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogParserDisabled(t *testing.T) {
-	changelogparser.ResetChangelogParser()
-	defer changelogparser.ResetChangelogParser()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: &config.ChangelogParserConfig{
@@ -417,9 +360,6 @@ func TestRegisterConfiguredPlugins_ChangelogParserDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogParserNil(t *testing.T) {
-	changelogparser.ResetChangelogParser()
-	defer changelogparser.ResetChangelogParser()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: nil,
@@ -435,9 +375,6 @@ func TestRegisterConfiguredPlugins_ChangelogParserNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithChangelogGenerator(t *testing.T) {
-	changeloggenerator.ResetChangelogGenerator()
-	defer changeloggenerator.ResetChangelogGenerator()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: &config.ChangelogGeneratorConfig{
@@ -461,9 +398,6 @@ func TestRegisterConfiguredPlugins_WithChangelogGenerator(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogGeneratorDisabled(t *testing.T) {
-	changeloggenerator.ResetChangelogGenerator()
-	defer changeloggenerator.ResetChangelogGenerator()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: &config.ChangelogGeneratorConfig{
@@ -481,9 +415,6 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogGeneratorNil(t *testing.T) {
-	changeloggenerator.ResetChangelogGenerator()
-	defer changeloggenerator.ResetChangelogGenerator()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: nil,
@@ -499,9 +430,6 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithReleaseGate(t *testing.T) {
-	releasegate.Unregister()
-	defer releasegate.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: &config.ReleaseGateConfig{
@@ -526,9 +454,6 @@ func TestRegisterConfiguredPlugins_WithReleaseGate(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ReleaseGateDisabled(t *testing.T) {
-	releasegate.Unregister()
-	defer releasegate.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: &config.ReleaseGateConfig{
@@ -546,9 +471,6 @@ func TestRegisterConfiguredPlugins_ReleaseGateDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ReleaseGateNil(t *testing.T) {
-	releasegate.Unregister()
-	defer releasegate.Unregister()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: nil,
@@ -564,9 +486,6 @@ func TestRegisterConfiguredPlugins_ReleaseGateNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithAuditLog(t *testing.T) {
-	auditlog.ResetAuditLog()
-	defer auditlog.ResetAuditLog()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: &config.AuditLogConfig{
@@ -591,9 +510,6 @@ func TestRegisterConfiguredPlugins_WithAuditLog(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AuditLogDisabled(t *testing.T) {
-	auditlog.ResetAuditLog()
-	defer auditlog.ResetAuditLog()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: &config.AuditLogConfig{
@@ -611,9 +527,6 @@ func TestRegisterConfiguredPlugins_AuditLogDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AuditLogNil(t *testing.T) {
-	auditlog.ResetAuditLog()
-	defer auditlog.ResetAuditLog()
-
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: nil,

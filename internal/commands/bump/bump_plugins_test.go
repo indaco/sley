@@ -11,12 +11,8 @@ import (
 	"github.com/indaco/sley/internal/commands/depsync"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins"
-	"github.com/indaco/sley/internal/plugins/auditlog"
-	"github.com/indaco/sley/internal/plugins/changeloggenerator"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
-	"github.com/indaco/sley/internal/plugins/releasegate"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
-	"github.com/indaco/sley/internal/plugins/versionvalidator"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/testutils"
 	"github.com/urfave/cli/v3"
@@ -27,25 +23,10 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestValidateTagAvailable(t *testing.T) {
-	// Save original and restore after test
-	origGetTagManagerFn := tagmanager.GetTagManagerFn
-	defer func() { tagmanager.GetTagManagerFn = origGetTagManagerFn }()
-
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return nil }
-		err := validateTagAvailable(registry, version)
-		if err != nil {
-			t.Errorf("expected nil error, got %v", err)
-		}
-	})
-
-	t.Run("mock tag manager validates", func(t *testing.T) {
-		registry := plugins.NewPluginRegistry()
-		mock := &mockTagManager{}
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return mock }
 		err := validateTagAvailable(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -70,15 +51,10 @@ func TestValidateTagAvailable(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCreateTagAfterBump(t *testing.T) {
-	// Save original and restore after test
-	origGetTagManagerFn := tagmanager.GetTagManagerFn
-	defer func() { tagmanager.GetTagManagerFn = origGetTagManagerFn }()
-
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return nil }
 		err := createTagAfterBump(registry, version, "minor")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -94,26 +70,11 @@ func TestCreateTagAfterBump(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateVersionPolicy(t *testing.T) {
-	// Save original and restore after test
-	origGetVersionValidatorFn := versionvalidator.GetVersionValidatorFn
-	defer func() { versionvalidator.GetVersionValidatorFn = origGetVersionValidatorFn }()
-
 	newVersion := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil validator returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator { return nil }
-		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
-		if err != nil {
-			t.Errorf("expected nil error, got %v", err)
-		}
-	})
-
-	t.Run("mock validator validates successfully", func(t *testing.T) {
-		registry := plugins.NewPluginRegistry()
-		mock := &mockVersionValidator{}
-		versionvalidator.GetVersionValidatorFn = func() versionvalidator.VersionValidator { return mock }
 		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -138,26 +99,11 @@ func TestValidateVersionPolicy(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateReleaseGate(t *testing.T) {
-	// Save original and restore after test
-	origGetReleaseGateFn := releasegate.GetReleaseGateFn
-	defer func() { releasegate.GetReleaseGateFn = origGetReleaseGateFn }()
-
 	newVersion := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil gate returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate { return nil }
-		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
-		if err != nil {
-			t.Errorf("expected nil error, got %v", err)
-		}
-	})
-
-	t.Run("mock gate validates successfully", func(t *testing.T) {
-		registry := plugins.NewPluginRegistry()
-		mock := &mockReleaseGate{}
-		releasegate.GetReleaseGateFn = func() releasegate.ReleaseGate { return mock }
 		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -182,15 +128,10 @@ func TestValidateReleaseGate(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateDependencyConsistency(t *testing.T) {
-	// Save original and restore after test
-	origGetDependencyCheckerFn := dependencycheck.GetDependencyCheckerFn
-	defer func() { dependencycheck.GetDependencyCheckerFn = origGetDependencyCheckerFn }()
-
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		dependencycheck.GetDependencyCheckerFn = func() dependencycheck.DependencyChecker { return nil }
 		err := validateDependencyConsistency(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -206,15 +147,10 @@ func TestValidateDependencyConsistency(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestSyncDependencies(t *testing.T) {
-	// Save original and restore after test
-	origGetDependencyCheckerFn := dependencycheck.GetDependencyCheckerFn
-	defer func() { dependencycheck.GetDependencyCheckerFn = origGetDependencyCheckerFn }()
-
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		dependencycheck.GetDependencyCheckerFn = func() dependencycheck.DependencyChecker { return nil }
 		err := depsync.SyncDependencies(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -230,16 +166,11 @@ func TestSyncDependencies(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestGenerateChangelogAfterBump(t *testing.T) {
-	// Save original and restore after test
-	origGetChangelogGeneratorFn := changeloggenerator.GetChangelogGeneratorFn
-	defer func() { changeloggenerator.GetChangelogGeneratorFn = origGetChangelogGeneratorFn }()
-
 	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil generator returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		changeloggenerator.GetChangelogGeneratorFn = func() changeloggenerator.ChangelogGenerator { return nil }
 		err := generateChangelogAfterBump(registry, version, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -255,16 +186,11 @@ func TestGenerateChangelogAfterBump(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestRecordAuditLogEntry(t *testing.T) {
-	// Save original and restore after test
-	origGetAuditLogFn := auditlog.GetAuditLogFn
-	defer func() { auditlog.GetAuditLogFn = origGetAuditLogFn }()
-
 	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil audit log returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		auditlog.GetAuditLogFn = func() auditlog.AuditLog { return nil }
 		err := recordAuditLogEntry(registry, version, prevVersion, "major")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
@@ -322,10 +248,6 @@ func TestRunPostBumpExtensionHooks(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCreateTagAfterBump_Enabled(t *testing.T) {
-	// Save and restore
-	origGetTagManagerFn := tagmanager.GetTagManagerFn
-	defer func() { tagmanager.GetTagManagerFn = origGetTagManagerFn }()
-
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 
 	t.Run("disabled plugin returns nil", func(t *testing.T) {
@@ -333,7 +255,9 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 		plugin := tagmanager.NewTagManager(&tagmanager.Config{
 			Enabled: false,
 		})
-		tagmanager.GetTagManagerFn = func() tagmanager.TagManager { return plugin }
+		if err := registry.RegisterTagManager(plugin); err != nil {
+			t.Fatalf("failed to register tag manager: %v", err)
+		}
 
 		err := createTagAfterBump(registry, version, "patch")
 		if err != nil {
@@ -519,10 +443,6 @@ func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Save and restore
-	origGetDependencyCheckerFn := dependencycheck.GetDependencyCheckerFn
-	defer func() { dependencycheck.GetDependencyCheckerFn = origGetDependencyCheckerFn }()
-
 	// Create dependency checker that finds inconsistencies
 	plugin := dependencycheck.NewDependencyChecker(&dependencycheck.Config{
 		Enabled: true,
@@ -556,10 +476,6 @@ func TestSingleModuleBump_ValidateDependencyConsistencyWithAutoSync(t *testing.T
 	if err := os.WriteFile(pkgPath, []byte(`{"version": "0.9.0"}`), 0644); err != nil {
 		t.Fatal(err)
 	}
-
-	// Save and restore
-	origGetDependencyCheckerFn := dependencycheck.GetDependencyCheckerFn
-	defer func() { dependencycheck.GetDependencyCheckerFn = origGetDependencyCheckerFn }()
 
 	// Create dependency checker with auto-sync enabled - should NOT fail on inconsistencies
 	plugin := dependencycheck.NewDependencyChecker(&dependencycheck.Config{

@@ -10,47 +10,42 @@ import (
 	"testing"
 )
 
-func TestDefaultCloneOrUpdate(t *testing.T) {
+func TestCloneOrUpdate(t *testing.T) {
 	t.Run("ExistingRepo", func(t *testing.T) {
-		tempDir := setupTestRepo(t)
-
-		// Mock UpdateRepo to verify it's being called
-		originalUpdateRepo := UpdateRepo
-		defer func() { UpdateRepo = originalUpdateRepo }()
-
-		UpdateRepo = func(ctx context.Context, repoPath string) error {
-			if repoPath != tempDir {
-				t.Errorf("UpdateRepo called with wrong path: got %s, want %s", repoPath, tempDir)
-			}
-			return nil
-		}
+		// Create a source repo and clone it so dest has a remote
+		sourceRepo := setupTestRepo(t)
+		destRepo := filepath.Join(t.TempDir(), "cloned")
 
 		ctx := context.Background()
-		err := DefaultCloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", tempDir)
+		if err := CloneRepo(ctx, sourceRepo, destRepo); err != nil {
+			t.Fatalf("setup clone failed: %v", err)
+		}
+
+		// CloneOrUpdate on existing repo should call UpdateRepo (git pull)
+		err := CloneOrUpdate(ctx, sourceRepo, destRepo)
 		if err != nil {
-			t.Fatalf("DefaultCloneOrUpdate failed: %v", err)
+			t.Fatalf("CloneOrUpdate failed on existing repo: %v", err)
+		}
+
+		// Verify it's still a valid git repo
+		if !IsValidGitRepo(destRepo) {
+			t.Error("expected valid git repo after update")
 		}
 	})
 
 	t.Run("NonExistingRepo", func(t *testing.T) {
-		tempDir := t.TempDir()
-		destRepo := filepath.Join(tempDir, "new_repo")
-
-		// Mock CloneRepoFunc to verify it's being called
-		originalCloneRepo := CloneRepoFunc
-		defer func() { CloneRepoFunc = originalCloneRepo }()
-
-		CloneRepoFunc = func(ctx context.Context, repoURL, repoPath string) error {
-			if repoPath != destRepo {
-				t.Errorf("CloneRepoFunc called with wrong path: got %s, want %s", repoPath, destRepo)
-			}
-			return nil
-		}
+		sourceRepo := setupTestRepo(t)
+		destRepo := filepath.Join(t.TempDir(), "new_repo")
 
 		ctx := context.Background()
-		err := DefaultCloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", destRepo)
+		err := CloneOrUpdate(ctx, sourceRepo, destRepo)
 		if err != nil {
-			t.Fatalf("DefaultCloneOrUpdate failed: %v", err)
+			t.Fatalf("CloneOrUpdate failed on new repo: %v", err)
+		}
+
+		// Verify it cloned successfully
+		if !IsValidGitRepo(destRepo) {
+			t.Error("expected valid git repo after clone")
 		}
 	})
 }

@@ -17,7 +17,7 @@ func (v *Validator) validateYAMLSyntax(ctx context.Context) {
 		return
 	}
 
-	// If we got here, the config was successfully loaded (validated in LoadConfigFn)
+	// If we got here, the config was successfully loaded (validated in LoadConfig)
 	v.addValidation("YAML Syntax", true, "Configuration file is valid YAML", false)
 }
 

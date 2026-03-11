@@ -1,5 +1,7 @@
 package auditlog
 
+import "github.com/indaco/sley/internal/config"
+
 // Config holds configuration for the audit log plugin.
 type Config struct {
 	// Enabled controls whether the plugin is active.
@@ -51,4 +53,21 @@ func (c *Config) GetFormat() string {
 		return "json"
 	}
 	return c.Format
+}
+
+// FromConfigStruct converts the config package struct to internal config.
+func FromConfigStruct(cfg *config.AuditLogConfig) *Config {
+	if cfg == nil {
+		return DefaultConfig()
+	}
+
+	return &Config{
+		Enabled:          cfg.Enabled,
+		Path:             cfg.GetPath(),
+		Format:           cfg.GetFormat(),
+		IncludeAuthor:    cfg.IncludeAuthor,
+		IncludeTimestamp: cfg.IncludeTimestamp,
+		IncludeCommitSHA: cfg.IncludeCommitSHA,
+		IncludeBranch:    cfg.IncludeBranch,
+	}
 }

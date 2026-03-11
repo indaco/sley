@@ -190,14 +190,14 @@ func TestConfigSaver_WriteError(t *testing.T) {
 	}
 }
 
-// TestSaveConfigFn_BackwardCompatibility ensures the backward-compatible SaveConfigFn still works.
-func TestSaveConfigFn_BackwardCompatibility(t *testing.T) {
+// TestSaveConfig_BackwardCompatibility ensures the backward-compatible SaveConfig still works.
+func TestSaveConfig_BackwardCompatibility(t *testing.T) {
 	tmp := t.TempDir()
 	runInTempDir(t, filepath.Join(tmp, "dummy"), func() {
 		cfg := &Config{Path: "test.version"}
-		err := SaveConfigFn(cfg)
+		err := SaveConfig(cfg)
 		if err != nil {
-			t.Fatalf("SaveConfigFn() error = %v", err)
+			t.Fatalf("SaveConfig() error = %v", err)
 		}
 
 		if _, err := os.Stat(".sley.yaml"); err != nil {

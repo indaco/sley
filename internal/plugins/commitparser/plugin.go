@@ -94,12 +94,3 @@ func (p *CommitParserPlugin) Parse(commits []string) (string, error) {
 		return "", errors.New("no bump type could be inferred")
 	}
 }
-
-/* ------------------------------------------------------------------------- */
-/* REGISTRATION                                                              */
-/* ------------------------------------------------------------------------- */
-
-// Register registers the commit parser plugin with the sley plugin system.
-func Register() {
-	RegisterCommitParserFn(&CommitParserPlugin{})
-}

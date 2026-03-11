@@ -100,8 +100,8 @@ var (
 // defaultRunner is the default PreReleaseHookRunner for backward compatibility.
 var defaultRunner = NewPreReleaseHookRunner(nil, nil)
 
-// RunPreReleaseHooksFn is kept for backward compatibility during migration.
-var RunPreReleaseHooksFn = func(ctx context.Context, skip bool) error {
+// RunPreReleaseHooks runs all registered pre-release hooks.
+func RunPreReleaseHooks(ctx context.Context, skip bool) error {
 	return defaultRunner.Run(ctx, skip)
 }
 
@@ -124,9 +124,4 @@ func ResetPreReleaseHooks() {
 	hooksMu.Lock()
 	defer hooksMu.Unlock()
 	preReleaseHooks = nil
-}
-
-// runPreReleaseHooks is kept for direct testing.
-func runPreReleaseHooks(ctx context.Context, skip bool) error {
-	return defaultRunner.Run(ctx, skip)
 }

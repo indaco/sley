@@ -2,7 +2,6 @@ package git
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 )
@@ -17,12 +16,6 @@ func TestCloneRepo_ContextCancellation(t *testing.T) {
 
 	if err == nil {
 		t.Fatal("expected error when context is cancelled, got nil")
-	}
-
-	// The error should be context.Canceled or contain relevant message
-	if !errors.Is(err, context.Canceled) && !errors.Is(ctx.Err(), context.Canceled) {
-		// Some implementations wrap the error differently
-		t.Logf("got error: %v (context.Err: %v)", err, ctx.Err())
 	}
 }
 
@@ -61,13 +54,13 @@ func TestUpdateRepo_ContextCancellation(t *testing.T) {
 	}
 }
 
-// TestDefaultCloneOrUpdate_ContextCancellation tests context cancellation for clone or update.
-func TestDefaultCloneOrUpdate_ContextCancellation(t *testing.T) {
+// TestCloneOrUpdate_ContextCancellation tests context cancellation for clone or update.
+func TestCloneOrUpdate_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
 	tempDir := t.TempDir()
-	err := DefaultCloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", tempDir)
+	err := CloneOrUpdate(ctx, "https://github.com/octocat/Hello-World.git", tempDir)
 
 	if err == nil {
 		t.Fatal("expected error when context is cancelled, got nil")
@@ -123,51 +116,28 @@ func TestUpdateRepo_NonExistentRepo(t *testing.T) {
 	}
 }
 
-// TestDefaultCloneOrUpdate_UpdateError tests error propagation when update fails.
-func TestDefaultCloneOrUpdate_UpdateError(t *testing.T) {
+// TestCloneOrUpdate_UpdateError tests error propagation when update fails.
+func TestCloneOrUpdate_UpdateError(t *testing.T) {
+	// Create a repo with no remote configured — git pull will fail
 	sourceRepo := setupTestRepo(t)
 
-	// Save original and restore after test
-	originalUpdateRepo := UpdateRepo
-	defer func() { UpdateRepo = originalUpdateRepo }()
-
-	expectedErr := errors.New("simulated update failure")
-	UpdateRepo = func(ctx context.Context, repoPath string) error {
-		return expectedErr
-	}
-
 	ctx := context.Background()
-	err := DefaultCloneOrUpdate(ctx, "https://github.com/test/repo.git", sourceRepo)
+	err := CloneOrUpdate(ctx, "https://github.com/test/repo.git", sourceRepo)
 
 	if err == nil {
-		t.Fatal("expected error when UpdateRepo fails, got nil")
-	}
-
-	if !errors.Is(err, expectedErr) {
-		t.Errorf("expected error %v, got %v", expectedErr, err)
+		t.Fatal("expected error when git pull fails on repo with no remote, got nil")
 	}
 }
 
-// TestDefaultCloneOrUpdate_CloneError tests error propagation when clone fails.
-func TestDefaultCloneOrUpdate_CloneError(t *testing.T) {
-	// Save original and restore after test
-	originalCloneRepo := CloneRepoFunc
-	defer func() { CloneRepoFunc = originalCloneRepo }()
-
-	expectedErr := errors.New("simulated clone failure")
-	CloneRepoFunc = func(ctx context.Context, repoURL, repoPath string) error {
-		return expectedErr
-	}
-
+// TestCloneOrUpdate_CloneError tests error propagation when clone fails.
+func TestCloneOrUpdate_CloneError(t *testing.T) {
 	tempDir := t.TempDir()
+	destPath := tempDir + "/new"
+
 	ctx := context.Background()
-	err := DefaultCloneOrUpdate(ctx, "https://github.com/test/repo.git", tempDir+"/new")
+	err := CloneOrUpdate(ctx, "https://invalid.repo.url/nonexistent.git", destPath)
 
 	if err == nil {
-		t.Fatal("expected error when CloneRepoFunc fails, got nil")
-	}
-
-	if !errors.Is(err, expectedErr) {
-		t.Errorf("expected error %v, got %v", expectedErr, err)
+		t.Fatal("expected error when clone fails with invalid URL, got nil")
 	}
 }
