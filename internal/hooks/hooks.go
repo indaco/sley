@@ -97,12 +97,11 @@ var (
 	preReleaseHooks []PreReleaseHook
 )
 
-// defaultRunner is the default PreReleaseHookRunner for backward compatibility.
-var defaultRunner = NewPreReleaseHookRunner(nil, nil)
-
 // RunPreReleaseHooks runs all registered pre-release hooks.
+// A fresh runner is created each call so it always sees the current hook list.
 func RunPreReleaseHooks(ctx context.Context, skip bool) error {
-	return defaultRunner.Run(ctx, skip)
+	runner := NewPreReleaseHookRunner(nil, nil)
+	return runner.Run(ctx, skip)
 }
 
 func RegisterPreReleaseHook(h PreReleaseHook) {

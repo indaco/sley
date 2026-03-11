@@ -24,7 +24,6 @@ var (
 
 // CommitParser defines the interface for parsing a list of commit messages
 // and determining the corresponding semver bump type.
-
 type CommitParser interface {
 	Name() string
 	Description() string
