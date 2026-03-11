@@ -4,8 +4,27 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
+	"regexp"
 	"strings"
 )
+
+// validGitRef matches safe git reference names: alphanumeric, dots, hyphens, slashes, tildes, carets.
+// Rejects shell metacharacters, spaces, and ".." sequences within ref names.
+var validGitRef = regexp.MustCompile(`^[a-zA-Z0-9._/~^@{}\-]+$`)
+
+// validateGitRef checks that a git reference is safe to use in a revision range.
+func validateGitRef(ref string) error {
+	if ref == "" {
+		return fmt.Errorf("git reference cannot be empty")
+	}
+	if strings.Contains(ref, "..") {
+		return fmt.Errorf("git reference %q contains invalid '..' sequence", ref)
+	}
+	if !validGitRef.MatchString(ref) {
+		return fmt.Errorf("git reference %q contains invalid characters", ref)
+	}
+	return nil
+}
 
 var (
 	GetCommitsFn = getCommits
@@ -24,6 +43,14 @@ func getCommits(since string, until string) ([]string, error) {
 		} else {
 			since = lastTag
 		}
+	}
+
+	// Validate git references to prevent unexpected behavior
+	if err := validateGitRef(since); err != nil {
+		return nil, fmt.Errorf("invalid 'since' reference: %w", err)
+	}
+	if err := validateGitRef(until); err != nil {
+		return nil, fmt.Errorf("invalid 'until' reference: %w", err)
 	}
 
 	revRange := since + ".." + until
