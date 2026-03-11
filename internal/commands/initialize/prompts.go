@@ -3,7 +3,7 @@ package initialize
 import (
 	"fmt"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/indaco/sley/internal/tui"
 )
 

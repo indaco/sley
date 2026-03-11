@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 	"github.com/goccy/go-yaml"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/discovery"

@@ -3,11 +3,12 @@ package tui
 import (
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 )
 
 func TestSleyTheme(t *testing.T) {
-	theme := sleyTheme()
+	theme := sleyTheme(true)
 
 	if theme == nil {
 		t.Fatal("SleyTheme() returned nil")
@@ -79,7 +80,7 @@ func TestSleyThemeColors(t *testing.T) {
 	// Verify adaptive colors are properly defined
 	testCases := []struct {
 		name  string
-		color lipgloss.AdaptiveColor
+		color compat.AdaptiveColor
 	}{
 		{"sleyTealPrimary", sleyTealPrimary},
 		{"sleyTealBright", sleyTealBright},
@@ -98,30 +99,21 @@ func TestSleyThemeColors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name+" has light color", func(t *testing.T) {
-			if tc.color.Light == "" {
+			if tc.color.Light == nil {
 				t.Errorf("%s should have a light color defined", tc.name)
 			}
 		})
 
 		t.Run(tc.name+" has dark color", func(t *testing.T) {
-			if tc.color.Dark == "" {
+			if tc.color.Dark == nil {
 				t.Errorf("%s should have a dark color defined", tc.name)
-			}
-		})
-
-		t.Run(tc.name+" has valid hex colors", func(t *testing.T) {
-			if !isValidHexColor(tc.color.Light) {
-				t.Errorf("%s light color %q is not a valid hex color", tc.name, tc.color.Light)
-			}
-			if !isValidHexColor(tc.color.Dark) {
-				t.Errorf("%s dark color %q is not a valid hex color", tc.name, tc.color.Dark)
 			}
 		})
 	}
 }
 
 func TestSleyThemeConsistency(t *testing.T) {
-	theme := sleyTheme()
+	theme := sleyTheme(true)
 
 	t.Run("Focused and blurred buttons have same padding", func(t *testing.T) {
 		_, fRight, _, fLeft := theme.Focused.FocusedButton.GetPadding()
@@ -131,20 +123,4 @@ func TestSleyThemeConsistency(t *testing.T) {
 			t.Error("FocusedButton and BlurredButton should have consistent padding")
 		}
 	})
-}
-
-// isValidHexColor checks if a string is a valid hex color (e.g., "#0d9488")
-func isValidHexColor(s string) bool {
-	if len(s) != 7 {
-		return false
-	}
-	if s[0] != '#' {
-		return false
-	}
-	for _, c := range s[1:] {
-		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
-			return false
-		}
-	}
-	return true
 }
