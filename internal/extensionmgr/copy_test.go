@@ -198,7 +198,9 @@ func TestShouldSkipEntry(t *testing.T) {
 		{"git directory", ".git", true, false, true},
 		{"node_modules directory", "node_modules", true, false, true},
 		{"regular file", "main.go", false, false, false},
-		{"dotfile", ".env", false, false, false},
+		{"env file skipped", ".env", false, true, false},
+		{"secrets file skipped", ".secrets", false, true, false},
+		{"key file skipped", "server.key", false, true, false},
 		{"unknown dir", "config", true, false, false},
 	}
 

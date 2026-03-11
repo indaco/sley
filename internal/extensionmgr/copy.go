@@ -159,14 +159,29 @@ var skipNames = map[string]struct{}{
 	".git":         {},
 	".DS_Store":    {},
 	"node_modules": {},
+	".env":         {},
+	".secrets":     {},
 }
+
+// skipSuffixes defines file suffixes to exclude during directory copying.
+var skipSuffixes = []string{".key"}
 
 // copyDirFn is kept for backward compatibility during migration.
 var copyDirFn = func(src, dst string) error { return defaultFileCopier.CopyDir(src, dst) }
 
 // shouldSkipEntry determines whether a file should be skipped or a directory subtree should be skipped.
 func shouldSkipEntry(info os.FileInfo) (skipFile bool, skipDir bool) {
-	_, skip := skipNames[info.Name()]
+	name := info.Name()
+	_, skip := skipNames[name]
+	if !skip {
+		// Check suffix-based skip patterns (e.g., .key files)
+		for _, suffix := range skipSuffixes {
+			if strings.HasSuffix(name, suffix) {
+				skip = true
+				break
+			}
+		}
+	}
 	if !skip {
 		return false, false
 	}
