@@ -3,6 +3,7 @@ package changeloggenerator
 import (
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // ParsedCommit represents a fully parsed conventional commit.
@@ -23,6 +24,36 @@ var (
 	// Matches: (#123) or (closes #123) etc at end of message
 	prNumberRe = regexp.MustCompile(`\(?#(\d+)\)?`)
 )
+
+// regexCache provides thread-safe caching of compiled regular expressions
+// to avoid recompilation of the same pattern (e.g., exclude patterns, group patterns).
+var regexCache = struct {
+	mu    sync.RWMutex
+	cache map[string]*regexp.Regexp
+}{
+	cache: make(map[string]*regexp.Regexp),
+}
+
+// getCompiledRegex returns a cached compiled regex, compiling and caching it on first use.
+func getCompiledRegex(pattern string) (*regexp.Regexp, error) {
+	regexCache.mu.RLock()
+	re, ok := regexCache.cache[pattern]
+	regexCache.mu.RUnlock()
+	if ok {
+		return re, nil
+	}
+
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	regexCache.mu.Lock()
+	regexCache.cache[pattern] = re
+	regexCache.mu.Unlock()
+
+	return re, nil
+}
 
 // ParseConventionalCommit parses a commit message into its components.
 // Returns nil if the commit doesn't follow conventional commit format.
@@ -70,10 +101,10 @@ func FilterCommits(commits []*ParsedCommit, excludePatterns []string) []*ParsedC
 		return commits
 	}
 
-	// Compile patterns
+	// Compile patterns (cached)
 	patterns := make([]*regexp.Regexp, 0, len(excludePatterns))
 	for _, p := range excludePatterns {
-		re, err := regexp.Compile(p)
+		re, err := getCompiledRegex(p)
 		if err != nil {
 			continue // Skip invalid patterns
 		}
@@ -132,7 +163,7 @@ type compiledGroup struct {
 func compileGroupPatterns(groups []GroupConfig) []compiledGroup {
 	compiled := make([]compiledGroup, 0, len(groups))
 	for i, g := range groups {
-		re, err := regexp.Compile(g.Pattern)
+		re, err := getCompiledRegex(g.Pattern)
 		if err != nil {
 			continue
 		}

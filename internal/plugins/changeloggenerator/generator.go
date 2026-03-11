@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/indaco/sley/internal/core"
@@ -19,9 +20,13 @@ type Generator struct {
 	remote    *RemoteInfo
 	formatter Formatter
 
-	// Template caches to avoid re-parsing on every contributor entry.
+	// Template caches with thread-safe initialization via sync.Once.
 	cachedContribTmpl    *template.Template
+	contribTmplOnce      sync.Once
+	contribTmplErr       error
 	cachedNewContribTmpl *template.Template
+	newContribTmplOnce   sync.Once
+	newContribTmplErr    error
 }
 
 // NewGenerator creates a new changelog generator.
@@ -202,18 +207,15 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 		format = "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
 	}
 
-	// Parse and execute template (use cached template if available)
-	tmpl := g.cachedContribTmpl
-	if tmpl == nil {
-		var parseErr error
-		tmpl, parseErr = template.New("contributor").Parse(format)
-		if parseErr != nil {
-			// Fallback on template error
-			fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
-			return
-		}
-		g.cachedContribTmpl = tmpl
+	// Parse template once (thread-safe)
+	g.contribTmplOnce.Do(func() {
+		g.cachedContribTmpl, g.contribTmplErr = template.New("contributor").Parse(format)
+	})
+	if g.contribTmplErr != nil {
+		fmt.Fprintf(sb, "- [@%s](https://%s/%s)\n", contrib.Username, host, contrib.Username)
+		return
 	}
+	tmpl := g.cachedContribTmpl
 
 	data := contributorTemplateData{
 		Name:     contrib.Name,
@@ -276,18 +278,15 @@ func (g *Generator) writeNewContributorEntry(sb *strings.Builder, nc *NewContrib
 		format = g.getDefaultNewContributorFormat(remote)
 	}
 
-	// Parse and execute template (use cached template if available)
-	tmpl := g.cachedNewContribTmpl
-	if tmpl == nil {
-		var parseErr error
-		tmpl, parseErr = template.New("newContributor").Parse(format)
-		if parseErr != nil {
-			// Fallback on template error
-			g.writeNewContributorFallback(sb, nc, remote)
-			return
-		}
-		g.cachedNewContribTmpl = tmpl
+	// Parse template once (thread-safe)
+	g.newContribTmplOnce.Do(func() {
+		g.cachedNewContribTmpl, g.newContribTmplErr = template.New("newContributor").Parse(format)
+	})
+	if g.newContribTmplErr != nil {
+		g.writeNewContributorFallback(sb, nc, remote)
+		return
 	}
+	tmpl := g.cachedNewContribTmpl
 
 	data := newContributorTemplateData{
 		Name:       nc.Name,
