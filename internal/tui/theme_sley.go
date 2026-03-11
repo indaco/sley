@@ -1,39 +1,40 @@
 package tui
 
 import (
-	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/huh/v2"
+	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/compat"
 )
 
 // Sley brand colors with adaptive light/dark support
 var (
 	// Primary teal - use darker shades on light bg, lighter on dark bg
-	sleyTealPrimary = lipgloss.AdaptiveColor{Light: "#0d9488", Dark: "#14b8a6"}
-	sleyTealBright  = lipgloss.AdaptiveColor{Light: "#0f766e", Dark: "#2dd4bf"}
-	sleyTealAccent  = lipgloss.AdaptiveColor{Light: "#115e59", Dark: "#5eead4"}
+	sleyTealPrimary = compat.AdaptiveColor{Light: lipgloss.Color("#0d9488"), Dark: lipgloss.Color("#14b8a6")}
+	sleyTealBright  = compat.AdaptiveColor{Light: lipgloss.Color("#0f766e"), Dark: lipgloss.Color("#2dd4bf")}
+	sleyTealAccent  = compat.AdaptiveColor{Light: lipgloss.Color("#115e59"), Dark: lipgloss.Color("#5eead4")}
 
 	// Text colors - high contrast for readability
-	sleyTextStrong = lipgloss.AdaptiveColor{Light: "#0f172a", Dark: "#f1f5f9"}
-	sleyTextNormal = lipgloss.AdaptiveColor{Light: "#334155", Dark: "#cbd5e1"}
-	sleyTextMuted  = lipgloss.AdaptiveColor{Light: "#64748b", Dark: "#94a3b8"}
-	sleyTextFaint  = lipgloss.AdaptiveColor{Light: "#94a3b8", Dark: "#64748b"}
+	sleyTextStrong = compat.AdaptiveColor{Light: lipgloss.Color("#0f172a"), Dark: lipgloss.Color("#f1f5f9")}
+	sleyTextNormal = compat.AdaptiveColor{Light: lipgloss.Color("#334155"), Dark: lipgloss.Color("#cbd5e1")}
+	sleyTextMuted  = compat.AdaptiveColor{Light: lipgloss.Color("#64748b"), Dark: lipgloss.Color("#94a3b8")}
+	sleyTextFaint  = compat.AdaptiveColor{Light: lipgloss.Color("#94a3b8"), Dark: lipgloss.Color("#64748b")}
 
 	// Borders and separators
-	sleyBorderFocused = lipgloss.AdaptiveColor{Light: "#0d9488", Dark: "#14b8a6"}
-	sleyBorderNormal  = lipgloss.AdaptiveColor{Light: "#cbd5e1", Dark: "#475569"}
+	sleyBorderFocused = compat.AdaptiveColor{Light: lipgloss.Color("#0d9488"), Dark: lipgloss.Color("#14b8a6")}
+	sleyBorderNormal  = compat.AdaptiveColor{Light: lipgloss.Color("#cbd5e1"), Dark: lipgloss.Color("#475569")}
 
 	// Button backgrounds
-	sleyButtonBg        = lipgloss.AdaptiveColor{Light: "#0d9488", Dark: "#14b8a6"}
-	sleyButtonBgBlurred = lipgloss.AdaptiveColor{Light: "#e2e8f0", Dark: "#334155"}
+	sleyButtonBg        = compat.AdaptiveColor{Light: lipgloss.Color("#0d9488"), Dark: lipgloss.Color("#14b8a6")}
+	sleyButtonBgBlurred = compat.AdaptiveColor{Light: lipgloss.Color("#e2e8f0"), Dark: lipgloss.Color("#334155")}
 
 	// Button text
-	sleyButtonText        = lipgloss.AdaptiveColor{Light: "#ffffff", Dark: "#0f172a"}
-	sleyButtonTextBlurred = lipgloss.AdaptiveColor{Light: "#64748b", Dark: "#94a3b8"}
+	sleyButtonText        = compat.AdaptiveColor{Light: lipgloss.Color("#ffffff"), Dark: lipgloss.Color("#0f172a")}
+	sleyButtonTextBlurred = compat.AdaptiveColor{Light: lipgloss.Color("#64748b"), Dark: lipgloss.Color("#94a3b8")}
 )
 
 // sleyTheme returns a huh theme with sley brand colors
-func sleyTheme() *huh.Theme {
-	t := huh.ThemeBase()
+func sleyTheme(isDark bool) *huh.Styles {
+	t := huh.ThemeBase(isDark)
 
 	// Focused state styles
 	t.Focused.Title = t.Focused.Title.

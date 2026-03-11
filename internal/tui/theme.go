@@ -1,12 +1,12 @@
 package tui
 
 import (
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 )
 
 // currentTheme holds the currently configured theme for TUI components.
 // When nil, currentThemeOrDefault() returns the default sleyTheme.
-var currentTheme *huh.Theme
+var currentTheme huh.Theme
 
 // SetTheme sets the current theme by name.
 // If the name is invalid or empty, the sley theme is used.
@@ -26,9 +26,9 @@ func SetTheme(name string) {
 
 // currentThemeOrDefault returns the current theme for TUI components.
 // Returns the sley theme if no theme has been set.
-func currentThemeOrDefault() *huh.Theme {
+func currentThemeOrDefault() huh.Theme {
 	if currentTheme == nil {
-		return sleyTheme()
+		return huh.ThemeFunc(sleyTheme)
 	}
 	return currentTheme
 }

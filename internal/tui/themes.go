@@ -3,7 +3,7 @@ package tui
 import (
 	"slices"
 
-	"github.com/charmbracelet/huh"
+	"charm.land/huh/v2"
 )
 
 // ValidThemes is the list of supported theme names.
@@ -23,20 +23,20 @@ func IsValidTheme(name string) bool {
 
 // GetTheme returns the huh.Theme for the given theme name.
 // Returns nil if the theme name is not recognized.
-func GetTheme(name string) *huh.Theme {
+func GetTheme(name string) huh.Theme {
 	switch name {
 	case "sley":
-		return sleyTheme()
+		return huh.ThemeFunc(sleyTheme)
 	case "base":
-		return huh.ThemeBase()
+		return huh.ThemeFunc(huh.ThemeBase)
 	case "base16":
-		return huh.ThemeBase16()
+		return huh.ThemeFunc(huh.ThemeBase16)
 	case "catppuccin":
-		return huh.ThemeCatppuccin()
+		return huh.ThemeFunc(huh.ThemeCatppuccin)
 	case "charm":
-		return huh.ThemeCharm()
+		return huh.ThemeFunc(huh.ThemeCharm)
 	case "dracula":
-		return huh.ThemeDracula()
+		return huh.ThemeFunc(huh.ThemeDracula)
 	default:
 		return nil
 	}

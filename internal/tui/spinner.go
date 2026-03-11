@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/charmbracelet/huh/spinner"
+	"charm.land/huh/v2/spinner"
 )
 
 // SpinnerType represents different spinner animation styles.
@@ -83,7 +83,7 @@ func (s *Spinner) Run(action func()) error {
 	sp := spinner.New().
 		Title(s.title).
 		Type(spinnerTypeMap[s.spinnerType]).
-		Accessible(s.accessible).
+		WithAccessible(s.accessible).
 		Action(action)
 
 	return sp.Run()
@@ -95,7 +95,7 @@ func (s *Spinner) RunWithErr(ctx context.Context, action func(context.Context) e
 	sp := spinner.New().
 		Title(s.title).
 		Type(spinnerTypeMap[s.spinnerType]).
-		Accessible(s.accessible).
+		WithAccessible(s.accessible).
 		Context(ctx).
 		ActionWithErr(action)
 
@@ -157,7 +157,7 @@ func (m *MultiModuleSpinner) RunEach(
 		sp := spinner.New().
 			Title(title).
 			Type(spinner.Dots).
-			Accessible(m.accessible).
+			WithAccessible(m.accessible).
 			Context(ctx).
 			ActionWithErr(func(innerCtx context.Context) error {
 				return action(innerCtx, currentIdx)
