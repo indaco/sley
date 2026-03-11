@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/indaco/sley/internal/clix"
-	"github.com/indaco/sley/internal/commands/depsync"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
@@ -119,7 +118,7 @@ func executePreBumpValidations(registry *plugins.PluginRegistry, newVersion, pre
 // used to avoid showing it twice in the dependency sync output.
 func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath string) error {
 	// Sync dependency files after updating .version
-	if err := depsync.SyncDependencies(registry, newVersion, bumpedPath); err != nil {
+	if err := operations.SyncDependencies(registry, newVersion, bumpedPath); err != nil {
 		return err
 	}
 

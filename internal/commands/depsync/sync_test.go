@@ -3,6 +3,7 @@ package depsync
 import (
 	"testing"
 
+	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/semver"
 )
@@ -37,7 +38,7 @@ func TestDeriveDependencyName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := deriveDependencyName(tt.path)
+			got := operations.DeriveDependencyName(tt.path)
 			if got != tt.expected {
 				t.Errorf("deriveDependencyName(%q) = %q, want %q", tt.path, got, tt.expected)
 			}

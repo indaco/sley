@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/indaco/sley/internal/commands/depsync"
+	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
@@ -151,7 +151,7 @@ func TestSyncDependencies(t *testing.T) {
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		err := depsync.SyncDependencies(registry, version)
+		err := operations.SyncDependencies(registry, version)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
