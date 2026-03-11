@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/indaco/sley/internal/apperrors"
 )
 
 // SemVersion represents a semantic version (major.minor.patch-preRelease+build).
@@ -170,7 +172,7 @@ func BumpByLabel(v SemVersion, label string) (SemVersion, error) {
 	case "major":
 		return SemVersion{Major: v.Major + 1, Minor: 0, Patch: 0}, nil
 	default:
-		return SemVersion{}, fmt.Errorf("invalid bump label: %s", label)
+		return SemVersion{}, &apperrors.InvalidBumpTypeError{BumpType: label}
 	}
 }
 
