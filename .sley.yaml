@@ -28,5 +28,5 @@ plugins:
       enabled: true
 extensions:
   - name: version-sync
-    path: ./local-extensions/version-sync
+    path: .sley-extensions/version-sync
     enabled: true
