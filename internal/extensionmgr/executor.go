@@ -102,8 +102,9 @@ func (e *ScriptExecutor) Execute(ctx context.Context, scriptPath string, input *
 	execCtx, cancel := context.WithTimeout(ctx, e.Timeout)
 	defer cancel()
 
-	// Prepare command
+	// Prepare command with working directory set to the script's directory
 	cmd := exec.CommandContext(execCtx, absPath)
+	cmd.Dir = filepath.Dir(absPath)
 	cmd.Stdin = bytes.NewReader(inputJSON)
 
 	var stdout, stderr bytes.Buffer
