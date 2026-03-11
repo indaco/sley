@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
