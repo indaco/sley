@@ -44,6 +44,7 @@ func (m *mockPrinter) PrintFailure(msg string) {
 /* ------------------------------------------------------------------------- */
 
 func TestRunPreReleaseHooks(t *testing.T) {
+
 	tests := []struct {
 		name       string
 		skip       bool
@@ -87,6 +88,7 @@ func TestRunPreReleaseHooks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ResetPreReleaseHooks()
 			t.Cleanup(func() { ResetPreReleaseHooks() })
 			for _, h := range tt.hooks {
@@ -111,6 +113,7 @@ func TestRunPreReleaseHooks(t *testing.T) {
 }
 
 func TestPreReleaseHookRunner_WithMocks(t *testing.T) {
+
 	tests := []struct {
 		name       string
 		skip       bool
@@ -153,7 +156,9 @@ func TestPreReleaseHookRunner_WithMocks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			// Use mock provider and printer (interface-based DI)
+
 			provider := &mockHookProvider{hooks: tt.hooks}
 			printer := &mockPrinter{}
 			runner := NewPreReleaseHookRunner(provider, printer)
@@ -175,6 +180,7 @@ func TestPreReleaseHookRunner_WithMocks(t *testing.T) {
 }
 
 func TestNewPreReleaseHookRunner_Defaults(t *testing.T) {
+
 	runner := NewPreReleaseHookRunner(nil, nil)
 	if runner == nil {
 		t.Fatal("NewPreReleaseHookRunner returned nil")

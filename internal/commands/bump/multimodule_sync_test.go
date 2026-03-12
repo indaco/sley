@@ -17,6 +17,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestMultiModuleBump_SyncsDependencies(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace (without root .version file)
@@ -106,6 +107,7 @@ func TestMultiModuleBump_SyncsDependencies(t *testing.T) {
 }
 
 func TestMultiModuleBump_NoSyncWhenDisabled(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace
@@ -166,6 +168,7 @@ func TestMultiModuleBump_NoSyncWhenDisabled(t *testing.T) {
 }
 
 func TestMultiModuleBump_NoSyncWithoutPlugin(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace
@@ -203,6 +206,7 @@ func TestMultiModuleBump_NoSyncWithoutPlugin(t *testing.T) {
 }
 
 func TestMultiModuleBump_AutoCommand_SyncsDependencies(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with pre-release versions
@@ -262,6 +266,7 @@ func TestMultiModuleBump_AutoCommand_SyncsDependencies(t *testing.T) {
 }
 
 func TestMultiModuleBump_ReleaseCommand_SyncsDependencies(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with pre-release versions
@@ -321,6 +326,7 @@ func TestMultiModuleBump_ReleaseCommand_SyncsDependencies(t *testing.T) {
 }
 
 func TestMultiModuleBump_SpecificModule_SyncsDependencies(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace
@@ -385,7 +391,9 @@ func TestMultiModuleBump_SpecificModule_SyncsDependencies(t *testing.T) {
 }
 
 func TestMultiModuleBump_WithNilRegistry(t *testing.T) {
+
 	// The function should handle nil registry gracefully
+
 	tmpDir := t.TempDir()
 
 	setupMultiModuleWorkspaceWithVersion(t, tmpDir, map[string]string{

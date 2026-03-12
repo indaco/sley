@@ -16,6 +16,7 @@ import (
 )
 
 func TestCLI_BumpCommand_Variants(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -38,6 +39,7 @@ func TestCLI_BumpCommand_Variants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			testutils.WriteTempVersionFile(t, tmpDir, tt.initial)
 			testutils.RunCLITest(t, appCli, tt.args, tmpDir)
 
@@ -50,6 +52,7 @@ func TestCLI_BumpCommand_Variants(t *testing.T) {
 }
 
 func TestCLI_BumpCommand_AutoInitFeedback(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		initial string
@@ -63,6 +66,7 @@ func TestCLI_BumpCommand_AutoInitFeedback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpDir := t.TempDir()
 			versionPath := filepath.Join(tmpDir, ".version")
 
@@ -192,6 +196,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpDir := t.TempDir()
 			versionPath := filepath.Join(tmpDir, ".version")
 
@@ -210,6 +215,7 @@ func TestCLI_BumpSubcommands_EarlyFailures(t *testing.T) {
 }
 
 func TestPrintQuietSummary(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		results  []workspace.ExecutionResult
@@ -235,6 +241,7 @@ func TestPrintQuietSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			output, _ := testutils.CaptureStdout(func() {
 				printQuietSummary(tt.results)
 			})

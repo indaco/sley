@@ -10,6 +10,7 @@ import (
 )
 
 func TestParseOutputFormat(t *testing.T) {
+
 	tests := []struct {
 		input string
 		want  OutputFormat
@@ -23,6 +24,7 @@ func TestParseOutputFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+
 			got := ParseOutputFormat(tt.input)
 			if got != tt.want {
 				t.Errorf("ParseOutputFormat(%q) = %v, want %v", tt.input, got, tt.want)
@@ -32,6 +34,7 @@ func TestParseOutputFormat(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_Text(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -70,6 +73,7 @@ func TestFormatter_FormatResult_Text(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_JSON(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -98,6 +102,7 @@ func TestFormatter_FormatResult_JSON(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_Table(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -124,6 +129,7 @@ func TestFormatter_FormatResult_Table(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_WithMismatches(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -153,6 +159,7 @@ func TestFormatter_FormatResult_WithMismatches(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_Empty(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 	}
@@ -166,6 +173,7 @@ func TestFormatter_FormatResult_Empty(t *testing.T) {
 }
 
 func TestGetModeDescription(t *testing.T) {
+
 	tests := []struct {
 		mode discovery.DetectionMode
 		want string
@@ -178,6 +186,7 @@ func TestGetModeDescription(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.mode.String(), func(t *testing.T) {
+
 			got := getModeDescription(tt.mode)
 			if got != tt.want {
 				t.Errorf("getModeDescription(%v) = %q, want %q", tt.mode, got, tt.want)
@@ -187,6 +196,7 @@ func TestGetModeDescription(t *testing.T) {
 }
 
 func TestFormatter_formatSummary(t *testing.T) {
+
 	tests := []struct {
 		name           string
 		result         *discovery.Result
@@ -226,6 +236,7 @@ func TestFormatter_formatSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			formatter := NewFormatter(FormatText)
 			summary := formatter.formatSummary(tt.result)
 
@@ -245,6 +256,7 @@ func TestFormatter_formatSummary(t *testing.T) {
 }
 
 func TestFormatter_PrintResult(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -271,6 +283,7 @@ func TestFormatter_PrintResult(t *testing.T) {
 }
 
 func TestFormatter_PrintResult_JSON(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.MultiModule,
 		Modules: []discovery.Module{
@@ -295,6 +308,7 @@ func TestFormatter_PrintResult_JSON(t *testing.T) {
 }
 
 func TestFormatter_PrintResult_Table(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 		Manifests: []discovery.ManifestSource{
@@ -324,6 +338,7 @@ func TestFormatter_PrintResult_Table(t *testing.T) {
 }
 
 func TestFormatter_formatTable_WithManifests(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 		Manifests: []discovery.ManifestSource{
@@ -367,6 +382,7 @@ func TestFormatter_formatTable_WithManifests(t *testing.T) {
 }
 
 func TestFormatter_formatTable_WithMismatches(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -402,6 +418,7 @@ func TestFormatter_formatTable_WithMismatches(t *testing.T) {
 }
 
 func TestFormatter_formatTable_Empty(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 	}
@@ -419,7 +436,9 @@ func TestFormatter_formatTable_Empty(t *testing.T) {
 }
 
 func TestFormatter_formatText_WithSyncCandidates(t *testing.T) {
+
 	// Test when there are sync candidates but no modules
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 		SyncCandidates: []discovery.SyncCandidate{
@@ -441,7 +460,9 @@ func TestFormatter_formatText_WithSyncCandidates(t *testing.T) {
 }
 
 func TestFormatter_formatText_WithModulesNoSyncCandidates(t *testing.T) {
+
 	// Test when there are modules - sync candidates section should be hidden
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -463,6 +484,7 @@ func TestFormatter_formatText_WithModulesNoSyncCandidates(t *testing.T) {
 }
 
 func TestFormatter_formatJSON_Complete(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.MultiModule,
 		Modules: []discovery.Module{
@@ -520,6 +542,7 @@ func TestFormatter_formatJSON_Complete(t *testing.T) {
 }
 
 func TestFormatter_formatJSON_WithPattern(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.NoModules,
 		SyncCandidates: []discovery.SyncCandidate{
@@ -542,6 +565,7 @@ func TestFormatter_formatJSON_WithPattern(t *testing.T) {
 }
 
 func TestFormatter_formatSummary_WithPrimaryVersion(t *testing.T) {
+
 	result := &discovery.Result{
 		Modules: []discovery.Module{
 			{Version: "5.0.0", RelPath: ".version"},
@@ -560,6 +584,7 @@ func TestFormatter_formatSummary_WithPrimaryVersion(t *testing.T) {
 }
 
 func TestFormatter_formatSummary_MultipleModulesAndManifests(t *testing.T) {
+
 	result := &discovery.Result{
 		Modules: []discovery.Module{
 			{Version: "1.0.0", RelPath: ".version"},
@@ -584,6 +609,7 @@ func TestFormatter_formatSummary_MultipleModulesAndManifests(t *testing.T) {
 }
 
 func TestFormatter_formatSummary_MultipleMismatches(t *testing.T) {
+
 	result := &discovery.Result{
 		Modules: []discovery.Module{
 			{Version: "1.0.0", RelPath: ".version"},
@@ -604,8 +630,10 @@ func TestFormatter_formatSummary_MultipleMismatches(t *testing.T) {
 }
 
 func TestParseOutputFormat_CaseInsensitive(t *testing.T) {
+
 	// The current implementation is case-sensitive
 	// These tests document that behavior
+
 	tests := []struct {
 		input string
 		want  OutputFormat
@@ -620,6 +648,7 @@ func TestParseOutputFormat_CaseInsensitive(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+
 			got := ParseOutputFormat(tt.input)
 			if got != tt.want {
 				t.Errorf("ParseOutputFormat(%q) = %v, want %v", tt.input, got, tt.want)
@@ -629,6 +658,7 @@ func TestParseOutputFormat_CaseInsensitive(t *testing.T) {
 }
 
 func TestNewFormatter(t *testing.T) {
+
 	tests := []struct {
 		format OutputFormat
 	}{
@@ -639,6 +669,7 @@ func TestNewFormatter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.format), func(t *testing.T) {
+
 			f := NewFormatter(tt.format)
 			if f == nil {
 				t.Fatal("expected non-nil formatter")
@@ -651,7 +682,9 @@ func TestNewFormatter(t *testing.T) {
 }
 
 func TestFormatter_FormatResult_DefaultCase(t *testing.T) {
+
 	// Test that an invalid/unknown format defaults to text
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{

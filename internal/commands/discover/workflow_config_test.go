@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateConfigYAML_DefaultsOnly(t *testing.T) {
+
 	plugins := []string{"commit-parser", "tag-manager"}
 	data, err := generateConfigYAML(".version", plugins, nil)
 
@@ -38,6 +39,7 @@ func TestGenerateConfigYAML_DefaultsOnly(t *testing.T) {
 }
 
 func TestGenerateConfigYAML_WithDependencyCheck(t *testing.T) {
+
 	plugins := []string{"commit-parser", "tag-manager", "dependency-check"}
 	candidates := []discovery.SyncCandidate{
 		{
@@ -68,6 +70,7 @@ func TestGenerateConfigYAML_WithDependencyCheck(t *testing.T) {
 }
 
 func TestGenerateConfigYAML_EmptyPlugins(t *testing.T) {
+
 	data, err := generateConfigYAML(".version", []string{}, nil)
 
 	if err != nil {
@@ -88,6 +91,7 @@ func TestGenerateConfigYAML_EmptyPlugins(t *testing.T) {
 }
 
 func TestGenerateConfigYAML_AllPluginTypes(t *testing.T) {
+
 	plugins := []string{"commit-parser", "tag-manager", "dependency-check"}
 	candidates := []discovery.SyncCandidate{
 		{Path: "package.json", Format: parser.FormatJSON, Field: "version"},
@@ -114,6 +118,7 @@ func TestGenerateConfigYAML_AllPluginTypes(t *testing.T) {
 }
 
 func TestGenerateConfigYAMLWithWorkspace(t *testing.T) {
+
 	plugins := []string{"commit-parser", "tag-manager"}
 	candidates := []discovery.SyncCandidate{
 		{Path: "package.json", Format: parser.FormatJSON, Field: "version"},
@@ -164,6 +169,7 @@ func TestGenerateConfigYAMLWithWorkspace(t *testing.T) {
 }
 
 func TestMarshalConfigWithComments(t *testing.T) {
+
 	cfg := &config.Config{
 		Path: ".version",
 	}
@@ -191,6 +197,7 @@ func TestMarshalConfigWithComments(t *testing.T) {
 }
 
 func TestMarshalConfigWithComments_EmptyPlugins(t *testing.T) {
+
 	cfg := &config.Config{
 		Path: ".version",
 	}
@@ -210,6 +217,7 @@ func TestMarshalConfigWithComments_EmptyPlugins(t *testing.T) {
 }
 
 func TestMarshalToYAML(t *testing.T) {
+
 	cfg := &config.Config{
 		Path: ".version",
 	}
@@ -227,6 +235,7 @@ func TestMarshalToYAML(t *testing.T) {
 }
 
 func TestDefaultVersionPath(t *testing.T) {
+
 	path := defaultVersionPath()
 	if path != ".version" {
 		t.Errorf("defaultVersionPath() = %q, want %q", path, ".version")
@@ -234,7 +243,9 @@ func TestDefaultVersionPath(t *testing.T) {
 }
 
 func TestConfigExists(t *testing.T) {
+
 	t.Run("config exists", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		t.Chdir(tmpDir)
 
@@ -249,6 +260,7 @@ func TestConfigExists(t *testing.T) {
 	})
 
 	t.Run("config does not exist", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		t.Chdir(tmpDir)
 

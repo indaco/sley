@@ -62,6 +62,7 @@ func mergeAndVerifyIdempotent(t *testing.T, g *Generator, changelogPath string, 
 }
 
 func TestWriteVersionedFile(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
@@ -94,6 +95,7 @@ func TestWriteVersionedFile(t *testing.T) {
 }
 
 func TestWriteVersionedFile_Error(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/readonly/path"
 	g, err := NewGenerator(cfg)
@@ -108,6 +110,7 @@ func TestWriteVersionedFile_Error(t *testing.T) {
 }
 
 func TestWriteUnifiedChangelog_New(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
@@ -142,6 +145,7 @@ func TestWriteUnifiedChangelog_New(t *testing.T) {
 }
 
 func TestWriteUnifiedChangelog_Existing(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
@@ -184,6 +188,7 @@ Previous content
 }
 
 func TestWriteUnifiedChangelog_Error(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = "/nonexistent/readonly/CHANGELOG.md"
 	g, err := NewGenerator(cfg)
@@ -198,6 +203,7 @@ func TestWriteUnifiedChangelog_Error(t *testing.T) {
 }
 
 func TestMergeVersionedFiles(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	if err := os.MkdirAll(changesDir, 0755); err != nil {
@@ -245,6 +251,7 @@ func TestMergeVersionedFiles(t *testing.T) {
 }
 
 func TestMergeVersionedFiles_SemanticOrder(t *testing.T) {
+
 	tmpDir, changesDir := setupTestChangesDir(t)
 
 	createVersionFiles(t, changesDir, map[string]string{
@@ -291,6 +298,7 @@ func TestMergeVersionedFiles_SemanticOrder(t *testing.T) {
 }
 
 func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	if err := os.MkdirAll(changesDir, 0755); err != nil {
@@ -312,6 +320,7 @@ func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
 }
 
 func TestMergeVersionedFiles_NonexistentDir(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/path"
 	g, err := NewGenerator(cfg)
@@ -327,6 +336,7 @@ func TestMergeVersionedFiles_NonexistentDir(t *testing.T) {
 }
 
 func TestMergeVersionedFiles_Idempotent(t *testing.T) {
+
 	tmpDir, changesDir := setupTestChangesDir(t)
 	changelogPath := filepath.Join(tmpDir, "CHANGELOG.md")
 
@@ -370,6 +380,7 @@ func verifyVersionOrder(t *testing.T, content string) {
 }
 
 func TestMergeVersionedFiles_IdempotentWithExistingChangelog(t *testing.T) {
+
 	tmpDir, changesDir := setupTestChangesDir(t)
 	changelogPath := filepath.Join(tmpDir, "CHANGELOG.md")
 
@@ -411,6 +422,7 @@ func verifyOldContentRemoved(t *testing.T, content string) {
 }
 
 func TestCollectVersionFiles(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	if err := os.MkdirAll(changesDir, 0755); err != nil {
@@ -465,6 +477,7 @@ func TestCollectVersionFiles(t *testing.T) {
 }
 
 func TestBuildMergedContent(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	if err := os.MkdirAll(changesDir, 0755); err != nil {
@@ -504,6 +517,7 @@ func TestBuildMergedContent(t *testing.T) {
 }
 
 func TestGetDefaultHeader(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -521,6 +535,7 @@ func TestGetDefaultHeader(t *testing.T) {
 }
 
 func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	templatePath := filepath.Join(tmpDir, "header.md")
 	customHeader := "# Custom Header\n\nCustom description"
@@ -543,6 +558,7 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 }
 
 func TestInsertAfterHeader(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -570,6 +586,7 @@ Old content
 }
 
 func TestInsertAfterHeader_NoVersionFound(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -592,6 +609,7 @@ Some description about this project.
 }
 
 func TestSortVersionFiles(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		input    []string
@@ -664,7 +682,9 @@ func TestSortVersionFiles(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			// Copy to avoid mutating test data
+
 			files := make([]string, len(tt.input))
 			copy(files, tt.input)
 
@@ -683,9 +703,11 @@ func TestSortVersionFiles(t *testing.T) {
 }
 
 func TestSortVersionFiles_SemanticOrder_0_10_0(t *testing.T) {
+
 	// Regression test: v0.10.0 must sort AFTER v0.9.1 and not between v0.1.2 and v0.2.0.
 	// This was the original bug: lexicographic comparison treated "10" < "2" because
 	// "1" < "2" character-by-character.
+
 	files := []string{
 		"/tmp/.changes/v0.1.2.md",
 		"/tmp/.changes/v0.2.0.md",
@@ -711,6 +733,7 @@ func TestSortVersionFiles_SemanticOrder_0_10_0(t *testing.T) {
 }
 
 func TestExtractVersion(t *testing.T) {
+
 	tests := []struct {
 		path    string
 		wantStr string
@@ -726,6 +749,7 @@ func TestExtractVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+
 			v := extractVersion(tt.path)
 			got := v.String()
 			if got != tt.wantStr {

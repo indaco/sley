@@ -6,6 +6,7 @@ import (
 )
 
 func TestNewGenerator(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -21,6 +22,7 @@ func TestNewGenerator(t *testing.T) {
 }
 
 func TestNewGenerator_InvalidFormat(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Format = "invalid-format"
 
@@ -34,6 +36,7 @@ func TestNewGenerator_InvalidFormat(t *testing.T) {
 }
 
 func TestFormatCommitEntry(t *testing.T) {
+
 	remote := &RemoteInfo{Provider: "github", Host: "github.com", Owner: "owner", Repo: "repo"}
 
 	tests := []struct {
@@ -92,6 +95,7 @@ func TestFormatCommitEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := formatCommitEntry(tt.commit, tt.remote)
 			for _, want := range tt.contains {
 				if !strings.Contains(got, want) {

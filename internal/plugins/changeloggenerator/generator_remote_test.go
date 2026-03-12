@@ -5,6 +5,7 @@ import (
 )
 
 func TestResolveRemote_FromConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "gitlab",
@@ -34,6 +35,7 @@ func TestResolveRemote_FromConfig(t *testing.T) {
 }
 
 func TestResolveRemote_FillDefaults(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -57,7 +59,9 @@ func TestResolveRemote_FillDefaults(t *testing.T) {
 }
 
 func TestResolveRemote_AutoDetect(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetRemoteInfoFn
 	defer func() { GetRemoteInfoFn = originalFn }()
 
@@ -91,6 +95,7 @@ func TestResolveRemote_AutoDetect(t *testing.T) {
 }
 
 func TestResolveRemote_NoConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = nil
 	g, err := NewGenerator(cfg)
@@ -105,6 +110,7 @@ func TestResolveRemote_NoConfig(t *testing.T) {
 }
 
 func TestResolveRemote_Cached(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -135,6 +141,7 @@ func TestResolveRemote_Cached(t *testing.T) {
 }
 
 func TestResolveRemote_FillProviderFromHost(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Host:  "github.com",

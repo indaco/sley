@@ -22,6 +22,7 @@ func (m *errMockGitTagReader) DescribeTags(ctx context.Context) (string, error) 
 
 // TestVersionManager_ReadError_Recovery tests error handling when file read fails.
 func TestVersionManager_ReadError_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 
@@ -38,6 +39,7 @@ func TestVersionManager_ReadError_Recovery(t *testing.T) {
 
 // TestVersionManager_WriteError_Recovery tests error handling when file write fails.
 func TestVersionManager_WriteError_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 
@@ -58,6 +60,7 @@ func TestVersionManager_WriteError_Recovery(t *testing.T) {
 
 // TestVersionManager_ContextCancellation_Recovery tests that operations respect context cancellation.
 func TestVersionManager_ContextCancellation_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("1.0.0"))
@@ -77,6 +80,7 @@ func TestVersionManager_ContextCancellation_Recovery(t *testing.T) {
 
 // TestVersionManager_ContextTimeout_Recovery tests that operations respect context deadline.
 func TestVersionManager_ContextTimeout_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("1.0.0"))
@@ -84,8 +88,8 @@ func TestVersionManager_ContextTimeout_Recovery(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	// Wait for timeout
-	time.Sleep(10 * time.Millisecond)
+	// Wait for the context to actually expire instead of sleeping
+	<-ctx.Done()
 
 	_, err := mgr.Read(ctx, "/test/.version")
 	if err == nil {
@@ -99,6 +103,7 @@ func TestVersionManager_ContextTimeout_Recovery(t *testing.T) {
 
 // TestVersionManager_ConcurrentReads_Recovery tests concurrent read operations.
 func TestVersionManager_ConcurrentReads_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("1.2.3"))
@@ -131,6 +136,7 @@ func TestVersionManager_ConcurrentReads_Recovery(t *testing.T) {
 
 // TestVersionManager_ConcurrentWrites_Recovery tests concurrent write operations.
 func TestVersionManager_ConcurrentWrites_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("1.0.0"))
@@ -171,6 +177,7 @@ func TestVersionManager_ConcurrentWrites_Recovery(t *testing.T) {
 
 // TestVersionManager_InitializeExistingFile_Recovery tests initialize when file exists.
 func TestVersionManager_InitializeExistingFile_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("2.0.0"))
@@ -194,6 +201,7 @@ func TestVersionManager_InitializeExistingFile_Recovery(t *testing.T) {
 
 // TestVersionManager_InitializeNewFile_Recovery tests initialize when file doesn't exist.
 func TestVersionManager_InitializeNewFile_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 
@@ -218,6 +226,7 @@ func TestVersionManager_InitializeNewFile_Recovery(t *testing.T) {
 
 // TestVersionManager_InitializeWriteError_Recovery tests initialize when write fails.
 func TestVersionManager_InitializeWriteError_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 
@@ -234,6 +243,7 @@ func TestVersionManager_InitializeWriteError_Recovery(t *testing.T) {
 
 // TestVersionManager_ParseInvalidVersion_Recovery tests handling of invalid version file.
 func TestVersionManager_ParseInvalidVersion_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("not-a-valid-version"))
@@ -248,6 +258,7 @@ func TestVersionManager_ParseInvalidVersion_Recovery(t *testing.T) {
 
 // TestVersionManager_EmptyFile_Recovery tests handling of empty version file.
 func TestVersionManager_EmptyFile_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte(""))
@@ -262,6 +273,7 @@ func TestVersionManager_EmptyFile_Recovery(t *testing.T) {
 
 // TestVersionManager_WhitespaceOnlyFile_Recovery tests handling of whitespace-only version file.
 func TestVersionManager_WhitespaceOnlyFile_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 	fs.SetFile("/test/.version", []byte("   \n\t  "))
@@ -276,6 +288,7 @@ func TestVersionManager_WhitespaceOnlyFile_Recovery(t *testing.T) {
 
 // TestVersionManager_MkdirError_Recovery tests handling of mkdir failure during save.
 func TestVersionManager_MkdirError_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 
@@ -292,6 +305,7 @@ func TestVersionManager_MkdirError_Recovery(t *testing.T) {
 
 // TestVersionManager_StatError_Recovery tests handling of stat failure.
 func TestVersionManager_StatError_Recovery(t *testing.T) {
+
 	fs := core.NewMockFileSystem()
 	mgr := NewVersionManager(fs, &errMockGitTagReader{})
 

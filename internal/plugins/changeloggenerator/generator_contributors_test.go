@@ -6,6 +6,7 @@ import (
 )
 
 func TestWriteContributorEntry(t *testing.T) {
+
 	g, err := NewGenerator(DefaultConfig())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -40,6 +41,7 @@ func TestWriteContributorEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			var sb strings.Builder
 			g.writeContributorEntry(&sb, tt.contrib, tt.remote)
 			got := sb.String()
@@ -53,6 +55,7 @@ func TestWriteContributorEntry(t *testing.T) {
 }
 
 func TestWriteContributorEntry_CustomFormat(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		format   string
@@ -99,6 +102,7 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := DefaultConfig()
 			cfg.Contributors.Format = tt.format
 			g, err := NewGenerator(cfg)
@@ -118,6 +122,7 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 }
 
 func TestWriteContributorEntry_NoHost(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -137,6 +142,7 @@ func TestWriteContributorEntry_NoHost(t *testing.T) {
 }
 
 func TestWriteContributorEntry_TemplateExecutionError(t *testing.T) {
+
 	cfg := DefaultConfig()
 	// Invalid template that parses but fails on execution
 	cfg.Contributors = &ContributorsConfig{
@@ -165,6 +171,7 @@ func TestWriteContributorEntry_TemplateExecutionError(t *testing.T) {
 }
 
 func TestWriteNewContributorsSection(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:             true,
@@ -207,6 +214,7 @@ func TestWriteNewContributorsSection(t *testing.T) {
 }
 
 func TestWriteNewContributorsSection_WithIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:             true,
@@ -237,6 +245,7 @@ func TestWriteNewContributorsSection_WithIcon(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_WithRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:             true,
@@ -274,6 +283,7 @@ func TestWriteNewContributorEntry_WithRemote(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_WithoutPR(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:             true,
@@ -317,6 +327,7 @@ func TestWriteNewContributorEntry_WithoutPR(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_WithoutRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:             true,
@@ -346,6 +357,7 @@ func TestWriteNewContributorEntry_WithoutRemote(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_CustomFormat(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:               true,
@@ -374,6 +386,7 @@ func TestWriteNewContributorEntry_CustomFormat(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_TemplateParseError(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:               true,
@@ -403,6 +416,7 @@ func TestWriteNewContributorEntry_TemplateParseError(t *testing.T) {
 }
 
 func TestWriteNewContributorEntry_TemplateExecutionError(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Contributors = &ContributorsConfig{
 		Enabled:               true,
@@ -432,6 +446,7 @@ func TestWriteNewContributorEntry_TemplateExecutionError(t *testing.T) {
 }
 
 func TestWriteNewContributorFallback_WithPR(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 
@@ -465,6 +480,7 @@ func TestWriteNewContributorFallback_WithPR(t *testing.T) {
 }
 
 func TestWriteNewContributorFallback_WithoutPR(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 
@@ -502,6 +518,7 @@ func TestWriteNewContributorFallback_WithoutPR(t *testing.T) {
 }
 
 func TestWriteNewContributorFallback_WithoutRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 
@@ -527,6 +544,7 @@ func TestWriteNewContributorFallback_WithoutRemote(t *testing.T) {
 }
 
 func TestWriteNewContributorFallback_NoRemoteNoPR(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 
@@ -552,6 +570,7 @@ func TestWriteNewContributorFallback_NoRemoteNoPR(t *testing.T) {
 }
 
 func TestGetDefaultNewContributorFormat_WithRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 
@@ -576,6 +595,7 @@ func TestGetDefaultNewContributorFormat_WithRemote(t *testing.T) {
 }
 
 func TestGetDefaultNewContributorFormat_WithoutRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, _ := NewGenerator(cfg)
 

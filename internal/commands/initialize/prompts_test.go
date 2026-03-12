@@ -5,6 +5,7 @@ import (
 )
 
 func TestAllPluginOptions(t *testing.T) {
+
 	options := AllPluginOptions()
 
 	if len(options) == 0 {
@@ -42,6 +43,7 @@ func TestAllPluginOptions(t *testing.T) {
 }
 
 func TestDefaultPluginNames(t *testing.T) {
+
 	defaults := DefaultPluginNames()
 
 	if len(defaults) == 0 {
@@ -68,6 +70,7 @@ func TestDefaultPluginNames(t *testing.T) {
 }
 
 func TestPluginOption_Defaults(t *testing.T) {
+
 	options := AllPluginOptions()
 
 	// Verify commit-parser and tag-manager have Default=true

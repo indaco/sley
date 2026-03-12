@@ -13,7 +13,9 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestLoadConfig(t *testing.T) {
+
 	t.Run("from env", func(t *testing.T) {
+
 		os.Setenv("SLEY_PATH", "env-defined/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
@@ -24,6 +26,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("from env with path traversal rejected", func(t *testing.T) {
+
 		os.Setenv("SLEY_PATH", "../../../etc/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
@@ -36,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("from env with absolute path allowed", func(t *testing.T) {
+
 		os.Setenv("SLEY_PATH", "/tmp/project/.version")
 		defer os.Unsetenv("SLEY_PATH")
 
@@ -46,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("valid yaml file with path", func(t *testing.T) {
+
 		content := "path: ./my-folder/.version\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -57,6 +62,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("missing file fallback", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		runInTempDir(t, filepath.Join(tmpDir, "dummy"), func() {
 			cfg, err := LoadConfig()
@@ -66,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("empty config falls back to default path", func(t *testing.T) {
+
 		content := "{}\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -77,6 +84,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("invalid yaml (bad format)", func(t *testing.T) {
+
 		content := "not_yaml::: true"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -87,6 +95,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("unmarshal error (syntax)", func(t *testing.T) {
+
 		content := ": this is invalid"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -97,6 +106,7 @@ func TestLoadConfig(t *testing.T) {
 	})
 
 	t.Run("read file error (directory instead of file)", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		runInTempDir(t, filepath.Join(tmpDir, "dummy"), func() {
 			if err := os.Mkdir(".sley.yaml", 0755); err != nil {
@@ -114,7 +124,9 @@ func TestLoadConfig(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestLoadConfigWithTheme(t *testing.T) {
+
 	t.Run("valid yaml file with theme", func(t *testing.T) {
+
 		content := "path: .version\ntheme: dracula\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -128,6 +140,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 	})
 
 	t.Run("empty theme in config", func(t *testing.T) {
+
 		content := "path: .version\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -141,6 +154,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 	})
 
 	t.Run("explicit empty theme", func(t *testing.T) {
+
 		content := "path: .version\ntheme: \"\"\n"
 		tmpPath := testutils.WriteTempConfig(t, content)
 		runInTempDir(t, tmpPath, func() {
@@ -155,6 +169,7 @@ func TestLoadConfigWithTheme(t *testing.T) {
 }
 
 func TestGetTheme(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		theme    string
@@ -179,6 +194,7 @@ func TestGetTheme(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := &Config{Theme: tt.theme}
 			got := cfg.GetTheme()
 			if got != tt.expected {
@@ -193,7 +209,9 @@ func TestGetTheme(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestNormalizeVersionPath(t *testing.T) {
+
 	// Case 1: path is a file
+
 	got := NormalizeVersionPath("foo/.version")
 	if got != "foo/.version" {
 		t.Errorf("expected unchanged path, got %q", got)

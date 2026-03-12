@@ -7,6 +7,7 @@ import (
 )
 
 func TestCommandHook_Run_Success(t *testing.T) {
+
 	h := CommandHook{
 		Name:    "echo-test",
 		Command: "echo 'hello world'",
@@ -19,6 +20,7 @@ func TestCommandHook_Run_Success(t *testing.T) {
 }
 
 func TestCommandHook_Run_Failure(t *testing.T) {
+
 	h := CommandHook{
 		Name:    "fail-test",
 		Command: "exit 1",
@@ -31,6 +33,7 @@ func TestCommandHook_Run_Failure(t *testing.T) {
 }
 
 func TestCommandHook_HookName(t *testing.T) {
+
 	h := CommandHook{Name: "hook-name"}
 	if got := h.HookName(); got != "hook-name" {
 		t.Errorf("expected 'hook-name', got %q", got)
@@ -38,6 +41,7 @@ func TestCommandHook_HookName(t *testing.T) {
 }
 
 func TestCommandHook_Run_WithTimeout(t *testing.T) {
+
 	h := CommandHook{
 		Name:    "timeout-test",
 		Command: "sleep 2",
@@ -57,6 +61,7 @@ func TestCommandHook_Run_WithTimeout(t *testing.T) {
 }
 
 func TestCommandHook_Run_WithDefaultTimeout(t *testing.T) {
+
 	h := CommandHook{
 		Name:    "default-timeout-test",
 		Command: "echo 'test'",

@@ -5,6 +5,7 @@ import (
 )
 
 func TestAllTemplates(t *testing.T) {
+
 	templates := AllTemplates()
 
 	if len(templates) == 0 {
@@ -26,6 +27,7 @@ func TestAllTemplates(t *testing.T) {
 }
 
 func TestTemplateNames(t *testing.T) {
+
 	names := TemplateNames()
 
 	expectedNames := []string{"basic", "git", "automation", "strict", "full"}
@@ -41,6 +43,7 @@ func TestTemplateNames(t *testing.T) {
 }
 
 func TestGetTemplate(t *testing.T) {
+
 	tests := []struct {
 		name            string
 		templateName    string
@@ -94,6 +97,7 @@ func TestGetTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpl, err := GetTemplate(tt.templateName)
 
 			if tt.expectError {
@@ -126,6 +130,7 @@ func TestGetTemplate(t *testing.T) {
 }
 
 func TestIsValidTemplate(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		expected bool
@@ -142,6 +147,7 @@ func TestIsValidTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := IsValidTemplate(tt.name)
 			if got != tt.expected {
 				t.Errorf("IsValidTemplate(%q): expected %v, got %v", tt.name, tt.expected, got)

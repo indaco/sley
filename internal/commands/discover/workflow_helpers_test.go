@@ -9,6 +9,7 @@ import (
 )
 
 func TestBuildSyncFileOptions(t *testing.T) {
+
 	candidates := []discovery.SyncCandidate{
 		{Path: "package.json", Format: parser.FormatJSON, Description: "Node.js"},
 		{Path: "Cargo.toml", Format: parser.FormatTOML, Description: "Rust"},
@@ -33,6 +34,7 @@ func TestBuildSyncFileOptions(t *testing.T) {
 }
 
 func TestBuildSyncFileOptions_Empty(t *testing.T) {
+
 	options, defaults := buildSyncFileOptions([]discovery.SyncCandidate{})
 
 	if len(options) != 0 {
@@ -44,6 +46,7 @@ func TestBuildSyncFileOptions_Empty(t *testing.T) {
 }
 
 func TestFilterCandidatesByPaths(t *testing.T) {
+
 	candidates := []discovery.SyncCandidate{
 		{Path: "package.json", Format: parser.FormatJSON},
 		{Path: "Cargo.toml", Format: parser.FormatTOML},
@@ -90,6 +93,7 @@ func TestFilterCandidatesByPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := filterCandidatesByPaths(candidates, tt.selectedPaths)
 
 			if len(result) != tt.wantCount {
@@ -106,6 +110,7 @@ func TestFilterCandidatesByPaths(t *testing.T) {
 }
 
 func TestGetFieldForManifest(t *testing.T) {
+
 	tests := []struct {
 		filename string
 		format   parser.Format
@@ -120,6 +125,7 @@ func TestGetFieldForManifest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
+
 			got := GetFieldForManifest(tt.filename, tt.format)
 			if got != tt.want {
 				t.Errorf("GetFieldForManifest(%q, %v) = %q, want %q", tt.filename, tt.format, got, tt.want)
@@ -129,6 +135,7 @@ func TestGetFieldForManifest(t *testing.T) {
 }
 
 func TestWorkflow_selectSyncFiles_EmptyCandidates(t *testing.T) {
+
 	mock := &MockPrompter{}
 	result := &discovery.Result{
 		SyncCandidates: []discovery.SyncCandidate{},
@@ -146,6 +153,7 @@ func TestWorkflow_selectSyncFiles_EmptyCandidates(t *testing.T) {
 }
 
 func TestWorkflow_selectSyncFiles_WithCandidates(t *testing.T) {
+
 	mock := &MockPrompter{
 		MultiSelectResult: []string{"package.json"},
 	}
@@ -174,6 +182,7 @@ func TestWorkflow_selectSyncFiles_WithCandidates(t *testing.T) {
 }
 
 func TestWorkflow_selectSyncFiles_WithError(t *testing.T) {
+
 	expectedErr := errors.New("prompt error")
 	mock := &MockPrompter{
 		MultiSelectErr: expectedErr,
@@ -196,6 +205,7 @@ func TestWorkflow_selectSyncFiles_WithError(t *testing.T) {
 }
 
 func TestWorkflow_selectSyncFiles_AllSelected(t *testing.T) {
+
 	mock := &MockPrompter{
 		MultiSelectResult: []string{"package.json", "Cargo.toml", "pyproject.toml"},
 	}
@@ -219,6 +229,7 @@ func TestWorkflow_selectSyncFiles_AllSelected(t *testing.T) {
 }
 
 func TestWorkflow_selectSyncFiles_NoneSelected(t *testing.T) {
+
 	mock := &MockPrompter{
 		MultiSelectResult: []string{},
 	}

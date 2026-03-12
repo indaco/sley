@@ -9,6 +9,7 @@ import (
 )
 
 func TestLoadPreReleaseHooksFromConfig(t *testing.T) {
+
 	ResetPreReleaseHooks()
 	t.Cleanup(func() { ResetPreReleaseHooks() })
 
@@ -42,6 +43,7 @@ func TestLoadPreReleaseHooksFromConfig(t *testing.T) {
 }
 
 func TestLoadPreReleaseHooksFromConfig_NilConfig(t *testing.T) {
+
 	ResetPreReleaseHooks()
 	t.Cleanup(func() { ResetPreReleaseHooks() })
 
@@ -57,6 +59,7 @@ func TestLoadPreReleaseHooksFromConfig_NilConfig(t *testing.T) {
 }
 
 func TestLoadPreReleaseHooksFromConfig_NilPreReleaseHooks(t *testing.T) {
+
 	ResetPreReleaseHooks()
 	t.Cleanup(func() { ResetPreReleaseHooks() })
 
@@ -76,6 +79,7 @@ func TestLoadPreReleaseHooksFromConfig_NilPreReleaseHooks(t *testing.T) {
 }
 
 func TestLoadPreReleaseHooksFromConfig_SkipMissingCommand(t *testing.T) {
+
 	ResetPreReleaseHooks()
 	t.Cleanup(func() { ResetPreReleaseHooks() })
 

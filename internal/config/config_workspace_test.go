@@ -11,6 +11,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestDiscoveryDefaults(t *testing.T) {
+
 	defaults := DiscoveryDefaults()
 
 	if defaults == nil {
@@ -50,7 +51,9 @@ func TestDiscoveryDefaults(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestLoadConfig_WorkspaceWithDiscovery(t *testing.T) {
+
 	t.Run("workspace with discovery enabled", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   discovery:
@@ -74,6 +77,7 @@ workspace:
 	})
 
 	t.Run("workspace with discovery disabled", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   discovery:
@@ -92,6 +96,7 @@ workspace:
 	})
 
 	t.Run("workspace with custom excludes", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   discovery:
@@ -132,7 +137,9 @@ func assertModuleConfig(t *testing.T, mod ModuleConfig, name, path string) {
 }
 
 func TestLoadConfig_WorkspaceWithModules(t *testing.T) {
+
 	t.Run("explicit modules defined", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   modules:
@@ -165,6 +172,7 @@ workspace:
 	})
 
 	t.Run("modules without enabled field defaults to enabled", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   modules:
@@ -212,7 +220,9 @@ func assertDefaultDiscoveryValues(t *testing.T, discovery *DiscoveryConfig) {
 }
 
 func TestConfig_WorkspaceDefaults(t *testing.T) {
+
 	t.Run("no workspace section returns defaults", func(t *testing.T) {
+
 		yamlContent := `path: .version`
 		tmpPath := testutils.WriteTempConfig(t, yamlContent)
 		runInTempDir(t, tmpPath, func() {
@@ -231,6 +241,7 @@ func TestConfig_WorkspaceDefaults(t *testing.T) {
 	})
 
 	t.Run("workspace without discovery section returns defaults", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   modules:
@@ -255,6 +266,7 @@ workspace:
 	})
 
 	t.Run("partial discovery config uses defaults for missing fields", func(t *testing.T) {
+
 		yamlContent := `path: .version
 workspace:
   discovery:
@@ -280,6 +292,7 @@ workspace:
 /* ------------------------------------------------------------------------- */
 
 func TestConfig_GetExcludePatterns(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *Config
@@ -323,6 +336,7 @@ func TestConfig_GetExcludePatterns(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			patterns := tt.config.GetExcludePatterns()
 
 			if len(patterns) != len(tt.expected) {
@@ -345,6 +359,7 @@ func TestConfig_GetExcludePatterns(t *testing.T) {
 }
 
 func TestConfig_HasExplicitModules(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *Config
@@ -386,6 +401,7 @@ func TestConfig_HasExplicitModules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.HasExplicitModules()
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
@@ -395,6 +411,7 @@ func TestConfig_HasExplicitModules(t *testing.T) {
 }
 
 func TestConfig_IsModuleEnabled(t *testing.T) {
+
 	enabled := true
 	disabled := false
 
@@ -462,6 +479,7 @@ func TestConfig_IsModuleEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.IsModuleEnabled(tt.moduleName)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
@@ -471,6 +489,7 @@ func TestConfig_IsModuleEnabled(t *testing.T) {
 }
 
 func TestModuleConfig_IsEnabled(t *testing.T) {
+
 	enabled := true
 	disabled := false
 
@@ -498,6 +517,7 @@ func TestModuleConfig_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.module.IsEnabled()
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)

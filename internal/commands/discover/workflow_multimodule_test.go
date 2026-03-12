@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkflow_runMultiModuleSetup_WorkspaceChoice(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -75,6 +76,7 @@ func TestWorkflow_runMultiModuleSetup_WorkspaceChoice(t *testing.T) {
 }
 
 func TestWorkflow_runMultiModuleSetup_SingleRootChoice(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -135,6 +137,7 @@ func TestWorkflow_runMultiModuleSetup_SingleRootChoice(t *testing.T) {
 }
 
 func TestWorkflow_runMultiModuleSetup_CoordinatedChoice(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -213,6 +216,7 @@ func TestWorkflow_runMultiModuleSetup_CoordinatedChoice(t *testing.T) {
 }
 
 func TestWorkflow_runMultiModuleSetup_Canceled(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -248,6 +252,7 @@ func TestWorkflow_runMultiModuleSetup_Canceled(t *testing.T) {
 }
 
 func TestWorkflow_runMultiModuleSetup_SelectError(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	expectedErr := errors.New("select error")
@@ -273,6 +278,7 @@ func TestWorkflow_runMultiModuleSetup_SelectError(t *testing.T) {
 }
 
 func TestWorkflow_createConfigWithWorkspace(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -335,6 +341,7 @@ func TestWorkflow_createConfigWithWorkspace(t *testing.T) {
 }
 
 func TestWorkflow_createConfigWithCoordinatedVersioning(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -414,6 +421,7 @@ func TestWorkflow_createConfigWithCoordinatedVersioning(t *testing.T) {
 }
 
 func TestWorkflow_createConfigWithCoordinatedVersioning_NoSubmodules(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -459,6 +467,7 @@ func TestWorkflow_createConfigWithCoordinatedVersioning_NoSubmodules(t *testing.
 }
 
 func TestWorkflow_createConfigWithCoordinatedVersioning_NoManifests(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -507,6 +516,7 @@ func TestWorkflow_createConfigWithCoordinatedVersioning_NoManifests(t *testing.T
 }
 
 func TestWorkflow_runInitWorkflow_MultiModule(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 

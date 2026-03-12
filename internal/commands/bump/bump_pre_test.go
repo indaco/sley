@@ -14,6 +14,7 @@ import (
 )
 
 func TestCLI_BumpPreCmd(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -49,6 +50,7 @@ func TestCLI_BumpPreCmd(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			testutils.WriteTempVersionFile(t, tmpDir, tt.initial)
 			testutils.RunCLITest(t, appCli, tt.args, tmpDir)
 
@@ -61,6 +63,7 @@ func TestCLI_BumpPreCmd(t *testing.T) {
 }
 
 func TestCLI_BumpPreCmd_ErrorNoPreRelease(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -77,6 +80,7 @@ func TestCLI_BumpPreCmd_ErrorNoPreRelease(t *testing.T) {
 }
 
 func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
+
 	tests := []struct {
 		name        string
 		args        []string
@@ -97,6 +101,7 @@ func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpDir := t.TempDir()
 			versionPath := filepath.Join(tmpDir, ".version")
 			testutils.WriteTempVersionFile(t, tmpDir, "1.2.3-rc.1")
@@ -117,6 +122,7 @@ func TestCLI_BumpPreCmd_EarlyFailures(t *testing.T) {
 }
 
 func TestCLI_BumpPreCmd_PreserveMetadata(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -152,6 +158,7 @@ func TestCLI_BumpPreCmd_PreserveMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			testutils.WriteTempVersionFile(t, tmpDir, tt.initial)
 			testutils.RunCLITest(t, appCli, tt.args, tmpDir)
 

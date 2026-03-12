@@ -85,6 +85,7 @@ See [Semantic Versioning](https://semver.org/) for versioning guidelines.`
 /* ------------------------------------------------------------------------- */
 
 func TestChangelogMergeCmd_Success(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -150,6 +151,7 @@ func TestChangelogMergeCmd_Success(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_CustomHeader(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -197,6 +199,7 @@ func TestChangelogMergeCmd_CustomHeader(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_NoVersionedFiles(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -229,6 +232,7 @@ func TestChangelogMergeCmd_NoVersionedFiles(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_WithConfig(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, "custom-changes")
 	outputPath := filepath.Join(tmpDir, "CUSTOM.md")
@@ -278,6 +282,7 @@ func TestChangelogMergeCmd_WithConfig(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_FlagOverridesConfig(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	flagChangesDir := filepath.Join(tmpDir, "flag-changes")
 	configOutputPath := filepath.Join(tmpDir, "CONFIG.md")
@@ -335,6 +340,7 @@ func TestChangelogMergeCmd_FlagOverridesConfig(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_MissingChangesDir(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	nonExistentDir := filepath.Join(tmpDir, "nonexistent")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -371,6 +377,7 @@ func TestChangelogMergeCmd_MissingChangesDir(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestBuildGeneratorConfig_DefaultValues(t *testing.T) {
+
 	genCfg := changeloggenerator.DefaultConfig()
 
 	// Should use defaults
@@ -387,6 +394,7 @@ func TestBuildGeneratorConfig_DefaultValues(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestChangelogMergeCmd_WarningWhenPluginDisabled(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -423,6 +431,7 @@ func TestChangelogMergeCmd_WarningWhenPluginDisabled(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_WarningWhenMergeAfterImmediate(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -467,6 +476,7 @@ func TestChangelogMergeCmd_WarningWhenMergeAfterImmediate(t *testing.T) {
 }
 
 func TestChangelogMergeCmd_NoWarningWhenMergeAfterManual(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
@@ -517,6 +527,7 @@ func TestChangelogMergeCmd_NoWarningWhenMergeAfterManual(t *testing.T) {
 }
 
 func TestIsChangelogGeneratorEnabled(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		cfg      *config.Config
@@ -565,6 +576,7 @@ func TestIsChangelogGeneratorEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := isChangelogGeneratorEnabled(tt.cfg)
 			if result != tt.expected {
 				t.Errorf("isChangelogGeneratorEnabled() = %v, want %v", result, tt.expected)

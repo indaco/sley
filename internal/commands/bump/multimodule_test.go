@@ -17,6 +17,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestGetFirstSuccessfulVersion(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		results  []workspace.ExecutionResult
@@ -64,6 +65,7 @@ func TestGetFirstSuccessfulVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := getFirstSuccessfulVersion(tt.results)
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)

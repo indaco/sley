@@ -61,7 +61,9 @@ func (m *mockFileWriter) WriteFile(file *os.File, data []byte) (int, error) {
 /* ------------------------------------------------------------------------- */
 
 func TestConfigSaver_Save(t *testing.T) {
+
 	t.Run("basic save scenarios", func(t *testing.T) {
+
 		tests := []struct {
 			name          string
 			cfg           *Config
@@ -113,6 +115,7 @@ func TestConfigSaver_Save(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
+
 				tmp := t.TempDir()
 				configFile := filepath.Join(tmp, ".sley.yaml")
 
@@ -149,6 +152,7 @@ func TestConfigSaver_Save(t *testing.T) {
 	})
 
 	t.Run("write fails due to directory permission", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		badDir := filepath.Join(tmp, "readonly")
 		if err := os.Mkdir(badDir, 0500); err != nil {
@@ -170,6 +174,7 @@ func TestConfigSaver_Save(t *testing.T) {
 }
 
 func TestConfigSaver_WriteError(t *testing.T) {
+
 	tmp := t.TempDir()
 	configFile := filepath.Join(tmp, ".sley.yaml")
 
@@ -192,6 +197,7 @@ func TestConfigSaver_WriteError(t *testing.T) {
 
 // TestSaveConfig_BackwardCompatibility ensures the backward-compatible SaveConfig still works.
 func TestSaveConfig_BackwardCompatibility(t *testing.T) {
+
 	tmp := t.TempDir()
 	runInTempDir(t, filepath.Join(tmp, "dummy"), func() {
 		cfg := &Config{Path: "test.version"}
@@ -207,7 +213,9 @@ func TestSaveConfig_BackwardCompatibility(t *testing.T) {
 }
 
 func TestNewConfigSaver_Defaults(t *testing.T) {
+
 	// Test that NewConfigSaver uses defaults when nil is passed
+
 	saver := NewConfigSaver(nil, nil, nil)
 	if saver == nil {
 		t.Fatal("NewConfigSaver returned nil")

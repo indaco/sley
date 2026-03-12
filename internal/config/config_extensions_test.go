@@ -35,6 +35,7 @@ func checkExtensionCount(t *testing.T, cfg *Config, want int) {
 }
 
 func TestLoadConfig_ExtensionConfiguration(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		yamlInput string
@@ -119,6 +120,7 @@ extensions: []
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()
@@ -134,6 +136,7 @@ extensions: []
 }
 
 func TestSaveConfig_WithExtensions(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -193,6 +196,7 @@ func TestSaveConfig_WithExtensions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmp := t.TempDir()
 			runInTempDir(t, filepath.Join(tmp, "dummy"), func() {
 				err := SaveConfig(tt.cfg)

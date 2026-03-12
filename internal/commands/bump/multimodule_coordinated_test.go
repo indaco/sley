@@ -18,6 +18,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestCoordinatedVersioning_SingleRootBumpSyncsSubmodules(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create root .version file
@@ -96,6 +97,7 @@ func TestCoordinatedVersioning_SingleRootBumpSyncsSubmodules(t *testing.T) {
 }
 
 func TestCoordinatedVersioning_MinorBumpSyncsSubmodules(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create root .version file
@@ -163,6 +165,7 @@ func TestCoordinatedVersioning_MinorBumpSyncsSubmodules(t *testing.T) {
 }
 
 func TestCoordinatedVersioning_SyncsManifestsAndVersionFiles(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create root .version file

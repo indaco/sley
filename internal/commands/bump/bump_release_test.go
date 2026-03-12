@@ -14,6 +14,7 @@ import (
 )
 
 func TestCLI_BumpReleaseCmd(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -63,6 +64,7 @@ func TestCLI_BumpReleaseCmd(t *testing.T) {
 }
 
 func TestBumpReleaseCmd_ErrorOnReadVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "invalid-version")
 
@@ -80,6 +82,7 @@ func TestBumpReleaseCmd_ErrorOnReadVersion(t *testing.T) {
 }
 
 func TestCLI_BumpReleaseCommand_SaveVersionFails(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -109,6 +112,7 @@ func TestCLI_BumpReleaseCommand_SaveVersionFails(t *testing.T) {
 }
 
 func TestBumpReleaseCmd_ErrorOnInitVersionFile(t *testing.T) {
+
 	tmp := t.TempDir()
 	protectedDir := filepath.Join(tmp, "protected")
 	if err := os.Mkdir(protectedDir, 0555); err != nil {
