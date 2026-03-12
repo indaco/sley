@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewPreOperation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	op := NewPreOperation(fs, "alpha", true)
 
@@ -29,6 +30,7 @@ func TestNewPreOperation(t *testing.T) {
 }
 
 func TestPreOperation_Execute_SetLabel(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -63,6 +65,7 @@ func TestPreOperation_Execute_SetLabel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -91,6 +94,7 @@ func TestPreOperation_Execute_SetLabel(t *testing.T) {
 }
 
 func TestPreOperation_Execute_IncrementLabel(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -143,6 +147,7 @@ func TestPreOperation_Execute_IncrementLabel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -171,6 +176,7 @@ func TestPreOperation_Execute_IncrementLabel(t *testing.T) {
 }
 
 func TestPreOperation_Execute_UpdatesModuleVersion(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -192,6 +198,7 @@ func TestPreOperation_Execute_UpdatesModuleVersion(t *testing.T) {
 }
 
 func TestPreOperation_Execute_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -214,6 +221,7 @@ func TestPreOperation_Execute_ContextCancellation(t *testing.T) {
 }
 
 func TestPreOperation_Execute_ContextTimeout(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -226,7 +234,7 @@ func TestPreOperation_Execute_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	time.Sleep(2 * time.Millisecond)
+	<-ctx.Done() // Wait for the context to actually expire
 
 	err := op.Execute(ctx, mod)
 	if err == nil {
@@ -235,6 +243,7 @@ func TestPreOperation_Execute_ContextTimeout(t *testing.T) {
 }
 
 func TestPreOperation_Execute_ReadError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	// Don't set any file, so read will fail
 
@@ -252,6 +261,7 @@ func TestPreOperation_Execute_ReadError(t *testing.T) {
 }
 
 func TestPreOperation_Execute_SaveError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -273,6 +283,7 @@ func TestPreOperation_Execute_SaveError(t *testing.T) {
 }
 
 func TestPreOperation_Name(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		increment bool
@@ -292,6 +303,7 @@ func TestPreOperation_Name(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			op := NewPreOperation(fs, "alpha", tt.increment)
 
@@ -304,6 +316,7 @@ func TestPreOperation_Name(t *testing.T) {
 }
 
 func TestPreOperation_Execute_WithBuildMetadata(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -326,6 +339,7 @@ func TestPreOperation_Execute_WithBuildMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 

@@ -7,7 +7,9 @@ import (
 )
 
 func TestCaptureStdout(t *testing.T) {
+	t.Parallel()
 	t.Run("captures stdout", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			fmt.Print("hello stdout")
 		})
@@ -22,6 +24,7 @@ func TestCaptureStdout(t *testing.T) {
 	})
 
 	t.Run("captures stderr", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			// Just print to stdout in this test
 			fmt.Print("test output")
@@ -37,6 +40,7 @@ func TestCaptureStdout(t *testing.T) {
 	})
 
 	t.Run("captures both stdout and stderr", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			fmt.Print("stdout message")
 		})
@@ -51,6 +55,7 @@ func TestCaptureStdout(t *testing.T) {
 	})
 
 	t.Run("trims whitespace", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			fmt.Print("  trimmed  ")
 		})
@@ -65,6 +70,7 @@ func TestCaptureStdout(t *testing.T) {
 	})
 
 	t.Run("empty function", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			// Do nothing
 		})
@@ -79,6 +85,7 @@ func TestCaptureStdout(t *testing.T) {
 	})
 
 	t.Run("multiline output", func(t *testing.T) {
+		t.Parallel()
 		output, err := CaptureStdout(func() {
 			fmt.Println("line 1")
 			fmt.Println("line 2")

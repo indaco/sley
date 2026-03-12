@@ -8,6 +8,7 @@ import (
 
 // TestCloneRepo_ContextCancellation tests that CloneRepo respects context cancellation.
 func TestCloneRepo_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
@@ -21,12 +22,15 @@ func TestCloneRepo_ContextCancellation(t *testing.T) {
 
 // TestCloneRepo_ContextTimeout tests that CloneRepo respects context deadline.
 func TestCloneRepo_ContextTimeout(t *testing.T) {
+	t.Parallel(
 	// Use an extremely short timeout to trigger deadline exceeded
+	)
+
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	// Wait for timeout to trigger
-	time.Sleep(10 * time.Millisecond)
+	// Wait for the context to actually expire instead of sleeping
+	<-ctx.Done()
 
 	tempDir := t.TempDir()
 	err := CloneRepo(ctx, "https://github.com/octocat/Hello-World.git", tempDir)
@@ -42,6 +46,7 @@ func TestCloneRepo_ContextTimeout(t *testing.T) {
 
 // TestUpdateRepo_ContextCancellation tests that UpdateRepo respects context cancellation.
 func TestUpdateRepo_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	sourceRepo := setupTestRepo(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -56,6 +61,7 @@ func TestUpdateRepo_ContextCancellation(t *testing.T) {
 
 // TestCloneOrUpdate_ContextCancellation tests context cancellation for clone or update.
 func TestCloneOrUpdate_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
@@ -69,6 +75,7 @@ func TestCloneOrUpdate_ContextCancellation(t *testing.T) {
 
 // TestForceReclone_ContextCancellation tests that ForceReclone respects context cancellation.
 func TestForceReclone_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	sourceRepo := setupTestRepo(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -84,6 +91,7 @@ func TestForceReclone_ContextCancellation(t *testing.T) {
 
 // TestCloneRepo_InvalidURL tests error handling for malformed URLs.
 func TestCloneRepo_InvalidURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		url  string
@@ -95,6 +103,7 @@ func TestCloneRepo_InvalidURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			tempDir := t.TempDir()
 
@@ -108,6 +117,7 @@ func TestCloneRepo_InvalidURL(t *testing.T) {
 
 // TestUpdateRepo_NonExistentRepo tests error handling for non-existent repo.
 func TestUpdateRepo_NonExistentRepo(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	err := UpdateRepo(ctx, "/nonexistent/path/to/repo")
 
@@ -118,7 +128,10 @@ func TestUpdateRepo_NonExistentRepo(t *testing.T) {
 
 // TestCloneOrUpdate_UpdateError tests error propagation when update fails.
 func TestCloneOrUpdate_UpdateError(t *testing.T) {
+	t.Parallel(
 	// Create a repo with no remote configured — git pull will fail
+	)
+
 	sourceRepo := setupTestRepo(t)
 
 	ctx := context.Background()
@@ -131,6 +144,7 @@ func TestCloneOrUpdate_UpdateError(t *testing.T) {
 
 // TestCloneOrUpdate_CloneError tests error propagation when clone fails.
 func TestCloneOrUpdate_CloneError(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	destPath := tempDir + "/new"
 

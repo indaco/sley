@@ -19,6 +19,7 @@ import (
 )
 
 func TestCLI_InitCommand_CreatesFile(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -51,6 +52,7 @@ func TestCLI_InitCommand_CreatesFile(t *testing.T) {
 }
 
 func TestCLI_InitCommand_InitializationError(t *testing.T) {
+
 	tmp := t.TempDir()
 	noWrite := filepath.Join(tmp, "nowrite")
 	if err := os.Mkdir(noWrite, 0555); err != nil {
@@ -79,6 +81,7 @@ func TestCLI_InitCommand_InitializationError(t *testing.T) {
 }
 
 func TestCLI_InitCommand_FileAlreadyExists(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -111,6 +114,7 @@ func TestCLI_InitCommand_FileAlreadyExists(t *testing.T) {
 }
 
 func TestCLI_InitCommand_ExistingInvalidContent(t *testing.T) {
+
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, ".version")
 
@@ -141,6 +145,7 @@ func TestCLI_InitCommand_ExistingInvalidContent(t *testing.T) {
 }
 
 func TestCLI_Command_InitializeVersionFilePermissionErrors(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		command []string
@@ -152,6 +157,7 @@ func TestCLI_Command_InitializeVersionFilePermissionErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmp := t.TempDir()
 			noWrite := filepath.Join(tmp, "protected")
 			if err := os.Mkdir(noWrite, 0555); err != nil {
@@ -178,6 +184,7 @@ func TestCLI_Command_InitializeVersionFilePermissionErrors(t *testing.T) {
 }
 
 func TestCLI_InitCommand_WithYesFlag(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 	configPath := filepath.Join(tmp, ".sley.yaml")
@@ -230,6 +237,7 @@ func TestCLI_InitCommand_WithYesFlag(t *testing.T) {
 }
 
 func TestCLI_InitCommand_WithEnableFlag(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 	configPath := filepath.Join(tmp, ".sley.yaml")
@@ -283,6 +291,7 @@ func TestCLI_InitCommand_WithEnableFlag(t *testing.T) {
 }
 
 func TestCLI_InitCommand_WithTemplateFlag(t *testing.T) {
+
 	tests := []struct {
 		name             string
 		template         string
@@ -300,6 +309,7 @@ func TestCLI_InitCommand_WithTemplateFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			loadedCfg := runInitWithTemplate(t, tt.template)
 			verifyTemplatePlugins(t, loadedCfg.Plugins, tt)
 		})
@@ -372,6 +382,7 @@ func verifyTemplatePlugins(t *testing.T, plugins *config.PluginConfig, expected 
 }
 
 func TestCLI_InitCommand_WithInvalidTemplate(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -396,6 +407,7 @@ func TestCLI_InitCommand_WithInvalidTemplate(t *testing.T) {
 }
 
 func TestCLI_InitCommand_WithForceFlag(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 	configPath := filepath.Join(tmp, ".sley.yaml")
@@ -439,6 +451,7 @@ func TestCLI_InitCommand_WithForceFlag(t *testing.T) {
 }
 
 func TestParseEnableFlag(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		input    string
@@ -473,6 +486,7 @@ func TestParseEnableFlag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := parseEnableFlag(tt.input)
 
 			if len(got) != len(tt.expected) {
@@ -490,6 +504,7 @@ func TestParseEnableFlag(t *testing.T) {
 }
 
 func TestInitializeVersionFile(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -513,6 +528,7 @@ func TestInitializeVersionFile(t *testing.T) {
 }
 
 func TestDeterminePlugins(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		ctx          *ProjectContext
@@ -598,6 +614,7 @@ func TestDeterminePlugins(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got, err := determinePlugins(tt.ctx, tt.yesFlag, tt.templateFlag, tt.enableFlag)
 			if tt.expectError {
 				if err == nil {
@@ -624,6 +641,7 @@ func TestDeterminePlugins(t *testing.T) {
 }
 
 func TestPluralize(t *testing.T) {
+
 	tests := []struct {
 		count    int
 		expected string
@@ -636,6 +654,7 @@ func TestPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(fmt.Sprintf("count=%d", tt.count), func(t *testing.T) {
+
 			got := tui.Pluralize(tt.count)
 			if got != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, got)
@@ -645,7 +664,9 @@ func TestPluralize(t *testing.T) {
 }
 
 func TestCreateConfigFile(t *testing.T) {
+
 	t.Run("creates new config file", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		t.Chdir(tmp)
 
@@ -664,6 +685,7 @@ func TestCreateConfigFile(t *testing.T) {
 	})
 
 	t.Run("force overwrites existing file", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		t.Chdir(tmp)
 
@@ -692,7 +714,9 @@ func TestCreateConfigFile(t *testing.T) {
 }
 
 func TestPrintVersionOnlySuccess(t *testing.T) {
+
 	t.Run("prints with valid version", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		if err := os.WriteFile(versionPath, []byte("1.2.3\n"), 0600); err != nil {
@@ -709,6 +733,7 @@ func TestPrintVersionOnlySuccess(t *testing.T) {
 	})
 
 	t.Run("prints without version on error", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		// Create file with invalid version
@@ -727,7 +752,9 @@ func TestPrintVersionOnlySuccess(t *testing.T) {
 }
 
 func TestPrintSuccessSummary(t *testing.T) {
+
 	t.Run("prints all messages when both created", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		if err := os.WriteFile(versionPath, []byte("1.0.0\n"), 0600); err != nil {
@@ -753,6 +780,7 @@ func TestPrintSuccessSummary(t *testing.T) {
 	})
 
 	t.Run("prints version created without config", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		if err := os.WriteFile(versionPath, []byte("2.0.0\n"), 0600); err != nil {
@@ -771,6 +799,7 @@ func TestPrintSuccessSummary(t *testing.T) {
 	})
 
 	t.Run("handles version read error gracefully", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		// Create file with invalid content
@@ -792,7 +821,9 @@ func TestPrintSuccessSummary(t *testing.T) {
 }
 
 func TestInitializeVersionFileWithMigration(t *testing.T) {
+
 	t.Run("uses migrated version", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 
@@ -811,6 +842,7 @@ func TestInitializeVersionFileWithMigration(t *testing.T) {
 	})
 
 	t.Run("uses default when no migration version", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 
@@ -830,6 +862,7 @@ func TestInitializeVersionFileWithMigration(t *testing.T) {
 	})
 
 	t.Run("returns false for existing valid file", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		if err := os.WriteFile(versionPath, []byte("1.0.0\n"), 0600); err != nil {
@@ -852,6 +885,7 @@ func TestInitializeVersionFileWithMigration(t *testing.T) {
 	})
 
 	t.Run("returns error for existing invalid file", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		versionPath := filepath.Join(tmp, ".version")
 		if err := os.WriteFile(versionPath, []byte("invalid\n"), 0600); err != nil {
@@ -869,6 +903,7 @@ func TestInitializeVersionFileWithMigration(t *testing.T) {
 }
 
 func TestHandleMigration_NoSources(t *testing.T) {
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 
@@ -880,6 +915,7 @@ func TestHandleMigration_NoSources(t *testing.T) {
 }
 
 func TestHandleMigration_WithYesFlag(t *testing.T) {
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 
@@ -897,6 +933,7 @@ func TestHandleMigration_WithYesFlag(t *testing.T) {
 }
 
 func TestHandleMigration_MultipleSources(t *testing.T) {
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 
@@ -921,7 +958,9 @@ version = "2.0.0"`
 }
 
 func TestIsTerminalInteractive(t *testing.T) {
+
 	// Running in test mode should return false
+
 	result := isTerminalInteractive()
 	if result {
 		t.Error("expected isTerminalInteractive to return false during test execution")
@@ -929,9 +968,11 @@ func TestIsTerminalInteractive(t *testing.T) {
 }
 
 func TestIsTerminalInteractive_ChecksStdin(t *testing.T) {
+
 	// This test verifies the function checks stdin stats
 	// In test environment, stdin.Stat() should succeed but return non-CharDevice mode
 	// The function should return false for non-interactive (test) environment
+
 	result := isTerminalInteractive()
 	if result {
 		t.Error("expected false in non-interactive test environment")
@@ -939,6 +980,7 @@ func TestIsTerminalInteractive_ChecksStdin(t *testing.T) {
 }
 
 func TestHandleMigration_SingleSource(t *testing.T) {
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 
@@ -955,7 +997,9 @@ func TestHandleMigration_SingleSource(t *testing.T) {
 }
 
 func TestDeterminePlugins_NonInteractive(t *testing.T) {
+
 	// In test environment (non-interactive), should use defaults
+
 	ctx := &ProjectContext{}
 	plugins, err := determinePlugins(ctx, false, "", "")
 	if err != nil {
@@ -970,6 +1014,7 @@ func TestDeterminePlugins_NonInteractive(t *testing.T) {
 }
 
 func TestCreateConfigFile_NonInteractiveSkipsExisting(t *testing.T) {
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 
@@ -995,6 +1040,7 @@ func TestCreateConfigFile_NonInteractiveSkipsExisting(t *testing.T) {
 }
 
 func TestCreateConfigFile_WriteFails(t *testing.T) {
+
 	tmp := t.TempDir()
 	readOnlyDir := filepath.Join(tmp, "readonly")
 	if err := os.Mkdir(readOnlyDir, 0555); err != nil {
@@ -1016,6 +1062,7 @@ func TestCreateConfigFile_WriteFails(t *testing.T) {
 }
 
 func TestInitializeVersionFileWithMigration_WriteFails(t *testing.T) {
+
 	tmp := t.TempDir()
 	readOnlyDir := filepath.Join(tmp, "readonly")
 	if err := os.Mkdir(readOnlyDir, 0555); err != nil {
@@ -1042,8 +1089,10 @@ func TestInitializeVersionFileWithMigration_WriteFails(t *testing.T) {
 // --yes, --template, and --enable flags which bypass the interactive prompt.
 
 func TestCLI_InitCommand_NoPluginsSelected(t *testing.T) {
+
 	// This test verifies behavior when plugins list is empty
 	// which happens when user cancels interactive prompt
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -1068,6 +1117,7 @@ func TestCLI_InitCommand_NoPluginsSelected(t *testing.T) {
 }
 
 func TestContainsPlugin(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		plugins  []string
@@ -1108,6 +1158,7 @@ func TestContainsPlugin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := containsPlugin(tt.plugins, tt.target)
 			if got != tt.expected {
 				t.Errorf("containsPlugin(%v, %q) = %v, want %v", tt.plugins, tt.target, got, tt.expected)
@@ -1117,8 +1168,10 @@ func TestContainsPlugin(t *testing.T) {
 }
 
 func TestCreateConfigFile_WithDependencyCheck(t *testing.T) {
+
 	// This test verifies that createConfigFile uses discovery
 	// when dependency-check plugin is selected
+
 	tmp := t.TempDir()
 	t.Chdir(tmp)
 

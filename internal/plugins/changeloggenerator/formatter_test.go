@@ -6,6 +6,7 @@ import (
 )
 
 func TestNewFormatter(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	tests := []struct {
@@ -42,6 +43,7 @@ func TestNewFormatter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			formatter, err := NewFormatter(tt.format, cfg)
 			if tt.wantErr {
 				if err == nil {
@@ -63,6 +65,7 @@ func TestNewFormatter(t *testing.T) {
 }
 
 func TestGroupedFormatter_FormatChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GroupedFormatter{config: cfg}
 
@@ -132,6 +135,7 @@ func TestGroupedFormatter_FormatChangelog(t *testing.T) {
 }
 
 func TestGroupedFormatter_WithIcons(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GroupedFormatter{config: cfg}
 
@@ -160,6 +164,7 @@ func TestGroupedFormatter_WithIcons(t *testing.T) {
 }
 
 func TestKeepAChangelogFormatter_FormatChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &KeepAChangelogFormatter{config: cfg}
 
@@ -227,6 +232,7 @@ func TestKeepAChangelogFormatter_FormatChangelog(t *testing.T) {
 }
 
 func TestKeepAChangelogFormatter_CommitTypeMapping(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &KeepAChangelogFormatter{config: cfg}
 
@@ -252,6 +258,7 @@ func TestKeepAChangelogFormatter_CommitTypeMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.commitType, func(t *testing.T) {
+
 			commit := &GroupedCommit{
 				ParsedCommit: &ParsedCommit{
 					Type:     tt.commitType,
@@ -269,6 +276,7 @@ func TestKeepAChangelogFormatter_CommitTypeMapping(t *testing.T) {
 }
 
 func TestKeepAChangelogFormatter_SectionOrder(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &KeepAChangelogFormatter{config: cfg}
 
@@ -343,6 +351,7 @@ func TestKeepAChangelogFormatter_SectionOrder(t *testing.T) {
 }
 
 func TestKeepAChangelogFormatter_UnknownTypeMapping(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &KeepAChangelogFormatter{config: cfg}
 
@@ -365,6 +374,7 @@ func TestKeepAChangelogFormatter_UnknownTypeMapping(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			commit := &GroupedCommit{
 				ParsedCommit: &ParsedCommit{
 					Type:        tt.commitType,
@@ -382,6 +392,7 @@ func TestKeepAChangelogFormatter_UnknownTypeMapping(t *testing.T) {
 }
 
 func TestGroupedFormatter_WithoutRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GroupedFormatter{config: cfg}
 
@@ -413,6 +424,7 @@ func TestGroupedFormatter_WithoutRemote(t *testing.T) {
 }
 
 func TestGroupedFormatter_BreakingChangesOnly(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GroupedFormatter{config: cfg}
@@ -453,6 +465,7 @@ func TestGroupedFormatter_BreakingChangesOnly(t *testing.T) {
 }
 
 func TestGroupedFormatter_MixedBreakingAndRegular(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GroupedFormatter{config: cfg}
@@ -549,6 +562,7 @@ func TestGroupedFormatter_MixedBreakingAndRegular(t *testing.T) {
 }
 
 func TestGroupedFormatter_CustomBreakingChangesIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = "CUSTOM"
 	formatter := &GroupedFormatter{config: cfg}
@@ -577,6 +591,7 @@ func TestGroupedFormatter_CustomBreakingChangesIcon(t *testing.T) {
 }
 
 func TestGroupedFormatter_NoBreakingChangesIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = "" // No icon
 	formatter := &GroupedFormatter{config: cfg}
@@ -609,6 +624,7 @@ func TestGroupedFormatter_NoBreakingChangesIcon(t *testing.T) {
 }
 
 func TestGroupedFormatter_BreakingChangesExcludedFromRegularGroups(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GroupedFormatter{config: cfg}
@@ -645,6 +661,7 @@ func TestGroupedFormatter_BreakingChangesExcludedFromRegularGroups(t *testing.T)
 }
 
 func TestGroupedFormatter_MultipleBreakingChanges(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GroupedFormatter{config: cfg}

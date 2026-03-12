@@ -9,7 +9,9 @@ import (
 )
 
 func TestNewTemplateData(t *testing.T) {
+
 	// Save and restore nowFunc
+
 	originalNowFunc := nowFunc
 	defer func() { nowFunc = originalNowFunc }()
 
@@ -91,6 +93,7 @@ func TestNewTemplateData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := NewTemplateData(tt.version, tt.prefix)
 
 			if got.Version != tt.wantData.Version {
@@ -125,6 +128,7 @@ func TestNewTemplateData(t *testing.T) {
 }
 
 func TestFormatMessage(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		template string
@@ -230,6 +234,7 @@ func TestFormatMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := FormatMessage(tt.template, tt.data)
 			if got != tt.want {
 				t.Errorf("FormatMessage() = %q, want %q", got, tt.want)
@@ -239,7 +244,9 @@ func TestFormatMessage(t *testing.T) {
 }
 
 func TestTemplatePlaceholders(t *testing.T) {
+
 	// Verify all expected placeholders are defined
+
 	expectedPlaceholders := []string{
 		"{version}",
 		"{tag}",

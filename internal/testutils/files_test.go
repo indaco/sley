@@ -8,7 +8,10 @@ import (
 )
 
 func TestReadFile(t *testing.T) {
+	t.Parallel(
 	// Create a temp file with content
+	)
+
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "test.txt")
 	content := "hello world\n"
@@ -25,6 +28,7 @@ func TestReadFile(t *testing.T) {
 }
 
 func TestWriteFile(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "write-test.txt")
 	content := "test content"
@@ -43,6 +47,7 @@ func TestWriteFile(t *testing.T) {
 }
 
 func TestWriteFile_WithExecutablePermissions(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	testFile := filepath.Join(tmpDir, "script.sh")
 	content := "#!/bin/bash\necho hello"
@@ -62,6 +67,7 @@ func TestWriteFile_WithExecutablePermissions(t *testing.T) {
 }
 
 func TestReadTempVersionFile(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -77,6 +83,7 @@ func TestReadTempVersionFile(t *testing.T) {
 }
 
 func TestReadTempVersionFile_TrimsWhitespace(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -92,6 +99,7 @@ func TestReadTempVersionFile_TrimsWhitespace(t *testing.T) {
 }
 
 func TestWriteTempVersionFile(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	path := WriteTempVersionFile(t, tmpDir, "3.0.0")
@@ -114,6 +122,7 @@ func TestWriteTempVersionFile(t *testing.T) {
 }
 
 func TestWriteTempConfig(t *testing.T) {
+	t.Parallel()
 	configContent := `
 version:
   path: .version

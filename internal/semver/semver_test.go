@@ -23,6 +23,7 @@ func (m *mockGitTagReader) DescribeTags(ctx context.Context) (string, error) {
 }
 
 func TestSemVersion_String_WithBuildOnly(t *testing.T) {
+
 	v := SemVersion{
 		Major: 1,
 		Minor: 0,
@@ -43,6 +44,7 @@ func TestSemVersion_String_WithBuildOnly(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func Test_compareInt(t *testing.T) {
+
 	tests := []struct {
 		a, b int
 		want int
@@ -68,6 +70,7 @@ func Test_compareInt(t *testing.T) {
 }
 
 func Test_parseNumericIdentifier(t *testing.T) {
+
 	tests := []struct {
 		input   string
 		wantNum int
@@ -108,6 +111,7 @@ func Test_parseNumericIdentifier(t *testing.T) {
 }
 
 func Test_compareIdentifier(t *testing.T) {
+
 	tests := []struct {
 		a, b string
 		want int
@@ -145,6 +149,7 @@ func Test_compareIdentifier(t *testing.T) {
 }
 
 func Test_comparePreRelease(t *testing.T) {
+
 	tests := []struct {
 		a, b string
 		want int
@@ -199,6 +204,7 @@ func Test_comparePreRelease(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestSemVersion_Compare(t *testing.T) {
+
 	tests := []struct {
 		name string
 		a    SemVersion
@@ -317,6 +323,7 @@ func TestSemVersion_Compare(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := tt.a.Compare(tt.b)
 			if got != tt.want {
 				t.Errorf("(%s).Compare(%s) = %d, want %d",
@@ -331,8 +338,10 @@ func TestSemVersion_Compare(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestInitializeVersionFileWithFeedback(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Run("file already exists and is valid", func(t *testing.T) {
+
 		path := testutils.WriteTempVersionFile(t, tmpDir, "2.3.4")
 
 		created, err := InitializeVersionFileWithFeedback(path)
@@ -346,6 +355,7 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 	})
 
 	t.Run("file already exists and is invalid", func(t *testing.T) {
+
 		path := testutils.WriteTempVersionFile(t, tmpDir, "not-a-version")
 
 		created, err := InitializeVersionFileWithFeedback(path)
@@ -367,6 +377,7 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 	})
 
 	t.Run("file does not exist, fallback to git tag", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		path := filepath.Join(tmp, ".version")
 
@@ -393,6 +404,7 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 	})
 
 	t.Run("file does not exist, fallback to default 0.0.0", func(t *testing.T) {
+
 		tmp := t.TempDir()
 		path := filepath.Join(tmp, ".version")
 
@@ -424,6 +436,7 @@ func TestInitializeVersionFileWithFeedback(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestParseAndString(t *testing.T) {
+
 	tests := []struct {
 		raw      string
 		expected string
@@ -446,6 +459,7 @@ func TestParseAndString(t *testing.T) {
 }
 
 func TestParseVersion_ValidWithVPrefix(t *testing.T) {
+
 	v, err := ParseVersion("v1.2.3")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -456,7 +470,9 @@ func TestParseVersion_ValidWithVPrefix(t *testing.T) {
 }
 
 func TestParseVersion_ErrorCases(t *testing.T) {
+
 	t.Run("invalid format (missing patch)", func(t *testing.T) {
+
 		_, err := ParseVersion("1.2")
 		if err == nil || !errors.Is(err, errInvalidVersion) {
 			t.Errorf("expected ErrInvalidVersion, got %v", err)
@@ -464,6 +480,7 @@ func TestParseVersion_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("non-numeric major", func(t *testing.T) {
+
 		_, err := ParseVersion("a.2.3")
 		if err == nil || !errors.Is(err, errInvalidVersion) {
 			t.Errorf("expected ErrInvalidVersion, got %v", err)
@@ -471,6 +488,7 @@ func TestParseVersion_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("non-numeric minor", func(t *testing.T) {
+
 		_, err := ParseVersion("1.b.3")
 		if err == nil || !errors.Is(err, errInvalidVersion) {
 			t.Errorf("expected ErrInvalidVersion, got %v", err)
@@ -478,6 +496,7 @@ func TestParseVersion_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("non-numeric patch", func(t *testing.T) {
+
 		_, err := ParseVersion("1.2.c")
 		if err == nil || !errors.Is(err, errInvalidVersion) {
 			t.Errorf("expected ErrInvalidVersion, got %v", err)
@@ -485,7 +504,9 @@ func TestParseVersion_ErrorCases(t *testing.T) {
 	})
 
 	t.Run("version string too long (ReDoS prevention)", func(t *testing.T) {
+
 		// Create a version string that exceeds maxVersionLength
+
 		longVersion := "1.0.0-" + strings.Repeat("a", maxVersionLength)
 		_, err := ParseVersion(longVersion)
 		if err == nil || !errors.Is(err, errInvalidVersion) {
@@ -498,6 +519,7 @@ func TestParseVersion_ErrorCases(t *testing.T) {
 }
 
 func TestParseVersion_InvalidFormat(t *testing.T) {
+
 	invalidVersions := []string{
 		"",
 		"1",
@@ -515,6 +537,7 @@ func TestParseVersion_InvalidFormat(t *testing.T) {
 }
 
 func TestParseVersion_NumberConversionErrors(t *testing.T) {
+
 	tests := []struct {
 		input         string
 		expectedError string
@@ -526,6 +549,7 @@ func TestParseVersion_NumberConversionErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+
 			_, err := ParseVersion(tt.input)
 			if err == nil {
 				t.Fatalf("expected error, got nil")
@@ -542,6 +566,7 @@ func TestParseVersion_NumberConversionErrors(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestUpdateVersion_Scenarios(t *testing.T) {
+
 	tmpDir := os.TempDir()
 	tests := []struct {
 		name        string
@@ -569,6 +594,7 @@ func TestUpdateVersion_Scenarios(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			path := testutils.WriteTempVersionFile(t, tmpDir, tt.initial)
 			defer os.Remove(path)
 
@@ -601,6 +627,7 @@ func TestUpdateVersion_Scenarios(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestReadVersion_FileDoesNotExist(t *testing.T) {
+
 	path := filepath.Join(t.TempDir(), "nonexistent.version")
 
 	_, err := ReadVersion(path)
@@ -614,6 +641,7 @@ func TestReadVersion_FileDoesNotExist(t *testing.T) {
 }
 
 func TestSetPreRelease(t *testing.T) {
+
 	tmpDir := os.TempDir()
 	path := testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 	defer os.Remove(path)
@@ -636,6 +664,7 @@ func TestSetPreRelease(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestIncrementPreRelease(t *testing.T) {
+
 	cases := []struct {
 		current string
 		base    string
@@ -682,6 +711,7 @@ func TestIncrementPreRelease(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestInitialize_NewFile_WithValidGitTag(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -706,6 +736,7 @@ func TestInitialize_NewFile_WithValidGitTag(t *testing.T) {
 }
 
 func TestInitialize_ExistingFile(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -733,6 +764,7 @@ func TestInitialize_ExistingFile(t *testing.T) {
 }
 
 func TestSaveVersion_MkdirAllFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create a file where the directory is expected
@@ -754,6 +786,7 @@ func TestSaveVersion_MkdirAllFails(t *testing.T) {
 }
 
 func TestInitialize_InvalidGitTagFormat(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 
@@ -778,6 +811,7 @@ func TestInitialize_InvalidGitTagFormat(t *testing.T) {
 }
 
 func TestInitializeVersionFileWithFeedback_InitializationFails(t *testing.T) {
+
 	tmp := t.TempDir()
 	noWrite := filepath.Join(tmp, "nowrite")
 	if err := os.Mkdir(noWrite, 0555); err != nil {
@@ -799,8 +833,10 @@ func TestInitializeVersionFileWithFeedback_InitializationFails(t *testing.T) {
 }
 
 func TestReadVersion_InvalidContent(t *testing.T) {
+
 	// Test that ReadVersion correctly reports an error for invalid version content.
 	// This uses the new dependency injection pattern with MockFileSystem.
+
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/test/.version", []byte("not-a-version\n"))
 
@@ -822,6 +858,7 @@ func TestReadVersion_InvalidContent(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestBumpNext(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		current  SemVersion
@@ -876,6 +913,7 @@ func TestBumpNext(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got, err := BumpNext(tt.current)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -892,6 +930,7 @@ func TestBumpNext(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestBumpByLabel(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		current  SemVersion
@@ -907,6 +946,7 @@ func TestBumpByLabel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got, err := BumpByLabel(tt.current, tt.label)
 			if tt.wantErr {
 				if err == nil {

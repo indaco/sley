@@ -12,6 +12,7 @@ import (
 )
 
 func TestDetectPackageJSONVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	pkgPath := filepath.Join(tmp, "package.json")
 
@@ -45,6 +46,7 @@ func TestDetectPackageJSONVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if err := os.WriteFile(pkgPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -67,6 +69,7 @@ func TestDetectPackageJSONVersion(t *testing.T) {
 }
 
 func TestDetectCargoVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	cargoPath := filepath.Join(tmp, "Cargo.toml")
 
@@ -100,6 +103,7 @@ name = "myapp"`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if err := os.WriteFile(cargoPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -116,6 +120,7 @@ name = "myapp"`,
 }
 
 func TestDetectPyprojectVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	pyprojectPath := filepath.Join(tmp, "pyproject.toml")
 
@@ -155,6 +160,7 @@ name = "myproject"`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if err := os.WriteFile(pyprojectPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -171,6 +177,7 @@ name = "myproject"`,
 }
 
 func TestDetectChartVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	chartPath := filepath.Join(tmp, "Chart.yaml")
 
@@ -197,6 +204,7 @@ name: mychart`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if err := os.WriteFile(chartPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -213,6 +221,7 @@ name: mychart`,
 }
 
 func TestDetectPlainTextVersion(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, "VERSION")
 
@@ -228,6 +237,7 @@ func TestDetectPlainTextVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if err := os.WriteFile(versionPath, []byte(tt.content), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -244,6 +254,7 @@ func TestDetectPlainTextVersion(t *testing.T) {
 }
 
 func TestIsValidSemver(t *testing.T) {
+
 	tests := []struct {
 		version string
 		valid   bool
@@ -263,6 +274,7 @@ func TestIsValidSemver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
+
 			got := isValidSemver(tt.version)
 			if got != tt.valid {
 				t.Errorf("isValidSemver(%q): expected %v, got %v", tt.version, tt.valid, got)
@@ -272,6 +284,7 @@ func TestIsValidSemver(t *testing.T) {
 }
 
 func TestGetBestVersionSource(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		sources  []VersionSource
@@ -310,6 +323,7 @@ func TestGetBestVersionSource(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			best := GetBestVersionSource(tt.sources)
 			if tt.expected == "" {
 				if best != nil {
@@ -328,6 +342,7 @@ func TestGetBestVersionSource(t *testing.T) {
 }
 
 func TestDetectExistingVersions(t *testing.T) {
+
 	tmp := t.TempDir()
 
 	// Create a package.json
@@ -366,6 +381,7 @@ version = "2.0.0"`
 }
 
 func TestCLI_InitCommand_WithMigrateFlag(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -400,6 +416,7 @@ func TestCLI_InitCommand_WithMigrateFlag(t *testing.T) {
 }
 
 func TestCLI_InitCommand_MigrateNoSources(t *testing.T) {
+
 	tmp := t.TempDir()
 	versionPath := filepath.Join(tmp, ".version")
 
@@ -429,6 +446,7 @@ func TestCLI_InitCommand_MigrateNoSources(t *testing.T) {
 }
 
 func TestFormatVersionSources(t *testing.T) {
+
 	sources := []VersionSource{
 		{File: "package.json", Version: "1.0.0", Format: "Node.js (package.json)"},
 		{File: "Cargo.toml", Version: "2.0.0", Format: "Rust (Cargo.toml)"},

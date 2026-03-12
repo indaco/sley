@@ -6,6 +6,7 @@ import (
 )
 
 func TestGetDefaultHost(t *testing.T) {
+
 	tests := []struct {
 		provider string
 		want     string
@@ -22,6 +23,7 @@ func TestGetDefaultHost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.provider, func(t *testing.T) {
+
 			got := getDefaultHost(tt.provider)
 			if got != tt.want {
 				t.Errorf("getDefaultHost(%q) = %q, want %q", tt.provider, got, tt.want)
@@ -31,6 +33,7 @@ func TestGetDefaultHost(t *testing.T) {
 }
 
 func TestGetProviderFromHost(t *testing.T) {
+
 	tests := []struct {
 		host string
 		want string
@@ -44,6 +47,7 @@ func TestGetProviderFromHost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.host, func(t *testing.T) {
+
 			got := getProviderFromHost(tt.host)
 			if got != tt.want {
 				t.Errorf("getProviderFromHost(%q) = %q, want %q", tt.host, got, tt.want)
@@ -53,6 +57,7 @@ func TestGetProviderFromHost(t *testing.T) {
 }
 
 func TestBuildCompareURL(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		remote   *RemoteInfo
@@ -113,6 +118,7 @@ func TestBuildCompareURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := buildCompareURL(tt.remote, tt.prev, tt.curr)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildCompareURL() = %q, expected to contain %q", got, tt.contains)
@@ -122,6 +128,7 @@ func TestBuildCompareURL(t *testing.T) {
 }
 
 func TestBuildCommitURL(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		remote   *RemoteInfo
@@ -174,6 +181,7 @@ func TestBuildCommitURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := buildCommitURL(tt.remote, tt.hash)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildCommitURL() = %q, expected to contain %q", got, tt.contains)
@@ -183,6 +191,7 @@ func TestBuildCommitURL(t *testing.T) {
 }
 
 func TestBuildPRURL(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		remote   *RemoteInfo
@@ -229,6 +238,7 @@ func TestBuildPRURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := buildPRURL(tt.remote, tt.prNumber)
 			if !strings.Contains(got, tt.contains) {
 				t.Errorf("buildPRURL() = %q, expected to contain %q", got, tt.contains)

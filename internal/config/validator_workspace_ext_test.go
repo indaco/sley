@@ -13,6 +13,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestValidator_ValidateWorkspaceConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -106,6 +107,7 @@ func TestValidator_ValidateWorkspaceConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			tt.setupFS(ctx, fs)
@@ -134,6 +136,7 @@ func TestValidator_ValidateWorkspaceConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateWorkspaceOverbreadExcludePattern(t *testing.T) {
+
 	ctx := context.Background()
 	config := &Config{
 		Workspace: &WorkspaceConfig{
@@ -170,6 +173,7 @@ func TestValidator_ValidateWorkspaceOverbreadExcludePattern(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidator_ValidateExtensionConfigs(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -272,6 +276,7 @@ func TestValidator_ValidateExtensionConfigs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			tt.setupFS(ctx, fs)

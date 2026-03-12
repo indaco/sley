@@ -9,6 +9,7 @@ import (
 )
 
 func TestVersionValidatorPlugin_Name(t *testing.T) {
+	t.Parallel()
 	vv := NewVersionValidator(nil)
 	if got := vv.Name(); got != "version-validator" {
 		t.Errorf("Name() = %q, want %q", got, "version-validator")
@@ -16,6 +17,7 @@ func TestVersionValidatorPlugin_Name(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_Description(t *testing.T) {
+	t.Parallel()
 	vv := NewVersionValidator(nil)
 	if got := vv.Description(); got == "" {
 		t.Error("Description() should not be empty")
@@ -23,6 +25,7 @@ func TestVersionValidatorPlugin_Description(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_Version(t *testing.T) {
+	t.Parallel()
 	vv := NewVersionValidator(nil)
 	if got := vv.Version(); got != "v0.1.0" {
 		t.Errorf("Version() = %q, want %q", got, "v0.1.0")
@@ -30,6 +33,7 @@ func TestVersionValidatorPlugin_Version(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_IsEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -54,6 +58,7 @@ func TestVersionValidatorPlugin_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			vv := NewVersionValidator(tt.cfg)
 			if got := vv.IsEnabled(); got != tt.want {
 				t.Errorf("IsEnabled() = %v, want %v", got, tt.want)
@@ -63,6 +68,7 @@ func TestVersionValidatorPlugin_IsEnabled(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_PreReleaseFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		pattern    string
@@ -109,6 +115,7 @@ func TestVersionValidatorPlugin_PreReleaseFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -128,6 +135,7 @@ func TestVersionValidatorPlugin_PreReleaseFormat(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_MajorVersionMax(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		maxVal  int
@@ -162,6 +170,7 @@ func TestVersionValidatorPlugin_MajorVersionMax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -181,6 +190,7 @@ func TestVersionValidatorPlugin_MajorVersionMax(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_MinorVersionMax(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -201,6 +211,7 @@ func TestVersionValidatorPlugin_MinorVersionMax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			version := semver.SemVersion{Major: 1, Minor: tt.minor, Patch: 0}
 			err := vv.Validate(version, semver.SemVersion{}, "minor")
 
@@ -212,6 +223,7 @@ func TestVersionValidatorPlugin_MinorVersionMax(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_PatchVersionMax(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -232,6 +244,7 @@ func TestVersionValidatorPlugin_PatchVersionMax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			version := semver.SemVersion{Major: 1, Minor: 0, Patch: tt.patch}
 			err := vv.Validate(version, semver.SemVersion{}, "patch")
 
@@ -243,6 +256,7 @@ func TestVersionValidatorPlugin_PatchVersionMax(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_RequirePreRelease0x(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		enabled    bool
@@ -282,6 +296,7 @@ func TestVersionValidatorPlugin_RequirePreRelease0x(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -301,6 +316,7 @@ func TestVersionValidatorPlugin_RequirePreRelease0x(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_NoBumpType(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		ruleType RuleType
@@ -347,6 +363,7 @@ func TestVersionValidatorPlugin_NoBumpType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -366,9 +383,7 @@ func TestVersionValidatorPlugin_NoBumpType(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_BranchConstraint(t *testing.T) {
-	// Save original and restore after test
-	original := getCurrentBranchFn
-	defer func() { getCurrentBranchFn = original }()
+	t.Parallel()
 
 	tests := []struct {
 		name      string
@@ -416,12 +431,7 @@ func TestVersionValidatorPlugin_BranchConstraint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			getCurrentBranchFn = func(_ context.Context) (string, error) {
-				if tt.branchErr {
-					return "", nil
-				}
-				return tt.branch, nil
-			}
+			t.Parallel()
 
 			cfg := &Config{
 				Enabled: true,
@@ -430,6 +440,12 @@ func TestVersionValidatorPlugin_BranchConstraint(t *testing.T) {
 				},
 			}
 			vv := NewVersionValidator(cfg)
+			vv.getCurrentBranch = func(_ context.Context) (string, error) {
+				if tt.branchErr {
+					return "", nil
+				}
+				return tt.branch, nil
+			}
 
 			version := semver.SemVersion{Major: 1, Minor: 1, Patch: 1}
 			err := vv.Validate(version, semver.SemVersion{Major: 1, Minor: 0, Patch: 0}, tt.bumpType)
@@ -442,6 +458,7 @@ func TestVersionValidatorPlugin_BranchConstraint(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_ValidateSet(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rules   []Rule
@@ -477,6 +494,7 @@ func TestVersionValidatorPlugin_ValidateSet(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules:   tt.rules,
@@ -493,6 +511,7 @@ func TestVersionValidatorPlugin_ValidateSet(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_MultipleRules(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -532,6 +551,7 @@ func TestVersionValidatorPlugin_MultipleRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := vv.Validate(tt.version, semver.SemVersion{}, "minor")
 
 			if (err != nil) != tt.wantErr {
@@ -542,6 +562,7 @@ func TestVersionValidatorPlugin_MultipleRules(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_DisabledSkipsValidation(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: false,
 		Rules: []Rule{
@@ -560,6 +581,7 @@ func TestVersionValidatorPlugin_DisabledSkipsValidation(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	if cfg.Enabled != false {
@@ -571,6 +593,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestMatchBranchPattern(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		pattern string
 		branch  string
@@ -587,6 +610,7 @@ func TestMatchBranchPattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.pattern+"_"+tt.branch, func(t *testing.T) {
+			t.Parallel()
 			got, err := matchBranchPattern(tt.pattern, tt.branch)
 			if err != nil {
 				t.Fatalf("matchBranchPattern() error = %v", err)
@@ -599,6 +623,7 @@ func TestMatchBranchPattern(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_GetConfig(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules:   []Rule{{Type: RuleMajorVersionMax, Value: 10}},
@@ -618,6 +643,7 @@ func TestVersionValidatorPlugin_GetConfig(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_InvalidRegexPattern(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -635,6 +661,7 @@ func TestVersionValidatorPlugin_InvalidRegexPattern(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_UnknownRuleType(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -652,6 +679,7 @@ func TestVersionValidatorPlugin_UnknownRuleType(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_ValidateSet_AllRuleTypes(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rules   []Rule
@@ -726,6 +754,7 @@ func TestVersionValidatorPlugin_ValidateSet_AllRuleTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules:   tt.rules,
@@ -742,6 +771,7 @@ func TestVersionValidatorPlugin_ValidateSet_AllRuleTypes(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_ValidateSetDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: false,
 		Rules: []Rule{
@@ -759,12 +789,7 @@ func TestVersionValidatorPlugin_ValidateSetDisabled(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_BranchConstraint_EmptyFields(t *testing.T) {
-	original := getCurrentBranchFn
-	defer func() { getCurrentBranchFn = original }()
-
-	getCurrentBranchFn = func(_ context.Context) (string, error) {
-		return "main", nil
-	}
+	t.Parallel()
 
 	tests := []struct {
 		name    string
@@ -785,11 +810,15 @@ func TestVersionValidatorPlugin_BranchConstraint_EmptyFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules:   []Rule{tt.rule},
 			}
 			vv := NewVersionValidator(cfg)
+			vv.getCurrentBranch = func(_ context.Context) (string, error) {
+				return "main", nil
+			}
 
 			err := vv.Validate(semver.SemVersion{Major: 1}, semver.SemVersion{}, "major")
 
@@ -801,13 +830,7 @@ func TestVersionValidatorPlugin_BranchConstraint_EmptyFields(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_BranchConstraint_GetBranchError(t *testing.T) {
-	original := getCurrentBranchFn
-	defer func() { getCurrentBranchFn = original }()
-
-	// Mock getCurrentBranchFn to return an error
-	getCurrentBranchFn = func(_ context.Context) (string, error) {
-		return "", fmt.Errorf("git not available")
-	}
+	t.Parallel()
 
 	cfg := &Config{
 		Enabled: true,
@@ -816,6 +839,9 @@ func TestVersionValidatorPlugin_BranchConstraint_GetBranchError(t *testing.T) {
 		},
 	}
 	vv := NewVersionValidator(cfg)
+	vv.getCurrentBranch = func(_ context.Context) (string, error) {
+		return "", fmt.Errorf("git not available")
+	}
 
 	// When getting branch fails, validation should pass (skip the check)
 	err := vv.Validate(semver.SemVersion{Major: 1}, semver.SemVersion{}, "major")
@@ -825,6 +851,7 @@ func TestVersionValidatorPlugin_BranchConstraint_GetBranchError(t *testing.T) {
 }
 
 func TestMatchBranchPattern_AdditionalCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		pattern string
@@ -871,6 +898,7 @@ func TestMatchBranchPattern_AdditionalCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := matchBranchPattern(tt.pattern, tt.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("matchBranchPattern() error = %v, wantErr %v", err, tt.wantErr)
@@ -884,6 +912,7 @@ func TestMatchBranchPattern_AdditionalCases(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_MaxPreReleaseIterations(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		maxVal     int
@@ -966,6 +995,7 @@ func TestVersionValidatorPlugin_MaxPreReleaseIterations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -985,6 +1015,7 @@ func TestVersionValidatorPlugin_MaxPreReleaseIterations(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_RequireEvenMinor(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		enabled    bool
@@ -1052,6 +1083,7 @@ func TestVersionValidatorPlugin_RequireEvenMinor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules: []Rule{
@@ -1071,6 +1103,7 @@ func TestVersionValidatorPlugin_RequireEvenMinor(t *testing.T) {
 }
 
 func TestExtractIterationNumber(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		preRelease string
@@ -1130,6 +1163,7 @@ func TestExtractIterationNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := extractIterationNumber(tt.preRelease)
 			if got != tt.want {
 				t.Errorf("extractIterationNumber(%q) = %d, want %d", tt.preRelease, got, tt.want)
@@ -1139,6 +1173,7 @@ func TestExtractIterationNumber(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_ValidateSet_NewRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rules   []Rule
@@ -1189,6 +1224,7 @@ func TestVersionValidatorPlugin_ValidateSet_NewRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{
 				Enabled: true,
 				Rules:   tt.rules,
@@ -1205,6 +1241,7 @@ func TestVersionValidatorPlugin_ValidateSet_NewRules(t *testing.T) {
 }
 
 func TestVersionValidatorPlugin_CombinedNewRules(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled: true,
 		Rules: []Rule{
@@ -1248,6 +1285,7 @@ func TestVersionValidatorPlugin_CombinedNewRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := vv.Validate(tt.version, semver.SemVersion{}, "minor")
 
 			if (err != nil) != tt.wantErr {

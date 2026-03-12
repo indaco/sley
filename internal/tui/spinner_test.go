@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewSpinner_Defaults(t *testing.T) {
+
 	s := NewSpinner()
 
 	if s.title != "Working..." {
@@ -22,6 +23,7 @@ func TestNewSpinner_Defaults(t *testing.T) {
 }
 
 func TestNewSpinner_WithOptions(t *testing.T) {
+
 	s := NewSpinner(
 		WithSpinnerTitle("Custom title"),
 		WithSpinnerType(SpinnerLine),
@@ -40,7 +42,9 @@ func TestNewSpinner_WithOptions(t *testing.T) {
 }
 
 func TestSpinnerTypeConstants(t *testing.T) {
+
 	// Verify all spinner types are mapped
+
 	types := []SpinnerType{SpinnerLine, SpinnerDots, SpinnerMiniDot, SpinnerPulse}
 
 	for _, st := range types {
@@ -51,6 +55,7 @@ func TestSpinnerTypeConstants(t *testing.T) {
 }
 
 func TestNewMultiModuleSpinner(t *testing.T) {
+
 	s := NewMultiModuleSpinner(5, true)
 
 	if s.total != 5 {
@@ -65,6 +70,7 @@ func TestNewMultiModuleSpinner(t *testing.T) {
 }
 
 func TestMultiModuleSpinner_FormatTitle(t *testing.T) {
+
 	s := NewMultiModuleSpinner(10, false)
 
 	tests := []struct {
@@ -101,6 +107,7 @@ func TestMultiModuleSpinner_FormatTitle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := s.formatTitle(tt.current, tt.moduleName)
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -110,6 +117,7 @@ func TestMultiModuleSpinner_FormatTitle(t *testing.T) {
 }
 
 func TestMultiModuleSpinner_RunEach_ContextCancellation(t *testing.T) {
+
 	s := NewMultiModuleSpinner(3, true) // accessible mode for no animation
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -126,6 +134,7 @@ func TestMultiModuleSpinner_RunEach_ContextCancellation(t *testing.T) {
 }
 
 func TestMultiModuleSpinner_RunEach_ActionError(t *testing.T) {
+
 	s := NewMultiModuleSpinner(3, true) // accessible mode for faster tests
 
 	expectedErr := errors.New("action failed")
@@ -144,6 +153,7 @@ func TestMultiModuleSpinner_RunEach_ActionError(t *testing.T) {
 }
 
 func TestMultiModuleSpinner_RunEach_Success(t *testing.T) {
+
 	s := NewMultiModuleSpinner(3, true) // accessible mode
 
 	modules := []string{"a", "b", "c"}
@@ -171,6 +181,7 @@ func TestMultiModuleSpinner_RunEach_Success(t *testing.T) {
 }
 
 func TestSpinner_Run_Accessible(t *testing.T) {
+
 	s := NewSpinner(
 		WithSpinnerTitle("Test"),
 		WithAccessibleMode(true), // No animations
@@ -190,6 +201,7 @@ func TestSpinner_Run_Accessible(t *testing.T) {
 }
 
 func TestSpinner_RunWithErr_Accessible(t *testing.T) {
+
 	s := NewSpinner(
 		WithSpinnerTitle("Context test"),
 		WithAccessibleMode(true),
@@ -210,6 +222,7 @@ func TestSpinner_RunWithErr_Accessible(t *testing.T) {
 }
 
 func TestSpinner_RunWithErr_Error(t *testing.T) {
+
 	s := NewSpinner(WithAccessibleMode(true))
 
 	expectedErr := errors.New("test error")
@@ -223,6 +236,7 @@ func TestSpinner_RunWithErr_Error(t *testing.T) {
 }
 
 func TestSpinner_RunWithErr_Cancellation(t *testing.T) {
+
 	s := NewSpinner(WithAccessibleMode(true))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -240,8 +254,10 @@ func TestSpinner_RunWithErr_Cancellation(t *testing.T) {
 }
 
 func TestQuickSpinner_Accessible(t *testing.T) {
+
 	// QuickSpinner uses non-accessible mode by default
 	// We test with an inline spinner for controlled behavior
+
 	s := NewSpinner(
 		WithSpinnerTitle("Quick test"),
 		WithAccessibleMode(true),
@@ -261,6 +277,7 @@ func TestQuickSpinner_Accessible(t *testing.T) {
 }
 
 func TestSpinnerAllTypes(t *testing.T) {
+
 	types := []SpinnerType{
 		SpinnerLine,
 		SpinnerDots,
@@ -270,6 +287,7 @@ func TestSpinnerAllTypes(t *testing.T) {
 
 	for _, spinnerType := range types {
 		t.Run(spinnerType.String(), func(t *testing.T) {
+
 			s := NewSpinner(
 				WithSpinnerType(spinnerType),
 				WithAccessibleMode(true),
@@ -307,7 +325,9 @@ func (t SpinnerType) String() string {
 }
 
 func TestQuickSpinnerWithErr(t *testing.T) {
+
 	// Test the convenience function with accessible mode
+
 	s := NewSpinner(
 		WithSpinnerTitle("Quick error test"),
 		WithAccessibleMode(true),

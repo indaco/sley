@@ -13,6 +13,7 @@ import (
 )
 
 func TestService_Discover_SingleModule(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.2.3\n"))
 
@@ -37,6 +38,7 @@ func TestService_Discover_SingleModule(t *testing.T) {
 }
 
 func TestService_Discover_MultiModule(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 
 	// Create module structure
@@ -65,6 +67,7 @@ func TestService_Discover_MultiModule(t *testing.T) {
 }
 
 func TestService_Discover_NoModules(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 
 	svc := NewService(fs, nil)
@@ -84,6 +87,7 @@ func TestService_Discover_NoModules(t *testing.T) {
 }
 
 func TestService_Discover_WithManifests(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -109,6 +113,7 @@ func TestService_Discover_WithManifests(t *testing.T) {
 }
 
 func TestService_Discover_WithMismatches(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/package.json", []byte(`{"version": "2.0.0"}`))
@@ -138,6 +143,7 @@ func TestService_Discover_WithMismatches(t *testing.T) {
 }
 
 func TestService_Discover_SyncCandidates(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
 	fs.SetFile("/project/Cargo.toml", []byte("[package]\nversion = \"1.0.0\"\n"))
@@ -166,6 +172,7 @@ func TestService_Discover_SyncCandidates(t *testing.T) {
 }
 
 func TestService_Discover_DisabledDiscovery(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/sub/.version", []byte("1.0.0\n"))
@@ -193,6 +200,7 @@ func TestService_Discover_DisabledDiscovery(t *testing.T) {
 }
 
 func TestService_Discover_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 
@@ -208,6 +216,7 @@ func TestService_Discover_ContextCancellation(t *testing.T) {
 }
 
 func TestService_DiscoverModulesOnly(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -225,6 +234,7 @@ func TestService_DiscoverModulesOnly(t *testing.T) {
 }
 
 func TestService_DiscoverManifestsOnly(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -242,6 +252,7 @@ func TestService_DiscoverManifestsOnly(t *testing.T) {
 }
 
 func TestDiscoverAt(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 
@@ -257,6 +268,7 @@ func TestDiscoverAt(t *testing.T) {
 }
 
 func TestService_Discover_MultipleManifestTypes(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
 	fs.SetFile("/project/Cargo.toml", []byte("[package]\nversion = \"1.0.0\"\n"))
@@ -293,6 +305,7 @@ func TestService_Discover_MultipleManifestTypes(t *testing.T) {
 }
 
 func TestService_Discover_InvalidManifestVersion(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	// Invalid version - not semver compatible
 	fs.SetFile("/project/package.json", []byte(`{"version": "invalid"}`))
@@ -311,6 +324,7 @@ func TestService_Discover_InvalidManifestVersion(t *testing.T) {
 }
 
 func TestService_loadModule(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/subdir/.version", []byte("1.2.3\n"))
 
@@ -336,6 +350,7 @@ func TestService_loadModule(t *testing.T) {
 }
 
 func TestService_loadModule_RootVersion(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 
@@ -352,6 +367,7 @@ func TestService_loadModule_RootVersion(t *testing.T) {
 }
 
 func TestService_shouldExclude(t *testing.T) {
+	t.Parallel()
 	svc := NewService(nil, nil)
 
 	tests := []struct {
@@ -395,6 +411,7 @@ func TestService_shouldExclude(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := svc.shouldExclude(tt.path, tt.path, tt.excludes)
 			if got != tt.want {
 				t.Errorf("shouldExclude(%q) = %v, want %v", tt.path, got, tt.want)
@@ -404,6 +421,7 @@ func TestService_shouldExclude(t *testing.T) {
 }
 
 func TestResult_WithFilter(t *testing.T) {
+	t.Parallel()
 	result := &Result{
 		Modules: []Module{
 			{Name: "a", Path: "/a/.version"},
@@ -429,6 +447,7 @@ func TestResult_WithFilter(t *testing.T) {
 }
 
 func TestService_DiscoverManifestsInDir(t *testing.T) {
+	t.Parallel()
 	mockFS := core.NewMockFileSystem()
 
 	// Set up files in a subdirectory
@@ -458,6 +477,7 @@ func TestService_DiscoverManifestsInDir(t *testing.T) {
 // Tests for recursive manifest discovery with configurable depth
 
 func TestService_DiscoverAllManifests_RecursiveDiscovery(t *testing.T) {
+	t.Parallel(
 	// Test the recursive manifest discovery across the entire project
 	// Structure:
 	// project/
@@ -465,6 +485,7 @@ func TestService_DiscoverAllManifests_RecursiveDiscovery(t *testing.T) {
 	// ├── cli/internal/version/.version
 	// ├── frontend/package.json  <-- Should be found at depth 1
 	// ├── node_modules/some-pkg/package.json  <-- Should be EXCLUDED
+	)
 
 	mockFS := core.NewMockFileSystem()
 
@@ -515,7 +536,10 @@ func TestService_DiscoverAllManifests_RecursiveDiscovery(t *testing.T) {
 }
 
 func TestService_DiscoverAllManifests_DepthLimit(t *testing.T) {
+	t.Parallel(
 	// Test that depth limiting works correctly
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	// Set up a deep structure
@@ -567,7 +591,10 @@ func TestService_DiscoverAllManifests_DepthLimit(t *testing.T) {
 }
 
 func TestService_DiscoverAllManifests_ExcludesCorrectDirectories(t *testing.T) {
+	t.Parallel(
 	// Test that all excluded directories are properly skipped
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	// Set up files in excluded directories
@@ -616,7 +643,10 @@ func TestService_DiscoverAllManifests_ExcludesCorrectDirectories(t *testing.T) {
 }
 
 func TestService_DiscoverWithDepth(t *testing.T) {
+	t.Parallel(
 	// Test the DiscoverWithDepth method
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	mockFS.SetFile("/project/.version", []byte("1.0.0\n"))
@@ -656,7 +686,10 @@ func TestService_DiscoverWithDepth(t *testing.T) {
 }
 
 func TestService_DiscoverAllManifests_NoDuplicates(t *testing.T) {
+	t.Parallel(
 	// Test that manifests are not duplicated
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	mockFS.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -682,6 +715,7 @@ func TestService_DiscoverAllManifests_NoDuplicates(t *testing.T) {
 }
 
 func TestService_DiscoverAllManifests_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
 
@@ -697,7 +731,10 @@ func TestService_DiscoverAllManifests_ContextCancellation(t *testing.T) {
 }
 
 func TestService_DiscoverAllManifests_ConfiguredDepth(t *testing.T) {
+	t.Parallel(
 	// Test that configured ManifestMaxDepth is respected
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	mockFS.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -732,9 +769,12 @@ func TestService_DiscoverAllManifests_ConfiguredDepth(t *testing.T) {
 // Tests for SyncCandidates - verifying they only contain manifests, not .version files
 
 func TestService_Discover_SyncCandidatesOnlyContainManifests(t *testing.T) {
+	t.Parallel(
 	// Integration test: verify that Discover() returns sync candidates
 	// ONLY for manifest files, NOT for .version files
 	// Submodule .version files are sources of truth, not sync targets
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	// Set up a monorepo structure
@@ -796,8 +836,11 @@ func TestService_Discover_SyncCandidatesOnlyContainManifests(t *testing.T) {
 }
 
 func TestService_Discover_MultiModule_SyncCandidatesExcludeVersionFiles(t *testing.T) {
+	t.Parallel(
 	// Test the complete flow for a monorepo with multiple .version files
 	// Verify that SyncCandidates only contains manifests
+	)
+
 	mockFS := core.NewMockFileSystem()
 
 	// Monorepo structure:

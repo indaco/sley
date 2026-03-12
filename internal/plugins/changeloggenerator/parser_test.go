@@ -5,6 +5,7 @@ import (
 )
 
 func TestParseConventionalCommit(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		subject      string
@@ -73,6 +74,7 @@ func TestParseConventionalCommit(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			commit := CommitInfo{
 				Hash:      "abc123",
 				ShortHash: "abc",
@@ -102,6 +104,7 @@ func TestParseConventionalCommit(t *testing.T) {
 }
 
 func TestParseCommits(t *testing.T) {
+
 	commits := []CommitInfo{
 		{Hash: "a", ShortHash: "a", Subject: "feat: add feature"},
 		{Hash: "b", ShortHash: "b", Subject: "fix: fix bug"},
@@ -126,6 +129,7 @@ func TestParseCommits(t *testing.T) {
 }
 
 func TestFilterCommits(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Subject: "feat: add feature"}, Type: "feat"},
 		{CommitInfo: CommitInfo{Subject: "Merge branch 'main'"}, Type: ""},
@@ -149,6 +153,7 @@ func TestFilterCommits(t *testing.T) {
 }
 
 func TestFilterCommits_EmptyPatterns(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Subject: "feat: add feature"}, Type: "feat"},
 		{CommitInfo: CommitInfo{Subject: "fix: fix bug"}, Type: "fix"},
@@ -162,6 +167,7 @@ func TestFilterCommits_EmptyPatterns(t *testing.T) {
 }
 
 func TestGroupCommits(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a"}, Type: "feat", Description: "add feature"},
 		{CommitInfo: CommitInfo{Hash: "b"}, Type: "feat", Description: "another feature"},
@@ -189,6 +195,7 @@ func TestGroupCommits(t *testing.T) {
 }
 
 func TestGroupCommits_OrderFromPosition(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a"}, Type: "docs"},
 		{CommitInfo: CommitInfo{Hash: "b"}, Type: "feat"},
@@ -215,6 +222,7 @@ func TestGroupCommits_OrderFromPosition(t *testing.T) {
 }
 
 func TestGroupCommits_UnmatchedGoesToOther(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a"}, Type: "feat", Description: "add feature"},
 		{CommitInfo: CommitInfo{Hash: "b"}, Type: "unknown", Description: "unknown type"},
@@ -235,6 +243,7 @@ func TestGroupCommits_UnmatchedGoesToOther(t *testing.T) {
 }
 
 func TestSortedGroupKeys(t *testing.T) {
+
 	grouped := map[string][]*GroupedCommit{
 		"Chores":    {{GroupOrder: 3}},
 		"Features":  {{GroupOrder: 0}},
@@ -257,6 +266,7 @@ func TestSortedGroupKeys(t *testing.T) {
 }
 
 func TestSortedGroupKeys_Empty(t *testing.T) {
+
 	grouped := map[string][]*GroupedCommit{}
 
 	keys := SortedGroupKeys(grouped)
@@ -267,6 +277,7 @@ func TestSortedGroupKeys_Empty(t *testing.T) {
 }
 
 func TestFilterCommits_InvalidPattern(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Subject: "feat: add feature"}, Type: "feat"},
 		{CommitInfo: CommitInfo{Subject: "fix: fix bug"}, Type: "fix"},
@@ -283,6 +294,7 @@ func TestFilterCommits_InvalidPattern(t *testing.T) {
 }
 
 func TestGroupCommits_InvalidPattern(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a"}, Type: "feat", Description: "add feature"},
 	}
@@ -301,6 +313,7 @@ func TestGroupCommits_InvalidPattern(t *testing.T) {
 }
 
 func TestGroupCommits_WithExplicitOrder(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a"}, Type: "fix", Description: "fix bug"},
 		{CommitInfo: CommitInfo{Hash: "b"}, Type: "feat", Description: "add feature"},
@@ -325,6 +338,7 @@ func TestGroupCommits_WithExplicitOrder(t *testing.T) {
 }
 
 func TestGroupCommits_NonConventionalCommit(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a", Subject: "Update README"}, Type: "", Description: "Update README"},
 	}
@@ -346,6 +360,7 @@ func TestGroupCommits_NonConventionalCommit(t *testing.T) {
 }
 
 func TestParsedCommit_Fields(t *testing.T) {
+
 	pc := ParsedCommit{
 		CommitInfo: CommitInfo{
 			Hash:        "abc123",
@@ -373,6 +388,7 @@ func TestParsedCommit_Fields(t *testing.T) {
 }
 
 func TestGroupedCommit_Fields(t *testing.T) {
+
 	gc := GroupedCommit{
 		ParsedCommit: &ParsedCommit{
 			CommitInfo: CommitInfo{Hash: "abc"},
@@ -395,6 +411,7 @@ func TestGroupedCommit_Fields(t *testing.T) {
 }
 
 func TestGroupCommitsWithOptions_IncludeNonConventional(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a", Subject: "feat: add feature"}, Type: "feat", Description: "add feature"},
 		{CommitInfo: CommitInfo{Hash: "b", Subject: "Update README"}, Type: "", Description: "Update README"},
@@ -424,6 +441,7 @@ func TestGroupCommitsWithOptions_IncludeNonConventional(t *testing.T) {
 }
 
 func TestGroupCommitsWithOptions_ExcludeNonConventional(t *testing.T) {
+
 	commits := []*ParsedCommit{
 		{CommitInfo: CommitInfo{Hash: "a", ShortHash: "a", Subject: "feat: add feature"}, Type: "feat", Description: "add feature"},
 		{CommitInfo: CommitInfo{Hash: "b", ShortHash: "b", Subject: "Update README"}, Type: "", Description: "Update README"},

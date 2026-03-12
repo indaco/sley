@@ -7,6 +7,7 @@ import (
 )
 
 func TestFilterModulesByName(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -67,6 +68,7 @@ func TestFilterModulesByName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := filterModulesByName(tt.modules, tt.moduleName)
 			if len(got) != tt.wantCount {
 				t.Errorf("filterModulesByName() returned %d modules, want %d", len(got), tt.wantCount)
@@ -87,6 +89,7 @@ func TestFilterModulesByName(t *testing.T) {
 }
 
 func TestFilterModulesByName_NilModules(t *testing.T) {
+	t.Parallel()
 	result := filterModulesByName(nil, "test")
 	if result != nil {
 		t.Errorf("filterModulesByName(nil, _) should return nil, got %v", result)
@@ -94,6 +97,7 @@ func TestFilterModulesByName_NilModules(t *testing.T) {
 }
 
 func TestFilterModulesByName_PreservesModuleData(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{
 			Name:           "module-a",
@@ -129,6 +133,7 @@ func TestFilterModulesByName_PreservesModuleData(t *testing.T) {
 }
 
 func TestFilterModulesByName_CaseSensitive(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "Module-A", Path: "/path/to/Module-A/.version"},
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
@@ -154,6 +159,7 @@ func TestFilterModulesByName_CaseSensitive(t *testing.T) {
 }
 
 func TestFilterModulesBySelection(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -204,6 +210,7 @@ func TestFilterModulesBySelection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := filterModulesBySelection(tt.modules, tt.selected)
 			if len(got) != tt.wantCount {
 				t.Errorf("filterModulesBySelection() returned %d modules, want %d", len(got), tt.wantCount)
@@ -224,6 +231,7 @@ func TestFilterModulesBySelection(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_NilModules(t *testing.T) {
+	t.Parallel()
 	result := filterModulesBySelection(nil, []string{"test"})
 	if result != nil {
 		t.Errorf("filterModulesBySelection(nil, _) should return nil, got %v", result)
@@ -231,6 +239,7 @@ func TestFilterModulesBySelection_NilModules(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_NilSelection(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 	}
@@ -242,6 +251,7 @@ func TestFilterModulesBySelection_NilSelection(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_DuplicateSelection(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -260,6 +270,7 @@ func TestFilterModulesBySelection_DuplicateSelection(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_PreservesOrder(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -283,6 +294,7 @@ func TestFilterModulesBySelection_PreservesOrder(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_PartialMatches(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module", Path: "/path/to/module/.version"},
 		{Name: "module-extra", Path: "/path/to/module-extra/.version"},
@@ -300,6 +312,7 @@ func TestFilterModulesBySelection_PartialMatches(t *testing.T) {
 }
 
 func TestFilterModulesBySelection_MixedExistingAndNonExisting(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -318,6 +331,7 @@ func TestFilterModulesBySelection_MixedExistingAndNonExisting(t *testing.T) {
 }
 
 func TestFilterModulesByNames(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "api", Path: "services/api/.version"},
 		{Name: "web", Path: "apps/web/.version"},
@@ -389,6 +403,7 @@ func TestFilterModulesByNames(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := filterModulesByNames(tt.modules, tt.names)
 			if len(got) != tt.wantCount {
 				t.Errorf("filterModulesByNames() returned %d modules, want %d", len(got), tt.wantCount)
@@ -410,6 +425,7 @@ func TestFilterModulesByNames(t *testing.T) {
 }
 
 func TestFilterModulesByPattern(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "api", Path: "services/api/.version"},
 		{Name: "auth", Path: "services/auth/.version"},
@@ -481,6 +497,7 @@ func TestFilterModulesByPattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := filterModulesByPattern(tt.modules, tt.pattern)
 
 			if tt.wantErr {

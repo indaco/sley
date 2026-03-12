@@ -6,6 +6,8 @@ import (
 )
 
 func TestNewParser(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		format      string
 		wantErr     bool
@@ -24,6 +26,8 @@ func TestNewParser(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.format, func(t *testing.T) {
+			t.Parallel()
+
 			parser, err := NewParser(tt.format, nil)
 
 			if tt.wantErr {
@@ -48,6 +52,8 @@ func TestNewParser(t *testing.T) {
 }
 
 func TestValidFormats(t *testing.T) {
+	t.Parallel()
+
 	formats := ValidFormats()
 
 	expected := []string{"keepachangelog", "grouped", "github", "minimal", "auto"}
@@ -64,6 +70,8 @@ func TestValidFormats(t *testing.T) {
 }
 
 func TestParsedSection_Fields(t *testing.T) {
+	t.Parallel()
+
 	ps := &ParsedSection{
 		Version:            "1.2.3",
 		Date:               "2024-01-15",
@@ -96,6 +104,8 @@ func TestParsedSection_Fields(t *testing.T) {
 }
 
 func TestParsedEntry_Fields(t *testing.T) {
+	t.Parallel()
+
 	pe := ParsedEntry{
 		Category:        "Added",
 		OriginalSection: "Features",

@@ -9,6 +9,7 @@ import (
 )
 
 func TestTagManagerPlugin_Name(t *testing.T) {
+
 	tm := NewTagManager(nil)
 	if got := tm.Name(); got != "tag-manager" {
 		t.Errorf("Name() = %q, want %q", got, "tag-manager")
@@ -16,6 +17,7 @@ func TestTagManagerPlugin_Name(t *testing.T) {
 }
 
 func TestTagManagerPlugin_Description(t *testing.T) {
+
 	tm := NewTagManager(nil)
 	if got := tm.Description(); got == "" {
 		t.Error("Description() should not be empty")
@@ -23,6 +25,7 @@ func TestTagManagerPlugin_Description(t *testing.T) {
 }
 
 func TestTagManagerPlugin_Version(t *testing.T) {
+
 	tm := NewTagManager(nil)
 	if got := tm.Version(); got != "v0.1.0" {
 		t.Errorf("Version() = %q, want %q", got, "v0.1.0")
@@ -30,6 +33,7 @@ func TestTagManagerPlugin_Version(t *testing.T) {
 }
 
 func TestTagManagerPlugin_FormatTagName(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		prefix  string
@@ -64,6 +68,7 @@ func TestTagManagerPlugin_FormatTagName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := &Config{Prefix: tt.prefix}
 			tm := NewTagManager(cfg)
 			if got := tm.FormatTagName(tt.version); got != tt.want {
@@ -74,6 +79,7 @@ func TestTagManagerPlugin_FormatTagName(t *testing.T) {
 }
 
 func TestTagManagerPlugin_TagExists(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		version semver.SemVersion
@@ -112,6 +118,7 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			mockOps := &MockGitTagOperations{
 				TagExistsFn: tt.mockFn,
 			}
@@ -130,6 +137,7 @@ func TestTagManagerPlugin_TagExists(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		version semver.SemVersion
@@ -152,6 +160,7 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			mockOps := &MockGitTagOperations{
 				TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 					return tt.exists, nil
@@ -168,6 +177,7 @@ func TestTagManagerPlugin_ValidateTagAvailable(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag(t *testing.T) {
+
 	tests := []struct {
 		name           string
 		cfg            *Config
@@ -227,6 +237,7 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			annotatedCalled := false
 			lightweightCalled := false
 			pushCalled := false
@@ -273,6 +284,7 @@ func TestTagManagerPlugin_CreateTag(t *testing.T) {
 }
 
 func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		prefix  string
@@ -311,6 +323,7 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			mockOps := &MockGitTagOperations{
 				GetLatestTagFn: func(ctx context.Context) (string, error) {
 					return tt.mockTag, tt.mockErr
@@ -334,6 +347,7 @@ func TestTagManagerPlugin_GetLatestTag(t *testing.T) {
 }
 
 func TestTagManagerPlugin_IsAutoCreateEnabled(t *testing.T) {
+
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -358,6 +372,7 @@ func TestTagManagerPlugin_IsAutoCreateEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tm := NewTagManager(tt.cfg)
 			if got := tm.IsAutoCreateEnabled(); got != tt.want {
 				t.Errorf("IsAutoCreateEnabled() = %v, want %v", got, tt.want)
@@ -367,6 +382,7 @@ func TestTagManagerPlugin_IsAutoCreateEnabled(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	if cfg.Enabled != false {
@@ -396,6 +412,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestTagManagerPlugin_GetConfig(t *testing.T) {
+
 	cfg := &Config{Enabled: true, Prefix: "release-", Push: true}
 	tm := NewTagManager(cfg)
 
@@ -412,6 +429,7 @@ func TestTagManagerPlugin_GetConfig(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
+
 	mockOps := &MockGitTagOperations{
 		TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 			return false, errors.New("git error")
@@ -427,6 +445,7 @@ func TestTagManagerPlugin_ValidateTagAvailable_Error(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_PushError(t *testing.T) {
+
 	mockOps := &MockGitTagOperations{
 		TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
@@ -450,6 +469,7 @@ func TestTagManagerPlugin_CreateTag_PushError(t *testing.T) {
 }
 
 func TestTagManagerPlugin_NilConfig(t *testing.T) {
+
 	tm := NewTagManager(nil)
 
 	// Should use defaults
@@ -459,6 +479,7 @@ func TestTagManagerPlugin_NilConfig(t *testing.T) {
 }
 
 func TestDefaultConfig_TagPrereleases(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	if cfg.TagPrereleases != false {
@@ -467,6 +488,7 @@ func TestDefaultConfig_TagPrereleases(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ShouldCreateTag(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -557,6 +579,7 @@ func TestTagManagerPlugin_ShouldCreateTag(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tm := NewTagManager(tt.cfg)
 			if got := tm.ShouldCreateTag(tt.version); got != tt.want {
 				t.Errorf("ShouldCreateTag() = %v, want %v", got, tt.want)
@@ -566,8 +589,10 @@ func TestTagManagerPlugin_ShouldCreateTag(t *testing.T) {
 }
 
 func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
+
 	// With default config (AutoCreate: false, TagPrereleases: false)
 	// Note: Default config has Enabled: false and AutoCreate: false
+
 	cfg := DefaultConfig()
 	cfg.Enabled = true
 	cfg.AutoCreate = true // Enable auto-create to test tagging behavior
@@ -587,7 +612,9 @@ func TestTagManagerPlugin_ShouldCreateTag_DefaultConfig(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
+
 	t.Run("create signed tag without key", func(t *testing.T) {
+
 		signedCalled := false
 		var capturedMessage string
 		var capturedKeyID string
@@ -630,6 +657,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 	})
 
 	t.Run("create signed tag with key", func(t *testing.T) {
+
 		signedCalled := false
 		var capturedKeyID string
 
@@ -667,6 +695,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 	})
 
 	t.Run("signed tag error", func(t *testing.T) {
+
 		mockOps := &MockGitTagOperations{
 			TagExistsFn: func(ctx context.Context, name string) (bool, error) {
 				return false, nil
@@ -693,6 +722,7 @@ func TestTagManagerPlugin_CreateTag_Signed(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
+
 	tests := []struct {
 		name            string
 		template        string
@@ -727,6 +757,7 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			var capturedMessage string
 
 			mockOps := &MockGitTagOperations{
@@ -761,6 +792,7 @@ func TestTagManagerPlugin_CreateTag_MessageTemplate(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.T) {
+
 	var capturedMessage string
 
 	mockOps := &MockGitTagOperations{
@@ -795,6 +827,7 @@ func TestTagManagerPlugin_CreateTag_ExplicitMessageOverridesTemplate(t *testing.
 }
 
 func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		template string
@@ -827,6 +860,7 @@ func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := &Config{
 				Prefix:          tt.prefix,
 				MessageTemplate: tt.template,
@@ -842,7 +876,9 @@ func TestTagManagerPlugin_FormatTagMessage(t *testing.T) {
 }
 
 func TestNewTagManagerWithOps_NilGitOps(t *testing.T) {
+
 	// When gitOps is nil, it should default to OSGitTagOperations
+
 	tm := NewTagManagerWithOps(nil, nil, nil)
 
 	if tm == nil {
@@ -857,6 +893,7 @@ func TestNewTagManagerWithOps_NilGitOps(t *testing.T) {
 }
 
 func TestDefaultConfig_CommitMessageTemplateDefault(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	if cfg.CommitMessageTemplate != "chore(release): {tag}" {
@@ -865,6 +902,7 @@ func TestDefaultConfig_CommitMessageTemplateDefault(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_AutoDetect(t *testing.T) {
+
 	var stagedFiles []string
 
 	mockCommitOps := &MockGitCommitOperations{
@@ -901,6 +939,7 @@ func TestTagManagerPlugin_CommitChanges_AutoDetect(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_Deduplication(t *testing.T) {
+
 	var stagedFiles []string
 
 	mockCommitOps := &MockGitCommitOperations{
@@ -938,6 +977,7 @@ func TestTagManagerPlugin_CommitChanges_Deduplication(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_StageError(t *testing.T) {
+
 	mockCommitOps := &MockGitCommitOperations{
 		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
@@ -961,6 +1001,7 @@ func TestTagManagerPlugin_CommitChanges_StageError(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_CommitError(t *testing.T) {
+
 	mockCommitOps := &MockGitCommitOperations{
 		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return []string{"file.txt"}, nil
@@ -987,6 +1028,7 @@ func TestTagManagerPlugin_CommitChanges_CommitError(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_GetModifiedError(t *testing.T) {
+
 	mockCommitOps := &MockGitCommitOperations{
 		GetModifiedFilesFn: func(ctx context.Context) ([]string, error) {
 			return nil, errors.New("git status failed")
@@ -1007,6 +1049,7 @@ func TestTagManagerPlugin_CommitChanges_GetModifiedError(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_NoFilesToStage(t *testing.T) {
+
 	stageCalled := false
 	commitCalled := false
 
@@ -1045,6 +1088,7 @@ func TestTagManagerPlugin_CommitChanges_NoFilesToStage(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_DefaultTemplate(t *testing.T) {
+
 	var commitMessage string
 
 	mockCommitOps := &MockGitCommitOperations{
@@ -1079,6 +1123,7 @@ func TestTagManagerPlugin_CommitChanges_DefaultTemplate(t *testing.T) {
 }
 
 func TestTagManagerPlugin_CommitChanges_CustomTemplate(t *testing.T) {
+
 	var commitMessage string
 
 	mockCommitOps := &MockGitCommitOperations{

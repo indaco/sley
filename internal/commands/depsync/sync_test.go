@@ -9,6 +9,7 @@ import (
 )
 
 func TestDeriveDependencyName(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		path     string
@@ -38,6 +39,7 @@ func TestDeriveDependencyName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := operations.DeriveDependencyName(tt.path)
 			if got != tt.expected {
 				t.Errorf("deriveDependencyName(%q) = %q, want %q", tt.path, got, tt.expected)
@@ -47,6 +49,7 @@ func TestDeriveDependencyName(t *testing.T) {
 }
 
 func TestSyncDependencies_NilChecker(t *testing.T) {
+	t.Parallel()
 	registry := plugins.NewPluginRegistry()
 	ver := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 

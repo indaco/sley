@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewReleaseGate(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -41,6 +42,7 @@ func TestNewReleaseGate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := NewReleaseGate(tt.cfg)
 			if got == nil {
 				t.Fatal("NewReleaseGate returned nil")
@@ -63,6 +65,7 @@ func TestNewReleaseGate(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_Metadata(t *testing.T) {
+	t.Parallel()
 	plugin := NewReleaseGate(DefaultConfig())
 
 	if got := plugin.Name(); got != "release-gate" {
@@ -79,6 +82,7 @@ func TestReleaseGatePlugin_Metadata(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_IsEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		cfg  *Config
@@ -103,6 +107,7 @@ func TestReleaseGatePlugin_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			plugin := NewReleaseGate(tt.cfg)
 			if got := plugin.IsEnabled(); got != tt.want {
 				t.Errorf("IsEnabled() = %v, want %v", got, tt.want)
@@ -112,7 +117,9 @@ func TestReleaseGatePlugin_IsEnabled(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_GetConfig(t *testing.T) {
+	t.Parallel()
 	t.Run("returns config when set", func(t *testing.T) {
+		t.Parallel()
 		config := &Config{Enabled: true, RequireCleanWorktree: true}
 		plugin := NewReleaseGate(config)
 		got := plugin.GetConfig()
@@ -122,6 +129,7 @@ func TestReleaseGatePlugin_GetConfig(t *testing.T) {
 	})
 
 	t.Run("returns default config when nil passed", func(t *testing.T) {
+		t.Parallel()
 		plugin := NewReleaseGate(nil)
 		got := plugin.GetConfig()
 		if got == nil {
@@ -131,6 +139,7 @@ func TestReleaseGatePlugin_GetConfig(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_ValidateRelease_Disabled(t *testing.T) {
+	t.Parallel()
 	plugin := NewReleaseGate(&Config{Enabled: false})
 
 	newVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
@@ -143,6 +152,7 @@ func TestReleaseGatePlugin_ValidateRelease_Disabled(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_CheckWorktreeClean(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		clean       bool
@@ -174,6 +184,7 @@ func TestReleaseGatePlugin_CheckWorktreeClean(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockOps := &MockGitOperations{
 				IsWorktreeCleanFn: func() (bool, error) {
 					return tt.clean, tt.gitErr
@@ -203,6 +214,7 @@ func TestReleaseGatePlugin_CheckWorktreeClean(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_CheckBranchConstraints(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		currentBranch   string
@@ -271,6 +283,7 @@ func TestReleaseGatePlugin_CheckBranchConstraints(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockOps := &MockGitOperations{
 				GetCurrentBranchFn: func() (string, error) {
 					return tt.currentBranch, tt.branchErr
@@ -301,6 +314,7 @@ func TestReleaseGatePlugin_CheckBranchConstraints(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_CheckWIPCommits(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		commits     []string
@@ -385,6 +399,7 @@ func TestReleaseGatePlugin_CheckWIPCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockOps := &MockGitOperations{
 				GetRecentCommitsFn: func(count int) ([]string, error) {
 					return tt.commits, tt.commitsErr
@@ -414,6 +429,7 @@ func TestReleaseGatePlugin_CheckWIPCommits(t *testing.T) {
 }
 
 func TestReleaseGatePlugin_ValidateRelease_Integration(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		cfg           *Config
@@ -480,6 +496,7 @@ func TestReleaseGatePlugin_ValidateRelease_Integration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mockOps := &MockGitOperations{
 				IsWorktreeCleanFn: func() (bool, error) {
 					return tt.worktreeClean, tt.worktreeErr
@@ -514,6 +531,7 @@ func TestReleaseGatePlugin_ValidateRelease_Integration(t *testing.T) {
 }
 
 func TestMatchBranchPattern(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		pattern string
@@ -567,6 +585,7 @@ func TestMatchBranchPattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := matchBranchPattern(tt.pattern, tt.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("matchBranchPattern() error = %v, wantErr %v", err, tt.wantErr)
@@ -580,7 +599,10 @@ func TestMatchBranchPattern(t *testing.T) {
 }
 
 func TestNewReleaseGateWithOps_NilGitOps(t *testing.T) {
+	t.Parallel(
 	// When gitOps is nil, it should default to OSGitOperations
+	)
+
 	plugin := NewReleaseGateWithOps(nil, nil)
 
 	if plugin == nil {

@@ -5,6 +5,7 @@ import (
 )
 
 func TestReplaceYAMLSection(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		content     string
@@ -65,6 +66,7 @@ func TestReplaceYAMLSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gotResult, gotFound := replaceYAMLSection(tt.content, tt.key, tt.replacement)
 			if gotFound != tt.wantFound {
 				t.Errorf("replaceYAMLSection() found = %v, want %v", gotFound, tt.wantFound)

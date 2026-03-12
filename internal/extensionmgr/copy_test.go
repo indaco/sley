@@ -12,6 +12,7 @@ import (
 )
 
 func TestCopyDir_Success(t *testing.T) {
+	t.Parallel()
 	src := t.TempDir()
 	dst := t.TempDir()
 
@@ -40,7 +41,10 @@ func TestCopyDir_Success(t *testing.T) {
 }
 
 func TestCopyDir_FailsOnWalk(t *testing.T) {
+	t.Parallel(
 	// Create a broken source path that doesn't exist
+	)
+
 	err := copyDirFn("non-existent-src", t.TempDir())
 	if err == nil {
 		t.Fatal("expected error due to non-existent source directory, got nil")
@@ -48,6 +52,7 @@ func TestCopyDir_FailsOnWalk(t *testing.T) {
 }
 
 func TestCopyDir_SkipsExcludedFiles(t *testing.T) {
+	t.Parallel()
 	src := t.TempDir()
 	dst := t.TempDir()
 
@@ -84,7 +89,10 @@ func TestCopyDir_SkipsExcludedFiles(t *testing.T) {
 }
 
 func TestCopyDir_FailsOnRel(t *testing.T) {
+	t.Parallel(
 	// Create a custom OSFileCopier with mocked relFn
+	)
+
 	copier := &OSFileCopier{
 		walkFn: filepath.Walk,
 		relFn: func(basepath, targpath string) (string, error) {
@@ -110,6 +118,7 @@ func TestCopyDir_FailsOnRel(t *testing.T) {
 }
 
 func TestCopyDir_FailsOnOpenSource(t *testing.T) {
+	t.Parallel()
 	tmp := t.TempDir()
 	srcFile := filepath.Join(tmp, "readonly.txt")
 	dstDir := filepath.Join(tmp, "dst")
@@ -128,6 +137,7 @@ func TestCopyDir_FailsOnOpenSource(t *testing.T) {
 }
 
 func TestCopyDir_FailsOnOpenTarget(t *testing.T) {
+	t.Parallel()
 	tmp := t.TempDir()
 	srcDir := filepath.Join(tmp, "src")
 	dstDir := filepath.Join(tmp, "dst")
@@ -147,7 +157,10 @@ func TestCopyDir_FailsOnOpenTarget(t *testing.T) {
 }
 
 func TestCopyFile_FailsOnCopy(t *testing.T) {
+	t.Parallel(
 	// Create a custom OSFileCopier with mocked copyFn
+	)
+
 	copier := &OSFileCopier{
 		walkFn:      filepath.Walk,
 		relFn:       filepath.Rel,
@@ -187,6 +200,7 @@ func CopyFileTestHelper(src io.Reader, dst string, perm os.FileMode) error {
 }
 
 func TestShouldSkipEntry(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		fileName  string
@@ -206,6 +220,7 @@ func TestShouldSkipEntry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			info := fakeFileInfo{name: tt.fileName, dir: tt.isDir}
 			skipF, skipD := shouldSkipEntry(info)
 			if skipF != tt.wantSkipF || skipD != tt.wantSkipD {
@@ -235,6 +250,7 @@ func (f fakeFileInfo) Sys() any           { return nil }
 
 // TestClassifyFileCopyError tests error classification
 func TestClassifyFileCopyError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		err           error
@@ -302,6 +318,7 @@ func TestClassifyFileCopyError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := classifyFileCopyError(tt.err, tt.src, tt.dst, tt.op)
 
 			// Check nil case
@@ -335,6 +352,7 @@ func TestClassifyFileCopyError(t *testing.T) {
 
 // TestFilePermissionError tests the FilePermissionError type
 func TestFilePermissionError(t *testing.T) {
+	t.Parallel()
 	originalErr := errors.New("permission denied")
 	err := &FilePermissionError{
 		Src: "/src/file.txt",
@@ -361,6 +379,7 @@ func TestFilePermissionError(t *testing.T) {
 
 // TestDiskFullError tests the DiskFullError type
 func TestDiskFullError(t *testing.T) {
+	t.Parallel()
 	originalErr := errors.New("write failed")
 	err := &DiskFullError{
 		Path: "/dst/file.txt",
@@ -385,6 +404,7 @@ func TestDiskFullError(t *testing.T) {
 
 // TestOSFileCopier_CopyFile_ErrorClassification tests error handling in CopyFile
 func TestOSFileCopier_CopyFile_ErrorClassification(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		setupCopier   func() *OSFileCopier
@@ -437,6 +457,7 @@ func TestOSFileCopier_CopyFile_ErrorClassification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			copier := tt.setupCopier()
 			err := copier.CopyFile("/src/test.txt", "/dst/test.txt", 0644)
 

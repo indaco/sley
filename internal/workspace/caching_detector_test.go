@@ -10,11 +10,13 @@ import (
 )
 
 func TestNewCachingDetector(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	cfg := &config.Config{}
 	detector := NewDetector(fs, cfg)
 
 	t.Run("default TTL", func(t *testing.T) {
+		t.Parallel()
 		cd := NewCachingDetector(detector, 0)
 		if cd.ttl != DefaultCacheTTL {
 			t.Errorf("expected default TTL %v, got %v", DefaultCacheTTL, cd.ttl)
@@ -22,6 +24,7 @@ func TestNewCachingDetector(t *testing.T) {
 	})
 
 	t.Run("custom TTL", func(t *testing.T) {
+		t.Parallel()
 		customTTL := 10 * time.Second
 		cd := NewCachingDetector(detector, customTTL)
 		if cd.ttl != customTTL {
@@ -30,10 +33,31 @@ func TestNewCachingDetector(t *testing.T) {
 	})
 }
 
+// waitForCacheExpiry polls until the cache expires or the deadline is exceeded.
+func waitForCacheExpiry(t *testing.T, cd *CachingDetector) {
+	t.Helper()
+	deadline := time.After(1 * time.Second)
+	ticker := time.NewTicker(1 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-deadline:
+			t.Fatal("timed out waiting for cache to expire")
+			return
+		case <-ticker.C:
+			if cd.GetCacheInfo().ExpiresIn == 0 {
+				return
+			}
+		}
+	}
+}
+
 func TestCachingDetector_DetectContext(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	t.Run("caches results", func(t *testing.T) {
+		t.Parallel()
 		fs := core.NewMockFileSystem()
 		_ = fs.WriteFile(ctx, "/project/.version", []byte("1.0.0\n"), 0644)
 
@@ -69,6 +93,7 @@ func TestCachingDetector_DetectContext(t *testing.T) {
 	})
 
 	t.Run("invalidates on different root", func(t *testing.T) {
+		t.Parallel()
 		fs := core.NewMockFileSystem()
 		_ = fs.WriteFile(ctx, "/project1/.version", []byte("1.0.0\n"), 0644)
 		_ = fs.WriteFile(ctx, "/project2/.version", []byte("2.0.0\n"), 0644)
@@ -101,6 +126,7 @@ func TestCachingDetector_DetectContext(t *testing.T) {
 	})
 
 	t.Run("expires after TTL", func(t *testing.T) {
+		t.Parallel()
 		fs := core.NewMockFileSystem()
 		_ = fs.WriteFile(ctx, "/project/.version", []byte("1.0.0\n"), 0644)
 
@@ -114,8 +140,7 @@ func TestCachingDetector_DetectContext(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		// Wait for TTL to expire
-		time.Sleep(20 * time.Millisecond)
+		waitForCacheExpiry(t, cd)
 
 		// Cache should be expired
 		info := cd.GetCacheInfo()
@@ -126,6 +151,7 @@ func TestCachingDetector_DetectContext(t *testing.T) {
 }
 
 func TestCachingDetector_InvalidateCache(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fs := core.NewMockFileSystem()
 	_ = fs.WriteFile(ctx, "/project/.version", []byte("1.0.0\n"), 0644)
@@ -157,6 +183,7 @@ func TestCachingDetector_InvalidateCache(t *testing.T) {
 }
 
 func TestCachingDetector_DiscoverModules(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fs := core.NewMockFileSystem()
 	_ = fs.MkdirAll(ctx, "/project/moduleA", 0755)
@@ -186,6 +213,7 @@ func TestCachingDetector_DiscoverModules(t *testing.T) {
 }
 
 func TestCachingDetector_Concurrent(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fs := core.NewMockFileSystem()
 	_ = fs.WriteFile(ctx, "/project/.version", []byte("1.0.0\n"), 0644)
@@ -219,6 +247,7 @@ func TestCachingDetector_Concurrent(t *testing.T) {
 }
 
 func TestCacheInfo(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	fs := core.NewMockFileSystem()
 	_ = fs.WriteFile(ctx, "/project/.version", []byte("1.0.0\n"), 0644)

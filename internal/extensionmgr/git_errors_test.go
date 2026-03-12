@@ -12,6 +12,7 @@ import (
 
 // TestParseGitError tests parsing of various git error outputs
 func TestParseGitError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		gitOutput       string
@@ -128,6 +129,7 @@ func TestParseGitError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := parseGitError(tt.gitOutput)
 
 			// Handle nil case for unknown errors
@@ -166,6 +168,7 @@ func TestParseGitError(t *testing.T) {
 
 // TestFormatGitError tests formatting of git errors with context
 func TestFormatGitError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name            string
 		err             error
@@ -281,6 +284,7 @@ func TestFormatGitError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := FormatGitError(tt.err, tt.gitOutput, tt.repoURL)
 
 			// Handle nil case
@@ -322,6 +326,7 @@ func TestFormatGitError(t *testing.T) {
 
 // TestGitCloneError_Unwrap tests error unwrapping
 func TestGitCloneError_Unwrap(t *testing.T) {
+	t.Parallel()
 	originalErr := errors.New("original error")
 	gitErr := &GitCloneError{
 		RepoURL: &RepoURL{
@@ -349,6 +354,7 @@ func TestGitCloneError_Unwrap(t *testing.T) {
 
 // TestGitCloneError_Error tests error message formatting
 func TestGitCloneError_Error(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		gitErr   *GitCloneError
@@ -425,6 +431,7 @@ func TestGitCloneError_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.gitErr.Error()
 
 			for _, want := range tt.contains {

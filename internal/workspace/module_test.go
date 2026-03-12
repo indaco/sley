@@ -5,6 +5,7 @@ import (
 )
 
 func TestModule_DisplayName(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		module   *Module
@@ -38,6 +39,7 @@ func TestModule_DisplayName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.module.DisplayName()
 			if got != tt.expected {
 				t.Errorf("DisplayName() = %q, want %q", got, tt.expected)
@@ -47,6 +49,7 @@ func TestModule_DisplayName(t *testing.T) {
 }
 
 func TestModule_String(t *testing.T) {
+	t.Parallel()
 	module := &Module{
 		Name:           "test-module",
 		CurrentVersion: "3.2.1",
@@ -60,6 +63,7 @@ func TestModule_String(t *testing.T) {
 }
 
 func TestModule_DisplayNameWithPath(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		module   *Module
@@ -105,6 +109,7 @@ func TestModule_DisplayNameWithPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.module.DisplayNameWithPath()
 			if got != tt.expected {
 				t.Errorf("DisplayNameWithPath() = %q, want %q", got, tt.expected)

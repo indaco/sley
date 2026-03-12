@@ -6,6 +6,7 @@ import (
 )
 
 func TestMinimalFormatter_FormatChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -99,6 +100,7 @@ func TestMinimalFormatter_FormatChangelog(t *testing.T) {
 }
 
 func TestMinimalFormatter_BreakingChanges(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -146,6 +148,7 @@ func TestMinimalFormatter_BreakingChanges(t *testing.T) {
 }
 
 func TestMinimalFormatter_AllTypes(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -168,6 +171,7 @@ func TestMinimalFormatter_AllTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.commitType, func(t *testing.T) {
+
 			grouped := map[string][]*GroupedCommit{
 				"Test": {
 					{
@@ -191,6 +195,7 @@ func TestMinimalFormatter_AllTypes(t *testing.T) {
 }
 
 func TestMinimalFormatter_UnknownAndEmptyTypes(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -206,6 +211,7 @@ func TestMinimalFormatter_UnknownAndEmptyTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			grouped := map[string][]*GroupedCommit{
 				"Other": {
 					{
@@ -229,6 +235,7 @@ func TestMinimalFormatter_UnknownAndEmptyTypes(t *testing.T) {
 }
 
 func TestMinimalFormatter_EmptyChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -250,6 +257,7 @@ func TestMinimalFormatter_EmptyChangelog(t *testing.T) {
 }
 
 func TestMinimalFormatter_FlatList(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -306,6 +314,7 @@ func TestMinimalFormatter_FlatList(t *testing.T) {
 }
 
 func TestMinimalFormatter_NoRemoteInfo(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -335,6 +344,7 @@ func TestMinimalFormatter_NoRemoteInfo(t *testing.T) {
 }
 
 func TestMinimalFormatter_OutputFormat(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &MinimalFormatter{config: cfg}
 
@@ -378,6 +388,7 @@ func TestMinimalFormatter_OutputFormat(t *testing.T) {
 }
 
 func TestGetTypeAbbreviation(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		commit   *GroupedCommit
@@ -436,6 +447,7 @@ func TestGetTypeAbbreviation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := getTypeAbbreviation(tt.commit)
 			if result != tt.expected {
 				t.Errorf("getTypeAbbreviation() = %q, want %q", result, tt.expected)

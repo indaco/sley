@@ -9,8 +9,11 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestValidateGitAvailable(t *testing.T) {
+	t.Parallel(
 	// This test will pass if git is installed, fail otherwise
 	// In CI/CD environments, git is typically available
+	)
+
 	err := ValidateGitAvailable()
 
 	// We can't reliably test both cases without mocking exec.Command

@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/extensions"
 )
 
 func TestHasHook(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		hooks    []string
@@ -46,6 +46,7 @@ func TestHasHook(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := hasHook(tt.hooks, tt.hookType)
 			if got != tt.want {
 				t.Errorf("hasHook() = %v, want %v", got, tt.want)
@@ -55,6 +56,7 @@ func TestHasHook(t *testing.T) {
 }
 
 func TestValidateExtensionHook(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		hookType string
@@ -89,6 +91,7 @@ func TestValidateExtensionHook(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := ValidateExtensionHook(tt.hookType)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateExtensionHook() error = %v, wantErr %v", err, tt.wantErr)
@@ -98,6 +101,7 @@ func TestValidateExtensionHook(t *testing.T) {
 }
 
 func TestNewExtensionHookRunner(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{}
 	runner := NewExtensionHookRunner(cfg)
 
@@ -113,6 +117,7 @@ func TestNewExtensionHookRunner(t *testing.T) {
 }
 
 func TestExtensionHookRunner_RunHooks_NoExtensions(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Extensions: []config.ExtensionConfig{},
 	}
@@ -132,6 +137,7 @@ func TestExtensionHookRunner_RunHooks_NoExtensions(t *testing.T) {
 }
 
 func TestExtensionHookRunner_RunHooks_DisabledExtension(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -174,6 +180,7 @@ hooks:
 }
 
 func TestExtensionHookRunner_RunHooks_Success(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -226,6 +233,7 @@ echo '{"success": true, "message": "Hook executed"}'
 }
 
 func TestExtensionHookRunner_RunHooks_WrongHook(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest with only post-bump hook
@@ -268,6 +276,7 @@ hooks:
 }
 
 func TestLoadExtensionsForHook(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -322,6 +331,7 @@ hooks:
 }
 
 func TestLoadExtensionsForHook_NoConfig(t *testing.T) {
+	t.Parallel()
 	exts, err := LoadExtensionsForHook(nil, PreBumpHook)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -333,6 +343,7 @@ func TestLoadExtensionsForHook_NoConfig(t *testing.T) {
 }
 
 func TestRunPreBumpHooks(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -378,6 +389,7 @@ echo '{"success": true}'
 }
 
 func TestRunPostBumpHooks(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -435,6 +447,7 @@ func (m *mockExecutor) Execute(ctx context.Context, scriptPath string, input *Ho
 }
 
 func TestExtensionHookRunner_RunHooks_ExecutorError(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -461,10 +474,6 @@ hooks:
 			},
 		},
 	}
-
-	// Save original function and restore after test
-	originalLoadFn := extensions.LoadExtensionManifestFn
-	defer func() { extensions.LoadExtensionManifestFn = originalLoadFn }()
 
 	runner := NewExtensionHookRunner(cfg)
 	runner.Executor = &mockExecutor{
@@ -587,6 +596,7 @@ func assertHookError(t *testing.T, err error, wantErr bool, wantErrText string) 
 }
 
 func TestExtensionHookRunner_RunHooks_TableDriven(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		hookType       HookType
@@ -635,6 +645,7 @@ func TestExtensionHookRunner_RunHooks_TableDriven(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			tmpDir := t.TempDir()
 			tt.setupManifests(t, tmpDir)
 			updateExtensionPaths(tt.extensions, tmpDir)
@@ -655,6 +666,7 @@ func TestExtensionHookRunner_RunHooks_TableDriven(t *testing.T) {
 
 // TestRunPreBumpHooks_EdgeCases tests edge cases for pre-bump hooks
 func TestRunPreBumpHooks_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		cfg         *config.Config
@@ -697,6 +709,7 @@ func TestRunPreBumpHooks_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			err := RunPreBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType, nil)
 
@@ -709,6 +722,7 @@ func TestRunPreBumpHooks_EdgeCases(t *testing.T) {
 
 // TestRunPostBumpHooks_EdgeCases tests edge cases for post-bump hooks
 func TestRunPostBumpHooks_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		cfg         *config.Config
@@ -745,6 +759,7 @@ func TestRunPostBumpHooks_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ctx := context.Background()
 			err := RunPostBumpHooks(ctx, tt.cfg, tt.version, tt.prevVersion, tt.bumpType, tt.prerelease, tt.metadata, nil)
 
@@ -757,6 +772,7 @@ func TestRunPostBumpHooks_EdgeCases(t *testing.T) {
 
 // TestLoadExtensionsForHook_EdgeCases tests edge cases for loading extensions
 func TestLoadExtensionsForHook_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		cfg          *config.Config
@@ -799,6 +815,7 @@ func TestLoadExtensionsForHook_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if tt.setupMocks != nil {
 				tt.setupMocks()
 			}
@@ -822,7 +839,9 @@ func TestLoadExtensionsForHook_EdgeCases(t *testing.T) {
 
 // TestModuleInfo tests the ModuleInfo struct and its usage
 func TestModuleInfo(t *testing.T) {
+	t.Parallel()
 	t.Run("nil module info is handled gracefully", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		err := RunPreBumpHooks(ctx, nil, "1.0.0", "0.9.0", "minor", nil)
 		if err != nil {
@@ -831,6 +850,7 @@ func TestModuleInfo(t *testing.T) {
 	})
 
 	t.Run("module info with dir and name", func(t *testing.T) {
+		t.Parallel()
 		moduleInfo := &ModuleInfo{
 			Dir:  "/path/to/module",
 			Name: "my-module",
@@ -847,6 +867,7 @@ func TestModuleInfo(t *testing.T) {
 
 // TestRunHooksWithModuleInfo tests that module info is correctly passed to hooks
 func TestRunHooksWithModuleInfo(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -888,6 +909,7 @@ echo "{\"success\": true, \"message\": \"module_dir=$module_dir module_name=$mod
 	}
 
 	t.Run("hook receives module info", func(t *testing.T) {
+		t.Parallel()
 		moduleInfo := &ModuleInfo{
 			Dir:  "/project/packages/app",
 			Name: "app",
@@ -901,6 +923,7 @@ echo "{\"success\": true, \"message\": \"module_dir=$module_dir module_name=$mod
 	})
 
 	t.Run("hook works without module info", func(t *testing.T) {
+		t.Parallel()
 		ctx := context.Background()
 		err := RunPostBumpHooks(ctx, cfg, "1.0.0", "0.9.0", "minor", nil, nil, nil)
 		if err != nil {
@@ -911,6 +934,7 @@ echo "{\"success\": true, \"message\": \"module_dir=$module_dir module_name=$mod
 
 // TestExtensionHookRunner_RunHooks_WithConfig tests that extension config is passed to hooks
 func TestExtensionHookRunner_RunHooks_WithConfig(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -982,6 +1006,7 @@ echo "{\"success\": true, \"message\": \"Config received: repo=$repo, strip-pref
 
 // TestExtensionHookRunner_RunHooks_WithoutConfig tests that hooks work without config
 func TestExtensionHookRunner_RunHooks_WithoutConfig(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create extension manifest
@@ -1036,6 +1061,7 @@ echo '{"success": true, "message": "Hook executed without config"}'
 
 // TestExtensionHookRunner_RunHooks_MultipleExtensionsWithDifferentConfigs tests multiple extensions with different configs
 func TestExtensionHookRunner_RunHooks_MultipleExtensionsWithDifferentConfigs(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	// Create first extension

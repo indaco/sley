@@ -23,9 +23,11 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestValidateTagAvailable(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := validateTagAvailable(registry, version)
 		if err != nil {
@@ -34,6 +36,7 @@ func TestValidateTagAvailable(t *testing.T) {
 	})
 
 	t.Run("mock tag manager returns validation error", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		mock := &mockTagManager{validateErr: fmt.Errorf("tag exists"), autoCreateEnabled: true}
 		if err := registry.RegisterTagManager(mock); err != nil {
@@ -51,9 +54,11 @@ func TestValidateTagAvailable(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCreateTagAfterBump(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := createTagAfterBump(registry, version, "minor")
 		if err != nil {
@@ -70,10 +75,12 @@ func TestCreateTagAfterBump(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateVersionPolicy(t *testing.T) {
+
 	newVersion := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil validator returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := validateVersionPolicy(registry, newVersion, prevVersion, "major")
 		if err != nil {
@@ -82,6 +89,7 @@ func TestValidateVersionPolicy(t *testing.T) {
 	})
 
 	t.Run("mock validator returns error", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		mock := &mockVersionValidator{validateErr: fmt.Errorf("policy violation")}
 		if err := registry.RegisterVersionValidator(mock); err != nil {
@@ -99,10 +107,12 @@ func TestValidateVersionPolicy(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateReleaseGate(t *testing.T) {
+
 	newVersion := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil gate returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := validateReleaseGate(registry, newVersion, prevVersion, "major")
 		if err != nil {
@@ -111,6 +121,7 @@ func TestValidateReleaseGate(t *testing.T) {
 	})
 
 	t.Run("mock gate returns error", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		mock := &mockReleaseGate{validateErr: fmt.Errorf("gate failed")}
 		if err := registry.RegisterReleaseGate(mock); err != nil {
@@ -128,9 +139,11 @@ func TestValidateReleaseGate(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidateDependencyConsistency(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := validateDependencyConsistency(registry, version)
 		if err != nil {
@@ -147,9 +160,11 @@ func TestValidateDependencyConsistency(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestSyncDependencies(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil checker returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := operations.SyncDependencies(registry, version)
 		if err != nil {
@@ -166,10 +181,12 @@ func TestSyncDependencies(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestGenerateChangelogAfterBump(t *testing.T) {
+
 	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil generator returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := generateChangelogAfterBump(registry, version, prevVersion, "major")
 		if err != nil {
@@ -186,10 +203,12 @@ func TestGenerateChangelogAfterBump(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestRecordAuditLogEntry(t *testing.T) {
+
 	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	t.Run("nil audit log returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		err := recordAuditLogEntry(registry, version, prevVersion, "major")
 		if err != nil {
@@ -206,10 +225,12 @@ func TestRecordAuditLogEntry(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestRunPreBumpExtensionHooks(t *testing.T) {
+
 	ctx := context.Background()
 	cfg := &config.Config{}
 
 	t.Run("skip hooks returns nil", func(t *testing.T) {
+
 		err := runPreBumpExtensionHooks(ctx, cfg, ".version", "1.0.0", "0.9.0", "minor", true)
 		if err != nil {
 			t.Errorf("expected nil error when skipping hooks, got %v", err)
@@ -217,6 +238,7 @@ func TestRunPreBumpExtensionHooks(t *testing.T) {
 	})
 
 	t.Run("nil config with skip returns nil", func(t *testing.T) {
+
 		err := runPreBumpExtensionHooks(ctx, nil, ".version", "1.0.0", "0.9.0", "minor", true)
 		if err != nil {
 			t.Errorf("expected nil error when skipping hooks with nil config, got %v", err)
@@ -225,6 +247,7 @@ func TestRunPreBumpExtensionHooks(t *testing.T) {
 }
 
 func TestRunPostBumpExtensionHooks(t *testing.T) {
+
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -236,6 +259,7 @@ func TestRunPostBumpExtensionHooks(t *testing.T) {
 	}
 
 	t.Run("skip hooks returns nil", func(t *testing.T) {
+
 		err := runPostBumpExtensionHooks(ctx, cfg, versionPath, "0.9.0", "minor", true)
 		if err != nil {
 			t.Errorf("expected nil error when skipping hooks, got %v", err)
@@ -248,9 +272,11 @@ func TestRunPostBumpExtensionHooks(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCreateTagAfterBump_Enabled(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 
 	t.Run("disabled plugin returns nil", func(t *testing.T) {
+
 		registry := plugins.NewPluginRegistry()
 		plugin := tagmanager.NewTagManagerWithOps(&tagmanager.Config{
 			Enabled: false,
@@ -267,6 +293,7 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 }
 
 func TestRunPostBumpExtensionHooks_WithError(t *testing.T) {
+
 	ctx := context.Background()
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -289,6 +316,7 @@ func TestRunPostBumpExtensionHooks_WithError(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestBumpAuto_SkipHooksFlag(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0-alpha")
@@ -312,6 +340,7 @@ func TestBumpAuto_SkipHooksFlag(t *testing.T) {
 }
 
 func TestBumpAuto_ExtensionHooksCalledWithLabel(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -339,6 +368,7 @@ func TestBumpAuto_ExtensionHooksCalledWithLabel(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestBumpRelease_SkipHooksFlag(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0-beta.1")
@@ -362,6 +392,7 @@ func TestBumpRelease_SkipHooksFlag(t *testing.T) {
 }
 
 func TestBumpRelease_ExtensionHooksCalledOnPromotion(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "2.0.0-rc.1")
@@ -389,6 +420,7 @@ func TestBumpRelease_ExtensionHooksCalledOnPromotion(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestSingleModuleBump_ValidateReleaseGateFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -411,6 +443,7 @@ func TestSingleModuleBump_ValidateReleaseGateFails(t *testing.T) {
 }
 
 func TestSingleModuleBump_ValidateVersionPolicyFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -433,6 +466,7 @@ func TestSingleModuleBump_ValidateVersionPolicyFails(t *testing.T) {
 }
 
 func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -467,6 +501,7 @@ func TestSingleModuleBump_ValidateDependencyConsistencyFails(t *testing.T) {
 }
 
 func TestSingleModuleBump_ValidateDependencyConsistencyWithAutoSync(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -509,6 +544,7 @@ func TestSingleModuleBump_ValidateDependencyConsistencyWithAutoSync(t *testing.T
 }
 
 func TestValidateDependencyConsistency_AutoSyncSkipsError(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create package.json with different version
@@ -538,6 +574,7 @@ func TestValidateDependencyConsistency_AutoSyncSkipsError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			plugin := dependencycheck.NewDependencyChecker(&dependencycheck.Config{
 				Enabled:  true,
 				AutoSync: tt.autoSync,
@@ -563,6 +600,7 @@ func TestValidateDependencyConsistency_AutoSyncSkipsError(t *testing.T) {
 }
 
 func TestSingleModuleBump_ValidateTagAvailableFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
@@ -585,6 +623,7 @@ func TestSingleModuleBump_ValidateTagAvailableFails(t *testing.T) {
 }
 
 func TestSingleModuleBump_UpdateVersionFails(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
 

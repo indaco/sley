@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewSetOperation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	version := "2.0.0"
 	op := NewSetOperation(fs, version)
@@ -26,6 +27,7 @@ func TestNewSetOperation(t *testing.T) {
 }
 
 func TestSetOperation_Execute(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -66,6 +68,7 @@ func TestSetOperation_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -100,6 +103,7 @@ func TestSetOperation_Execute(t *testing.T) {
 }
 
 func TestSetOperation_Execute_InvalidVersion(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		version string
@@ -128,6 +132,7 @@ func TestSetOperation_Execute_InvalidVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte("1.0.0\n"))
 
@@ -147,6 +152,7 @@ func TestSetOperation_Execute_InvalidVersion(t *testing.T) {
 }
 
 func TestSetOperation_Execute_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.0.0\n"))
 
@@ -169,6 +175,7 @@ func TestSetOperation_Execute_ContextCancellation(t *testing.T) {
 }
 
 func TestSetOperation_Execute_ContextTimeout(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.0.0\n"))
 
@@ -181,7 +188,7 @@ func TestSetOperation_Execute_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	time.Sleep(2 * time.Millisecond)
+	<-ctx.Done() // Wait for the context to actually expire
 
 	err := op.Execute(ctx, mod)
 	if err == nil {
@@ -190,6 +197,7 @@ func TestSetOperation_Execute_ContextTimeout(t *testing.T) {
 }
 
 func TestSetOperation_Execute_WriteError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.WriteErr = context.DeadlineExceeded
 
@@ -207,6 +215,7 @@ func TestSetOperation_Execute_WriteError(t *testing.T) {
 }
 
 func TestSetOperation_Name(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		version  string
 		expected string
@@ -227,6 +236,7 @@ func TestSetOperation_Name(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.version, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			op := NewSetOperation(fs, tt.version)
 
@@ -239,6 +249,7 @@ func TestSetOperation_Name(t *testing.T) {
 }
 
 func TestSetOperation_Execute_NoFileExists(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	// Don't create any file initially
 

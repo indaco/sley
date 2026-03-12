@@ -5,6 +5,7 @@ import (
 )
 
 func TestParseRemoteURL(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		url          string
@@ -138,6 +139,7 @@ func TestParseRemoteURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got, err := parseRemoteURL(tt.url)
 
 			if tt.wantErr {
@@ -169,6 +171,7 @@ func TestParseRemoteURL(t *testing.T) {
 }
 
 func TestExtractUsername(t *testing.T) {
+
 	tests := []struct {
 		name       string
 		email      string
@@ -222,6 +225,7 @@ func TestExtractUsername(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			gotUser, gotHost := extractUsername(tt.email, tt.authorName)
 			if gotUser != tt.wantUser {
 				t.Errorf("username = %q, want %q", gotUser, tt.wantUser)
@@ -234,6 +238,7 @@ func TestExtractUsername(t *testing.T) {
 }
 
 func TestGetContributors(t *testing.T) {
+
 	commits := []CommitInfo{
 		{Author: "Alice", AuthorEmail: "alice@example.com"},
 		{Author: "Bob", AuthorEmail: "bob@example.com"},
@@ -271,6 +276,7 @@ func TestGetContributors(t *testing.T) {
 }
 
 func TestCommitInfo(t *testing.T) {
+
 	commit := CommitInfo{
 		Hash:        "abc123def456",
 		ShortHash:   "abc123d",
@@ -291,6 +297,7 @@ func TestCommitInfo(t *testing.T) {
 }
 
 func TestBuildRemoteInfo(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		host         string
@@ -337,6 +344,7 @@ func TestBuildRemoteInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := buildRemoteInfo(tt.host, tt.owner, tt.repo)
 
 			if got.Provider != tt.wantProvider {
@@ -356,6 +364,7 @@ func TestBuildRemoteInfo(t *testing.T) {
 }
 
 func TestKnownProviders(t *testing.T) {
+
 	expected := map[string]string{
 		"github.com":    "github",
 		"gitlab.com":    "gitlab",
@@ -373,7 +382,9 @@ func TestKnownProviders(t *testing.T) {
 }
 
 func TestGetCommitsWithMeta_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetCommitsWithMetaFn
 	defer func() { GetCommitsWithMetaFn = originalFn }()
 
@@ -395,7 +406,9 @@ func TestGetCommitsWithMeta_MockSuccess(t *testing.T) {
 }
 
 func TestGetRemoteInfo_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetRemoteInfoFn
 	defer func() { GetRemoteInfoFn = originalFn }()
 
@@ -419,7 +432,9 @@ func TestGetRemoteInfo_MockSuccess(t *testing.T) {
 }
 
 func TestGetLatestTag_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetLatestTagFn
 	defer func() { GetLatestTagFn = originalFn }()
 
@@ -438,7 +453,9 @@ func TestGetLatestTag_MockSuccess(t *testing.T) {
 }
 
 func TestGetContributors_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetContributorsFn
 	defer func() { GetContributorsFn = originalFn }()
 
@@ -457,6 +474,7 @@ func TestGetContributors_MockSuccess(t *testing.T) {
 }
 
 func TestRemoteInfo_Fields(t *testing.T) {
+
 	remote := RemoteInfo{
 		Provider: "gitlab",
 		Host:     "gitlab.example.com",
@@ -479,6 +497,7 @@ func TestRemoteInfo_Fields(t *testing.T) {
 }
 
 func TestContributor_Fields(t *testing.T) {
+
 	contrib := Contributor{
 		Name:     "Alice Smith",
 		Username: "alicesmith",
@@ -501,6 +520,7 @@ func TestContributor_Fields(t *testing.T) {
 }
 
 func TestNewContributor_Fields(t *testing.T) {
+
 	nc := NewContributor{
 		Contributor: Contributor{
 			Name:     "New Dev",
@@ -531,7 +551,9 @@ func TestNewContributor_Fields(t *testing.T) {
 }
 
 func TestGetNewContributors(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetHistoricalContributorsFn
 	defer func() { GetHistoricalContributorsFn = originalFn }()
 
@@ -604,6 +626,7 @@ func TestGetNewContributors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
 				return tt.historicalUsernames, nil
 			}
@@ -633,7 +656,9 @@ func TestGetNewContributors(t *testing.T) {
 }
 
 func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetHistoricalContributorsFn
 	defer func() { GetHistoricalContributorsFn = originalFn }()
 
@@ -665,6 +690,7 @@ func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			commits := []CommitInfo{
 				{Author: "Dev", AuthorEmail: "dev@users.noreply.github.com", ShortHash: "abc123", Subject: tt.subject},
 			}
@@ -686,7 +712,9 @@ func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
 }
 
 func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetHistoricalContributorsFn
 	defer func() { GetHistoricalContributorsFn = originalFn }()
 
@@ -712,7 +740,9 @@ func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
 }
 
 func TestGetNewContributorsFn_MockSuccess(t *testing.T) {
+
 	// Save and restore original function
+
 	originalFn := GetNewContributorsFn
 	defer func() { GetNewContributorsFn = originalFn }()
 

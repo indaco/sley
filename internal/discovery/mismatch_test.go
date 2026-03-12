@@ -5,6 +5,7 @@ import (
 )
 
 func TestDetectMismatches(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		result    *Result
@@ -85,6 +86,7 @@ func TestDetectMismatches(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			mismatches := DetectMismatches(tt.result)
 			if len(mismatches) != tt.wantCount {
 				t.Errorf("DetectMismatches() returned %d mismatches, want %d", len(mismatches), tt.wantCount)
@@ -94,6 +96,7 @@ func TestDetectMismatches(t *testing.T) {
 }
 
 func TestDetectMismatchesWithCustomBase(t *testing.T) {
+	t.Parallel()
 	result := &Result{
 		Modules: []Module{
 			{RelPath: ".version", Version: "1.0.0"},
@@ -127,6 +130,7 @@ func TestDetectMismatchesWithCustomBase(t *testing.T) {
 }
 
 func TestGetUniqueVersions(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		result    *Result
@@ -188,6 +192,7 @@ func TestGetUniqueVersions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			versions := GetUniqueVersions(tt.result)
 			if len(versions) != tt.wantCount {
 				t.Errorf("GetUniqueVersions() returned %d versions, want %d", len(versions), tt.wantCount)
@@ -200,6 +205,7 @@ func TestGetUniqueVersions(t *testing.T) {
 }
 
 func TestIsVersionConsistent(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		result *Result
@@ -247,6 +253,7 @@ func TestIsVersionConsistent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := IsVersionConsistent(tt.result); got != tt.want {
 				t.Errorf("IsVersionConsistent() = %v, want %v", got, tt.want)
 			}
@@ -255,6 +262,7 @@ func TestIsVersionConsistent(t *testing.T) {
 }
 
 func TestGetVersionSummary(t *testing.T) {
+	t.Parallel()
 	result := &Result{
 		Modules: []Module{
 			{RelPath: "a/.version", Version: "1.0.0"},
@@ -290,6 +298,7 @@ func TestGetVersionSummary(t *testing.T) {
 }
 
 func TestGetVersionSummary_NilResult(t *testing.T) {
+	t.Parallel()
 	summaries := GetVersionSummary(nil)
 	if summaries != nil {
 		t.Errorf("expected nil for nil result, got %v", summaries)
@@ -297,6 +306,7 @@ func TestGetVersionSummary_NilResult(t *testing.T) {
 }
 
 func TestMismatchSorting(t *testing.T) {
+	t.Parallel()
 	result := &Result{
 		Modules: []Module{
 			{RelPath: ".version", Version: "1.0.0"},

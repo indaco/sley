@@ -21,6 +21,7 @@ func newTestTagManagerPlugin(cfg *tagmanager.Config, gitOps *tagmanager.MockGitT
 }
 
 func TestCommitAndTagAfterBump_AutoCreateDisabled(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	plugin := newTestTagManagerPlugin(&tagmanager.Config{
 		Enabled:    true,
@@ -40,6 +41,7 @@ func TestCommitAndTagAfterBump_AutoCreateDisabled(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_Success(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	var stagedFiles []string
 	var commitMsg string
@@ -89,6 +91,7 @@ func TestCommitAndTagAfterBump_Success(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_WithModifiedFiles(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	var stagedFiles []string
 
@@ -127,6 +130,7 @@ func TestCommitAndTagAfterBump_WithModifiedFiles(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_CommitFails(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	plugin := newTestTagManagerPlugin(&tagmanager.Config{
 		Enabled:    true,
@@ -153,6 +157,7 @@ func TestCommitAndTagAfterBump_CommitFails(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_TagCreationFails(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	plugin := newTestTagManagerPlugin(&tagmanager.Config{
 		Enabled:    true,
@@ -183,6 +188,7 @@ func TestCommitAndTagAfterBump_TagCreationFails(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_WithoutBumpedPath(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	plugin := newTestTagManagerPlugin(&tagmanager.Config{
 		Enabled:    true,
@@ -211,6 +217,7 @@ func TestCommitAndTagAfterBump_WithoutBumpedPath(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_WithPush(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	var pushedTag string
 
@@ -248,6 +255,7 @@ func TestCommitAndTagAfterBump_WithPush(t *testing.T) {
 }
 
 func TestCommitAndTagAfterBump_CustomCommitMessageTemplate(t *testing.T) {
+
 	version := semver.SemVersion{Major: 1, Minor: 2, Patch: 3}
 	var commitMsg string
 

@@ -5,6 +5,7 @@ import (
 )
 
 func TestGetBuiltinPlugins(t *testing.T) {
+	t.Parallel()
 	plugins := GetBuiltinPlugins()
 
 	// Should return all 8 built-in plugins
@@ -38,6 +39,7 @@ func TestGetBuiltinPlugins(t *testing.T) {
 }
 
 func TestGetBuiltinPlugins_ReturnsCopy(t *testing.T) {
+	t.Parallel()
 	plugins1 := GetBuiltinPlugins()
 	plugins2 := GetBuiltinPlugins()
 
@@ -53,11 +55,15 @@ func TestGetBuiltinPlugins_ReturnsCopy(t *testing.T) {
 }
 
 func TestBuiltinPluginMetadata(t *testing.T) {
+	t.Parallel()
 	plugins := GetBuiltinPlugins()
 
 	for _, p := range plugins {
 		t.Run(p.Name, func(t *testing.T) {
+			t.Parallel(
 			// All plugins should have required fields
+			)
+
 			if p.Name == "" {
 				t.Error("plugin name should not be empty")
 			}
@@ -84,6 +90,7 @@ func TestBuiltinPluginMetadata(t *testing.T) {
 }
 
 func TestPluginTypeConstants(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		pluginType PluginType
 		expected   string
@@ -100,6 +107,7 @@ func TestPluginTypeConstants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
+			t.Parallel()
 			if string(tt.pluginType) != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, string(tt.pluginType))
 			}

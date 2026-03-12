@@ -7,6 +7,7 @@ import (
 )
 
 func TestDetectProjectContext_EmptyDirectory(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -30,6 +31,7 @@ func TestDetectProjectContext_EmptyDirectory(t *testing.T) {
 }
 
 func TestDetectProjectContext_GitRepository(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create .git directory
@@ -48,6 +50,7 @@ func TestDetectProjectContext_GitRepository(t *testing.T) {
 }
 
 func TestDetectProjectContext_GitSubdirectory(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create .git in root
@@ -73,6 +76,7 @@ func TestDetectProjectContext_GitSubdirectory(t *testing.T) {
 }
 
 func TestDetectProjectContext_PackageJSON(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create package.json
@@ -91,6 +95,7 @@ func TestDetectProjectContext_PackageJSON(t *testing.T) {
 }
 
 func TestDetectProjectContext_GoMod(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create go.mod
@@ -109,6 +114,7 @@ func TestDetectProjectContext_GoMod(t *testing.T) {
 }
 
 func TestDetectProjectContext_MultipleMarkers(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create .git directory
@@ -145,6 +151,7 @@ func TestDetectProjectContext_MultipleMarkers(t *testing.T) {
 }
 
 func TestProjectContext_SuggestedPlugins(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		ctx      *ProjectContext
@@ -197,6 +204,7 @@ func TestProjectContext_SuggestedPlugins(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := tt.ctx.SuggestedPlugins()
 
 			if len(got) != len(tt.expected) {
@@ -214,6 +222,7 @@ func TestProjectContext_SuggestedPlugins(t *testing.T) {
 }
 
 func TestProjectContext_FormatDetectionSummary(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		ctx      *ProjectContext
@@ -273,6 +282,7 @@ func TestProjectContext_FormatDetectionSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			summary := tt.ctx.FormatDetectionSummary()
 
 			if tt.empty {
@@ -292,6 +302,7 @@ func TestProjectContext_FormatDetectionSummary(t *testing.T) {
 }
 
 func TestProjectContext_HasAnyDetection(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		ctx      *ProjectContext
@@ -341,6 +352,7 @@ func TestProjectContext_HasAnyDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := tt.ctx.HasAnyDetection()
 			if got != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, got)

@@ -5,6 +5,7 @@ import (
 )
 
 func TestParseIgnoreContent(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		content  string
@@ -62,6 +63,7 @@ tmp/`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := parseIgnoreContent(tt.content)
 
 			if len(got) != len(tt.expected) {
@@ -81,6 +83,7 @@ tmp/`,
 }
 
 func TestIgnoreFile_Matches(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		content  string
@@ -224,6 +227,7 @@ vendor`,
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ignoreFile := NewIgnoreFile(tt.content)
 			got := ignoreFile.Matches(tt.path)
 
@@ -236,6 +240,7 @@ vendor`,
 }
 
 func TestMatchIgnorePattern(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		pattern  string
@@ -280,6 +285,7 @@ func TestMatchIgnorePattern(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := matchIgnorePattern(tt.pattern, tt.path)
 
 			if got != tt.expected {
@@ -291,6 +297,7 @@ func TestMatchIgnorePattern(t *testing.T) {
 }
 
 func TestIgnoreFile_Patterns(t *testing.T) {
+	t.Parallel()
 	content := `node_modules
 .git
 vendor`
@@ -320,6 +327,7 @@ vendor`
 }
 
 func TestPatternMatcher_Matches(t *testing.T) {
+	t.Parallel()
 	patterns := []string{
 		"node_modules",
 		"*.tmp",
@@ -345,6 +353,7 @@ func TestPatternMatcher_Matches(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
+			t.Parallel()
 			got := matcher.matches(tt.path)
 
 			if got != tt.expected {
@@ -355,6 +364,7 @@ func TestPatternMatcher_Matches(t *testing.T) {
 }
 
 func TestPatternMatcher_EmptyPatterns(t *testing.T) {
+	t.Parallel()
 	matcher := newPatternMatcher([]string{})
 
 	paths := []string{"anything", "node_modules", "*.tmp"}

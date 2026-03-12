@@ -7,10 +7,12 @@ import (
 )
 
 func TestMockGitClient(t *testing.T) {
+
 	mockGit := NewMockGitClient()
 	ctx := context.Background()
 
 	t.Run("describe tags", func(t *testing.T) {
+
 		mockGit.TagOutput = "v1.0.0"
 		tag, err := mockGit.DescribeTags(ctx)
 		if err != nil {
@@ -22,6 +24,7 @@ func TestMockGitClient(t *testing.T) {
 	})
 
 	t.Run("describe tags error", func(t *testing.T) {
+
 		mockGit.TagError = errors.New("no tags")
 		_, err := mockGit.DescribeTags(ctx)
 		if err == nil || err.Error() != "no tags" {
@@ -31,6 +34,7 @@ func TestMockGitClient(t *testing.T) {
 	})
 
 	t.Run("clone", func(t *testing.T) {
+
 		err := mockGit.Clone(ctx, "https://example.com/repo.git", "/tmp/repo")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -42,6 +46,7 @@ func TestMockGitClient(t *testing.T) {
 	})
 
 	t.Run("is valid repo", func(t *testing.T) {
+
 		mockGit.IsValidRepos["/existing/repo"] = true
 
 		if !mockGit.IsValidRepo("/existing/repo") {
@@ -54,10 +59,12 @@ func TestMockGitClient(t *testing.T) {
 }
 
 func TestMockGitClient_Pull(t *testing.T) {
+
 	mockGit := NewMockGitClient()
 	ctx := context.Background()
 
 	t.Run("pull success", func(t *testing.T) {
+
 		err := mockGit.Pull(ctx, "/repo")
 		if err != nil {
 			t.Errorf("Pull() unexpected error: %v", err)
@@ -65,6 +72,7 @@ func TestMockGitClient_Pull(t *testing.T) {
 	})
 
 	t.Run("pull error", func(t *testing.T) {
+
 		mockGit.PullError = errors.New("pull failed")
 		err := mockGit.Pull(ctx, "/repo")
 		if err == nil || err.Error() != "pull failed" {
@@ -74,6 +82,7 @@ func TestMockGitClient_Pull(t *testing.T) {
 }
 
 func TestMockGitClient_CloneError(t *testing.T) {
+
 	mockGit := NewMockGitClient()
 	ctx := context.Background()
 
@@ -85,6 +94,7 @@ func TestMockGitClient_CloneError(t *testing.T) {
 }
 
 func TestMockGitTagOperations_CreateAnnotatedTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -105,6 +115,7 @@ func TestMockGitTagOperations_CreateAnnotatedTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_CreateLightweightTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -125,6 +136,7 @@ func TestMockGitTagOperations_CreateLightweightTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_CreateSignedTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -145,6 +157,7 @@ func TestMockGitTagOperations_CreateSignedTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_TagExists(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -175,6 +188,7 @@ func TestMockGitTagOperations_TagExists(t *testing.T) {
 }
 
 func TestMockGitTagOperations_GetLatestTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -196,6 +210,7 @@ func TestMockGitTagOperations_GetLatestTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_PushTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -216,6 +231,7 @@ func TestMockGitTagOperations_PushTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_ListTags(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -237,6 +253,7 @@ func TestMockGitTagOperations_ListTags(t *testing.T) {
 }
 
 func TestMockGitTagOperations_DeleteTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -257,6 +274,7 @@ func TestMockGitTagOperations_DeleteTag(t *testing.T) {
 }
 
 func TestMockGitTagOperations_DeleteRemoteTag(t *testing.T) {
+
 	mock := NewMockGitTagOperations()
 	ctx := context.Background()
 
@@ -274,9 +292,11 @@ func TestMockGitTagOperations_DeleteRemoteTag(t *testing.T) {
 }
 
 func TestMockGitCommitReader(t *testing.T) {
+
 	mock := NewMockGitCommitReader()
 
 	t.Run("get commits", func(t *testing.T) {
+
 		mock.Commits = []string{"abc123", "def456"}
 		commits, err := mock.GetCommits("v1.0.0", "HEAD")
 		if err != nil {
@@ -288,6 +308,7 @@ func TestMockGitCommitReader(t *testing.T) {
 	})
 
 	t.Run("get commits with error", func(t *testing.T) {
+
 		mock.GetCommitsErr = errors.New("git error")
 		_, err := mock.GetCommits("v1.0.0", "HEAD")
 		if err == nil || err.Error() != "git error" {
@@ -298,10 +319,12 @@ func TestMockGitCommitReader(t *testing.T) {
 }
 
 func TestMockGitBranchReader(t *testing.T) {
+
 	mock := NewMockGitBranchReader()
 	ctx := context.Background()
 
 	t.Run("get current branch", func(t *testing.T) {
+
 		mock.BranchName = "main"
 		branch, err := mock.GetCurrentBranch(ctx)
 		if err != nil {
@@ -313,6 +336,7 @@ func TestMockGitBranchReader(t *testing.T) {
 	})
 
 	t.Run("get current branch with error", func(t *testing.T) {
+
 		mock.GetCurrentBranchErr = errors.New("branch error")
 		_, err := mock.GetCurrentBranch(ctx)
 		if err == nil || err.Error() != "branch error" {

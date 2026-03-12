@@ -11,6 +11,7 @@ import (
 )
 
 func TestGenerateConfigWithComments_Empty(t *testing.T) {
+
 	data, err := GenerateConfigWithComments(".version", []string{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -28,6 +29,7 @@ func TestGenerateConfigWithComments_Empty(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_CommitParser(t *testing.T) {
+
 	data, err := GenerateConfigWithComments(".version", []string{"commit-parser"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -56,6 +58,7 @@ func TestGenerateConfigWithComments_CommitParser(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_TagManager(t *testing.T) {
+
 	data, err := GenerateConfigWithComments(".version", []string{"tag-manager"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -76,6 +79,7 @@ func TestGenerateConfigWithComments_TagManager(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_MultiplePlugins(t *testing.T) {
+
 	plugins := []string{
 		"commit-parser",
 		"tag-manager",
@@ -113,6 +117,7 @@ func TestGenerateConfigWithComments_MultiplePlugins(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_AllPlugins(t *testing.T) {
+
 	plugins := []string{
 		"commit-parser",
 		"tag-manager",
@@ -168,6 +173,7 @@ func verifyAllPluginsEnabled(t *testing.T, plugins *config.PluginConfig) {
 }
 
 func TestGenerateConfigWithComments_PathField(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		path     string
@@ -180,6 +186,7 @@ func TestGenerateConfigWithComments_PathField(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			data, err := GenerateConfigWithComments(tt.path, []string{"commit-parser"})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
@@ -198,6 +205,7 @@ func TestGenerateConfigWithComments_PathField(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_HeaderComments(t *testing.T) {
+
 	data, err := GenerateConfigWithComments(".version", []string{"commit-parser"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -220,6 +228,7 @@ func TestGenerateConfigWithComments_HeaderComments(t *testing.T) {
 }
 
 func TestGenerateConfigWithComments_InlineComments(t *testing.T) {
+
 	plugins := []string{"commit-parser", "tag-manager"}
 	data, err := GenerateConfigWithComments(".version", plugins)
 	if err != nil {
@@ -239,6 +248,7 @@ func TestGenerateConfigWithComments_InlineComments(t *testing.T) {
 }
 
 func TestGenerateConfigWithDiscovery(t *testing.T) {
+
 	plugins := []string{"dependency-check", "tag-manager"}
 	syncCandidates := []discovery.SyncCandidate{
 		{
@@ -294,6 +304,7 @@ func TestGenerateConfigWithDiscovery(t *testing.T) {
 }
 
 func TestGenerateConfigWithDiscovery_EmptyCandidates(t *testing.T) {
+
 	plugins := []string{"dependency-check"}
 	syncCandidates := []discovery.SyncCandidate{}
 
@@ -318,6 +329,7 @@ func TestGenerateConfigWithDiscovery_EmptyCandidates(t *testing.T) {
 }
 
 func TestGenerateConfigWithDiscovery_WithRegexPattern(t *testing.T) {
+
 	plugins := []string{"dependency-check"}
 	syncCandidates := []discovery.SyncCandidate{
 		{

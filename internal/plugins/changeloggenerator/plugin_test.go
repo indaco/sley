@@ -8,6 +8,7 @@ import (
 )
 
 func TestNewChangelogGenerator(t *testing.T) {
+
 	cfg := DefaultConfig()
 	plugin, err := NewChangelogGenerator(cfg)
 	if err != nil {
@@ -25,6 +26,7 @@ func TestNewChangelogGenerator(t *testing.T) {
 }
 
 func TestNewChangelogGenerator_NilConfig(t *testing.T) {
+
 	plugin, err := NewChangelogGenerator(nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -41,6 +43,7 @@ func TestNewChangelogGenerator_NilConfig(t *testing.T) {
 }
 
 func TestPluginName(t *testing.T) {
+
 	plugin, err := NewChangelogGenerator(DefaultConfig())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -53,6 +56,7 @@ func TestPluginName(t *testing.T) {
 }
 
 func TestPluginDescription(t *testing.T) {
+
 	plugin, err := NewChangelogGenerator(DefaultConfig())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -68,6 +72,7 @@ func TestPluginDescription(t *testing.T) {
 }
 
 func TestPluginVersion(t *testing.T) {
+
 	plugin, err := NewChangelogGenerator(DefaultConfig())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -83,6 +88,7 @@ func TestPluginVersion(t *testing.T) {
 }
 
 func TestPluginIsEnabled(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		enabled  bool
@@ -94,6 +100,7 @@ func TestPluginIsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := DefaultConfig()
 			cfg.Enabled = tt.enabled
 			plugin, err := NewChangelogGenerator(cfg)
@@ -109,6 +116,7 @@ func TestPluginIsEnabled(t *testing.T) {
 }
 
 func TestPluginGetConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Mode = "unified"
 	plugin, err := NewChangelogGenerator(cfg)
@@ -126,6 +134,7 @@ func TestPluginGetConfig(t *testing.T) {
 }
 
 func TestGenerateForVersion_Disabled(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Enabled = false
 	plugin, err := NewChangelogGenerator(cfg)
@@ -141,6 +150,7 @@ func TestGenerateForVersion_Disabled(t *testing.T) {
 }
 
 func TestGenerateForVersion_Enabled_VersionedMode(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -194,6 +204,7 @@ func TestGenerateForVersion_Enabled_VersionedMode(t *testing.T) {
 }
 
 func TestGenerateForVersion_Enabled_UnifiedMode(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -243,6 +254,7 @@ func TestGenerateForVersion_Enabled_UnifiedMode(t *testing.T) {
 }
 
 func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -287,6 +299,7 @@ func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
 }
 
 func TestGenerateForVersion_NoCommits(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Enabled = true
 	plugin, err := NewChangelogGenerator(cfg)
@@ -308,6 +321,7 @@ func TestGenerateForVersion_NoCommits(t *testing.T) {
 }
 
 func TestGenerateForVersion_UnknownMode(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -344,11 +358,14 @@ func TestGenerateForVersion_UnknownMode(t *testing.T) {
 }
 
 func TestChangelogGeneratorInterface(t *testing.T) {
+
 	// Verify that ChangelogGeneratorPlugin implements ChangelogGenerator
+
 	var _ ChangelogGenerator = (*ChangelogGeneratorPlugin)(nil)
 }
 
 func TestHandleMergeAfter_Immediate(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 
@@ -415,6 +432,7 @@ func TestHandleMergeAfter_Immediate(t *testing.T) {
 }
 
 func TestHandleMergeAfter_Manual(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 
@@ -463,6 +481,7 @@ func TestHandleMergeAfter_Manual(t *testing.T) {
 }
 
 func TestHandleMergeAfter_Prompt_NonInteractive(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 
@@ -516,6 +535,7 @@ func TestHandleMergeAfter_Prompt_NonInteractive(t *testing.T) {
 }
 
 func TestHandleMergeAfter_Prompt_Interactive_Confirmed(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 
@@ -577,6 +597,7 @@ func TestHandleMergeAfter_Prompt_Interactive_Confirmed(t *testing.T) {
 }
 
 func TestHandleMergeAfter_Prompt_Interactive_Declined(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	changesDir := filepath.Join(tmpDir, ".changes")
 
@@ -635,6 +656,7 @@ func TestHandleMergeAfter_Prompt_Interactive_Declined(t *testing.T) {
 }
 
 func TestWriteChangelog_Versioned(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -658,6 +680,7 @@ func TestWriteChangelog_Versioned(t *testing.T) {
 }
 
 func TestWriteChangelog_Unified(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()
@@ -680,6 +703,7 @@ func TestWriteChangelog_Unified(t *testing.T) {
 }
 
 func TestWriteChangelog_Both(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := DefaultConfig()

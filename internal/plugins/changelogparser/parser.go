@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-// Function variables for testability.
-var openFileFn = os.Open
+// OpenFileFunc is the function signature for opening files.
+type OpenFileFunc func(string) (*os.File, error)
 
 // ChangelogSection represents a parsed section from CHANGELOG.md.
 type ChangelogSection struct {
@@ -29,17 +29,18 @@ type UnreleasedSection struct {
 
 // changelogFileParser parses CHANGELOG.md files in Keep a Changelog format.
 type changelogFileParser struct {
-	path string
+	path       string
+	openFileFn OpenFileFunc
 }
 
 // newChangelogFileParser creates a new changelog parser for the given file path.
 func newChangelogFileParser(path string) *changelogFileParser {
-	return &changelogFileParser{path: path}
+	return &changelogFileParser{path: path, openFileFn: os.Open}
 }
 
 // ParseUnreleased extracts and parses the Unreleased section from CHANGELOG.md.
 func (p *changelogFileParser) ParseUnreleased() (*UnreleasedSection, error) {
-	file, err := openFileFn(p.path)
+	file, err := p.openFileFn(p.path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, errors.New("changelog file not found")

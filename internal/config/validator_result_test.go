@@ -12,6 +12,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestHasErrors(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		results []ValidationResult
@@ -50,6 +51,7 @@ func TestHasErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if got := HasErrors(tt.results); got != tt.want {
 				t.Errorf("HasErrors() = %v, want %v", got, tt.want)
 			}
@@ -58,6 +60,7 @@ func TestHasErrors(t *testing.T) {
 }
 
 func TestErrorCount(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		results []ValidationResult
@@ -90,6 +93,7 @@ func TestErrorCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if got := ErrorCount(tt.results); got != tt.want {
 				t.Errorf("ErrorCount() = %v, want %v", got, tt.want)
 			}
@@ -98,6 +102,7 @@ func TestErrorCount(t *testing.T) {
 }
 
 func TestWarningCount(t *testing.T) {
+
 	tests := []struct {
 		name    string
 		results []ValidationResult
@@ -130,6 +135,7 @@ func TestWarningCount(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			if got := WarningCount(tt.results); got != tt.want {
 				t.Errorf("WarningCount() = %v, want %v", got, tt.want)
 			}
@@ -142,6 +148,7 @@ func TestWarningCount(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestValidator_ValidateNoPlugins(t *testing.T) {
+
 	tests := []struct {
 		name   string
 		config *Config
@@ -160,6 +167,7 @@ func TestValidator_ValidateNoPlugins(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -187,6 +195,7 @@ func TestValidator_ValidateNoPlugins(t *testing.T) {
 }
 
 func TestValidator_ValidateVersionValidatorNoRules(t *testing.T) {
+
 	ctx := context.Background()
 	config := &Config{
 		Plugins: &PluginConfig{
@@ -220,6 +229,7 @@ func TestValidator_ValidateVersionValidatorNoRules(t *testing.T) {
 }
 
 func TestValidator_ValidateDependencyCheckNoFiles(t *testing.T) {
+
 	ctx := context.Background()
 	config := &Config{
 		Plugins: &PluginConfig{

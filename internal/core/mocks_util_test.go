@@ -6,9 +6,11 @@ import (
 )
 
 func TestMockMarshaler(t *testing.T) {
+
 	mock := NewMockMarshaler()
 
 	t.Run("marshal", func(t *testing.T) {
+
 		mock.MarshalOutput = []byte(`{"key":"value"}`)
 		data, err := mock.Marshal(map[string]string{"key": "value"})
 		if err != nil {
@@ -20,6 +22,7 @@ func TestMockMarshaler(t *testing.T) {
 	})
 
 	t.Run("marshal with error", func(t *testing.T) {
+
 		mock.MarshalErr = errors.New("marshal error")
 		_, err := mock.Marshal(nil)
 		if err == nil || err.Error() != "marshal error" {
@@ -29,6 +32,7 @@ func TestMockMarshaler(t *testing.T) {
 	})
 
 	t.Run("unmarshal", func(t *testing.T) {
+
 		mock.UnmarshalErr = nil
 		err := mock.Unmarshal([]byte(`{}`), &struct{}{})
 		if err != nil {
@@ -37,6 +41,7 @@ func TestMockMarshaler(t *testing.T) {
 	})
 
 	t.Run("unmarshal with error", func(t *testing.T) {
+
 		mock.UnmarshalErr = errors.New("unmarshal error")
 		err := mock.Unmarshal([]byte(`{}`), &struct{}{})
 		if err == nil || err.Error() != "unmarshal error" {
@@ -46,9 +51,11 @@ func TestMockMarshaler(t *testing.T) {
 }
 
 func TestMockUserDirProvider(t *testing.T) {
+
 	mock := NewMockUserDirProvider()
 
 	t.Run("home dir", func(t *testing.T) {
+
 		mock.HomeDirPath = "/home/testuser"
 		home, err := mock.HomeDir()
 		if err != nil {
@@ -60,6 +67,7 @@ func TestMockUserDirProvider(t *testing.T) {
 	})
 
 	t.Run("home dir with error", func(t *testing.T) {
+
 		mock.HomeDirErr = errors.New("home error")
 		_, err := mock.HomeDir()
 		if err == nil || err.Error() != "home error" {
@@ -69,9 +77,11 @@ func TestMockUserDirProvider(t *testing.T) {
 }
 
 func TestMockFileCopier(t *testing.T) {
+
 	mock := NewMockFileCopier()
 
 	t.Run("copy dir", func(t *testing.T) {
+
 		err := mock.CopyDir("/src", "/dst")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -85,6 +95,7 @@ func TestMockFileCopier(t *testing.T) {
 	})
 
 	t.Run("copy dir with error", func(t *testing.T) {
+
 		mock.CopyDirErr = errors.New("copy dir error")
 		err := mock.CopyDir("/src", "/dst")
 		if err == nil || err.Error() != "copy dir error" {
@@ -94,6 +105,7 @@ func TestMockFileCopier(t *testing.T) {
 	})
 
 	t.Run("copy file", func(t *testing.T) {
+
 		mock.CopyFileCalls = nil
 		err := mock.CopyFile("/src/file.txt", "/dst/file.txt", 0644)
 		if err != nil {
@@ -105,6 +117,7 @@ func TestMockFileCopier(t *testing.T) {
 	})
 
 	t.Run("copy file with error", func(t *testing.T) {
+
 		mock.CopyFileErr = errors.New("copy file error")
 		err := mock.CopyFile("/src/file.txt", "/dst/file.txt", 0644)
 		if err == nil || err.Error() != "copy file error" {

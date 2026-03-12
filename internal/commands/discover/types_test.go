@@ -5,6 +5,7 @@ import (
 )
 
 func TestNewPrompter(t *testing.T) {
+
 	prompter := NewPrompter()
 
 	if prompter == nil {
@@ -19,11 +20,14 @@ func TestNewPrompter(t *testing.T) {
 }
 
 func TestTUIPrompter_Interface(t *testing.T) {
+
 	// Verify TUIPrompter implements Prompter interface
+
 	var _ Prompter = &TUIPrompter{}
 }
 
 func TestOutputFormat_Constants(t *testing.T) {
+
 	if FormatText != "text" {
 		t.Errorf("FormatText = %q, want %q", FormatText, "text")
 	}
@@ -36,6 +40,7 @@ func TestOutputFormat_Constants(t *testing.T) {
 }
 
 func TestParseOutputFormat_AllCases(t *testing.T) {
+
 	tests := []struct {
 		input    string
 		expected OutputFormat
@@ -51,6 +56,7 @@ func TestParseOutputFormat_AllCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+
 			result := ParseOutputFormat(tt.input)
 			if result != tt.expected {
 				t.Errorf("ParseOutputFormat(%q) = %v, want %v", tt.input, result, tt.expected)

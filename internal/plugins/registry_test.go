@@ -43,7 +43,9 @@ func (m *mockTagManager) GetConfig() *tagmanager.Config                       { 
 func (m *mockTagManager) CommitChanges(_ semver.SemVersion, _ []string) error { return nil }
 
 func TestPluginRegistry_CommitParser(t *testing.T) {
+	t.Parallel()
 	t.Run("register and get", func(t *testing.T) {
+		t.Parallel()
 		registry := NewPluginRegistry()
 		parser := &mockCommitParser{name: "test-parser"}
 
@@ -61,6 +63,7 @@ func TestPluginRegistry_CommitParser(t *testing.T) {
 	})
 
 	t.Run("duplicate registration returns error", func(t *testing.T) {
+		t.Parallel()
 		registry := NewPluginRegistry()
 		parser1 := &mockCommitParser{name: "parser1"}
 		parser2 := &mockCommitParser{name: "parser2"}
@@ -76,6 +79,7 @@ func TestPluginRegistry_CommitParser(t *testing.T) {
 	})
 
 	t.Run("get returns nil when not registered", func(t *testing.T) {
+		t.Parallel()
 		registry := NewPluginRegistry()
 		if parser := registry.GetCommitParser(); parser != nil {
 			t.Errorf("expected nil, got %v", parser)
@@ -84,7 +88,9 @@ func TestPluginRegistry_CommitParser(t *testing.T) {
 }
 
 func TestPluginRegistry_TagManager(t *testing.T) {
+	t.Parallel()
 	t.Run("register and get", func(t *testing.T) {
+		t.Parallel()
 		registry := NewPluginRegistry()
 		tm := &mockTagManager{name: "test-tm"}
 
@@ -102,6 +108,7 @@ func TestPluginRegistry_TagManager(t *testing.T) {
 	})
 
 	t.Run("duplicate registration returns error", func(t *testing.T) {
+		t.Parallel()
 		registry := NewPluginRegistry()
 		tm1 := &mockTagManager{name: "tm1"}
 		tm2 := &mockTagManager{name: "tm2"}
@@ -118,6 +125,7 @@ func TestPluginRegistry_TagManager(t *testing.T) {
 }
 
 func TestPluginRegistry_Reset(t *testing.T) {
+	t.Parallel()
 	registry := NewPluginRegistry()
 
 	// Register multiple plugins
@@ -149,6 +157,7 @@ func TestPluginRegistry_Reset(t *testing.T) {
 }
 
 func TestPluginRegistry_ThreadSafety(t *testing.T) {
+	t.Parallel()
 	registry := NewPluginRegistry()
 	var wg sync.WaitGroup
 
@@ -171,6 +180,7 @@ func TestPluginRegistry_ThreadSafety(t *testing.T) {
 }
 
 func TestPluginRegistry_AllPluginTypes(t *testing.T) {
+	t.Parallel()
 	registry := NewPluginRegistry()
 
 	// Test all plugin types can be registered
@@ -254,6 +264,7 @@ func TestPluginRegistry_AllPluginTypes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if err := tt.register(); err != nil {
 				t.Fatalf("registration failed: %v", err)
 			}

@@ -11,6 +11,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestTagManagerConfig_GetAutoCreate(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -35,6 +36,7 @@ func TestTagManagerConfig_GetAutoCreate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetAutoCreate()
 			if result != tt.expected {
 				t.Errorf("GetAutoCreate() = %v, want %v", result, tt.expected)
@@ -44,6 +46,7 @@ func TestTagManagerConfig_GetAutoCreate(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetAnnotate(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -68,6 +71,7 @@ func TestTagManagerConfig_GetAnnotate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetAnnotate()
 			if result != tt.expected {
 				t.Errorf("GetAnnotate() = %v, want %v", result, tt.expected)
@@ -77,6 +81,7 @@ func TestTagManagerConfig_GetAnnotate(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetPrefix(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -101,6 +106,7 @@ func TestTagManagerConfig_GetPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetPrefix()
 			if result != tt.expected {
 				t.Errorf("GetPrefix() = %q, want %q", result, tt.expected)
@@ -110,6 +116,7 @@ func TestTagManagerConfig_GetPrefix(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -134,6 +141,7 @@ func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetTagPrereleases()
 			if result != tt.expected {
 				t.Errorf("GetTagPrereleases() = %v, want %v", result, tt.expected)
@@ -143,6 +151,7 @@ func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetSign(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -162,6 +171,7 @@ func TestTagManagerConfig_GetSign(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetSign()
 			if result != tt.expected {
 				t.Errorf("GetSign() = %v, want %v", result, tt.expected)
@@ -171,6 +181,7 @@ func TestTagManagerConfig_GetSign(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetSigningKey(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -190,6 +201,7 @@ func TestTagManagerConfig_GetSigningKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetSigningKey()
 			if result != tt.expected {
 				t.Errorf("GetSigningKey() = %q, want %q", result, tt.expected)
@@ -199,6 +211,7 @@ func TestTagManagerConfig_GetSigningKey(t *testing.T) {
 }
 
 func TestTagManagerConfig_GetMessageTemplate(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *TagManagerConfig
@@ -218,6 +231,7 @@ func TestTagManagerConfig_GetMessageTemplate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetMessageTemplate()
 			if result != tt.expected {
 				t.Errorf("GetMessageTemplate() = %q, want %q", result, tt.expected)
@@ -236,6 +250,7 @@ func boolPtr(b bool) *bool {
 /* ------------------------------------------------------------------------- */
 
 func TestTagManagerConfig_TagPrereleases_YAMLLoading(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		yamlInput string
@@ -287,6 +302,7 @@ plugins:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()
@@ -312,6 +328,7 @@ plugins:
 /* ------------------------------------------------------------------------- */
 
 func TestTagManagerConfig_SignAndMessageTemplate_YAMLLoading(t *testing.T) {
+
 	tests := []struct {
 		name            string
 		yamlInput       string
@@ -385,6 +402,7 @@ plugins:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()
@@ -420,6 +438,7 @@ plugins:
 /* ------------------------------------------------------------------------- */
 
 func TestConfig_BackwardCompatibility(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		yamlInput string
@@ -482,6 +501,7 @@ extensions:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()
@@ -500,6 +520,7 @@ extensions:
 /* ------------------------------------------------------------------------- */
 
 func TestAuditLogConfig_GetPath(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *AuditLogConfig
@@ -519,6 +540,7 @@ func TestAuditLogConfig_GetPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetPath()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -528,6 +550,7 @@ func TestAuditLogConfig_GetPath(t *testing.T) {
 }
 
 func TestAuditLogConfig_GetFormat(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *AuditLogConfig
@@ -547,6 +570,7 @@ func TestAuditLogConfig_GetFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetFormat()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -560,6 +584,7 @@ func TestAuditLogConfig_GetFormat(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestChangelogGeneratorConfig_GetChangesDir(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *ChangelogGeneratorConfig
@@ -579,6 +604,7 @@ func TestChangelogGeneratorConfig_GetChangesDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetChangesDir()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -588,6 +614,7 @@ func TestChangelogGeneratorConfig_GetChangesDir(t *testing.T) {
 }
 
 func TestChangelogGeneratorConfig_GetChangelogPath(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *ChangelogGeneratorConfig
@@ -607,6 +634,7 @@ func TestChangelogGeneratorConfig_GetChangelogPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetChangelogPath()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -616,6 +644,7 @@ func TestChangelogGeneratorConfig_GetChangelogPath(t *testing.T) {
 }
 
 func TestChangelogGeneratorConfig_GetMode(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		config   *ChangelogGeneratorConfig
@@ -640,6 +669,7 @@ func TestChangelogGeneratorConfig_GetMode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := tt.config.GetMode()
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -653,6 +683,7 @@ func TestChangelogGeneratorConfig_GetMode(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestContributorsConfig_Icon(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		yamlInput string
@@ -698,6 +729,7 @@ plugins:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()
@@ -727,6 +759,7 @@ plugins:
 /* ------------------------------------------------------------------------- */
 
 func TestChangelogGeneratorConfig_BreakingChangesIcon(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		yamlInput string
@@ -777,6 +810,7 @@ plugins:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			tmpPath := testutils.WriteTempConfig(t, tt.yamlInput)
 			runInTempDir(t, tmpPath, func() {
 				cfg, err := LoadConfig()

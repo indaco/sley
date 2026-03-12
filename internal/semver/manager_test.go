@@ -9,6 +9,7 @@ import (
 )
 
 func TestVersionManager_Read(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	ctx := context.Background()
 	mockFS.SetFile("/test/.version", []byte("1.2.3-alpha.1+build.123\n"))
@@ -32,6 +33,7 @@ func TestVersionManager_Read(t *testing.T) {
 }
 
 func TestVersionManager_Read_FileNotFound(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	ctx := context.Background()
 	mgr := NewVersionManager(mockFS, nil)
@@ -43,6 +45,7 @@ func TestVersionManager_Read_FileNotFound(t *testing.T) {
 }
 
 func TestVersionManager_Read_InvalidVersion(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	ctx := context.Background()
 	mockFS.SetFile("/test/.version", []byte("not-a-version\n"))
@@ -56,6 +59,7 @@ func TestVersionManager_Read_InvalidVersion(t *testing.T) {
 }
 
 func TestVersionManager_Save(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	ctx := context.Background()
 	mgr := NewVersionManager(mockFS, nil)
@@ -79,6 +83,7 @@ func TestVersionManager_Save(t *testing.T) {
 }
 
 func TestVersionManager_Initialize_WithGitTag(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	mockGit := &MockGitTagReader{Tag: "v1.5.0\n"}
 
@@ -102,6 +107,7 @@ func TestVersionManager_Initialize_WithGitTag(t *testing.T) {
 }
 
 func TestVersionManager_Initialize_WithoutGitTag(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	mockGit := &MockGitTagReader{Err: errors.New("no tags")}
 
@@ -125,6 +131,7 @@ func TestVersionManager_Initialize_WithoutGitTag(t *testing.T) {
 }
 
 func TestVersionManager_Initialize_FileExists(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/test/.version", []byte("9.9.9\n"))
 
@@ -144,6 +151,7 @@ func TestVersionManager_Initialize_FileExists(t *testing.T) {
 }
 
 func TestVersionManager_InitializeWithFeedback(t *testing.T) {
+
 	tests := []struct {
 		name        string
 		fileExists  bool
@@ -155,6 +163,7 @@ func TestVersionManager_InitializeWithFeedback(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			mockFS := core.NewMockFileSystem()
 			if tt.fileExists {
 				mockFS.SetFile("/test/.version", []byte("1.0.0\n"))
@@ -176,6 +185,7 @@ func TestVersionManager_InitializeWithFeedback(t *testing.T) {
 }
 
 func TestVersionManager_Update(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		initial  string
@@ -196,6 +206,7 @@ func TestVersionManager_Update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			mockFS := core.NewMockFileSystem()
 			mockFS.SetFile("/test/.version", []byte(tt.initial))
@@ -216,6 +227,7 @@ func TestVersionManager_Update(t *testing.T) {
 }
 
 func TestVersionManager_Update_InvalidBumpType(t *testing.T) {
+
 	ctx := context.Background()
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/test/.version", []byte("1.0.0\n"))
@@ -229,6 +241,7 @@ func TestVersionManager_Update_InvalidBumpType(t *testing.T) {
 }
 
 func TestSetDefaultManager(t *testing.T) {
+
 	mockFS := core.NewMockFileSystem()
 	mockFS.SetFile("/test/.version", []byte("5.5.5\n"))
 
@@ -248,6 +261,7 @@ func TestSetDefaultManager(t *testing.T) {
 }
 
 func TestDefaultVersionManager(t *testing.T) {
+
 	mgr := DefaultVersionManager()
 	if mgr == nil {
 		t.Fatal("DefaultVersionManager returned nil")

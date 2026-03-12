@@ -9,6 +9,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestDefaultCommitParser_Name(t *testing.T) {
+	t.Parallel()
 	var p CommitParserPlugin
 	if got := p.Name(); got != "commit-parser" {
 		t.Errorf("expected plugin name 'commit-parser', got '%s'", got)
@@ -16,6 +17,7 @@ func TestDefaultCommitParser_Name(t *testing.T) {
 }
 
 func TestDefaultCommitParser_Description(t *testing.T) {
+	t.Parallel()
 	var p CommitParserPlugin
 	if got := p.Description(); got != "Parses conventional commits to infer bump type" {
 		t.Errorf("expected plugin description, got '%s'", got)
@@ -23,6 +25,7 @@ func TestDefaultCommitParser_Description(t *testing.T) {
 }
 
 func TestDefaultCommitParser_Version(t *testing.T) {
+	t.Parallel()
 	var p CommitParserPlugin
 	if got := p.Version(); got != "v0.1.0" {
 		t.Errorf("expected plugin version 'v0.1.0', got '%s'", got)
@@ -34,6 +37,7 @@ func TestDefaultCommitParser_Version(t *testing.T) {
 /* ------------------------------------------------------------------------- */
 
 func TestCommitParser_Parse(t *testing.T) {
+	t.Parallel()
 	parser := NewCommitParser()
 
 	tests := []struct {
@@ -61,6 +65,7 @@ func TestCommitParser_Parse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := parser.Parse(tt.commits)
 			if tt.expectError {
 				if err == nil {

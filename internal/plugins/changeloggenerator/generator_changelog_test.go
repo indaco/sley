@@ -6,6 +6,7 @@ import (
 )
 
 func TestGenerateVersionChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -49,6 +50,7 @@ func TestGenerateVersionChangelog(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -82,6 +84,7 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_WithContributorsIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -115,6 +118,7 @@ func TestGenerateVersionChangelog_WithContributorsIcon(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_WithCustomContributorFormat(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -157,6 +161,7 @@ func TestGenerateVersionChangelog_WithCustomContributorFormat(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
+
 	cfg := DefaultConfig()
 	g, err := NewGenerator(cfg)
 	if err != nil {
@@ -175,6 +180,7 @@ func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_NoRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = nil
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
@@ -204,6 +210,7 @@ func TestGenerateVersionChangelog_NoRemote(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.Repository = &RepositoryConfig{
 		Provider: "github",
@@ -239,7 +246,9 @@ func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
 }
 
 func TestGenerateVersionChangelog_WithNewContributors(t *testing.T) {
+
 	// Save and restore original functions
+
 	originalGetNewContributorsFn := GetNewContributorsFn
 	originalGetContributorsFn := GetContributorsFn
 	defer func() {

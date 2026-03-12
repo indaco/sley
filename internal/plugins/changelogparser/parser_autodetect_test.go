@@ -6,6 +6,8 @@ import (
 )
 
 func TestAutoDetectParser_Format(t *testing.T) {
+	t.Parallel()
+
 	p := newAutoDetectParser(nil)
 	if p.Format() != "auto" {
 		t.Errorf("expected 'auto', got %s", p.Format())
@@ -13,6 +15,8 @@ func TestAutoDetectParser_Format(t *testing.T) {
 }
 
 func TestDetectFormat(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		content  string
@@ -109,6 +113,8 @@ Some introductory text.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result := DetectFormat(tt.content)
 			if result != tt.expected {
 				t.Errorf("DetectFormat() = %q, want %q", result, tt.expected)
@@ -118,6 +124,8 @@ Some introductory text.
 }
 
 func TestAutoDetectParser_ParseUnreleased(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		content        string
@@ -183,6 +191,8 @@ func TestAutoDetectParser_ParseUnreleased(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := newAutoDetectParser(nil)
 			section, err := p.ParseUnreleased(strings.NewReader(tt.content))
 

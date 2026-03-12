@@ -7,6 +7,7 @@ import (
 )
 
 func TestDefaultConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	if cfg.Enabled {
@@ -45,6 +46,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestDefaultGroups(t *testing.T) {
+
 	groups := DefaultGroups()
 
 	if len(groups) == 0 {
@@ -66,6 +68,7 @@ func TestDefaultGroups(t *testing.T) {
 }
 
 func TestDefaultExcludePatterns(t *testing.T) {
+
 	patterns := DefaultExcludePatterns()
 
 	if len(patterns) == 0 {
@@ -87,6 +90,7 @@ func TestDefaultExcludePatterns(t *testing.T) {
 }
 
 func TestFromConfigStruct_Nil(t *testing.T) {
+
 	cfg := FromConfigStruct(nil)
 
 	if cfg == nil {
@@ -98,6 +102,7 @@ func TestFromConfigStruct_Nil(t *testing.T) {
 }
 
 func TestFromConfigStruct_Full(t *testing.T) {
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled:       true,
 		Mode:          "unified",
@@ -175,7 +180,9 @@ func TestFromConfigStruct_Full(t *testing.T) {
 }
 
 func TestFromConfigStruct_Defaults(t *testing.T) {
+
 	// Test with minimal config - should use defaults
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled: true,
 	}
@@ -217,6 +224,7 @@ func TestFromConfigStruct_Defaults(t *testing.T) {
 }
 
 func TestGroupConfig(t *testing.T) {
+
 	g := GroupConfig{
 		Pattern: "^feat",
 		Label:   "Features",
@@ -239,6 +247,7 @@ func TestGroupConfig(t *testing.T) {
 }
 
 func TestContributorsConfig(t *testing.T) {
+
 	c := ContributorsConfig{
 		Enabled: true,
 		Format:  "custom",
@@ -253,6 +262,7 @@ func TestContributorsConfig(t *testing.T) {
 }
 
 func TestRepositoryConfig(t *testing.T) {
+
 	r := RepositoryConfig{
 		Provider:   "github",
 		Host:       "github.com",
@@ -279,7 +289,9 @@ func TestRepositoryConfig(t *testing.T) {
 }
 
 func TestFromConfigStruct_GroupIcons(t *testing.T) {
+
 	// Test with GroupIcons - should use defaults and apply icons
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled: true,
 		GroupIcons: map[string]string{
@@ -324,7 +336,9 @@ func TestFromConfigStruct_GroupIcons(t *testing.T) {
 }
 
 func TestFromConfigStruct_GroupsOverridesGroupIcons(t *testing.T) {
+
 	// Test that Groups takes precedence over GroupIcons
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled: true,
 		Groups: []config.CommitGroupConfig{
@@ -352,7 +366,9 @@ func TestFromConfigStruct_GroupsOverridesGroupIcons(t *testing.T) {
 }
 
 func TestFromConfigStruct_UseDefaultIcons(t *testing.T) {
+
 	// Test that UseDefaultIcons applies default icons to all groups
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled:         true,
 		UseDefaultIcons: true,
@@ -400,7 +416,9 @@ func TestFromConfigStruct_UseDefaultIcons(t *testing.T) {
 }
 
 func TestFromConfigStruct_UseDefaultIconsWithOverrides(t *testing.T) {
+
 	// Test that user-defined GroupIcons override defaults when UseDefaultIcons is true
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled:         true,
 		UseDefaultIcons: true,
@@ -435,7 +453,9 @@ func TestFromConfigStruct_UseDefaultIconsWithOverrides(t *testing.T) {
 }
 
 func TestFromConfigStruct_UseDefaultIconsContributorOverride(t *testing.T) {
+
 	// Test that user-defined contributor icon overrides default
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled:         true,
 		UseDefaultIcons: true,
@@ -454,7 +474,9 @@ func TestFromConfigStruct_UseDefaultIconsContributorOverride(t *testing.T) {
 }
 
 func TestFromConfigStruct_UseDefaultIconsFalse(t *testing.T) {
+
 	// Test that UseDefaultIcons=false doesn't apply icons
+
 	input := &config.ChangelogGeneratorConfig{
 		Enabled:         true,
 		UseDefaultIcons: false,
@@ -476,7 +498,9 @@ func TestFromConfigStruct_UseDefaultIconsFalse(t *testing.T) {
 }
 
 func TestDefaultGroupIcons(t *testing.T) {
+
 	// Verify all default group labels have corresponding icons
+
 	groups := DefaultGroups()
 	for _, g := range groups {
 		if _, ok := DefaultGroupIcons[g.Label]; !ok {
@@ -492,20 +516,25 @@ func TestDefaultGroupIcons(t *testing.T) {
 }
 
 func TestDefaultContributorIcon(t *testing.T) {
+
 	// Verify default contributor icon is set
+
 	if DefaultContributorIcon == "" {
 		t.Error("DefaultContributorIcon should not be empty")
 	}
 }
 
 func TestDefaultBreakingChangesIcon(t *testing.T) {
+
 	// Verify default breaking changes icon is set
+
 	if DefaultBreakingChangesIcon == "" {
 		t.Error("DefaultBreakingChangesIcon should not be empty")
 	}
 }
 
 func TestFromConfigStruct_BreakingChangesIcon(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		input    *config.ChangelogGeneratorConfig
@@ -549,6 +578,7 @@ func TestFromConfigStruct_BreakingChangesIcon(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := FromConfigStruct(tt.input)
 			if cfg.BreakingChangesIcon != tt.wantIcon {
 				t.Errorf("BreakingChangesIcon = %q, want %q", cfg.BreakingChangesIcon, tt.wantIcon)
@@ -558,6 +588,7 @@ func TestFromConfigStruct_BreakingChangesIcon(t *testing.T) {
 }
 
 func TestFromConfigStruct_MergeAfter(t *testing.T) {
+
 	tests := []struct {
 		name           string
 		input          *config.ChangelogGeneratorConfig
@@ -598,6 +629,7 @@ func TestFromConfigStruct_MergeAfter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := FromConfigStruct(tt.input)
 			if cfg.MergeAfter != tt.wantMergeAfter {
 				t.Errorf("MergeAfter = %q, want %q", cfg.MergeAfter, tt.wantMergeAfter)

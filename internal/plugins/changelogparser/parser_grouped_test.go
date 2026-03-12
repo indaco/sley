@@ -6,6 +6,8 @@ import (
 )
 
 func TestGroupedParser_Format(t *testing.T) {
+	t.Parallel()
+
 	p := newGroupedParser(nil)
 	if p.Format() != "grouped" {
 		t.Errorf("expected 'grouped', got %s", p.Format())
@@ -13,6 +15,8 @@ func TestGroupedParser_Format(t *testing.T) {
 }
 
 func TestGroupedParser_ParseUnreleased(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		content        string
@@ -167,6 +171,8 @@ Some text without version.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := newGroupedParser(nil)
 			section, err := p.ParseUnreleased(strings.NewReader(tt.content))
 
@@ -212,6 +218,8 @@ Some text without version.
 }
 
 func TestGroupedParser_CustomSectionMap(t *testing.T) {
+	t.Parallel()
+
 	content := `## v1.2.0
 
 ### New Features
@@ -255,6 +263,8 @@ func TestGroupedParser_CustomSectionMap(t *testing.T) {
 }
 
 func TestGroupedParser_EntryCleaning(t *testing.T) {
+	t.Parallel()
+
 	content := `## v1.2.0
 
 ### Features
@@ -288,6 +298,8 @@ func TestGroupedParser_EntryCleaning(t *testing.T) {
 }
 
 func TestStripSectionIcon(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		input    string
 		expected string
@@ -301,6 +313,8 @@ func TestStripSectionIcon(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
+
 			result := stripSectionIcon(tt.input)
 			if result != tt.expected {
 				t.Errorf("stripSectionIcon(%q) = %q, want %q", tt.input, result, tt.expected)
@@ -310,6 +324,8 @@ func TestStripSectionIcon(t *testing.T) {
 }
 
 func TestStripMarkdownLinks(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		input    string
 		expected string
@@ -322,6 +338,8 @@ func TestStripMarkdownLinks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
+
 			result := stripMarkdownLinks(tt.input)
 			if result != tt.expected {
 				t.Errorf("stripMarkdownLinks(%q) = %q, want %q", tt.input, result, tt.expected)

@@ -7,10 +7,12 @@ import (
 )
 
 func TestMockCommandExecutor(t *testing.T) {
+
 	mockExec := NewMockCommandExecutor()
 	ctx := context.Background()
 
 	t.Run("run with default success", func(t *testing.T) {
+
 		err := mockExec.Run(ctx, ".", "echo", "hello")
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -25,6 +27,7 @@ func TestMockCommandExecutor(t *testing.T) {
 	})
 
 	t.Run("output with set response", func(t *testing.T) {
+
 		mockExec.SetResponse("git describe --tags", "v1.2.3\n")
 		output, err := mockExec.Output(ctx, ".", "git", "describe", "--tags")
 		if err != nil {
@@ -36,6 +39,7 @@ func TestMockCommandExecutor(t *testing.T) {
 	})
 
 	t.Run("error injection", func(t *testing.T) {
+
 		mockExec.SetError("make test", errors.New("test failed"))
 		_, err := mockExec.Output(ctx, ".", "make", "test")
 		if err == nil || err.Error() != "test failed" {
@@ -44,6 +48,7 @@ func TestMockCommandExecutor(t *testing.T) {
 	})
 
 	t.Run("default error", func(t *testing.T) {
+
 		mockExec := NewMockCommandExecutor()
 		mockExec.DefaultError = errors.New("default error")
 
@@ -55,6 +60,7 @@ func TestMockCommandExecutor(t *testing.T) {
 }
 
 func TestMockCommandExecutor_DefaultOutput(t *testing.T) {
+
 	mockExec := NewMockCommandExecutor()
 	ctx := context.Background()
 
@@ -69,6 +75,7 @@ func TestMockCommandExecutor_DefaultOutput(t *testing.T) {
 }
 
 func TestMockCommandExecutor_Run_CommandKey(t *testing.T) {
+
 	mockExec := NewMockCommandExecutor()
 	ctx := context.Background()
 

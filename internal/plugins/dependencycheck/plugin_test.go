@@ -6,6 +6,7 @@ import (
 )
 
 func TestDependencyCheckerPlugin_Name(t *testing.T) {
+
 	dc := NewDependencyChecker(nil)
 	if got := dc.Name(); got != "dependency-check" {
 		t.Errorf("Name() = %q, want %q", got, "dependency-check")
@@ -13,6 +14,7 @@ func TestDependencyCheckerPlugin_Name(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_Description(t *testing.T) {
+
 	dc := NewDependencyChecker(nil)
 	if got := dc.Description(); got == "" {
 		t.Error("Description() should not be empty")
@@ -20,6 +22,7 @@ func TestDependencyCheckerPlugin_Description(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_Version(t *testing.T) {
+
 	dc := NewDependencyChecker(nil)
 	if got := dc.Version(); got != "v0.1.0" {
 		t.Errorf("Version() = %q, want %q", got, "v0.1.0")
@@ -27,6 +30,7 @@ func TestDependencyCheckerPlugin_Version(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
+
 	tests := []struct {
 		name   string
 		config *Config
@@ -51,6 +55,7 @@ func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			dc := NewDependencyChecker(tt.config)
 			if got := dc.IsEnabled(); got != tt.want {
 				t.Errorf("IsEnabled() = %v, want %v", got, tt.want)
@@ -60,6 +65,7 @@ func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_GetConfig(t *testing.T) {
+
 	cfg := &Config{
 		Enabled:  true,
 		AutoSync: true,
@@ -85,7 +91,9 @@ func TestDependencyCheckerPlugin_GetConfig(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalReadJSON := readJSONVersionFn
 	originalReadYAML := readYAMLVersionFn
 	originalReadTOML := readTOMLVersionFn
@@ -186,7 +194,9 @@ func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			// Set up mocks
+
 			if tt.mockReaders != nil {
 				if mockJSON, ok := tt.mockReaders["json"]; ok {
 					readJSONVersionFn = mockJSON
@@ -215,7 +225,9 @@ func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalWriteJSON := writeJSONVersionFn
 	originalWriteYAML := writeYAMLVersionFn
 	originalWriteTOML := writeTOMLVersionFn
@@ -282,7 +294,9 @@ func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			// Set up mocks
+
 			if tt.mockWriters != nil {
 				if mockJSON, ok := tt.mockWriters["json"]; ok {
 					writeJSONVersionFn = mockJSON
@@ -306,6 +320,7 @@ func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
 }
 
 func TestInconsistency_String(t *testing.T) {
+
 	inc := Inconsistency{
 		Path:     "package.json",
 		Expected: "1.2.3",
@@ -321,6 +336,7 @@ func TestInconsistency_String(t *testing.T) {
 }
 
 func TestNormalizeVersion(t *testing.T) {
+
 	tests := []struct {
 		input string
 		want  string
@@ -334,6 +350,7 @@ func TestNormalizeVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+
 			got := normalizeVersion(tt.input)
 			if got != tt.want {
 				t.Errorf("normalizeVersion(%q) = %q, want %q", tt.input, got, tt.want)
@@ -343,6 +360,7 @@ func TestNormalizeVersion(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
+
 	cfg := DefaultConfig()
 
 	if cfg.Enabled {
@@ -357,7 +375,9 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestReadVersionFromFile_AllFormats(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalReadJSON := readJSONVersionFn
 	originalReadYAML := readYAMLVersionFn
 	originalReadTOML := readTOMLVersionFn
@@ -427,6 +447,7 @@ func TestReadVersionFromFile_AllFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			_, err := dc.readVersionFromFile(tt.file)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("readVersionFromFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -441,7 +462,9 @@ func TestReadVersionFromFile_AllFormats(t *testing.T) {
 }
 
 func TestWriteVersionToFile_AllFormats(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalWriteJSON := writeJSONVersionFn
 	originalWriteYAML := writeYAMLVersionFn
 	originalWriteTOML := writeTOMLVersionFn
@@ -511,6 +534,7 @@ func TestWriteVersionToFile_AllFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			err := dc.writeVersionToFile(tt.file, "1.0.0")
 			if (err != nil) != tt.wantErr {
 				t.Errorf("writeVersionToFile() error = %v, wantErr %v", err, tt.wantErr)
@@ -525,7 +549,9 @@ func TestWriteVersionToFile_AllFormats(t *testing.T) {
 }
 
 func TestCheckConsistency_AllFormats(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalReadJSON := readJSONVersionFn
 	originalReadYAML := readYAMLVersionFn
 	originalReadTOML := readTOMLVersionFn
@@ -569,7 +595,9 @@ func TestCheckConsistency_AllFormats(t *testing.T) {
 }
 
 func TestSyncVersions_AllFormats(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalWriteJSON := writeJSONVersionFn
 	originalWriteYAML := writeYAMLVersionFn
 	originalWriteTOML := writeTOMLVersionFn
@@ -619,7 +647,9 @@ func TestSyncVersions_AllFormats(t *testing.T) {
 }
 
 func TestSyncVersions_PluginDisabled(t *testing.T) {
+
 	// Save original functions and restore after test
+
 	originalWriteJSON := writeJSONVersionFn
 	defer func() { writeJSONVersionFn = originalWriteJSON }()
 
@@ -649,6 +679,7 @@ func TestSyncVersions_PluginDisabled(t *testing.T) {
 }
 
 func TestGetConfig_AutoSync(t *testing.T) {
+
 	cfg := &Config{
 		Enabled:  true,
 		AutoSync: false,
@@ -662,6 +693,7 @@ func TestGetConfig_AutoSync(t *testing.T) {
 }
 
 func TestCheckConsistency_NilConfig(t *testing.T) {
+
 	dc := NewDependencyChecker(nil)
 	inconsistencies, err := dc.CheckConsistency("1.0.0")
 
@@ -674,6 +706,7 @@ func TestCheckConsistency_NilConfig(t *testing.T) {
 }
 
 func TestSyncVersions_NilConfig(t *testing.T) {
+
 	dc := NewDependencyChecker(nil)
 	err := dc.SyncVersions("1.0.0")
 

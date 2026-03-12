@@ -17,6 +17,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestMultiModuleBump_PreCommand_WithAll(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with pre-release versions
@@ -53,6 +54,7 @@ func TestMultiModuleBump_PreCommand_WithAll(t *testing.T) {
 }
 
 func TestMultiModuleBump_PreCommand_WithModule(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with pre-release versions
@@ -90,6 +92,7 @@ func TestMultiModuleBump_PreCommand_WithModule(t *testing.T) {
 }
 
 func TestMultiModuleBump_PreCommand_WithLabel(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with stable versions
@@ -126,6 +129,7 @@ func TestMultiModuleBump_PreCommand_WithLabel(t *testing.T) {
 }
 
 func TestMultiModuleBump_PreCommand_SyncsDependencies(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Set up a multi-module workspace with pre-release versions

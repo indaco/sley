@@ -10,7 +10,9 @@ import (
 // where these functions now reside.
 
 func TestReadWriteRawVersion(t *testing.T) {
+
 	// Save original and restore
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -19,6 +21,7 @@ func TestReadWriteRawVersion(t *testing.T) {
 	}()
 
 	t.Run("read raw version", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("1.2.3\n"), nil
 		}
@@ -33,6 +36,7 @@ func TestReadWriteRawVersion(t *testing.T) {
 	})
 
 	t.Run("read raw version - file error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -44,6 +48,7 @@ func TestReadWriteRawVersion(t *testing.T) {
 	})
 
 	t.Run("write raw version", func(t *testing.T) {
+
 		var written []byte
 		writeFileFn = func(path string, data []byte, perm os.FileMode) error {
 			written = data
@@ -60,6 +65,7 @@ func TestReadWriteRawVersion(t *testing.T) {
 	})
 
 	t.Run("write raw version - adds newline", func(t *testing.T) {
+
 		var written []byte
 		writeFileFn = func(path string, data []byte, perm os.FileMode) error {
 			written = data
@@ -77,6 +83,7 @@ func TestReadWriteRawVersion(t *testing.T) {
 	})
 
 	t.Run("write raw version - write error", func(t *testing.T) {
+
 		writeFileFn = func(path string, data []byte, perm os.FileMode) error {
 			return errors.New("write failed")
 		}
@@ -89,7 +96,9 @@ func TestReadWriteRawVersion(t *testing.T) {
 }
 
 func TestReadWriteRegexVersion(t *testing.T) {
+
 	// Save original and restore
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -98,6 +107,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	}()
 
 	t.Run("read regex version", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -112,6 +122,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 
 	t.Run("read regex version - no match", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`no version here`), nil
 		}
@@ -123,6 +134,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 
 	t.Run("read regex version - invalid pattern", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -134,6 +146,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 
 	t.Run("write regex version", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -154,6 +167,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 
 	t.Run("write regex version - pattern not found", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`no version here`), nil
 		}
@@ -169,6 +183,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 	})
 
 	t.Run("write regex version - invalid pattern", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -181,6 +196,7 @@ func TestReadWriteRegexVersion(t *testing.T) {
 }
 
 func TestReadJSONVersion(t *testing.T) {
+
 	originalRead := readFileFn
 	defer func() { readFileFn = originalRead }()
 
@@ -213,6 +229,7 @@ func TestReadJSONVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			readFileFn = func(path string) ([]byte, error) {
 				return []byte(tt.content), nil
 			}
@@ -235,6 +252,7 @@ func TestReadJSONVersion(t *testing.T) {
 }
 
 func TestWriteJSONVersion(t *testing.T) {
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -243,6 +261,7 @@ func TestWriteJSONVersion(t *testing.T) {
 	}()
 
 	t.Run("simple field with trailing newline", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`{"version": "1.2.3"}`), nil
 		}
@@ -263,6 +282,7 @@ func TestWriteJSONVersion(t *testing.T) {
 	})
 
 	t.Run("preserves field order", func(t *testing.T) {
+
 		input := `{
   "name": "my-package",
   "version": "1.0.0",
@@ -291,6 +311,7 @@ func TestWriteJSONVersion(t *testing.T) {
 	})
 
 	t.Run("nested field preserves structure", func(t *testing.T) {
+
 		input := `{
   "name": "my-package",
   "metadata": {
@@ -365,7 +386,9 @@ func containsSubstring(s, substr string) bool {
 }
 
 func TestReadWriteYAMLVersion(t *testing.T) {
+
 	// Save original and restore
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -374,6 +397,7 @@ func TestReadWriteYAMLVersion(t *testing.T) {
 	}()
 
 	t.Run("read YAML simple field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("version: 1.2.3\n"), nil
 		}
@@ -388,6 +412,7 @@ func TestReadWriteYAMLVersion(t *testing.T) {
 	})
 
 	t.Run("read YAML nested field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("metadata:\n  version: 2.0.0\n"), nil
 		}
@@ -402,6 +427,7 @@ func TestReadWriteYAMLVersion(t *testing.T) {
 	})
 
 	t.Run("write YAML simple field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("version: 1.2.3\n"), nil
 		}
@@ -424,7 +450,9 @@ func TestReadWriteYAMLVersion(t *testing.T) {
 }
 
 func TestReadWriteTOMLVersion(t *testing.T) {
+
 	// Save original and restore
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -433,6 +461,7 @@ func TestReadWriteTOMLVersion(t *testing.T) {
 	}()
 
 	t.Run("read TOML simple field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -447,6 +476,7 @@ func TestReadWriteTOMLVersion(t *testing.T) {
 	})
 
 	t.Run("read TOML nested field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("[tool.poetry]\nversion = \"2.0.0\"\n"), nil
 		}
@@ -461,6 +491,7 @@ func TestReadWriteTOMLVersion(t *testing.T) {
 	})
 
 	t.Run("write TOML simple field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.2.3"`), nil
 		}
@@ -485,10 +516,12 @@ func TestReadWriteTOMLVersion(t *testing.T) {
 // Additional error path tests for improved coverage
 
 func TestReadJSONVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	defer func() { readFileFn = originalRead }()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -500,6 +533,7 @@ func TestReadJSONVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("non-string version field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`{"version": 123}`), nil
 		}
@@ -511,6 +545,7 @@ func TestReadJSONVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("field not found", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`{"name": "test"}`), nil
 		}
@@ -523,6 +558,7 @@ func TestReadJSONVersion_Errors(t *testing.T) {
 }
 
 func TestWriteJSONVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -531,6 +567,7 @@ func TestWriteJSONVersion_Errors(t *testing.T) {
 	}()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -542,6 +579,7 @@ func TestWriteJSONVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("write error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`{"version": "1.0.0"}`), nil
 		}
@@ -557,10 +595,12 @@ func TestWriteJSONVersion_Errors(t *testing.T) {
 }
 
 func TestReadYAMLVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	defer func() { readFileFn = originalRead }()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -572,6 +612,7 @@ func TestReadYAMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("invalid YAML", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("invalid: yaml: content:"), nil
 		}
@@ -583,6 +624,7 @@ func TestReadYAMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("non-string version field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("version: 123\n"), nil
 		}
@@ -594,6 +636,7 @@ func TestReadYAMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("field not found", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("name: test\n"), nil
 		}
@@ -606,6 +649,7 @@ func TestReadYAMLVersion_Errors(t *testing.T) {
 }
 
 func TestWriteYAMLVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -614,6 +658,7 @@ func TestWriteYAMLVersion_Errors(t *testing.T) {
 	}()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -625,6 +670,7 @@ func TestWriteYAMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("invalid YAML", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("invalid: yaml: content:"), nil
 		}
@@ -636,6 +682,7 @@ func TestWriteYAMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("write error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte("version: 1.0.0\n"), nil
 		}
@@ -651,10 +698,12 @@ func TestWriteYAMLVersion_Errors(t *testing.T) {
 }
 
 func TestReadTOMLVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	defer func() { readFileFn = originalRead }()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -666,6 +715,7 @@ func TestReadTOMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("invalid TOML", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`[invalid toml`), nil
 		}
@@ -677,6 +727,7 @@ func TestReadTOMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("non-string version field", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = 123`), nil
 		}
@@ -688,6 +739,7 @@ func TestReadTOMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("field not found", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`name = "test"`), nil
 		}
@@ -700,6 +752,7 @@ func TestReadTOMLVersion_Errors(t *testing.T) {
 }
 
 func TestWriteTOMLVersion_Errors(t *testing.T) {
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -708,6 +761,7 @@ func TestWriteTOMLVersion_Errors(t *testing.T) {
 	}()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -719,6 +773,7 @@ func TestWriteTOMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("invalid TOML", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`[invalid toml`), nil
 		}
@@ -730,6 +785,7 @@ func TestWriteTOMLVersion_Errors(t *testing.T) {
 	})
 
 	t.Run("write error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`version = "1.0.0"`), nil
 		}
@@ -745,6 +801,7 @@ func TestWriteTOMLVersion_Errors(t *testing.T) {
 }
 
 func TestReadRegexVersion_FileError(t *testing.T) {
+
 	originalRead := readFileFn
 	defer func() { readFileFn = originalRead }()
 
@@ -759,6 +816,7 @@ func TestReadRegexVersion_FileError(t *testing.T) {
 }
 
 func TestWriteRegexVersion_FileError(t *testing.T) {
+
 	originalRead := readFileFn
 	originalWrite := writeFileFn
 	defer func() {
@@ -767,6 +825,7 @@ func TestWriteRegexVersion_FileError(t *testing.T) {
 	}()
 
 	t.Run("file read error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return nil, errors.New("file not found")
 		}
@@ -778,6 +837,7 @@ func TestWriteRegexVersion_FileError(t *testing.T) {
 	})
 
 	t.Run("write error", func(t *testing.T) {
+
 		readFileFn = func(path string) ([]byte, error) {
 			return []byte(`Version = "1.0.0"`), nil
 		}

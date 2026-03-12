@@ -10,6 +10,7 @@ import (
 
 // TestScriptExecutor_MalformedJSONResponse tests handling of malformed JSON from extensions.
 func TestScriptExecutor_MalformedJSONResponse(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 
 	tests := []struct {
@@ -56,6 +57,7 @@ echo 'null'
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			scriptPath := filepath.Join(tempDir, tt.name+".sh")
 			if err := os.WriteFile(scriptPath, []byte(tt.scriptContent), 0755); err != nil {
 				t.Fatalf("failed to write script: %v", err)
@@ -81,6 +83,7 @@ echo 'null'
 
 // TestScriptExecutor_ScriptNotFound_Recovery tests handling of missing script file.
 func TestScriptExecutor_ScriptNotFound_Recovery(t *testing.T) {
+	t.Parallel()
 	executor := NewScriptExecutorWithTimeout(30 * time.Second)
 	ctx := context.Background()
 
@@ -98,6 +101,7 @@ func TestScriptExecutor_ScriptNotFound_Recovery(t *testing.T) {
 
 // TestScriptExecutor_ContextCancellation_Recovery tests that execution respects context cancellation.
 func TestScriptExecutor_ContextCancellation_Recovery(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	scriptPath := filepath.Join(tempDir, "slow.sh")
 
@@ -120,11 +124,9 @@ echo '{"version": "1.0.0"}'
 		ProjectRoot: "/test",
 	}
 
-	// Cancel after a short delay
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		cancel()
-	}()
+	// Cancel after a short delay using a timer instead of sleeping in a goroutine
+	timer := time.AfterFunc(100*time.Millisecond, cancel)
+	defer timer.Stop()
 
 	_, err := executor.Execute(ctx, scriptPath, input)
 	if err == nil {
@@ -134,6 +136,7 @@ echo '{"version": "1.0.0"}'
 
 // TestScriptExecutor_TimeoutRecovery tests that execution respects timeout.
 func TestScriptExecutor_TimeoutRecovery(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	scriptPath := filepath.Join(tempDir, "slow.sh")
 
@@ -179,7 +182,7 @@ echo '{"success": true, "version": "1.0.0"}'
 
 // TestScriptExecutor_NonZeroExitCode_Recovery tests handling of scripts that exit with non-zero.
 func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
-	tempDir := t.TempDir()
+	t.Parallel()
 
 	tests := []struct {
 		name     string
@@ -192,7 +195,8 @@ func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scriptPath := filepath.Join(tempDir, "exit_test.sh")
+			t.Parallel()
+			scriptPath := filepath.Join(t.TempDir(), "exit_test.sh")
 			script := "#!/bin/sh\nexit " + tt.exitCode + "\n"
 			if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
 				t.Fatalf("failed to write script: %v", err)
@@ -217,6 +221,7 @@ func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
 
 // TestScriptExecutor_StderrOutputRecovery tests that stderr is captured in error.
 func TestScriptExecutor_StderrOutputRecovery(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	scriptPath := filepath.Join(tempDir, "stderr.sh")
 
@@ -251,6 +256,7 @@ exit 1
 
 // TestScriptExecutor_LargeOutputRecovery tests handling of large output from scripts.
 func TestScriptExecutor_LargeOutputRecovery(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	scriptPath := filepath.Join(tempDir, "large_output.sh")
 
@@ -285,6 +291,7 @@ echo '{"version": "1.0.0", "message": "success"}'
 
 // TestParseRepoURL_InvalidURLs tests handling of various invalid URL formats.
 func TestParseRepoURL_InvalidURLs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		url     string
@@ -297,6 +304,7 @@ func TestParseRepoURL_InvalidURLs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			_, err := ParseRepoURL(tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseRepoURL(%q) error = %v, wantErr %v", tt.url, err, tt.wantErr)
@@ -307,6 +315,7 @@ func TestParseRepoURL_InvalidURLs(t *testing.T) {
 
 // TestParseRepoURL_ValidURLs tests parsing of valid URL formats.
 func TestParseRepoURL_ValidURLs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		url       string
@@ -322,6 +331,7 @@ func TestParseRepoURL_ValidURLs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := ParseRepoURL(tt.url)
 			if err != nil {
 				t.Fatalf("ParseRepoURL(%q) unexpected error: %v", tt.url, err)
@@ -338,6 +348,7 @@ func TestParseRepoURL_ValidURLs(t *testing.T) {
 
 // TestInstallFromURL_InvalidURL tests error handling for invalid URLs in InstallFromURL.
 func TestInstallFromURL_InvalidURL(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, ".sley.yaml")
 	extDir := filepath.Join(tempDir, "extensions")

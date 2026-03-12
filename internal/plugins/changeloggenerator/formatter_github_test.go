@@ -6,6 +6,7 @@ import (
 )
 
 func TestGitHubFormatter_FormatChangelog(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -100,6 +101,7 @@ func TestGitHubFormatter_FormatChangelog(t *testing.T) {
 }
 
 func TestGitHubFormatter_WithScope(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -133,6 +135,7 @@ func TestGitHubFormatter_WithScope(t *testing.T) {
 }
 
 func TestGitHubFormatter_WithoutScope(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -170,6 +173,7 @@ func TestGitHubFormatter_WithoutScope(t *testing.T) {
 }
 
 func TestGitHubFormatter_WithPRNumber(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -208,6 +212,7 @@ func TestGitHubFormatter_WithPRNumber(t *testing.T) {
 }
 
 func TestGitHubFormatter_WithoutPRNumber(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -246,6 +251,7 @@ func TestGitHubFormatter_WithoutPRNumber(t *testing.T) {
 }
 
 func TestGitHubFormatter_WithoutRemote(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -295,6 +301,7 @@ func TestGitHubFormatter_WithoutRemote(t *testing.T) {
 }
 
 func TestGitHubFormatter_FlattenedGroups(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -403,6 +410,7 @@ func TestGitHubFormatter_FlattenedGroups(t *testing.T) {
 }
 
 func TestGitHubFormatter_GitLabNoreplyEmail(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -435,6 +443,7 @@ func TestGitHubFormatter_GitLabNoreplyEmail(t *testing.T) {
 }
 
 func TestGitHubFormatter_CodebergNoreplyEmail(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -467,6 +476,7 @@ func TestGitHubFormatter_CodebergNoreplyEmail(t *testing.T) {
 }
 
 func TestGitHubFormatter_BreakingChange(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GitHubFormatter{config: cfg}
@@ -513,6 +523,7 @@ func TestGitHubFormatter_BreakingChange(t *testing.T) {
 }
 
 func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GitHubFormatter{config: cfg}
@@ -603,11 +614,13 @@ func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 	breakingSection, changedSection := extractGitHubSections(result)
 
 	t.Run("has both section headers", func(t *testing.T) {
+
 		assertContains(t, result, "### ⚠️ Breaking Changes", "expected Breaking Changes header")
 		assertContains(t, result, "### What's Changed", "expected What's Changed header")
 	})
 
 	t.Run("section order", func(t *testing.T) {
+
 		breakingIdx := strings.Index(result, "### ⚠️ Breaking Changes")
 		whatsChangedIdx := strings.Index(result, "### What's Changed")
 		if breakingIdx >= whatsChangedIdx {
@@ -616,6 +629,7 @@ func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 	})
 
 	t.Run("breaking changes in correct section", func(t *testing.T) {
+
 		assertContains(t, breakingSection, "Remove deprecated endpoints", "breaking change missing from section")
 		assertContains(t, breakingSection, "Change authentication flow", "breaking change missing from section")
 		assertNotContains(t, changedSection, "Remove deprecated endpoints", "breaking change in wrong section")
@@ -623,6 +637,7 @@ func TestGitHubFormatter_MixedBreakingAndRegular(t *testing.T) {
 	})
 
 	t.Run("regular changes in correct section", func(t *testing.T) {
+
 		assertContains(t, changedSection, "Add new caching layer", "regular change missing from section")
 		assertContains(t, changedSection, "Fix memory leak in parser", "regular change missing from section")
 	})
@@ -659,6 +674,7 @@ func assertNotContains(t *testing.T, haystack, needle, msg string) {
 }
 
 func TestGitHubFormatter_EmptyGroups(t *testing.T) {
+
 	cfg := DefaultConfig()
 	formatter := &GitHubFormatter{config: cfg}
 
@@ -683,6 +699,7 @@ func TestGitHubFormatter_EmptyGroups(t *testing.T) {
 }
 
 func TestGitHubFormatter_CustomBreakingChangesIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = "CUSTOM"
 	formatter := &GitHubFormatter{config: cfg}
@@ -722,6 +739,7 @@ func TestGitHubFormatter_CustomBreakingChangesIcon(t *testing.T) {
 }
 
 func TestGitHubFormatter_DefaultBreakingChangesIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = DefaultBreakingChangesIcon
 	formatter := &GitHubFormatter{config: cfg}
@@ -757,6 +775,7 @@ func TestGitHubFormatter_DefaultBreakingChangesIcon(t *testing.T) {
 }
 
 func TestGitHubFormatter_NoBreakingChangesIcon(t *testing.T) {
+
 	cfg := DefaultConfig()
 	cfg.BreakingChangesIcon = "" // No icon
 	formatter := &GitHubFormatter{config: cfg}

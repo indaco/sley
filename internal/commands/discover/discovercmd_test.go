@@ -15,6 +15,7 @@ import (
 )
 
 func TestRun_ReturnsCommand(t *testing.T) {
+
 	cmd := Run(nil)
 
 	if cmd.Name != "discover" {
@@ -42,7 +43,9 @@ func TestRun_ReturnsCommand(t *testing.T) {
 }
 
 func TestDiscoverAndSuggest(t *testing.T) {
+
 	// Create a mock filesystem with test files
+
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/project/.version", []byte("1.0.0\n"))
 	fs.SetFile("/project/package.json", []byte(`{"version": "1.0.0"}`))
@@ -66,6 +69,7 @@ func TestDiscoverAndSuggest(t *testing.T) {
 }
 
 func TestPrintQuietSummary(t *testing.T) {
+
 	// This is a visual output test - we just verify it doesn't panic
 
 	tests := []struct {
@@ -101,13 +105,16 @@ func TestPrintQuietSummary(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			// Just verify it doesn't panic
+
 			printQuietSummary(tt.result)
 		})
 	}
 }
 
 func TestRun_HasCorrectAliases(t *testing.T) {
+
 	cmd := Run(nil)
 
 	if len(cmd.Aliases) != 1 || cmd.Aliases[0] != "scan" {
@@ -116,6 +123,7 @@ func TestRun_HasCorrectAliases(t *testing.T) {
 }
 
 func TestRun_HasDepthFlag(t *testing.T) {
+
 	cmd := Run(nil)
 
 	found := false
@@ -136,6 +144,7 @@ func TestRun_HasDepthFlag(t *testing.T) {
 }
 
 func TestRun_CommandAction(t *testing.T) {
+
 	cfg := &config.Config{}
 	cmd := Run(cfg)
 
@@ -145,6 +154,7 @@ func TestRun_CommandAction(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_TextFormat(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.2.3")
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -169,6 +179,7 @@ func TestCLI_DiscoverCommand_TextFormat(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_JSONFormat(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "2.0.0")
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -193,6 +204,7 @@ func TestCLI_DiscoverCommand_JSONFormat(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_TableFormat(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "3.0.0")
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -214,6 +226,7 @@ func TestCLI_DiscoverCommand_TableFormat(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_QuietMode(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -239,6 +252,7 @@ func TestCLI_DiscoverCommand_QuietMode(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_WithDepthFlag(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	// Create a nested structure
@@ -273,6 +287,7 @@ func TestCLI_DiscoverCommand_WithDepthFlag(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_WithManifests(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
@@ -300,6 +315,7 @@ func TestCLI_DiscoverCommand_WithManifests(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_EmptyDirectory(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	cfg := &config.Config{Path: filepath.Join(tmpDir, ".version")}
@@ -319,6 +335,7 @@ func TestCLI_DiscoverCommand_EmptyDirectory(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_VersionMismatch(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
@@ -346,6 +363,7 @@ func TestCLI_DiscoverCommand_VersionMismatch(t *testing.T) {
 }
 
 func TestCLI_DiscoverCommand_MultipleManifests(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
@@ -383,6 +401,7 @@ func TestCLI_DiscoverCommand_MultipleManifests(t *testing.T) {
 }
 
 func TestDiscoverAndSuggest_WithSyncCandidates(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -418,7 +437,9 @@ func TestDiscoverAndSuggest_WithSyncCandidates(t *testing.T) {
 }
 
 func TestDiscoverAndSuggest_ErrorCase(t *testing.T) {
+
 	// Test with non-existent directory
+
 	cfg := &config.Config{}
 	_, _, err := DiscoverAndSuggest(context.Background(), cfg, "/nonexistent/directory/path")
 
@@ -428,6 +449,7 @@ func TestDiscoverAndSuggest_ErrorCase(t *testing.T) {
 }
 
 func TestPrintQuietSummary_WithPrimaryVersion(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{
@@ -451,6 +473,7 @@ func TestPrintQuietSummary_WithPrimaryVersion(t *testing.T) {
 }
 
 func TestPrintQuietSummary_MultiModule(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.MultiModule,
 		Modules: []discovery.Module{
@@ -475,6 +498,7 @@ func TestPrintQuietSummary_MultiModule(t *testing.T) {
 }
 
 func TestPrintQuietSummary_WithManifestsAndMismatches(t *testing.T) {
+
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
 		Modules: []discovery.Module{

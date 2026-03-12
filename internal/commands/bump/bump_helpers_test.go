@@ -62,6 +62,7 @@ func (m *mockReleaseGate) IsEnabled() bool { return true }
 /* ------------------------------------------------------------------------- */
 
 func TestCalculateNewBuild(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		meta         string
@@ -78,6 +79,7 @@ func TestCalculateNewBuild(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := calculateNewBuild(tt.meta, tt.preserveMeta, tt.currentBuild)
 			if result != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, result)
@@ -87,6 +89,7 @@ func TestCalculateNewBuild(t *testing.T) {
 }
 
 func TestExtractVersionPointers(t *testing.T) {
+
 	strPtr := func(s string) *string { return &s }
 
 	tests := []struct {
@@ -123,6 +126,7 @@ func TestExtractVersionPointers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			pre, build := extractVersionPointers(tt.version)
 			assertStringPtr(t, "prerelease", tt.expectedPre, pre)
 			assertStringPtr(t, "build", tt.expectedBuild, build)
@@ -144,6 +148,7 @@ func assertStringPtr(t *testing.T, name string, expected, actual *string) {
 }
 
 func TestPromotePreRelease(t *testing.T) {
+
 	tests := []struct {
 		name         string
 		current      semver.SemVersion
@@ -172,6 +177,7 @@ func TestPromotePreRelease(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := promotePreRelease(tt.current, tt.preserveMeta)
 			if result.String() != tt.expected.String() {
 				t.Errorf("expected %q, got %q", tt.expected.String(), result.String())
@@ -181,6 +187,7 @@ func TestPromotePreRelease(t *testing.T) {
 }
 
 func TestSetBuildMetadata(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		current  semver.SemVersion
@@ -217,6 +224,7 @@ func TestSetBuildMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := setBuildMetadata(tt.current, tt.next, tt.meta, tt.preserve)
 			if result.Build != tt.expected {
 				t.Errorf("expected build %q, got %q", tt.expected, result.Build)
@@ -226,6 +234,7 @@ func TestSetBuildMetadata(t *testing.T) {
 }
 
 func TestModuleInfoFromPath(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		path     string
@@ -268,6 +277,7 @@ func TestModuleInfoFromPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			result := moduleInfoFromPath(tt.path)
 
 			if tt.wantNil {

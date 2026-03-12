@@ -38,6 +38,7 @@ func (m *MockPrompter) Select(title, description string, options []huh.Option[st
 }
 
 func TestNewWorkflow(t *testing.T) {
+
 	mock := &MockPrompter{}
 	result := &discovery.Result{}
 
@@ -55,7 +56,9 @@ func TestNewWorkflow(t *testing.T) {
 }
 
 func TestWorkflow_Run_NonInteractive(t *testing.T) {
+
 	// When not interactive, Run should return false, nil
+
 	mock := &MockPrompter{}
 	result := &discovery.Result{}
 	w := NewWorkflow(mock, result, "/test")

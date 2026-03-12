@@ -69,6 +69,7 @@ func (m *MockFileOps) FileExists(path string) bool {
 }
 
 func TestNewAuditLog(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		config         *Config
@@ -105,6 +106,7 @@ func TestNewAuditLog(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			plugin := NewAuditLog(tt.config)
 			if plugin == nil {
 				t.Fatal("expected plugin to be non-nil")
@@ -120,6 +122,7 @@ func TestNewAuditLog(t *testing.T) {
 }
 
 func TestAuditLogPlugin_Metadata(t *testing.T) {
+	t.Parallel()
 	plugin := NewAuditLog(DefaultConfig())
 
 	if plugin.Name() != "audit-log" {
@@ -136,6 +139,7 @@ func TestAuditLogPlugin_Metadata(t *testing.T) {
 }
 
 func TestAuditLogPlugin_IsEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		enabled bool
@@ -146,6 +150,7 @@ func TestAuditLogPlugin_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := DefaultConfig()
 			cfg.Enabled = tt.enabled
 			plugin := NewAuditLog(cfg)
@@ -158,6 +163,7 @@ func TestAuditLogPlugin_IsEnabled(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_Disabled(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 	cfg.Enabled = false
 
@@ -176,6 +182,7 @@ func TestAuditLogPlugin_RecordEntry_Disabled(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_JSON(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -245,6 +252,7 @@ func TestAuditLogPlugin_RecordEntry_JSON(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_YAML(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.yaml",
@@ -298,6 +306,7 @@ func TestAuditLogPlugin_RecordEntry_YAML(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_MultipleEntries(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -350,6 +359,7 @@ func TestAuditLogPlugin_RecordEntry_MultipleEntries(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_GitError(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -410,6 +420,7 @@ func TestAuditLogPlugin_RecordEntry_GitError(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_SelectiveMetadata(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		includeAuthor bool
@@ -427,6 +438,7 @@ func TestAuditLogPlugin_RecordEntry_SelectiveMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			entry := recordEntryWithConfig(t, tt.includeAuthor, tt.includeSHA, tt.includeBranch, tt.includeTime)
 			verifyMetadataInclusion(t, entry, tt.includeAuthor, tt.includeSHA, tt.includeBranch, tt.includeTime)
 		})
@@ -487,6 +499,7 @@ func verifyField(t *testing.T, fieldName, fieldValue string, shouldInclude bool)
 }
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfig()
 
 	if cfg.Enabled {
@@ -513,6 +526,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestConfig_GetPath(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		path     string
@@ -524,6 +538,7 @@ func TestConfig_GetPath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{Path: tt.path}
 			if cfg.GetPath() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, cfg.GetPath())
@@ -533,6 +548,7 @@ func TestConfig_GetPath(t *testing.T) {
 }
 
 func TestConfig_GetFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		format   string
@@ -545,6 +561,7 @@ func TestConfig_GetFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			cfg := &Config{Format: tt.format}
 			if cfg.GetFormat() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, cfg.GetFormat())
@@ -592,6 +609,7 @@ func (m *MockFileOpsWithErrors) FileExists(path string) bool {
 }
 
 func TestAuditLogPlugin_RecordEntry_FileReadError(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -620,6 +638,7 @@ func TestAuditLogPlugin_RecordEntry_FileReadError(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_FileWriteError(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -647,6 +666,7 @@ func TestAuditLogPlugin_RecordEntry_FileWriteError(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_InvalidJSONInFile(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -675,6 +695,7 @@ func TestAuditLogPlugin_RecordEntry_InvalidJSONInFile(t *testing.T) {
 }
 
 func TestAuditLogPlugin_RecordEntry_ExistingEntries(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.json",
@@ -734,6 +755,7 @@ func TestAuditLogPlugin_RecordEntry_ExistingEntries(t *testing.T) {
 }
 
 func TestAuditLogPlugin_SortEntries_InvalidTimestamps(t *testing.T) {
+	t.Parallel()
 	plugin := NewAuditLog(nil)
 
 	entries := []Entry{
@@ -752,6 +774,7 @@ func TestAuditLogPlugin_SortEntries_InvalidTimestamps(t *testing.T) {
 }
 
 func TestAuditLogPlugin_SortEntries_AllValid(t *testing.T) {
+	t.Parallel()
 	plugin := NewAuditLog(nil)
 
 	entries := []Entry{
@@ -775,6 +798,7 @@ func TestAuditLogPlugin_SortEntries_AllValid(t *testing.T) {
 }
 
 func TestAuditLogPlugin_NewAuditLogWithOps_NilConfig(t *testing.T) {
+	t.Parallel()
 	mockGit := &MockGitOps{}
 	mockFile := NewMockFileOps()
 
@@ -795,6 +819,7 @@ func TestAuditLogPlugin_NewAuditLogWithOps_NilConfig(t *testing.T) {
 }
 
 func TestDefaultFileOps_FileExists(t *testing.T) {
+	t.Parallel()
 	fileOps := &DefaultFileOps{}
 
 	// Test non-existent file
@@ -804,6 +829,7 @@ func TestDefaultFileOps_FileExists(t *testing.T) {
 }
 
 func TestDefaultFileOps_ReadFile_NonExistent(t *testing.T) {
+	t.Parallel()
 	fileOps := &DefaultFileOps{}
 
 	_, err := fileOps.ReadFile("/non/existent/path/file.json")
@@ -813,6 +839,7 @@ func TestDefaultFileOps_ReadFile_NonExistent(t *testing.T) {
 }
 
 func TestDefaultFileOps_WriteAndReadFile(t *testing.T) {
+	t.Parallel()
 	fileOps := &DefaultFileOps{}
 	tmpFile := t.TempDir() + "/test-audit.json"
 
@@ -841,7 +868,10 @@ func TestDefaultFileOps_WriteAndReadFile(t *testing.T) {
 }
 
 func TestDefaultGitOps_Integration(t *testing.T) {
+	t.Parallel(
 	// Skip if not in a git repo
+	)
+
 	gitOps := &DefaultGitOps{}
 
 	// These will work if we're in a git repo, otherwise they'll fail
@@ -875,6 +905,7 @@ func TestDefaultGitOps_Integration(t *testing.T) {
 }
 
 func TestAuditLogPlugin_YAMLFormat(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.yaml",
@@ -919,6 +950,7 @@ func TestAuditLogPlugin_YAMLFormat(t *testing.T) {
 }
 
 func TestAuditLogPlugin_YAMLWithExistingEntries(t *testing.T) {
+	t.Parallel()
 	cfg := &Config{
 		Enabled:          true,
 		Path:             ".version-history.yaml",

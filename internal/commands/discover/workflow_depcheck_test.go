@@ -12,6 +12,7 @@ import (
 )
 
 func TestGenerateDependencyCheckFileConfig(t *testing.T) {
+
 	candidate := discovery.SyncCandidate{
 		Path:    "package.json",
 		Format:  parser.FormatJSON,
@@ -33,6 +34,7 @@ func TestGenerateDependencyCheckFileConfig(t *testing.T) {
 }
 
 func TestGenerateDependencyCheckFileConfig_WithPattern(t *testing.T) {
+
 	candidate := discovery.SyncCandidate{
 		Path:    "version.go",
 		Format:  parser.FormatRegex,
@@ -50,6 +52,7 @@ func TestGenerateDependencyCheckFileConfig_WithPattern(t *testing.T) {
 }
 
 func TestGenerateDependencyCheckConfig(t *testing.T) {
+
 	candidates := []discovery.SyncCandidate{
 		{
 			Path:   "package.json",
@@ -77,6 +80,7 @@ func TestGenerateDependencyCheckConfig(t *testing.T) {
 }
 
 func TestSuggestDependencyCheckFromDiscovery(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		result    *discovery.Result
@@ -110,6 +114,7 @@ func TestSuggestDependencyCheckFromDiscovery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			cfg := SuggestDependencyCheckFromDiscovery(tt.result)
 
 			if tt.wantNil {
@@ -131,6 +136,7 @@ func TestSuggestDependencyCheckFromDiscovery(t *testing.T) {
 }
 
 func TestWorkflow_generateDependencyCheckConfig(t *testing.T) {
+
 	candidates := []discovery.SyncCandidate{
 		{
 			Path:        "package.json",
@@ -172,6 +178,7 @@ func TestWorkflow_generateDependencyCheckConfig(t *testing.T) {
 }
 
 func TestWorkflow_generateDependencyCheckConfig_NoFieldOrPattern(t *testing.T) {
+
 	candidates := []discovery.SyncCandidate{
 		{
 			Path:        "VERSION",
@@ -196,6 +203,7 @@ func TestWorkflow_generateDependencyCheckConfig_NoFieldOrPattern(t *testing.T) {
 }
 
 func TestWorkflow_runDependencyCheckSetup(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -238,6 +246,7 @@ func TestWorkflow_runDependencyCheckSetup(t *testing.T) {
 }
 
 func TestWorkflow_runDependencyCheckSetup_NoSelection(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -274,6 +283,7 @@ func TestWorkflow_runDependencyCheckSetup_NoSelection(t *testing.T) {
 }
 
 func TestWorkflow_runDependencyCheckSetup_SelectionError(t *testing.T) {
+
 	tmpDir := t.TempDir()
 
 	expectedErr := errors.New("selection failed")

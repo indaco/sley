@@ -6,7 +6,9 @@ import (
 )
 
 func TestMockCommitParser(t *testing.T) {
+	t.Parallel()
 	t.Run("successful parse", func(t *testing.T) {
+		t.Parallel()
 		mock := MockCommitParser{
 			Label: "minor",
 			Err:   nil,
@@ -26,6 +28,7 @@ func TestMockCommitParser(t *testing.T) {
 	})
 
 	t.Run("parse with error", func(t *testing.T) {
+		t.Parallel()
 		mock := MockCommitParser{
 			Label: "",
 			Err:   ErrMockParseFailed,
@@ -48,7 +51,9 @@ type testError struct {
 func (e testError) Error() string { return e.msg }
 
 func TestMockHook(t *testing.T) {
+	t.Parallel()
 	t.Run("successful hook", func(t *testing.T) {
+		t.Parallel()
 		mock := MockHook{
 			Name:      "pre-release",
 			ShouldErr: false,
@@ -65,6 +70,7 @@ func TestMockHook(t *testing.T) {
 	})
 
 	t.Run("failing hook", func(t *testing.T) {
+		t.Parallel()
 		mock := MockHook{
 			Name:      "validation",
 			ShouldErr: true,
@@ -86,6 +92,7 @@ func TestMockHook(t *testing.T) {
 }
 
 func TestWithMock(t *testing.T) {
+	t.Parallel()
 	setupCalled := false
 	testFuncCalled := false
 

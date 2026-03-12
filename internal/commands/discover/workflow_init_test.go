@@ -14,6 +14,7 @@ import (
 )
 
 func TestWorkflow_runMismatchWorkflow(t *testing.T) {
+
 	mock := &MockPrompter{}
 	result := &discovery.Result{
 		Mode: discovery.SingleModule,
@@ -47,6 +48,7 @@ func TestWorkflow_runMismatchWorkflow(t *testing.T) {
 }
 
 func TestWorkflow_suggestAdditionalSyncFiles(t *testing.T) {
+
 	mock := &MockPrompter{}
 	result := &discovery.Result{
 		SyncCandidates: []discovery.SyncCandidate{
@@ -67,9 +69,11 @@ func TestWorkflow_suggestAdditionalSyncFiles(t *testing.T) {
 }
 
 func TestWorkflow_printInitSuccess(t *testing.T) {
+
 	w := &Workflow{}
 
 	t.Run("with plugins only", func(t *testing.T) {
+
 		plugins := []string{"commit-parser", "tag-manager"}
 
 		output, err := testutils.CaptureStdout(func() {
@@ -91,6 +95,7 @@ func TestWorkflow_printInitSuccess(t *testing.T) {
 	})
 
 	t.Run("with sync candidates", func(t *testing.T) {
+
 		plugins := []string{"commit-parser", "dependency-check"}
 		candidates := []discovery.SyncCandidate{
 			{Path: "package.json", Format: parser.FormatJSON},
@@ -113,6 +118,7 @@ func TestWorkflow_printInitSuccess(t *testing.T) {
 	})
 
 	t.Run("shows next steps", func(t *testing.T) {
+
 		plugins := []string{"commit-parser"}
 
 		output, err := testutils.CaptureStdout(func() {
@@ -132,7 +138,9 @@ func TestWorkflow_printInitSuccess(t *testing.T) {
 }
 
 func TestWorkflow_ensureVersionFile(t *testing.T) {
+
 	t.Run("creates version file when missing", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		t.Chdir(tmpDir)
 
@@ -151,6 +159,7 @@ func TestWorkflow_ensureVersionFile(t *testing.T) {
 	})
 
 	t.Run("does nothing when file exists", func(t *testing.T) {
+
 		tmpDir := t.TempDir()
 		t.Chdir(tmpDir)
 
@@ -176,6 +185,7 @@ func TestWorkflow_ensureVersionFile(t *testing.T) {
 }
 
 func TestWorkflow_createConfigWithDefaults(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -213,6 +223,7 @@ func TestWorkflow_createConfigWithDefaults(t *testing.T) {
 }
 
 func TestWorkflow_createConfigWithDependencyCheck(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -254,6 +265,7 @@ func TestWorkflow_createConfigWithDependencyCheck(t *testing.T) {
 }
 
 func TestWorkflow_runInitWorkflow_NoSyncCandidates(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -287,6 +299,7 @@ func TestWorkflow_runInitWorkflow_NoSyncCandidates(t *testing.T) {
 }
 
 func TestWorkflow_runInitWorkflow_UserDeclines(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -325,6 +338,7 @@ func TestWorkflow_runInitWorkflow_UserDeclines(t *testing.T) {
 }
 
 func TestWorkflow_runInitWorkflow_UserAccepts(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -362,6 +376,7 @@ func TestWorkflow_runInitWorkflow_UserAccepts(t *testing.T) {
 }
 
 func TestWorkflow_runInitWorkflow_ConfirmError(t *testing.T) {
+
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
@@ -387,6 +402,7 @@ func TestWorkflow_runInitWorkflow_ConfirmError(t *testing.T) {
 }
 
 func TestWorkflow_runExistingConfigWorkflow_WithMismatches(t *testing.T) {
+
 	mock := &MockPrompter{}
 
 	result := &discovery.Result{
@@ -417,6 +433,7 @@ func TestWorkflow_runExistingConfigWorkflow_WithMismatches(t *testing.T) {
 }
 
 func TestWorkflow_runExistingConfigWorkflow_NoMismatches(t *testing.T) {
+
 	mock := &MockPrompter{}
 
 	result := &discovery.Result{

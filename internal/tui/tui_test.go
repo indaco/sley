@@ -5,6 +5,7 @@ import (
 )
 
 func TestChoice_String(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		choice   Choice
@@ -18,6 +19,7 @@ func TestChoice_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := tt.choice.String()
 			if got != tt.expected {
 				t.Errorf("Choice.String() = %v, want %v", got, tt.expected)
@@ -27,6 +29,7 @@ func TestChoice_String(t *testing.T) {
 }
 
 func TestParseChoice(t *testing.T) {
+
 	tests := []struct {
 		name     string
 		input    string
@@ -41,6 +44,7 @@ func TestParseChoice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			got := ParseChoice(tt.input)
 			if got != tt.expected {
 				t.Errorf("ParseChoice(%q) = %v, want %v", tt.input, got, tt.expected)
@@ -50,6 +54,7 @@ func TestParseChoice(t *testing.T) {
 }
 
 func TestAllModules(t *testing.T) {
+
 	selection := AllModules()
 
 	if !selection.All {
@@ -66,6 +71,7 @@ func TestAllModules(t *testing.T) {
 }
 
 func TestSelectedModules(t *testing.T) {
+
 	names := []string{"module-a", "module-b", "module-c"}
 	selection := SelectedModules(names)
 
@@ -89,6 +95,7 @@ func TestSelectedModules(t *testing.T) {
 }
 
 func TestCanceledSelection(t *testing.T) {
+
 	selection := CanceledSelection()
 
 	if !selection.Canceled {
@@ -105,6 +112,7 @@ func TestCanceledSelection(t *testing.T) {
 }
 
 func TestSelection_ZeroValue(t *testing.T) {
+
 	var selection Selection
 
 	if selection.All {
@@ -121,6 +129,7 @@ func TestSelection_ZeroValue(t *testing.T) {
 }
 
 func TestSelectedModules_EmptySlice(t *testing.T) {
+
 	selection := SelectedModules([]string{})
 
 	if selection.All {
@@ -141,6 +150,7 @@ func TestSelectedModules_EmptySlice(t *testing.T) {
 }
 
 func TestSelectedModules_NilSlice(t *testing.T) {
+
 	selection := SelectedModules(nil)
 
 	if selection.All {

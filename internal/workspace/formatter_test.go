@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewTextFormatter(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("test operation")
 	if formatter == nil {
 		t.Fatal("NewTextFormatter() returned nil")
@@ -20,6 +21,7 @@ func TestNewTextFormatter(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_Empty(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("bump")
 	result := formatter.FormatResults([]ExecutionResult{})
 
@@ -30,6 +32,7 @@ func TestTextFormatter_FormatResults_Empty(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_Success(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("Version Bump")
 
 	modules := []*Module{
@@ -72,6 +75,7 @@ func TestTextFormatter_FormatResults_Success(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_MixedResults(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("bump")
 
 	modules := []*Module{
@@ -112,6 +116,7 @@ func TestTextFormatter_FormatResults_MixedResults(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_NoVersionChange(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("")
 
 	module := &Module{Name: "module-a", Path: "/path/.version"}
@@ -132,6 +137,7 @@ func TestTextFormatter_FormatResults_NoVersionChange(t *testing.T) {
 }
 
 func TestTextFormatter_FormatModuleList_Empty(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("")
 	result := formatter.FormatModuleList([]*Module{})
 
@@ -142,6 +148,7 @@ func TestTextFormatter_FormatModuleList_Empty(t *testing.T) {
 }
 
 func TestTextFormatter_FormatModuleList(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("")
 
 	modules := []*Module{
@@ -167,6 +174,7 @@ func TestTextFormatter_FormatModuleList(t *testing.T) {
 }
 
 func TestTextFormatter_FormatModuleList_SingleModule(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("")
 
 	modules := []*Module{
@@ -181,6 +189,7 @@ func TestTextFormatter_FormatModuleList_SingleModule(t *testing.T) {
 }
 
 func TestNewJSONFormatter(t *testing.T) {
+	t.Parallel()
 	formatter := NewJSONFormatter()
 	if formatter == nil {
 		t.Fatal("NewJSONFormatter() returned nil")
@@ -188,6 +197,7 @@ func TestNewJSONFormatter(t *testing.T) {
 }
 
 func TestJSONFormatter_FormatResults(t *testing.T) {
+	t.Parallel()
 	formatter := NewJSONFormatter()
 
 	modules := []*Module{
@@ -256,6 +266,7 @@ func TestJSONFormatter_FormatResults(t *testing.T) {
 }
 
 func TestJSONFormatter_FormatModuleList(t *testing.T) {
+	t.Parallel()
 	formatter := NewJSONFormatter()
 
 	modules := []*Module{
@@ -303,6 +314,7 @@ func TestJSONFormatter_FormatModuleList(t *testing.T) {
 }
 
 func TestFormatDuration(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		duration time.Duration
@@ -332,6 +344,7 @@ func TestFormatDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := formatDuration(tt.duration)
 			if got != tt.expected {
 				t.Errorf("formatDuration(%v) = %q, want %q", tt.duration, got, tt.expected)
@@ -341,6 +354,7 @@ func TestFormatDuration(t *testing.T) {
 }
 
 func TestPluralize(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		count    int
 		expected string
@@ -353,6 +367,7 @@ func TestPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(strconv.Itoa(tt.count), func(t *testing.T) {
+			t.Parallel()
 			got := pluralize(tt.count)
 			if got != tt.expected {
 				t.Errorf("pluralize(%d) = %q, want %q", tt.count, got, tt.expected)
@@ -362,6 +377,7 @@ func TestPluralize(t *testing.T) {
 }
 
 func TestGetFormatter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		format    string
@@ -402,6 +418,7 @@ func TestGetFormatter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			formatter := GetFormatter(tt.format, tt.operation)
 			if formatter == nil {
 				t.Fatal("GetFormatter() returned nil")
@@ -427,18 +444,22 @@ func TestGetFormatter(t *testing.T) {
 }
 
 func TestTextFormatter_ImplementsOutputFormatter(t *testing.T) {
+	t.Parallel()
 	var _ OutputFormatter = (*TextFormatter)(nil)
 }
 
 func TestJSONFormatter_ImplementsOutputFormatter(t *testing.T) {
+	t.Parallel()
 	var _ OutputFormatter = (*JSONFormatter)(nil)
 }
 
 func TestTableFormatter_ImplementsOutputFormatter(t *testing.T) {
+	t.Parallel()
 	var _ OutputFormatter = (*TableFormatter)(nil)
 }
 
 func TestNewTableFormatter(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("test operation")
 	if formatter == nil {
 		t.Fatal("NewTableFormatter() returned nil")
@@ -449,6 +470,7 @@ func TestNewTableFormatter(t *testing.T) {
 }
 
 func TestTableFormatter_FormatResults_Empty(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("bump")
 	result := formatter.FormatResults([]ExecutionResult{})
 
@@ -459,6 +481,7 @@ func TestTableFormatter_FormatResults_Empty(t *testing.T) {
 }
 
 func TestTableFormatter_FormatResults_Success(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("Version Bump")
 
 	modules := []*Module{
@@ -519,6 +542,7 @@ func TestTableFormatter_FormatResults_Success(t *testing.T) {
 }
 
 func TestTableFormatter_FormatResults_MixedResults(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("bump")
 
 	modules := []*Module{
@@ -556,6 +580,7 @@ func TestTableFormatter_FormatResults_MixedResults(t *testing.T) {
 }
 
 func TestTableFormatter_FormatModuleList_Empty(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("")
 	result := formatter.FormatModuleList([]*Module{})
 
@@ -566,6 +591,7 @@ func TestTableFormatter_FormatModuleList_Empty(t *testing.T) {
 }
 
 func TestTableFormatter_FormatModuleList(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("")
 
 	modules := []*Module{
@@ -603,6 +629,7 @@ func TestTableFormatter_FormatModuleList(t *testing.T) {
 }
 
 func TestTableFormatter_FormatModuleList_LongPath(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatter("")
 
 	modules := []*Module{
@@ -622,6 +649,7 @@ func TestTableFormatter_FormatModuleList_LongPath(t *testing.T) {
 }
 
 func TestNewTextFormatterWithVerb(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		operation  string
@@ -635,6 +663,7 @@ func TestNewTextFormatterWithVerb(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			formatter := NewTextFormatterWithVerb(tt.operation, tt.actionVerb)
 
 			module := &Module{Name: "test-module", Path: "/path/.version"}
@@ -660,6 +689,7 @@ func TestNewTextFormatterWithVerb(t *testing.T) {
 }
 
 func TestNewTableFormatterWithVerb(t *testing.T) {
+	t.Parallel()
 	formatter := NewTableFormatterWithVerb("Validation Summary", "validated")
 
 	module := &Module{Name: "test-module", Path: "/path/.version"}
@@ -683,6 +713,7 @@ func TestNewTableFormatterWithVerb(t *testing.T) {
 }
 
 func TestGetFormatterWithVerb(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		format     string
@@ -696,6 +727,7 @@ func TestGetFormatterWithVerb(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			formatter := GetFormatterWithVerb(tt.format, tt.operation, tt.actionVerb)
 
 			if formatter == nil {
@@ -721,7 +753,10 @@ func TestGetFormatterWithVerb(t *testing.T) {
 }
 
 func TestGetFormatterWithVerb_JSON(t *testing.T) {
+	t.Parallel(
 	// JSON formatter doesn't use actionVerb, just verify it returns JSONFormatter
+	)
+
 	formatter := GetFormatterWithVerb("json", "Test Op", "tested")
 
 	if formatter == nil {
@@ -746,6 +781,7 @@ func TestGetFormatterWithVerb_JSON(t *testing.T) {
 }
 
 func TestFormatModulePath(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		module   *Module
@@ -775,6 +811,7 @@ func TestFormatModulePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := formatModulePath(tt.module)
 			if got != tt.expected {
 				t.Errorf("formatModulePath() = %q, want %q", got, tt.expected)
@@ -784,6 +821,7 @@ func TestFormatModulePath(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_WithPathDisambiguation(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("Bump minor")
 
 	// Create modules with same name but different paths (simulating ambiguous names)
@@ -832,6 +870,7 @@ func TestTextFormatter_FormatResults_WithPathDisambiguation(t *testing.T) {
 }
 
 func TestTextFormatter_FormatResults_FailedWithPath(t *testing.T) {
+	t.Parallel()
 	formatter := NewTextFormatter("bump")
 
 	module := &Module{

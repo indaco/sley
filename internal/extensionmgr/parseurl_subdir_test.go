@@ -10,6 +10,7 @@ import (
 
 // TestParseRepoURL_Subdirectory tests subdirectory parsing in repository URLs
 func TestParseRepoURL_Subdirectory(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		urlStr      string
@@ -114,6 +115,7 @@ func TestParseRepoURL_Subdirectory(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseRepoURL(tt.urlStr)
 
 			if (err != nil) != tt.wantErr {

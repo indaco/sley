@@ -18,6 +18,7 @@ import (
 // TestRemoteInstallation_VariousGitHosts tests URL parsing for various git hosting services
 // This test doesn't make network calls, it just validates that various hosts are accepted
 func TestRemoteInstallation_VariousGitHosts(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode")
 	}
@@ -61,7 +62,10 @@ func TestRemoteInstallation_VariousGitHosts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel(
 			// Test URL parsing - should accept any valid git URL format
+			)
+
 			repoURL, err := ParseRepoURL(tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)
@@ -76,7 +80,10 @@ func TestRemoteInstallation_VariousGitHosts(t *testing.T) {
 
 // TestParseRepoURL_WithSubdirectory tests URL parsing with subdirectories (unit test)
 func TestParseRepoURL_WithSubdirectoryIntegration(t *testing.T) {
+	t.Parallel(
 	// This is a unit test but grouped with integration tests for organization
+	)
+
 	tests := []struct {
 		name       string
 		url        string
@@ -105,6 +112,7 @@ func TestParseRepoURL_WithSubdirectoryIntegration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := ParseRepoURL(tt.url)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ParseRepoURL() error = %v, wantErr %v", err, tt.wantErr)

@@ -8,6 +8,7 @@ import (
 )
 
 func TestValidator_ValidateYAMLSyntax(t *testing.T) {
+
 	tests := []struct {
 		name       string
 		configPath string
@@ -35,6 +36,7 @@ func TestValidator_ValidateYAMLSyntax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			tt.setupFS(ctx, fs)
@@ -69,6 +71,7 @@ func TestValidator_ValidateYAMLSyntax(t *testing.T) {
 }
 
 func TestValidator_ValidateTagManagerConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -118,6 +121,7 @@ func TestValidator_ValidateTagManagerConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -149,6 +153,7 @@ func TestValidator_ValidateTagManagerConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateVersionValidatorConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -229,6 +234,7 @@ func TestValidator_ValidateVersionValidatorConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -254,6 +260,7 @@ func TestValidator_ValidateVersionValidatorConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateDependencyCheckConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -346,6 +353,7 @@ func TestValidator_ValidateDependencyCheckConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			tt.setupFS(ctx, fs)
@@ -373,6 +381,7 @@ func TestValidator_ValidateDependencyCheckConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateChangelogGeneratorConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -459,6 +468,7 @@ func TestValidator_ValidateChangelogGeneratorConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -484,6 +494,7 @@ func TestValidator_ValidateChangelogGeneratorConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateAuditLogConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -529,6 +540,7 @@ func TestValidator_ValidateAuditLogConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -554,6 +566,7 @@ func TestValidator_ValidateAuditLogConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateChangelogParserConfig(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -624,6 +637,7 @@ func TestValidator_ValidateChangelogParserConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			tt.setupFS(ctx, fs)
@@ -651,6 +665,7 @@ func TestValidator_ValidateChangelogParserConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateReleaseGateConfig(t *testing.T) {
+
 	tests := []struct {
 		name        string
 		config      *Config
@@ -685,6 +700,7 @@ func TestValidator_ValidateReleaseGateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -710,6 +726,7 @@ func TestValidator_ValidateReleaseGateConfig(t *testing.T) {
 }
 
 func TestValidator_ValidateCommitParserPlugin(t *testing.T) {
+
 	tests := []struct {
 		name   string
 		config *Config
@@ -734,6 +751,7 @@ func TestValidator_ValidateCommitParserPlugin(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -748,6 +766,7 @@ func TestValidator_ValidateCommitParserPlugin(t *testing.T) {
 }
 
 func TestValidator_ValidateVersionValidatorBranchConstraint(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -794,6 +813,7 @@ func TestValidator_ValidateVersionValidatorBranchConstraint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -819,6 +839,7 @@ func TestValidator_ValidateVersionValidatorBranchConstraint(t *testing.T) {
 }
 
 func TestValidator_ValidateChangelogGeneratorCustomProvider(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -843,6 +864,7 @@ func TestValidator_ValidateChangelogGeneratorCustomProvider(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")
@@ -868,6 +890,7 @@ func TestValidator_ValidateChangelogGeneratorCustomProvider(t *testing.T) {
 }
 
 func TestValidator_ValidateChangelogGeneratorMergeAfter(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		config    *Config
@@ -937,6 +960,7 @@ func TestValidator_ValidateChangelogGeneratorMergeAfter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			ctx := context.Background()
 			fs := core.NewMockFileSystem()
 			validator := NewValidator(fs, tt.config, "", ".")

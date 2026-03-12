@@ -16,6 +16,7 @@ import (
 // ---------------------------------------------------------------------------
 
 func TestSetExtensionEnabled_Disable(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".sley.yaml")
 
@@ -58,6 +59,7 @@ extensions:
 }
 
 func TestSetExtensionEnabled_Enable(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".sley.yaml")
 
@@ -100,6 +102,7 @@ extensions:
 }
 
 func TestSetExtensionEnabled_NotFound(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".sley.yaml")
 
@@ -119,6 +122,7 @@ func TestSetExtensionEnabled_NotFound(t *testing.T) {
 }
 
 func TestSetExtensionEnabled_PreservesComments(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 	configPath := filepath.Join(tmpDir, ".sley.yaml")
 
@@ -205,6 +209,7 @@ pre-release-hooks:
 }
 
 func TestSetExtensionEnabled_ReadFileError(t *testing.T) {
+	t.Parallel()
 	invalidPath := filepath.Join(t.TempDir(), "nonexistent.yaml")
 
 	updater := NewDefaultConfigUpdater(&DefaultYAMLMarshaler{})
@@ -215,6 +220,7 @@ func TestSetExtensionEnabled_ReadFileError(t *testing.T) {
 }
 
 func TestSetExtensionEnabled_MarshalError(t *testing.T) {
+	t.Parallel()
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, ".sley.yaml")
 
@@ -241,6 +247,7 @@ func TestSetExtensionEnabled_MarshalError(t *testing.T) {
 }
 
 func TestSetExtensionEnabled_WriteFileError(t *testing.T) {
+	t.Parallel()
 	tmp := t.TempDir()
 	configPath := filepath.Join(tmp, ".sley.yaml")
 

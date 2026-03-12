@@ -8,6 +8,7 @@ import (
 )
 
 func TestSleyTheme(t *testing.T) {
+
 	theme := sleyTheme(true)
 
 	if theme == nil {
@@ -15,7 +16,9 @@ func TestSleyTheme(t *testing.T) {
 	}
 
 	t.Run("Focused styles are configured", func(t *testing.T) {
+
 		// Title should be bold
+
 		if !theme.Focused.Title.GetBold() {
 			t.Error("Focused.Title should be bold")
 		}
@@ -38,7 +41,9 @@ func TestSleyTheme(t *testing.T) {
 	})
 
 	t.Run("Blurred styles are configured", func(t *testing.T) {
+
 		// BlurredButton should have padding matching FocusedButton
+
 		_, right, _, left := theme.Focused.BlurredButton.GetPadding()
 		if left != 1 || right != 1 {
 			t.Errorf("Focused.BlurredButton should have horizontal padding of 1, got left=%d right=%d", left, right)
@@ -46,7 +51,9 @@ func TestSleyTheme(t *testing.T) {
 	})
 
 	t.Run("Help styles are configured", func(t *testing.T) {
+
 		// Verify help styles can render text (styles are configured)
+
 		shortKeyRendered := theme.Help.ShortKey.Render("key")
 		shortDescRendered := theme.Help.ShortDesc.Render("description")
 		shortSepRendered := theme.Help.ShortSeparator.Render(" - ")
@@ -77,7 +84,9 @@ func TestSleyTheme(t *testing.T) {
 }
 
 func TestSleyThemeColors(t *testing.T) {
+
 	// Verify adaptive colors are properly defined
+
 	testCases := []struct {
 		name  string
 		color compat.AdaptiveColor
@@ -99,12 +108,14 @@ func TestSleyThemeColors(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name+" has light color", func(t *testing.T) {
+
 			if tc.color.Light == nil {
 				t.Errorf("%s should have a light color defined", tc.name)
 			}
 		})
 
 		t.Run(tc.name+" has dark color", func(t *testing.T) {
+
 			if tc.color.Dark == nil {
 				t.Errorf("%s should have a dark color defined", tc.name)
 			}
@@ -113,9 +124,11 @@ func TestSleyThemeColors(t *testing.T) {
 }
 
 func TestSleyThemeConsistency(t *testing.T) {
+
 	theme := sleyTheme(true)
 
 	t.Run("Focused and blurred buttons have same padding", func(t *testing.T) {
+
 		_, fRight, _, fLeft := theme.Focused.FocusedButton.GetPadding()
 		_, bRight, _, bLeft := theme.Focused.BlurredButton.GetPadding()
 
