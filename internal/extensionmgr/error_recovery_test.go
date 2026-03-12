@@ -2,7 +2,6 @@ package extensionmgr
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -59,9 +58,7 @@ echo 'null'
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			scriptPath := filepath.Join(tempDir, tt.name+".sh")
-			if err := os.WriteFile(scriptPath, []byte(tt.scriptContent), 0755); err != nil {
-				t.Fatalf("failed to write script: %v", err)
-			}
+			mustWriteFile(t, scriptPath, tt.scriptContent, 0755)
 
 			executor := NewScriptExecutorWithTimeout(30 * time.Second)
 			ctx := context.Background()
@@ -110,9 +107,7 @@ func TestScriptExecutor_ContextCancellation_Recovery(t *testing.T) {
 sleep 10
 echo '{"version": "1.0.0"}'
 `
-	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to write script: %v", err)
-	}
+	mustWriteFile(t, scriptPath, script, 0755)
 
 	executor := NewScriptExecutorWithTimeout(30 * time.Second)
 	ctx, cancel := context.WithCancel(context.Background())
@@ -151,9 +146,7 @@ while [ $i -lt 100 ]; do
 done
 echo '{"success": true, "version": "1.0.0"}'
 `
-	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to write script: %v", err)
-	}
+	mustWriteFile(t, scriptPath, script, 0755)
 
 	// Use short timeout (500ms should be enough for process startup and kill)
 	executor := NewScriptExecutorWithTimeout(500 * time.Millisecond)
@@ -198,9 +191,7 @@ func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
 			t.Parallel()
 			scriptPath := filepath.Join(t.TempDir(), "exit_test.sh")
 			script := "#!/bin/sh\nexit " + tt.exitCode + "\n"
-			if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
-				t.Fatalf("failed to write script: %v", err)
-			}
+			mustWriteFile(t, scriptPath, script, 0755)
 
 			executor := NewScriptExecutorWithTimeout(30 * time.Second)
 			ctx := context.Background()
@@ -229,9 +220,7 @@ func TestScriptExecutor_StderrOutputRecovery(t *testing.T) {
 echo "error message" >&2
 exit 1
 `
-	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to write script: %v", err)
-	}
+	mustWriteFile(t, scriptPath, script, 0755)
 
 	executor := NewScriptExecutorWithTimeout(30 * time.Second)
 	ctx := context.Background()
@@ -269,9 +258,7 @@ done
 # Output valid JSON at the end
 echo '{"version": "1.0.0", "message": "success"}'
 `
-	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
-		t.Fatalf("failed to write script: %v", err)
-	}
+	mustWriteFile(t, scriptPath, script, 0755)
 
 	executor := NewScriptExecutorWithTimeout(30 * time.Second)
 	ctx := context.Background()

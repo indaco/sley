@@ -565,8 +565,20 @@ func mustMkdirAll(t *testing.T, path string) {
 // mustWriteFile writes a file, failing the test on error.
 func mustWriteFile(t *testing.T, path, content string, perm os.FileMode) {
 	t.Helper()
-	if err := os.WriteFile(path, []byte(content), perm); err != nil {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm)
+	if err != nil {
+		t.Fatalf("failed to create file %s: %v", path, err)
+	}
+	if _, err := f.WriteString(content); err != nil {
+		f.Close()
 		t.Fatalf("failed to write file %s: %v", path, err)
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		t.Fatalf("failed to sync file %s: %v", path, err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("failed to close file %s: %v", path, err)
 	}
 }
 
