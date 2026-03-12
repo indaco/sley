@@ -183,7 +183,6 @@ echo '{"success": true, "version": "1.0.0"}'
 // TestScriptExecutor_NonZeroExitCode_Recovery tests handling of scripts that exit with non-zero.
 func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
 	t.Parallel()
-	tempDir := t.TempDir()
 
 	tests := []struct {
 		name     string
@@ -197,7 +196,7 @@ func TestScriptExecutor_NonZeroExitCode_Recovery(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			scriptPath := filepath.Join(tempDir, "exit_test.sh")
+			scriptPath := filepath.Join(t.TempDir(), "exit_test.sh")
 			script := "#!/bin/sh\nexit " + tt.exitCode + "\n"
 			if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
 				t.Fatalf("failed to write script: %v", err)
