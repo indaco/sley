@@ -5,7 +5,7 @@ import (
 )
 
 func TestValidThemes(t *testing.T) {
-	t.Parallel()
+
 	expected := []string{"sley", "base", "base16", "catppuccin", "charm", "dracula"}
 
 	if len(ValidThemes) != len(expected) {
@@ -20,7 +20,7 @@ func TestValidThemes(t *testing.T) {
 }
 
 func TestIsValidTheme(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name     string
 		theme    string
@@ -80,7 +80,7 @@ func TestIsValidTheme(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+
 			got := IsValidTheme(tt.theme)
 			if got != tt.expected {
 				t.Errorf("IsValidTheme(%q) = %v, want %v", tt.theme, got, tt.expected)
@@ -90,7 +90,7 @@ func TestIsValidTheme(t *testing.T) {
 }
 
 func TestGetTheme(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name        string
 		theme       string
@@ -149,7 +149,7 @@ func TestGetTheme(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+
 			got := GetTheme(tt.theme)
 			if tt.expectNil && got != nil {
 				t.Errorf("GetTheme(%q) returned non-nil, want nil: %s", tt.theme, tt.description)
@@ -162,14 +162,13 @@ func TestGetTheme(t *testing.T) {
 }
 
 func TestSetTheme(t *testing.T) {
-	t.Parallel(
+
 	// Reset theme after each test
-	)
 
 	defer resetTheme()
 
 	t.Run("set valid theme", func(t *testing.T) {
-		t.Parallel()
+
 		SetTheme("dracula")
 		theme := currentThemeOrDefault()
 		if theme == nil {
@@ -178,7 +177,7 @@ func TestSetTheme(t *testing.T) {
 	})
 
 	t.Run("set empty string resets to default", func(t *testing.T) {
-		t.Parallel()
+
 		SetTheme("dracula") // First set a non-default theme
 		SetTheme("")        // Reset to default
 		theme := currentThemeOrDefault()
@@ -189,7 +188,7 @@ func TestSetTheme(t *testing.T) {
 	})
 
 	t.Run("set invalid theme falls back to default", func(t *testing.T) {
-		t.Parallel()
+
 		SetTheme("invalid-theme")
 		theme := currentThemeOrDefault()
 		if theme == nil {
@@ -200,14 +199,13 @@ func TestSetTheme(t *testing.T) {
 }
 
 func TestCurrentTheme(t *testing.T) {
-	t.Parallel(
+
 	// Reset theme after each test
-	)
 
 	defer resetTheme()
 
 	t.Run("returns default theme when not set", func(t *testing.T) {
-		t.Parallel()
+
 		resetTheme()
 		theme := currentThemeOrDefault()
 		if theme == nil {
@@ -216,7 +214,7 @@ func TestCurrentTheme(t *testing.T) {
 	})
 
 	t.Run("returns set theme", func(t *testing.T) {
-		t.Parallel()
+
 		SetTheme("charm")
 		theme := currentThemeOrDefault()
 		if theme == nil {
@@ -226,9 +224,8 @@ func TestCurrentTheme(t *testing.T) {
 }
 
 func TestResetTheme(t *testing.T) {
-	t.Parallel(
+
 	// Set a theme first
-	)
 
 	SetTheme("dracula")
 

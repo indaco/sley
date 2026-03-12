@@ -6,7 +6,7 @@ import (
 )
 
 func TestIsInteractive_CI(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name   string
 		envVar string
@@ -30,9 +30,8 @@ func TestIsInteractive_CI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel(
+
 			// Set CI environment variable
-			)
 
 			oldVal := os.Getenv(tt.envVar)
 			os.Setenv(tt.envVar, tt.value)
@@ -53,21 +52,19 @@ func TestIsInteractive_CI(t *testing.T) {
 }
 
 func TestIsInteractive_NoCIEnv(t *testing.T) {
-	t.Parallel(
+
 	// This test is environment-dependent
 	// In a real terminal: should return true
 	// In CI or with redirected stdout: should return false
 	// We can't reliably test the TTY check, so we just ensure it doesn't panic
-	)
 
 	_ = IsInteractive()
 }
 
 func TestIsTTY(t *testing.T) {
-	t.Parallel(
+
 	// This test is environment-dependent
 	// Just ensure it doesn't panic
-	)
 
 	_ = IsTTY()
 }

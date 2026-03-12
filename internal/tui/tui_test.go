@@ -5,7 +5,7 @@ import (
 )
 
 func TestChoice_String(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name     string
 		choice   Choice
@@ -19,7 +19,7 @@ func TestChoice_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+
 			got := tt.choice.String()
 			if got != tt.expected {
 				t.Errorf("Choice.String() = %v, want %v", got, tt.expected)
@@ -29,7 +29,7 @@ func TestChoice_String(t *testing.T) {
 }
 
 func TestParseChoice(t *testing.T) {
-	t.Parallel()
+
 	tests := []struct {
 		name     string
 		input    string
@@ -44,7 +44,7 @@ func TestParseChoice(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+
 			got := ParseChoice(tt.input)
 			if got != tt.expected {
 				t.Errorf("ParseChoice(%q) = %v, want %v", tt.input, got, tt.expected)
@@ -54,7 +54,7 @@ func TestParseChoice(t *testing.T) {
 }
 
 func TestAllModules(t *testing.T) {
-	t.Parallel()
+
 	selection := AllModules()
 
 	if !selection.All {
@@ -71,7 +71,7 @@ func TestAllModules(t *testing.T) {
 }
 
 func TestSelectedModules(t *testing.T) {
-	t.Parallel()
+
 	names := []string{"module-a", "module-b", "module-c"}
 	selection := SelectedModules(names)
 
@@ -95,7 +95,7 @@ func TestSelectedModules(t *testing.T) {
 }
 
 func TestCanceledSelection(t *testing.T) {
-	t.Parallel()
+
 	selection := CanceledSelection()
 
 	if !selection.Canceled {
@@ -112,7 +112,7 @@ func TestCanceledSelection(t *testing.T) {
 }
 
 func TestSelection_ZeroValue(t *testing.T) {
-	t.Parallel()
+
 	var selection Selection
 
 	if selection.All {
@@ -129,7 +129,7 @@ func TestSelection_ZeroValue(t *testing.T) {
 }
 
 func TestSelectedModules_EmptySlice(t *testing.T) {
-	t.Parallel()
+
 	selection := SelectedModules([]string{})
 
 	if selection.All {
@@ -150,7 +150,7 @@ func TestSelectedModules_EmptySlice(t *testing.T) {
 }
 
 func TestSelectedModules_NilSlice(t *testing.T) {
-	t.Parallel()
+
 	selection := SelectedModules(nil)
 
 	if selection.All {

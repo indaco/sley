@@ -8,14 +8,14 @@ import (
 )
 
 func TestMockPrompter_PromptModuleSelection(t *testing.T) {
-	t.Parallel()
+
 	modules := []*workspace.Module{
 		{Name: "module-a", CurrentVersion: "1.0.0"},
 		{Name: "module-b", CurrentVersion: "2.0.0"},
 	}
 
 	t.Run("returns pre-configured selection", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		expected := AllModules()
 		mock.SelectionResult = expected
@@ -31,7 +31,7 @@ func TestMockPrompter_PromptModuleSelection(t *testing.T) {
 	})
 
 	t.Run("returns pre-configured error", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		expectedErr := errors.New("test error")
 		mock.SelectionError = expectedErr
@@ -43,7 +43,7 @@ func TestMockPrompter_PromptModuleSelection(t *testing.T) {
 	})
 
 	t.Run("records call", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		mock.SelectionResult = AllModules()
 
@@ -68,9 +68,9 @@ func TestMockPrompter_PromptModuleSelection(t *testing.T) {
 }
 
 func TestMockPrompter_ConfirmOperation(t *testing.T) {
-	t.Parallel()
+
 	t.Run("returns pre-configured result", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		mock.ConfirmResult = true
 
@@ -85,7 +85,7 @@ func TestMockPrompter_ConfirmOperation(t *testing.T) {
 	})
 
 	t.Run("returns pre-configured error", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		expectedErr := errors.New("test error")
 		mock.ConfirmError = expectedErr
@@ -97,7 +97,7 @@ func TestMockPrompter_ConfirmOperation(t *testing.T) {
 	})
 
 	t.Run("records call", func(t *testing.T) {
-		t.Parallel()
+
 		mock := NewMockPrompter()
 		mock.ConfirmResult = true
 
@@ -122,7 +122,7 @@ func TestMockPrompter_ConfirmOperation(t *testing.T) {
 }
 
 func TestMockPrompter_Reset(t *testing.T) {
-	t.Parallel()
+
 	mock := NewMockPrompter()
 	mock.SelectionResult = AllModules()
 	mock.SelectionError = errors.New("test error")
@@ -161,7 +161,7 @@ func TestMockPrompter_Reset(t *testing.T) {
 }
 
 func TestMockPrompter_Chaining(t *testing.T) {
-	t.Parallel()
+
 	mock := NewMockPrompter().
 		WithSelectionResult(AllModules()).
 		WithConfirmResult(true)
@@ -176,7 +176,7 @@ func TestMockPrompter_Chaining(t *testing.T) {
 }
 
 func TestMockPrompter_WithSelectionError(t *testing.T) {
-	t.Parallel()
+
 	expectedErr := errors.New("selection error")
 	mock := NewMockPrompter().WithSelectionError(expectedErr)
 
@@ -192,7 +192,7 @@ func TestMockPrompter_WithSelectionError(t *testing.T) {
 }
 
 func TestMockPrompter_WithConfirmError(t *testing.T) {
-	t.Parallel()
+
 	expectedErr := errors.New("confirm error")
 	mock := NewMockPrompter().WithConfirmError(expectedErr)
 
@@ -207,7 +207,7 @@ func TestMockPrompter_WithConfirmError(t *testing.T) {
 }
 
 func TestMockPrompter_CallCount(t *testing.T) {
-	t.Parallel()
+
 	mock := NewMockPrompter()
 	mock.SelectionResult = AllModules()
 
@@ -235,7 +235,7 @@ func TestMockPrompter_CallCount(t *testing.T) {
 }
 
 func TestMockPrompter_LastCall(t *testing.T) {
-	t.Parallel()
+
 	mock := NewMockPrompter()
 	mock.SelectionResult = AllModules()
 
