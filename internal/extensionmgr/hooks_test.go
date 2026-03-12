@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/extensions"
 )
 
 func TestHasHook(t *testing.T) {
@@ -475,10 +474,6 @@ hooks:
 			},
 		},
 	}
-
-	// Save original function and restore after test
-	originalLoadFn := extensions.LoadExtensionManifestFn
-	defer func() { extensions.LoadExtensionManifestFn = originalLoadFn }()
 
 	runner := NewExtensionHookRunner(cfg)
 	runner.Executor = &mockExecutor{

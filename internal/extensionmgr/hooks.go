@@ -32,15 +32,17 @@ const (
 
 // ExtensionHookRunner manages the execution of extension hooks
 type ExtensionHookRunner struct {
-	Config   *config.Config
-	Executor Executor
+	Config         *config.Config
+	Executor       Executor
+	ManifestLoader ManifestLoader
 }
 
 // NewExtensionHookRunner creates a new ExtensionHookRunner
 func NewExtensionHookRunner(cfg *config.Config) *ExtensionHookRunner {
 	return &ExtensionHookRunner{
-		Config:   cfg,
-		Executor: NewScriptExecutor(),
+		Config:         cfg,
+		Executor:       NewScriptExecutor(),
+		ManifestLoader: &DefaultManifestLoader{},
 	}
 }
 
@@ -60,7 +62,7 @@ func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, i
 		}
 
 		// Load extension manifest
-		manifest, err := extensions.LoadExtensionManifestFn(extCfg.Path)
+		manifest, err := r.ManifestLoader.Load(extCfg.Path)
 		if err != nil {
 			return fmt.Errorf("failed to load extension %q: %w", extCfg.Name, err)
 		}
@@ -103,20 +105,21 @@ func hasHook(hooks []string, hookType string) bool {
 	return slices.Contains(hooks, hookType)
 }
 
-// LoadExtensionsForHook returns all enabled extensions that support the specified hook
-func LoadExtensionsForHook(cfg *config.Config, hookType HookType) ([]*extensions.ExtensionManifest, error) {
-	if cfg == nil || len(cfg.Extensions) == 0 {
+// LoadExtensionsForHook returns all enabled extensions that support the specified hook.
+// It uses the runner's ManifestLoader for dependency injection.
+func (r *ExtensionHookRunner) LoadExtensionsForHook(hookType HookType) ([]*extensions.ExtensionManifest, error) {
+	if r.Config == nil || len(r.Config.Extensions) == 0 {
 		return nil, nil
 	}
 
 	var result []*extensions.ExtensionManifest
 
-	for _, extCfg := range cfg.Extensions {
+	for _, extCfg := range r.Config.Extensions {
 		if !extCfg.Enabled {
 			continue
 		}
 
-		manifest, err := extensions.LoadExtensionManifestFn(extCfg.Path)
+		manifest, err := r.ManifestLoader.Load(extCfg.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load extension %q: %w", extCfg.Name, err)
 		}
@@ -127,6 +130,12 @@ func LoadExtensionsForHook(cfg *config.Config, hookType HookType) ([]*extensions
 	}
 
 	return result, nil
+}
+
+// LoadExtensionsForHook is a package-level convenience that creates a default runner.
+func LoadExtensionsForHook(cfg *config.Config, hookType HookType) ([]*extensions.ExtensionManifest, error) {
+	runner := NewExtensionHookRunner(cfg)
+	return runner.LoadExtensionsForHook(hookType)
 }
 
 // ValidateExtensionHook validates that a hook type is valid
