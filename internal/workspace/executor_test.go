@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -26,6 +27,7 @@ func (m *mockOperation) Name() string {
 }
 
 func TestNewExecutor(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		opts     []ExecutorOption
@@ -60,6 +62,7 @@ func TestNewExecutor(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			e := NewExecutor(tt.opts...)
 			if e.parallel != tt.wantPar {
 				t.Errorf("NewExecutor() parallel = %v, want %v", e.parallel, tt.wantPar)
@@ -72,6 +75,7 @@ func TestNewExecutor(t *testing.T) {
 }
 
 func TestExecutor_Run_EmptyModules(t *testing.T) {
+	t.Parallel()
 	e := NewExecutor()
 	op := &mockOperation{name: "test"}
 
@@ -87,6 +91,7 @@ func TestExecutor_Run_EmptyModules(t *testing.T) {
 }
 
 func TestExecutor_Run_NilOperation(t *testing.T) {
+	t.Parallel()
 	e := NewExecutor()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
@@ -99,6 +104,7 @@ func TestExecutor_Run_NilOperation(t *testing.T) {
 }
 
 func TestExecutor_Run_Success(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version", CurrentVersion: "1.0.0"},
 		{Name: "module-b", Path: "/path/to/module-b/.version", CurrentVersion: "2.0.0"},
@@ -139,6 +145,7 @@ func TestExecutor_Run_Success(t *testing.T) {
 }
 
 func TestExecutor_Run_PartialFailure(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -188,6 +195,7 @@ func TestExecutor_Run_PartialFailure(t *testing.T) {
 }
 
 func TestExecutor_Run_FailFast(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -222,6 +230,7 @@ func TestExecutor_Run_FailFast(t *testing.T) {
 }
 
 func TestExecutor_Run_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -236,8 +245,13 @@ func TestExecutor_Run_ContextCancellation(t *testing.T) {
 			if mod.Name == "module-a" {
 				cancel() // Cancel after first module
 			}
-			time.Sleep(10 * time.Millisecond)
-			return nil
+			// Check if context was cancelled instead of sleeping
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+				return nil
+			}
 		},
 	}
 
@@ -256,6 +270,7 @@ func TestExecutor_Run_ContextCancellation(t *testing.T) {
 }
 
 func TestHasErrors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		results []ExecutionResult
@@ -286,6 +301,7 @@ func TestHasErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := HasErrors(tt.results)
 			if got != tt.want {
 				t.Errorf("HasErrors() = %v, want %v", got, tt.want)
@@ -295,6 +311,7 @@ func TestHasErrors(t *testing.T) {
 }
 
 func TestSuccessCount(t *testing.T) {
+	t.Parallel()
 	results := []ExecutionResult{
 		{Success: true},
 		{Success: false},
@@ -310,6 +327,7 @@ func TestSuccessCount(t *testing.T) {
 }
 
 func TestErrorCount(t *testing.T) {
+	t.Parallel()
 	results := []ExecutionResult{
 		{Success: true},
 		{Success: false},
@@ -325,6 +343,7 @@ func TestErrorCount(t *testing.T) {
 }
 
 func TestTotalDuration(t *testing.T) {
+	t.Parallel()
 	results := []ExecutionResult{
 		{Duration: 100 * time.Millisecond},
 		{Duration: 200 * time.Millisecond},
@@ -340,6 +359,7 @@ func TestTotalDuration(t *testing.T) {
 }
 
 func TestExecutor_RunParallel_Success(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version", CurrentVersion: "1.0.0"},
 		{Name: "module-b", Path: "/path/to/module-b/.version", CurrentVersion: "2.0.0"},
@@ -354,7 +374,6 @@ func TestExecutor_RunParallel_Success(t *testing.T) {
 			mu.Lock()
 			executed[mod.Name] = true
 			mu.Unlock()
-			time.Sleep(10 * time.Millisecond) // Simulate some work
 			return nil
 		},
 	}
@@ -387,6 +406,7 @@ func TestExecutor_RunParallel_Success(t *testing.T) {
 }
 
 func TestExecutor_RunParallel_PartialFailure(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -398,7 +418,6 @@ func TestExecutor_RunParallel_PartialFailure(t *testing.T) {
 	op := &mockOperation{
 		name: "test-parallel-fail",
 		execFunc: func(ctx context.Context, mod *Module) error {
-			time.Sleep(5 * time.Millisecond)
 			if mod.Name == "module-b" || mod.Name == "module-d" {
 				return expectedErr
 			}
@@ -439,6 +458,7 @@ func TestExecutor_RunParallel_PartialFailure(t *testing.T) {
 }
 
 func TestExecutor_RunParallel_FailFast(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -499,6 +519,7 @@ func TestExecutor_RunParallel_FailFast(t *testing.T) {
 }
 
 func TestExecutor_RunParallel_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	modules := []*Module{
 		{Name: "module-a", Path: "/path/to/module-a/.version"},
 		{Name: "module-b", Path: "/path/to/module-b/.version"},
@@ -531,6 +552,7 @@ func TestExecutor_RunParallel_ContextCancellation(t *testing.T) {
 }
 
 func TestExecutor_VersionTracking(t *testing.T) {
+	t.Parallel()
 	module := &Module{
 		Name:           "test-module",
 		Path:           "/path/to/.version",
@@ -567,6 +589,7 @@ func TestExecutor_VersionTracking(t *testing.T) {
 }
 
 func TestWithParallel(t *testing.T) {
+	t.Parallel()
 	e := NewExecutor(WithParallel(true))
 	if !e.parallel {
 		t.Error("WithParallel(true) should set parallel to true")
@@ -579,6 +602,7 @@ func TestWithParallel(t *testing.T) {
 }
 
 func TestWithFailFast(t *testing.T) {
+	t.Parallel()
 	e := NewExecutor(WithFailFast(true))
 	if !e.failFast {
 		t.Error("WithFailFast(true) should set failFast to true")
@@ -594,7 +618,10 @@ func TestWithFailFast(t *testing.T) {
 // These tests are specifically designed to catch race conditions when run with -race flag.
 
 func TestExecutor_RaceDetector_ParallelModuleAccess(t *testing.T) {
+	t.Parallel(
 	// Test concurrent access to module state
+	)
+
 	const numModules = 50
 	modules := make([]*Module, numModules)
 	for i := range numModules {
@@ -639,7 +666,10 @@ func TestExecutor_RaceDetector_ParallelModuleAccess(t *testing.T) {
 }
 
 func TestExecutor_RaceDetector_ParallelFailFastCancellation(t *testing.T) {
+	t.Parallel(
 	// Test that fail-fast correctly cancels concurrent operations without races
+	)
+
 	const numModules = 20
 	modules := make([]*Module, numModules)
 	for i := range numModules {
@@ -691,7 +721,10 @@ func TestExecutor_RaceDetector_ParallelFailFastCancellation(t *testing.T) {
 }
 
 func TestExecutor_RaceDetector_ResultsSliceAccess(t *testing.T) {
+	t.Parallel(
 	// Test that results slice is properly synchronized
+	)
+
 	const numModules = 30
 	modules := make([]*Module, numModules)
 	for i := range numModules {
@@ -705,8 +738,8 @@ func TestExecutor_RaceDetector_ResultsSliceAccess(t *testing.T) {
 	op := &mockOperation{
 		name: "results-race-test",
 		execFunc: func(ctx context.Context, mod *Module) error {
-			// Random delay to increase chance of race conditions
-			time.Sleep(time.Duration(1+int64(mod.Name[len(mod.Name)-1])%10) * time.Millisecond)
+			// Yield to increase chance of interleaving for race detection
+			runtime.Gosched()
 			mod.CurrentVersion = "2.0.0"
 			return nil
 		},
@@ -732,7 +765,10 @@ func TestExecutor_RaceDetector_ResultsSliceAccess(t *testing.T) {
 }
 
 func TestExecutor_RaceDetector_ConcurrentContextCancellation(t *testing.T) {
+	t.Parallel(
 	// Test concurrent context cancellation handling
+	)
+
 	const numModules = 25
 	modules := make([]*Module, numModules)
 	for i := range numModules {
@@ -774,7 +810,10 @@ func TestExecutor_RaceDetector_ConcurrentContextCancellation(t *testing.T) {
 }
 
 func TestExecutor_RaceDetector_MixedSuccessFailure(t *testing.T) {
+	t.Parallel(
 	// Test mixed success/failure results with concurrent access
+	)
+
 	const numModules = 40
 	modules := make([]*Module, numModules)
 	for i := range numModules {
