@@ -62,8 +62,13 @@ func DefaultConfig() *Config {
 }
 
 // VersionValidatorPlugin implements the VersionValidator interface.
+// GetCurrentBranchFunc is the function signature for getting the current git branch.
+type GetCurrentBranchFunc func(ctx context.Context) (string, error)
+
+// VersionValidatorPlugin implements VersionValidator.
 type VersionValidatorPlugin struct {
-	cfg *Config
+	cfg              *Config
+	getCurrentBranch GetCurrentBranchFunc
 }
 
 // NewVersionValidator creates a new VersionValidatorPlugin instance.
@@ -71,7 +76,12 @@ func NewVersionValidator(cfg *Config) *VersionValidatorPlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
-	return &VersionValidatorPlugin{cfg: cfg}
+	return &VersionValidatorPlugin{
+		cfg: cfg,
+		getCurrentBranch: func(ctx context.Context) (string, error) {
+			return defaultCurrentBranchReader.GetCurrentBranch(ctx)
+		},
+	}
 }
 
 // Name returns the plugin name.
@@ -233,11 +243,6 @@ func (p *VersionValidatorPlugin) validateRequirePreRelease0x(rule *Rule, version
 // defaultCurrentBranchReader is the default branch reader for backward compatibility.
 var defaultCurrentBranchReader core.GitBranchReader = defaultBranchReader
 
-// getCurrentBranchFn is kept for backward compatibility during migration.
-var getCurrentBranchFn = func(ctx context.Context) (string, error) {
-	return defaultCurrentBranchReader.GetCurrentBranch(ctx)
-}
-
 // validateBranchConstraint checks if the bump type is allowed on the current branch.
 func (p *VersionValidatorPlugin) validateBranchConstraint(rule *Rule, bumpType string) error {
 	if rule.Branch == "" || len(rule.Allowed) == 0 {
@@ -248,7 +253,7 @@ func (p *VersionValidatorPlugin) validateBranchConstraint(rule *Rule, bumpType s
 	ctx, cancel := context.WithTimeout(context.Background(), core.TimeoutShort)
 	defer cancel()
 
-	branch, err := getCurrentBranchFn(ctx)
+	branch, err := p.getCurrentBranch(ctx)
 	if err != nil {
 		// If we can't get the branch, skip this validation
 		return nil
