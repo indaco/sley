@@ -7,6 +7,7 @@ import (
 )
 
 func TestNewModulePrompt(t *testing.T) {
+	t.Parallel()
 	modules := []*workspace.Module{
 		{Name: "module-a", CurrentVersion: "1.0.0"},
 		{Name: "module-b", CurrentVersion: "2.0.0"},
@@ -24,11 +25,15 @@ func TestNewModulePrompt(t *testing.T) {
 }
 
 func TestModulePrompt_ImplementsPrompter(t *testing.T) {
+	t.Parallel(
 	// Compile-time check that ModulePrompt implements Prompter
+	)
+
 	var _ Prompter = (*ModulePrompt)(nil)
 }
 
 func TestPluralize(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		count    int
@@ -42,6 +47,7 @@ func TestPluralize(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := Pluralize(tt.count)
 			if got != tt.expected {
 				t.Errorf("Pluralize(%d) = %q, want %q", tt.count, got, tt.expected)
@@ -51,6 +57,7 @@ func TestPluralize(t *testing.T) {
 }
 
 func TestModulePrompt_FormatModuleList(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		modules       []*workspace.Module
@@ -93,6 +100,7 @@ func TestModulePrompt_FormatModuleList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			prompt := NewModulePrompt(tt.modules)
 			result := prompt.formatModuleList()
 
@@ -119,6 +127,7 @@ func containsSubstring(s, substr string) bool {
 }
 
 func TestModulePrompt_PromptModuleSelection_EmptyModules(t *testing.T) {
+	t.Parallel()
 	prompt := NewModulePrompt(nil)
 
 	_, err := prompt.PromptModuleSelection([]*workspace.Module{})
@@ -133,6 +142,7 @@ func TestModulePrompt_PromptModuleSelection_EmptyModules(t *testing.T) {
 }
 
 func TestErrCanceled(t *testing.T) {
+	t.Parallel()
 	if ErrCanceled == nil {
 		t.Fatal("ErrCanceled should not be nil")
 	}
@@ -144,7 +154,10 @@ func TestErrCanceled(t *testing.T) {
 }
 
 func TestModulePrompt_FormatModuleList_WithPaths(t *testing.T) {
+	t.Parallel(
 	// Test that formatModuleList uses DisplayNameWithPath for disambiguation
+	)
+
 	modules := []*workspace.Module{
 		{Name: "version", CurrentVersion: "1.0.0", Dir: "backend/gateway/internal/version"},
 		{Name: "version", CurrentVersion: "2.0.0", Dir: "cli/internal/version"},
@@ -170,7 +183,10 @@ func TestModulePrompt_FormatModuleList_WithPaths(t *testing.T) {
 }
 
 func TestModulePrompt_FormatModuleList_RootModule(t *testing.T) {
+	t.Parallel(
 	// Test that root modules (Dir = ".") don't show redundant path
+	)
+
 	modules := []*workspace.Module{
 		{Name: "myapp", CurrentVersion: "1.0.0", Dir: "."},
 	}
@@ -193,6 +209,7 @@ func TestModulePrompt_FormatModuleList_RootModule(t *testing.T) {
 // and Choice tests (String, ParseChoice) are in tui_test.go
 
 func TestCustomKeyMap(t *testing.T) {
+	t.Parallel()
 	km := CustomKeyMap()
 
 	if km == nil {
@@ -254,8 +271,11 @@ func TestCustomKeyMap(t *testing.T) {
 
 // TestConfirmOperation_DelegatesToConfirm verifies ConfirmOperation delegates to Confirm.
 func TestConfirmOperation_DelegatesToConfirm(t *testing.T) {
+	t.Parallel(
 	// This test verifies the method exists and has the correct signature.
 	// The actual interactive behavior is tested manually.
+	)
+
 	prompt := NewModulePrompt(nil)
 
 	// Verify the method exists with correct signature (compile-time check)
@@ -264,6 +284,9 @@ func TestConfirmOperation_DelegatesToConfirm(t *testing.T) {
 
 // TestConfirmFunctionSignature verifies the Confirm function has correct signature.
 func TestConfirmFunctionSignature(t *testing.T) {
+	t.Parallel(
 	// Verify the function exists with correct signature (compile-time check)
+	)
+
 	_ = Confirm
 }

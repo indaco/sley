@@ -15,7 +15,9 @@ import (
 )
 
 func TestGetOrInitVersionFile(t *testing.T) {
+	t.Parallel()
 	t.Run("strict=true and file exists", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 		tmpFile := testutils.WriteTempVersionFile(t, tmpDir, "0.1.0")
 
@@ -29,6 +31,7 @@ func TestGetOrInitVersionFile(t *testing.T) {
 	})
 
 	t.Run("strict=true and file missing", func(t *testing.T) {
+		t.Parallel()
 		missingPath := filepath.Join(t.TempDir(), "missing.version")
 
 		created, err := GetOrInitVersionFile(missingPath, true)
@@ -41,6 +44,7 @@ func TestGetOrInitVersionFile(t *testing.T) {
 	})
 
 	t.Run("strict=false and initialization succeeds", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 		targetPath := filepath.Join(tmpDir, ".version")
 
@@ -60,7 +64,10 @@ func TestGetOrInitVersionFile(t *testing.T) {
 }
 
 func TestGetOrInitVersionFile_InitError(t *testing.T) {
+	t.Parallel(
 	// Use MockFileSystem with write error to simulate initialization failure
+	)
+
 	mockFS := core.NewMockFileSystem()
 	mockFS.WriteErr = errors.New("mock init failure")
 
@@ -83,7 +90,9 @@ func TestGetOrInitVersionFile_InitError(t *testing.T) {
 }
 
 func TestFromCommand(t *testing.T) {
+	t.Parallel()
 	t.Run("path exists, strict false", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 		tmpFile := testutils.WriteTempVersionFile(t, tmpDir, "0.1.0")
 
@@ -100,6 +109,7 @@ func TestFromCommand(t *testing.T) {
 	})
 
 	t.Run("path init success, strict false", func(t *testing.T) {
+		t.Parallel()
 		tmpDir := t.TempDir()
 		targetPath := filepath.Join(tmpDir, ".version")
 

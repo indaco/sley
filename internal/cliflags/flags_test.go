@@ -8,6 +8,7 @@ import (
 )
 
 func TestMultiModuleFlags(t *testing.T) {
+	t.Parallel()
 	flags := MultiModuleFlags()
 
 	if len(flags) == 0 {
@@ -44,6 +45,7 @@ func TestMultiModuleFlags(t *testing.T) {
 }
 
 func TestMultiModuleFlags_FlagTypes(t *testing.T) {
+	t.Parallel()
 	flags := MultiModuleFlags()
 
 	// Verify some specific flag configurations
@@ -86,6 +88,7 @@ func TestMultiModuleFlags_FlagTypes(t *testing.T) {
 }
 
 func TestMultiModuleFlags_Aliases(t *testing.T) {
+	t.Parallel()
 	flags := MultiModuleFlags()
 
 	aliasMap := make(map[string][]string)

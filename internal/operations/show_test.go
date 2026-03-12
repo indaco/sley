@@ -10,6 +10,7 @@ import (
 )
 
 func TestNewShowOperation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	op := NewShowOperation(fs)
 
@@ -22,6 +23,7 @@ func TestNewShowOperation(t *testing.T) {
 }
 
 func TestShowOperation_Execute(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		version  string
@@ -56,6 +58,7 @@ func TestShowOperation_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.version))
 
@@ -79,6 +82,7 @@ func TestShowOperation_Execute(t *testing.T) {
 }
 
 func TestShowOperation_Execute_FileNotFound(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	// Don't create any file
 
@@ -96,6 +100,7 @@ func TestShowOperation_Execute_FileNotFound(t *testing.T) {
 }
 
 func TestShowOperation_Execute_InvalidVersion(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("not-a-version\n"))
 
@@ -113,6 +118,7 @@ func TestShowOperation_Execute_InvalidVersion(t *testing.T) {
 }
 
 func TestShowOperation_Execute_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.0.0\n"))
 
@@ -135,6 +141,7 @@ func TestShowOperation_Execute_ContextCancellation(t *testing.T) {
 }
 
 func TestShowOperation_Execute_ContextTimeout(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.0.0\n"))
 
@@ -147,7 +154,7 @@ func TestShowOperation_Execute_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	time.Sleep(2 * time.Millisecond)
+	<-ctx.Done() // Wait for the context to actually expire
 
 	err := op.Execute(ctx, mod)
 	if err == nil {
@@ -156,6 +163,7 @@ func TestShowOperation_Execute_ContextTimeout(t *testing.T) {
 }
 
 func TestShowOperation_Execute_ReadError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.ReadErr = context.DeadlineExceeded
 
@@ -173,6 +181,7 @@ func TestShowOperation_Execute_ReadError(t *testing.T) {
 }
 
 func TestShowOperation_Name(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	op := NewShowOperation(fs)
 
@@ -184,6 +193,7 @@ func TestShowOperation_Name(t *testing.T) {
 }
 
 func TestShowOperation_Execute_EmptyFile(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte(""))
 
@@ -201,6 +211,7 @@ func TestShowOperation_Execute_EmptyFile(t *testing.T) {
 }
 
 func TestShowOperation_Execute_PreservesModulePath(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 

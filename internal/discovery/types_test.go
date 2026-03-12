@@ -7,6 +7,7 @@ import (
 )
 
 func TestDetectionMode_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		mode DetectionMode
 		want string
@@ -19,6 +20,7 @@ func TestDetectionMode_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.want, func(t *testing.T) {
+			t.Parallel()
 			got := tt.mode.String()
 			if got != tt.want {
 				t.Errorf("DetectionMode(%d).String() = %q, want %q", tt.mode, got, tt.want)
@@ -28,6 +30,7 @@ func TestDetectionMode_String(t *testing.T) {
 }
 
 func TestResult_HasModules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		modules []Module
@@ -52,6 +55,7 @@ func TestResult_HasModules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &Result{Modules: tt.modules}
 			if got := r.HasModules(); got != tt.want {
 				t.Errorf("HasModules() = %v, want %v", got, tt.want)
@@ -61,6 +65,7 @@ func TestResult_HasModules(t *testing.T) {
 }
 
 func TestResult_HasManifests(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		manifests []ManifestSource
@@ -85,6 +90,7 @@ func TestResult_HasManifests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &Result{Manifests: tt.manifests}
 			if got := r.HasManifests(); got != tt.want {
 				t.Errorf("HasManifests() = %v, want %v", got, tt.want)
@@ -94,6 +100,7 @@ func TestResult_HasManifests(t *testing.T) {
 }
 
 func TestResult_HasMismatches(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		mismatches []Mismatch
@@ -113,6 +120,7 @@ func TestResult_HasMismatches(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &Result{Mismatches: tt.mismatches}
 			if got := r.HasMismatches(); got != tt.want {
 				t.Errorf("HasMismatches() = %v, want %v", got, tt.want)
@@ -122,6 +130,7 @@ func TestResult_HasMismatches(t *testing.T) {
 }
 
 func TestResult_IsEmpty(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		modules   []Module
@@ -156,6 +165,7 @@ func TestResult_IsEmpty(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &Result{Modules: tt.modules, Manifests: tt.manifests}
 			if got := r.IsEmpty(); got != tt.want {
 				t.Errorf("IsEmpty() = %v, want %v", got, tt.want)
@@ -165,6 +175,7 @@ func TestResult_IsEmpty(t *testing.T) {
 }
 
 func TestResult_PrimaryVersion(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		modules   []Module
@@ -211,6 +222,7 @@ func TestResult_PrimaryVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			r := &Result{Modules: tt.modules, Manifests: tt.manifests}
 			if got := r.PrimaryVersion(); got != tt.want {
 				t.Errorf("PrimaryVersion() = %q, want %q", got, tt.want)
@@ -220,6 +232,7 @@ func TestResult_PrimaryVersion(t *testing.T) {
 }
 
 func TestSyncCandidate_ToFileConfig(t *testing.T) {
+	t.Parallel()
 	candidate := SyncCandidate{
 		Path:    "package.json",
 		Format:  parser.FormatJSON,
@@ -241,6 +254,7 @@ func TestSyncCandidate_ToFileConfig(t *testing.T) {
 }
 
 func TestDefaultKnownManifests(t *testing.T) {
+	t.Parallel()
 	manifests := DefaultKnownManifests()
 
 	// Should have common manifest types

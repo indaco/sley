@@ -8,6 +8,7 @@ import (
 )
 
 func TestFormat_IsValid(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		format Format
 		want   bool
@@ -23,6 +24,7 @@ func TestFormat_IsValid(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(string(tt.format), func(t *testing.T) {
+			t.Parallel()
 			got := tt.format.IsValid()
 			if got != tt.want {
 				t.Errorf("Format(%q).IsValid() = %v, want %v", tt.format, got, tt.want)
@@ -32,6 +34,7 @@ func TestFormat_IsValid(t *testing.T) {
 }
 
 func TestParseFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  Format
@@ -47,6 +50,7 @@ func TestParseFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			got := ParseFormat(tt.input)
 			if got != tt.want {
 				t.Errorf("ParseFormat(%q) = %v, want %v", tt.input, got, tt.want)
@@ -56,6 +60,7 @@ func TestParseFormat(t *testing.T) {
 }
 
 func TestReader_ReadJSON(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -109,6 +114,7 @@ func TestReader_ReadJSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.json", []byte(tt.content))
 
@@ -138,6 +144,7 @@ func TestReader_ReadJSON(t *testing.T) {
 }
 
 func TestReader_ReadYAML(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -179,6 +186,7 @@ func TestReader_ReadYAML(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.yaml", []byte(tt.content))
 
@@ -208,6 +216,7 @@ func TestReader_ReadYAML(t *testing.T) {
 }
 
 func TestReader_ReadTOML(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -249,6 +258,7 @@ func TestReader_ReadTOML(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.toml", []byte(tt.content))
 
@@ -278,6 +288,7 @@ func TestReader_ReadTOML(t *testing.T) {
 }
 
 func TestReader_ReadRaw(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -312,6 +323,7 @@ func TestReader_ReadRaw(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/VERSION", []byte(tt.content))
 
@@ -333,6 +345,7 @@ func TestReader_ReadRaw(t *testing.T) {
 }
 
 func TestReader_ReadRegex(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		content string
@@ -380,6 +393,7 @@ func TestReader_ReadRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.go", []byte(tt.content))
 
@@ -409,6 +423,7 @@ func TestReader_ReadRegex(t *testing.T) {
 }
 
 func TestReader_FileNotFound(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	reader := NewReader(fs)
 
@@ -424,6 +439,7 @@ func TestReader_FileNotFound(t *testing.T) {
 }
 
 func TestReader_EmptyPath(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	reader := NewReader(fs)
 
@@ -439,6 +455,7 @@ func TestReader_EmptyPath(t *testing.T) {
 }
 
 func TestReader_InvalidFormat(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test", []byte("1.0.0"))
 	reader := NewReader(fs)
@@ -454,6 +471,7 @@ func TestReader_InvalidFormat(t *testing.T) {
 }
 
 func TestReader_ReadVersion(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/package.json", []byte(`{"version": "1.2.3"}`))
 
@@ -474,6 +492,7 @@ func TestReader_ReadVersion(t *testing.T) {
 }
 
 func TestReader_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test.json", []byte(`{"version": "1.0.0"}`))
 
@@ -493,6 +512,7 @@ func TestReader_ContextCancellation(t *testing.T) {
 }
 
 func TestFormatForFile(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		filename string
 		want     Format
@@ -513,6 +533,7 @@ func TestFormatForFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
+			t.Parallel()
 			got := FormatForFile(tt.filename)
 			if got != tt.want {
 				t.Errorf("FormatForFile(%q) = %v, want %v", tt.filename, got, tt.want)
@@ -522,6 +543,7 @@ func TestFormatForFile(t *testing.T) {
 }
 
 func TestFieldForFormat(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		filename string
 		want     string
@@ -536,6 +558,7 @@ func TestFieldForFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.filename, func(t *testing.T) {
+			t.Parallel()
 			got := FieldForFormat(tt.filename)
 			if got != tt.want {
 				t.Errorf("FieldForFormat(%q) = %v, want %v", tt.filename, got, tt.want)

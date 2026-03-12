@@ -11,6 +11,7 @@ import (
 )
 
 func TestNewBumpOperation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "alpha", "build123", true)
 
@@ -39,6 +40,7 @@ func TestNewBumpOperation(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Patch(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -70,6 +72,7 @@ func TestBumpOperation_Execute_Patch(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Minor(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -101,6 +104,7 @@ func TestBumpOperation_Execute_Minor(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Major(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -132,6 +136,7 @@ func TestBumpOperation_Execute_Major(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Release(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-beta.1+build.123\n"))
 
@@ -163,6 +168,7 @@ func TestBumpOperation_Execute_Release(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Auto(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -182,6 +188,7 @@ func TestBumpOperation_Execute_Auto(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -210,6 +217,7 @@ func TestBumpOperation_Execute_Auto(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_WithPreRelease(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -237,6 +245,7 @@ func TestBumpOperation_Execute_WithPreRelease(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_WithMetadata(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -264,6 +273,7 @@ func TestBumpOperation_Execute_WithMetadata(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_PreserveMetadata(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name             string
 		initial          string
@@ -303,6 +313,7 @@ func TestBumpOperation_Execute_PreserveMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -331,6 +342,7 @@ func TestBumpOperation_Execute_PreserveMetadata(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -353,6 +365,7 @@ func TestBumpOperation_Execute_ContextCancellation(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_ContextTimeout(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -365,7 +378,7 @@ func TestBumpOperation_Execute_ContextTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	defer cancel()
 
-	time.Sleep(2 * time.Millisecond)
+	<-ctx.Done() // Wait for the context to actually expire
 
 	err := op.Execute(ctx, mod)
 	if err == nil {
@@ -374,6 +387,7 @@ func TestBumpOperation_Execute_ContextTimeout(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_ReadError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	// Don't set any file, so read will fail
 
@@ -404,6 +418,7 @@ func (m mockErrorBumper) BumpByLabel(_ semver.SemVersion, _ string) (semver.SemV
 }
 
 func TestBumpOperation_Execute_AutoBumpError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -424,6 +439,7 @@ func TestBumpOperation_Execute_AutoBumpError(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_UnknownBumpType(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -441,6 +457,7 @@ func TestBumpOperation_Execute_UnknownBumpType(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_SaveError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -462,6 +479,7 @@ func TestBumpOperation_Execute_SaveError(t *testing.T) {
 }
 
 func TestBumpOperation_Name(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		bumpType BumpType
@@ -501,6 +519,7 @@ func TestBumpOperation_Name(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			op := NewBumpOperation(fs, semver.NewDefaultBumper(), tt.bumpType, "", "", false)
 
@@ -513,6 +532,7 @@ func TestBumpOperation_Name(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Pre_IncrementExisting(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -547,6 +567,7 @@ func TestBumpOperation_Execute_Pre_IncrementExisting(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -575,6 +596,7 @@ func TestBumpOperation_Execute_Pre_IncrementExisting(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Pre_WithLabel(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		initial  string
@@ -603,6 +625,7 @@ func TestBumpOperation_Execute_Pre_WithLabel(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test/.version", []byte(tt.initial))
 
@@ -631,6 +654,7 @@ func TestBumpOperation_Execute_Pre_WithLabel(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Pre_NoExistingPreRelease(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -649,6 +673,7 @@ func TestBumpOperation_Execute_Pre_NoExistingPreRelease(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Pre_PreserveMetadata(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-rc.1+build.99\n"))
 
@@ -676,6 +701,7 @@ func TestBumpOperation_Execute_Pre_PreserveMetadata(t *testing.T) {
 }
 
 func TestBumpOperation_Execute_Pre_WithNewMetadata(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3-rc.1\n"))
 
@@ -703,6 +729,7 @@ func TestBumpOperation_Execute_Pre_WithNewMetadata(t *testing.T) {
 }
 
 func TestExtractPreReleaseBase(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input    string
 		expected string
@@ -723,6 +750,7 @@ func TestExtractPreReleaseBase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 			result := semver.ExtractPreReleaseBase(tt.input)
 			if result != tt.expected {
 				t.Errorf("ExtractPreReleaseBase(%q) = %q, want %q", tt.input, result, tt.expected)
@@ -732,6 +760,7 @@ func TestExtractPreReleaseBase(t *testing.T) {
 }
 
 func TestBumpOperation_Preview_ReturnsVersionsWithoutWriting(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -761,6 +790,7 @@ func TestBumpOperation_Preview_ReturnsVersionsWithoutWriting(t *testing.T) {
 }
 
 func TestBumpOperation_Preview_Minor(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -777,6 +807,7 @@ func TestBumpOperation_Preview_Minor(t *testing.T) {
 }
 
 func TestBumpOperation_Preview_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -792,6 +823,7 @@ func TestBumpOperation_Preview_ContextCancellation(t *testing.T) {
 }
 
 func TestBumpOperation_Preview_ReadError(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 
 	op := NewBumpOperation(fs, semver.NewDefaultBumper(), BumpPatch, "", "", false)
@@ -803,6 +835,7 @@ func TestBumpOperation_Preview_ReadError(t *testing.T) {
 }
 
 func TestBumpOperation_Write(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -824,6 +857,7 @@ func TestBumpOperation_Write(t *testing.T) {
 }
 
 func TestBumpOperation_Write_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test/.version", []byte("1.2.3\n"))
 
@@ -839,6 +873,7 @@ func TestBumpOperation_Write_ContextCancellation(t *testing.T) {
 }
 
 func TestBumpOperation_PreviewThenWrite_EqualsExecute(t *testing.T) {
+	t.Parallel()
 	fs1 := core.NewMockFileSystem()
 	fs1.SetFile("/test/.version", []byte("1.2.3\n"))
 

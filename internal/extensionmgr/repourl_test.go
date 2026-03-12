@@ -9,6 +9,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestRepoURL_Methods(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		repoURL      *RepoURL
@@ -60,6 +61,7 @@ func TestRepoURL_Methods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.repoURL.IsGitHubURL(); got != tt.wantIsGitHub {
 				t.Errorf("IsGitHubURL() = %v, want %v", got, tt.wantIsGitHub)
 			}
@@ -78,6 +80,7 @@ func TestRepoURL_Methods(t *testing.T) {
 
 // TestRepoURL_CloneURL tests clone URL generation
 func TestRepoURL_CloneURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		repoURL *RepoURL
@@ -114,6 +117,7 @@ func TestRepoURL_CloneURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.repoURL.CloneURL()
 			if got != tt.wantURL {
 				t.Errorf("CloneURL() = %v, want %v", got, tt.wantURL)
@@ -124,6 +128,7 @@ func TestRepoURL_CloneURL(t *testing.T) {
 
 // TestRepoURL_String tests string representation
 func TestRepoURL_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		repoURL *RepoURL
@@ -151,6 +156,7 @@ func TestRepoURL_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.repoURL.String()
 			if got != tt.want {
 				t.Errorf("String() = %v, want %v", got, tt.want)
@@ -161,6 +167,7 @@ func TestRepoURL_String(t *testing.T) {
 
 // TestRepoURL_HostChecks tests host checking methods
 func TestRepoURL_HostChecks(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		repoURL    *RepoURL
@@ -211,6 +218,7 @@ func TestRepoURL_HostChecks(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if got := tt.repoURL.IsGitHubURL(); got != tt.wantGitHub {
 				t.Errorf("IsGitHubURL() = %v, want %v", got, tt.wantGitHub)
 			}
@@ -223,6 +231,7 @@ func TestRepoURL_HostChecks(t *testing.T) {
 
 // TestRepoURL_String_WithRef tests the String() method includes ref when present
 func TestRepoURL_String_WithRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		repoURL *RepoURL
@@ -271,6 +280,7 @@ func TestRepoURL_String_WithRef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.repoURL.String()
 			if got != tt.want {
 				t.Errorf("String() = %v, want %v", got, tt.want)

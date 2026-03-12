@@ -9,6 +9,7 @@ import (
 )
 
 func TestWriter_WriteJSON(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		content     string
@@ -49,6 +50,7 @@ func TestWriter_WriteJSON(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.json", []byte(tt.content))
 
@@ -89,6 +91,7 @@ func TestWriter_WriteJSON(t *testing.T) {
 }
 
 func TestWriter_WriteYAML(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		content     string
@@ -122,6 +125,7 @@ func TestWriter_WriteYAML(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.yaml", []byte(tt.content))
 
@@ -162,6 +166,7 @@ func TestWriter_WriteYAML(t *testing.T) {
 }
 
 func TestWriter_WriteTOML(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		content     string
@@ -195,6 +200,7 @@ func TestWriter_WriteTOML(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.toml", []byte(tt.content))
 
@@ -235,6 +241,7 @@ func TestWriter_WriteTOML(t *testing.T) {
 }
 
 func TestWriter_WriteRaw(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		newVersion string
@@ -259,6 +266,7 @@ func TestWriter_WriteRaw(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/VERSION", []byte("0.0.0"))
 
@@ -286,6 +294,7 @@ func TestWriter_WriteRaw(t *testing.T) {
 }
 
 func TestWriter_WriteRegex(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		content     string
@@ -333,6 +342,7 @@ func TestWriter_WriteRegex(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			fs := core.NewMockFileSystem()
 			fs.SetFile("/test.go", []byte(tt.content))
 
@@ -368,6 +378,7 @@ func TestWriter_WriteRegex(t *testing.T) {
 }
 
 func TestWriter_FileNotFound(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	writer := NewWriter(fs)
 
@@ -383,6 +394,7 @@ func TestWriter_FileNotFound(t *testing.T) {
 }
 
 func TestWriter_EmptyPath(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	writer := NewWriter(fs)
 
@@ -398,6 +410,7 @@ func TestWriter_EmptyPath(t *testing.T) {
 }
 
 func TestWriter_InvalidFormat(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test", []byte("1.0.0"))
 	writer := NewWriter(fs)
@@ -413,6 +426,7 @@ func TestWriter_InvalidFormat(t *testing.T) {
 }
 
 func TestWriter_Exists(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/exists.json", []byte(`{}`))
 
@@ -428,6 +442,7 @@ func TestWriter_Exists(t *testing.T) {
 }
 
 func TestReadWriter(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/package.json", []byte(`{"version": "1.0.0"}`))
 
@@ -471,6 +486,7 @@ func TestReadWriter(t *testing.T) {
 }
 
 func TestWriter_ContextCancellation(t *testing.T) {
+	t.Parallel()
 	fs := core.NewMockFileSystem()
 	fs.SetFile("/test.json", []byte(`{"version": "1.0.0"}`))
 
@@ -490,6 +506,7 @@ func TestWriter_ContextCancellation(t *testing.T) {
 }
 
 func TestSetNestedValue(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		initial map[string]any
@@ -527,6 +544,7 @@ func TestSetNestedValue(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := setNestedValue(tt.initial, tt.field, tt.value)
 
 			if tt.wantErr {

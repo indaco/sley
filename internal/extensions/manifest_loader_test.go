@@ -18,6 +18,7 @@ func writeExtensionYAML(t *testing.T, dir, content string) string {
 }
 
 func TestLoadExtensionManifest_Valid(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `
 name: test
@@ -43,6 +44,7 @@ entry: actions.json
 }
 
 func TestLoadExtensionManifest_WithSchemaVersion(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `
 schema_version: 1
@@ -65,6 +67,7 @@ entry: actions.json
 }
 
 func TestLoadExtensionManifest_UnsupportedSchemaVersion(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `
 schema_version: 99
@@ -89,6 +92,7 @@ entry: actions.json
 }
 
 func TestLoadExtensionManifest_MissingFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	_, err := LoadExtensionManifestFn(dir)
 	if err == nil {
@@ -108,6 +112,7 @@ func TestLoadExtensionManifest_MissingFile(t *testing.T) {
 }
 
 func TestLoadExtensionManifest_InvalidYAML(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := ": this is not valid yaml"
 	writeExtensionYAML(t, dir, content)
@@ -130,6 +135,7 @@ func TestLoadExtensionManifest_InvalidYAML(t *testing.T) {
 }
 
 func TestLoadExtensionManifest_InvalidManifest(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	content := `
 name: ""

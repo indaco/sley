@@ -7,6 +7,7 @@ import (
 )
 
 func TestExecutionMode_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		mode ExecutionMode
@@ -31,6 +32,7 @@ func TestExecutionMode_String(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.mode.String()
 			if got != tt.want {
 				t.Errorf("ExecutionMode.String() = %v, want %v", got, tt.want)
@@ -40,6 +42,7 @@ func TestExecutionMode_String(t *testing.T) {
 }
 
 func TestExecutionContext_IsSingleModule(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		ctx  *ExecutionContext
@@ -63,6 +66,7 @@ func TestExecutionContext_IsSingleModule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.ctx.IsSingleModule()
 			if got != tt.want {
 				t.Errorf("ExecutionContext.IsSingleModule() = %v, want %v", got, tt.want)
@@ -72,6 +76,7 @@ func TestExecutionContext_IsSingleModule(t *testing.T) {
 }
 
 func TestExecutionContext_IsMultiModule(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		ctx  *ExecutionContext
@@ -95,6 +100,7 @@ func TestExecutionContext_IsMultiModule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := tt.ctx.IsMultiModule()
 			if got != tt.want {
 				t.Errorf("ExecutionContext.IsMultiModule() = %v, want %v", got, tt.want)
@@ -104,6 +110,7 @@ func TestExecutionContext_IsMultiModule(t *testing.T) {
 }
 
 func TestExecutionContext_EmptyModules(t *testing.T) {
+	t.Parallel()
 	execCtx := &ExecutionContext{
 		Mode:    MultiModuleMode,
 		Modules: []*workspace.Module{},
@@ -119,7 +126,10 @@ func TestExecutionContext_EmptyModules(t *testing.T) {
 }
 
 func TestExecutionContext_SingleModuleWithModules(t *testing.T) {
+	t.Parallel(
 	// This is an edge case - single module mode should not have Modules set
+	)
+
 	execCtx := &ExecutionContext{
 		Mode:    SingleModuleMode,
 		Path:    "/test/.version",
@@ -139,7 +149,10 @@ func TestExecutionContext_SingleModuleWithModules(t *testing.T) {
 }
 
 func TestExecutionContext_MultiModuleWithPath(t *testing.T) {
+	t.Parallel(
 	// This is an edge case - multi-module mode should not have Path set
+	)
+
 	execCtx := &ExecutionContext{
 		Mode: MultiModuleMode,
 		Path: "/test/.version",
@@ -162,6 +175,7 @@ func TestExecutionContext_MultiModuleWithPath(t *testing.T) {
 }
 
 func TestWithDefaultAll(t *testing.T) {
+	t.Parallel()
 	opts := &executionOptions{}
 
 	// Apply the option

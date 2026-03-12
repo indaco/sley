@@ -10,6 +10,7 @@ import (
 
 // TestParseRepoURL_WithRef tests parsing URLs with version/branch/commit refs
 func TestParseRepoURL_WithRef(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		urlStr      string
@@ -201,6 +202,7 @@ func TestParseRepoURL_WithRef(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseRepoURL(tt.urlStr)
 
 			if (err != nil) != tt.wantErr {

@@ -9,6 +9,7 @@ import (
 )
 
 func TestValidatePath(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	tests := []struct {
@@ -61,6 +62,7 @@ func TestValidatePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result, err := ValidatePath(tt.path, tt.baseDir)
 
 			if tt.wantErr {
@@ -86,9 +88,11 @@ func TestValidatePath(t *testing.T) {
 }
 
 func TestValidatePath_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	t.Run("path with dots is cleaned", func(t *testing.T) {
+		t.Parallel()
 		path := filepath.Join(tmpDir, "subdir", ".", "file.txt")
 		result, err := ValidatePath(path, tmpDir)
 		if err != nil {
@@ -101,6 +105,7 @@ func TestValidatePath_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("path equals base dir", func(t *testing.T) {
+		t.Parallel()
 		result, err := ValidatePath(tmpDir, tmpDir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -111,6 +116,7 @@ func TestValidatePath_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("subdirectory path", func(t *testing.T) {
+		t.Parallel()
 		subPath := filepath.Join(tmpDir, "subdir", "file.txt")
 		result, err := ValidatePath(subPath, tmpDir)
 		if err != nil {
@@ -122,6 +128,7 @@ func TestValidatePath_EdgeCases(t *testing.T) {
 	})
 
 	t.Run("path with multiple dots cleaned", func(t *testing.T) {
+		t.Parallel()
 		path := "./some/path/../other/./file.txt"
 		result, err := ValidatePath(path, "")
 		if err != nil {
@@ -135,8 +142,11 @@ func TestValidatePath_EdgeCases(t *testing.T) {
 }
 
 func TestValidatePath_InvalidBaseDir(t *testing.T) {
+	t.Parallel(
 	// Use a path that's very unlikely to exist on any system
 	// This should still work since we're testing error handling
+	)
+
 	invalidBase := string([]byte{0, 1, 2}) // Invalid path characters
 
 	_, err := ValidatePath("test.txt", invalidBase)
@@ -152,10 +162,14 @@ func TestValidatePath_InvalidBaseDir(t *testing.T) {
 }
 
 func TestValidatePath_AbsPathErrors(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	t.Run("valid nested path", func(t *testing.T) {
+		t.Parallel(
 		// Test a deeply nested path to exercise all code paths
+		)
+
 		nestedPath := filepath.Join(tmpDir, "a", "b", "c", "d", "e", "file.txt")
 		result, err := ValidatePath(nestedPath, tmpDir)
 		if err != nil {
@@ -167,6 +181,7 @@ func TestValidatePath_AbsPathErrors(t *testing.T) {
 	})
 
 	t.Run("path with trailing separator", func(t *testing.T) {
+		t.Parallel()
 		pathWithSep := tmpDir + string(filepath.Separator)
 		result, err := ValidatePath(pathWithSep, tmpDir)
 		if err != nil {
@@ -181,9 +196,11 @@ func TestValidatePath_AbsPathErrors(t *testing.T) {
 }
 
 func TestIsWithinDir_VariousScenarios(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	t.Run("deeply nested path", func(t *testing.T) {
+		t.Parallel()
 		deepPath := filepath.Join(tmpDir, "a", "b", "c", "d", "e", "f", "g", "h")
 		result := IsWithinDir(deepPath, tmpDir)
 		if !result {
@@ -192,6 +209,7 @@ func TestIsWithinDir_VariousScenarios(t *testing.T) {
 	})
 
 	t.Run("path with trailing separator equals dir", func(t *testing.T) {
+		t.Parallel()
 		pathWithSep := tmpDir + string(filepath.Separator)
 		result := IsWithinDir(pathWithSep, tmpDir)
 		if !result {
@@ -200,6 +218,7 @@ func TestIsWithinDir_VariousScenarios(t *testing.T) {
 	})
 
 	t.Run("sibling directory", func(t *testing.T) {
+		t.Parallel()
 		parent := filepath.Dir(tmpDir)
 		siblingDir := filepath.Join(parent, "other-dir")
 		result := IsWithinDir(siblingDir, tmpDir)
@@ -209,7 +228,10 @@ func TestIsWithinDir_VariousScenarios(t *testing.T) {
 	})
 
 	t.Run("empty path strings", func(t *testing.T) {
+		t.Parallel(
 		// Test with empty strings - they should resolve to current directory
+		)
+
 		result := IsWithinDir("", "")
 		// Both empty strings resolve to ".", which equals itself
 		if !result {
@@ -219,6 +241,7 @@ func TestIsWithinDir_VariousScenarios(t *testing.T) {
 }
 
 func TestIsWithinDir(t *testing.T) {
+	t.Parallel()
 	tmpDir := t.TempDir()
 
 	tests := []struct {
@@ -261,6 +284,7 @@ func TestIsWithinDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := IsWithinDir(tt.path, tt.dir)
 			if result != tt.expected {
 				t.Errorf("expected %v, got %v", tt.expected, result)
@@ -270,7 +294,9 @@ func TestIsWithinDir(t *testing.T) {
 }
 
 func TestIsWithinDir_RelativePaths(t *testing.T) {
+	t.Parallel()
 	t.Run("relative path within relative dir", func(t *testing.T) {
+		t.Parallel()
 		result := IsWithinDir("subdir/file.txt", "subdir")
 		// This should be true since both resolve to the same relative location
 		if !result {
@@ -279,6 +305,7 @@ func TestIsWithinDir_RelativePaths(t *testing.T) {
 	})
 
 	t.Run("current directory check", func(t *testing.T) {
+		t.Parallel()
 		result := IsWithinDir(".", ".")
 		if !result {
 			t.Error("current directory should be within itself")
@@ -287,16 +314,25 @@ func TestIsWithinDir_RelativePaths(t *testing.T) {
 }
 
 func TestIsWithinDir_ErrorHandling(t *testing.T) {
+	t.Parallel(
 	// Test with paths that might cause Abs to fail (though rare)
+	)
+
 	invalidPath := string([]byte{0, 1, 2})
 
 	t.Run("invalid path returns false", func(t *testing.T) {
+		t.Parallel(
 		// Just verify this doesn't panic - result may vary by system
+		)
+
 		_ = IsWithinDir(invalidPath, "/tmp")
 	})
 
 	t.Run("invalid dir returns false", func(t *testing.T) {
+		t.Parallel(
 		// Just verify this doesn't panic - result may vary by system
+		)
+
 		_ = IsWithinDir("/tmp/file", invalidPath)
 	})
 }

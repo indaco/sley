@@ -7,6 +7,7 @@ import (
 )
 
 func TestVersionFileNotFoundError(t *testing.T) {
+	t.Parallel()
 	err := &VersionFileNotFoundError{Path: "/path/to/.version"}
 
 	if err.Error() != "version file not found at /path/to/.version" {
@@ -21,6 +22,7 @@ func TestVersionFileNotFoundError(t *testing.T) {
 }
 
 func TestInvalidVersionError(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		version  string
 		reason   string
@@ -39,6 +41,7 @@ func TestInvalidVersionError(t *testing.T) {
 }
 
 func TestInvalidBumpTypeError(t *testing.T) {
+	t.Parallel()
 	err := &InvalidBumpTypeError{BumpType: "huge"}
 	expected := "invalid bump type: huge (expected: patch, minor, or major)"
 
@@ -48,6 +51,7 @@ func TestInvalidBumpTypeError(t *testing.T) {
 }
 
 func TestConfigError(t *testing.T) {
+	t.Parallel()
 	inner := errors.New("file not found")
 	err := &ConfigError{Operation: "load", Err: inner}
 
@@ -65,6 +69,7 @@ func TestConfigError(t *testing.T) {
 }
 
 func TestCommandError(t *testing.T) {
+	t.Parallel()
 	inner := fmt.Errorf("exit status 1")
 
 	tests := []struct {
@@ -89,6 +94,7 @@ func TestCommandError(t *testing.T) {
 }
 
 func TestPathValidationError(t *testing.T) {
+	t.Parallel()
 	err := &PathValidationError{Path: "../secret", Reason: "path traversal detected"}
 	expected := `invalid path "../secret": path traversal detected`
 
@@ -98,6 +104,7 @@ func TestPathValidationError(t *testing.T) {
 }
 
 func TestHookError(t *testing.T) {
+	t.Parallel()
 	inner := errors.New("make: *** No rule to make target")
 	err := &HookError{HookName: "pre-build", Err: inner}
 
@@ -115,6 +122,7 @@ func TestHookError(t *testing.T) {
 }
 
 func TestGitError(t *testing.T) {
+	t.Parallel()
 	inner := errors.New("fatal: not a git repository")
 	err := &GitError{Operation: "status", Err: inner}
 
@@ -141,6 +149,7 @@ func TestGitError(t *testing.T) {
 }
 
 func TestFileError(t *testing.T) {
+	t.Parallel()
 	inner := errors.New("permission denied")
 	err := &FileError{Op: "read", Path: "/etc/shadow", Err: inner}
 
@@ -162,9 +171,11 @@ func TestFileError(t *testing.T) {
 }
 
 func TestExtensionError(t *testing.T) {
+	t.Parallel()
 	inner := errors.New("script failed")
 
 	t.Run("with name", func(t *testing.T) {
+		t.Parallel()
 		err := &ExtensionError{Name: "my-ext", Op: "execute", Err: inner}
 
 		expected := `extension "my-ext" execute: script failed`
@@ -182,6 +193,7 @@ func TestExtensionError(t *testing.T) {
 	})
 
 	t.Run("without name", func(t *testing.T) {
+		t.Parallel()
 		err := &ExtensionError{Name: "", Op: "load", Err: inner}
 
 		expected := "extension load: script failed"
@@ -192,7 +204,9 @@ func TestExtensionError(t *testing.T) {
 }
 
 func TestWrapGit(t *testing.T) {
+	t.Parallel()
 	t.Run("nil error returns nil", func(t *testing.T) {
+		t.Parallel()
 		result := WrapGit("clone", nil)
 		if result != nil {
 			t.Errorf("expected nil, got %v", result)
@@ -200,6 +214,7 @@ func TestWrapGit(t *testing.T) {
 	})
 
 	t.Run("non-nil error wraps correctly", func(t *testing.T) {
+		t.Parallel()
 		inner := errors.New("remote not found")
 		result := WrapGit("fetch", inner)
 
@@ -219,7 +234,9 @@ func TestWrapGit(t *testing.T) {
 }
 
 func TestWrapFile(t *testing.T) {
+	t.Parallel()
 	t.Run("nil error returns nil", func(t *testing.T) {
+		t.Parallel()
 		result := WrapFile("write", "/tmp/test", nil)
 		if result != nil {
 			t.Errorf("expected nil, got %v", result)
@@ -227,6 +244,7 @@ func TestWrapFile(t *testing.T) {
 	})
 
 	t.Run("non-nil error wraps correctly", func(t *testing.T) {
+		t.Parallel()
 		inner := errors.New("disk full")
 		result := WrapFile("write", "/tmp/test", inner)
 
@@ -250,7 +268,9 @@ func TestWrapFile(t *testing.T) {
 }
 
 func TestWrapExtension(t *testing.T) {
+	t.Parallel()
 	t.Run("nil error returns nil", func(t *testing.T) {
+		t.Parallel()
 		result := WrapExtension("my-ext", "run", nil)
 		if result != nil {
 			t.Errorf("expected nil, got %v", result)
@@ -258,6 +278,7 @@ func TestWrapExtension(t *testing.T) {
 	})
 
 	t.Run("non-nil error wraps correctly", func(t *testing.T) {
+		t.Parallel()
 		inner := errors.New("timeout")
 		result := WrapExtension("my-ext", "run", inner)
 
@@ -281,6 +302,7 @@ func TestWrapExtension(t *testing.T) {
 }
 
 func TestSentinelErrors(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		err      error
 		expected string
@@ -297,6 +319,7 @@ func TestSentinelErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
+			t.Parallel()
 			if tt.err.Error() != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, tt.err.Error())
 			}

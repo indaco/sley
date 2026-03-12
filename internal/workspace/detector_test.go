@@ -27,7 +27,10 @@ func setupTestFS(files map[string]string) *core.MockFileSystem {
 }
 
 func TestDetector_SingleModule_InCWD(t *testing.T) {
+	t.Parallel(
 	// Setup: .version in current directory
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/.version": "1.0.0",
 	})
@@ -50,7 +53,10 @@ func TestDetector_SingleModule_InCWD(t *testing.T) {
 }
 
 func TestDetector_MultiModule(t *testing.T) {
+	t.Parallel(
 	// Setup: Multiple .version files in subdirectories
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/module-a/.version": "1.0.0",
 		"/project/module-b/.version": "2.0.0",
@@ -95,7 +101,10 @@ func TestDetector_MultiModule(t *testing.T) {
 }
 
 func TestDetector_NoModules(t *testing.T) {
+	t.Parallel(
 	// Setup: No .version files
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/README.md": "# Project",
 	})
@@ -114,7 +123,10 @@ func TestDetector_NoModules(t *testing.T) {
 }
 
 func TestDetector_SingleModuleInSubdir(t *testing.T) {
+	t.Parallel(
 	// Setup: Only one .version in a subdirectory
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/module-a/.version": "1.0.0",
 	})
@@ -137,7 +149,10 @@ func TestDetector_SingleModuleInSubdir(t *testing.T) {
 }
 
 func TestDetector_ExcludePatterns(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files in both regular and excluded directories
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/module-a/.version":      "1.0.0",
 		"/project/node_modules/.version":  "1.0.0",
@@ -173,7 +188,10 @@ func TestDetector_ExcludePatterns(t *testing.T) {
 }
 
 func TestDetector_MaxDepth(t *testing.T) {
+	t.Parallel(
 	// Setup: Deeply nested .version files
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/level1/.version":                "1.0.0",
 		"/project/level1/level2/.version":         "1.0.0",
@@ -208,7 +226,10 @@ func TestDetector_MaxDepth(t *testing.T) {
 }
 
 func TestDetector_ExplicitModules(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/frontend/.version": "1.0.0",
 		"/project/backend/.version":  "2.0.0",
@@ -251,8 +272,11 @@ func TestDetector_ExplicitModules(t *testing.T) {
 }
 
 func TestDetector_RecursiveDisabled(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files at different levels
 	// When recursive is disabled, only .version files directly in the scanned directory are found
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/.version":                 "0.5.0", // This will be found
 		"/project/module-a/.version":        "1.0.0", // This won't be found (in subdir)
@@ -288,7 +312,10 @@ func TestDetector_RecursiveDisabled(t *testing.T) {
 }
 
 func TestDetector_ModuleVersionLoading(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files with different versions
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/module-a/.version": "1.2.3",
 		"/project/module-b/.version": "0.1.0-beta",
@@ -321,7 +348,10 @@ func TestDetector_ModuleVersionLoading(t *testing.T) {
 }
 
 func TestDetector_SemverignoreIntegration(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files and .sleyignore
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/.sleyignore":          "test-*\n*.tmp\n# Comment\nignored/",
 		"/project/module-a/.version":    "1.0.0",
@@ -352,7 +382,10 @@ func TestDetector_SemverignoreIntegration(t *testing.T) {
 }
 
 func TestDetector_DiscoveryDisabled(t *testing.T) {
+	t.Parallel(
 	// Setup: .version files
+	)
+
 	fs := setupTestFS(map[string]string{
 		"/project/module-a/.version": "1.0.0",
 	})
@@ -379,6 +412,7 @@ func TestDetector_DiscoveryDisabled(t *testing.T) {
 }
 
 func TestDetectionMode_String(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		mode     DetectionMode
 		expected string
@@ -398,6 +432,7 @@ func TestDetectionMode_String(t *testing.T) {
 
 // Integration test with real filesystem
 func TestDetector_RealFilesystem(t *testing.T) {
+	t.Parallel()
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
 	}

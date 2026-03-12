@@ -13,6 +13,7 @@ func createTestGitOps(mockExec func(name string, args ...string) *exec.Cmd) *OSG
 }
 
 func TestOSGitOperations_IsWorktreeClean(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		stdout    string
@@ -41,6 +42,7 @@ func TestOSGitOperations_IsWorktreeClean(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 				if tt.stdout == "" {
 					return exec.Command("true")
@@ -68,7 +70,9 @@ func TestOSGitOperations_IsWorktreeClean(t *testing.T) {
 }
 
 func TestOSGitOperations_IsWorktreeClean_Error(t *testing.T) {
+	t.Parallel()
 	t.Run("git error with stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'not a git repo' >&2 && exit 1")
 		})
@@ -80,6 +84,7 @@ func TestOSGitOperations_IsWorktreeClean_Error(t *testing.T) {
 	})
 
 	t.Run("git error without stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
@@ -92,6 +97,7 @@ func TestOSGitOperations_IsWorktreeClean_Error(t *testing.T) {
 }
 
 func TestOSGitOperations_GetCurrentBranch(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		stdout  string
@@ -114,6 +120,7 @@ func TestOSGitOperations_GetCurrentBranch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 				return exec.Command("echo", tt.stdout)
 			})
@@ -138,7 +145,9 @@ func TestOSGitOperations_GetCurrentBranch(t *testing.T) {
 }
 
 func TestOSGitOperations_GetCurrentBranch_Error(t *testing.T) {
+	t.Parallel()
 	t.Run("git error with stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'not a git repo' >&2 && exit 1")
 		})
@@ -150,6 +159,7 @@ func TestOSGitOperations_GetCurrentBranch_Error(t *testing.T) {
 	})
 
 	t.Run("git error without stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
@@ -161,6 +171,7 @@ func TestOSGitOperations_GetCurrentBranch_Error(t *testing.T) {
 	})
 
 	t.Run("empty output", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("true")
 		})
@@ -173,6 +184,7 @@ func TestOSGitOperations_GetCurrentBranch_Error(t *testing.T) {
 }
 
 func TestOSGitOperations_GetRecentCommits(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		count   int
@@ -216,6 +228,7 @@ func TestOSGitOperations_GetRecentCommits(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 				return exec.Command("printf", tt.stdout)
 			})
@@ -247,6 +260,7 @@ func TestOSGitOperations_GetRecentCommits(t *testing.T) {
 }
 
 func TestOSGitOperations_GetRecentCommits_Empty(t *testing.T) {
+	t.Parallel()
 	ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 		return exec.Command("true")
 	})
@@ -261,7 +275,9 @@ func TestOSGitOperations_GetRecentCommits_Empty(t *testing.T) {
 }
 
 func TestOSGitOperations_GetRecentCommits_Error(t *testing.T) {
+	t.Parallel()
 	t.Run("git error with stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("sh", "-c", "echo 'not a git repo' >&2 && exit 1")
 		})
@@ -273,6 +289,7 @@ func TestOSGitOperations_GetRecentCommits_Error(t *testing.T) {
 	})
 
 	t.Run("git error without stderr", func(t *testing.T) {
+		t.Parallel()
 		ops := createTestGitOps(func(name string, args ...string) *exec.Cmd {
 			return exec.Command("false")
 		})
@@ -285,6 +302,7 @@ func TestOSGitOperations_GetRecentCommits_Error(t *testing.T) {
 }
 
 func TestNewOSGitOperations(t *testing.T) {
+	t.Parallel()
 	ops := NewOSGitOperations()
 	if ops == nil {
 		t.Fatal("NewOSGitOperations() returned nil")

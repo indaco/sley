@@ -6,7 +6,10 @@ import (
 )
 
 func TestIsWindows(t *testing.T) {
+	t.Parallel(
 	// Save original OS env
+	)
+
 	origOS := os.Getenv("OS")
 	defer func() {
 		if origOS == "" {
@@ -55,6 +58,7 @@ func TestIsWindows(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			os.Setenv("OS", tt.osEnv)
 
 			got := IsWindows()

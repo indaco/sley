@@ -11,8 +11,12 @@ import (
 )
 
 func TestCloneOrUpdate(t *testing.T) {
+	t.Parallel()
 	t.Run("ExistingRepo", func(t *testing.T) {
+		t.Parallel(
 		// Create a source repo and clone it so dest has a remote
+		)
+
 		sourceRepo := setupTestRepo(t)
 		destRepo := filepath.Join(t.TempDir(), "cloned")
 
@@ -34,6 +38,7 @@ func TestCloneOrUpdate(t *testing.T) {
 	})
 
 	t.Run("NonExistingRepo", func(t *testing.T) {
+		t.Parallel()
 		sourceRepo := setupTestRepo(t)
 		destRepo := filepath.Join(t.TempDir(), "new_repo")
 
@@ -51,6 +56,7 @@ func TestCloneOrUpdate(t *testing.T) {
 }
 
 func TestIsValidGitRepo_ValidRepo(t *testing.T) {
+	t.Parallel()
 	tempDir := setupTestRepo(t)
 	defer os.RemoveAll(tempDir)
 
@@ -60,6 +66,7 @@ func TestIsValidGitRepo_ValidRepo(t *testing.T) {
 }
 
 func TestIsValidGitRepo_InvalidRepo(t *testing.T) {
+	t.Parallel()
 	tempDir := filepath.Join(os.TempDir(), "tempo_non_git_test")
 	_ = os.RemoveAll(tempDir) // Ensure cleanup before creating
 
@@ -74,6 +81,7 @@ func TestIsValidGitRepo_InvalidRepo(t *testing.T) {
 }
 
 func TestCloneRepo(t *testing.T) {
+	t.Parallel()
 	sourceRepo := setupTestRepo(t)
 
 	tempDir := t.TempDir()
@@ -93,6 +101,7 @@ func TestCloneRepo(t *testing.T) {
 }
 
 func TestUpdateRepo(t *testing.T) {
+	t.Parallel()
 	sourceRepo := setupTestRepo(t)
 
 	tempDir := t.TempDir()
@@ -111,6 +120,7 @@ func TestUpdateRepo(t *testing.T) {
 }
 
 func TestForceReclone(t *testing.T) {
+	t.Parallel()
 	sourceRepo := setupTestRepo(t)
 
 	tempDir := t.TempDir()
@@ -137,6 +147,7 @@ func TestForceReclone(t *testing.T) {
 }
 
 func TestFailRemoveExistingRepo(t *testing.T) {
+	t.Parallel()
 	repoPath := setupReadOnlyDir(t)
 
 	ctx := context.Background()
@@ -159,6 +170,7 @@ func TestFailRemoveExistingRepo(t *testing.T) {
 }
 
 func TestFailCloneRepo(t *testing.T) {
+	t.Parallel()
 	tempDir := t.TempDir()
 	destRepo := filepath.Join(tempDir, "cloned_repo")
 

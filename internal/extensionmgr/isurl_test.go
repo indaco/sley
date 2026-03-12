@@ -9,6 +9,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestIsURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		str  string
@@ -73,6 +74,7 @@ func TestIsURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := IsURL(tt.str)
 			if got != tt.want {
 				t.Errorf("IsURL() = %v, want %v", got, tt.want)
@@ -83,6 +85,7 @@ func TestIsURL(t *testing.T) {
 
 // TestIsURL_EdgeCases tests IsURL with various edge cases
 func TestIsURL_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		str  string
@@ -142,6 +145,7 @@ func TestIsURL_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := IsURL(tt.str)
 			if got != tt.want {
 				t.Errorf("IsURL(%q) = %v, want %v", tt.str, got, tt.want)

@@ -8,6 +8,7 @@ import (
 )
 
 func TestRegisterConfiguredPlugins_WithCommitParser(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			CommitParser: true,
@@ -28,6 +29,7 @@ func TestRegisterConfiguredPlugins_WithCommitParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			CommitParser: false,
@@ -43,6 +45,7 @@ func TestRegisterConfiguredPlugins_DisabledCommitParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_NilConfig(t *testing.T) {
+	t.Parallel()
 	registry := NewPluginRegistry()
 	RegisterBuiltinPlugins(nil, registry)
 
@@ -52,6 +55,7 @@ func TestRegisterConfiguredPlugins_NilConfig(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_NilPluginsField(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: nil, // explicit nil
 	}
@@ -65,6 +69,7 @@ func TestRegisterConfiguredPlugins_NilPluginsField(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithTagManager(t *testing.T) {
+	t.Parallel()
 	autoCreate := true
 	annotate := true
 	cfg := &config.Config{
@@ -93,6 +98,7 @@ func TestRegisterConfiguredPlugins_WithTagManager(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_TagManagerDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			TagManager: &config.TagManagerConfig{
@@ -110,6 +116,7 @@ func TestRegisterConfiguredPlugins_TagManagerDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_TagManagerNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			TagManager: nil,
@@ -125,6 +132,7 @@ func TestRegisterConfiguredPlugins_TagManagerNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithVersionValidator(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: &config.VersionValidatorConfig{
@@ -151,6 +159,7 @@ func TestRegisterConfiguredPlugins_WithVersionValidator(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_VersionValidatorDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: &config.VersionValidatorConfig{
@@ -168,6 +177,7 @@ func TestRegisterConfiguredPlugins_VersionValidatorDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_VersionValidatorNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			VersionValidator: nil,
@@ -183,6 +193,7 @@ func TestRegisterConfiguredPlugins_VersionValidatorNil(t *testing.T) {
 }
 
 func TestConvertValidationRules(t *testing.T) {
+	t.Parallel()
 	configRules := []config.ValidationRule{
 		{Type: "major-version-max", Value: 10},
 		{Type: "pre-release-format", Pattern: "^alpha$"},
@@ -215,6 +226,7 @@ func TestConvertValidationRules(t *testing.T) {
 }
 
 func TestConvertValidationRules_Empty(t *testing.T) {
+	t.Parallel()
 	rules := convertValidationRules(nil)
 
 	if len(rules) != 0 {
@@ -229,6 +241,7 @@ func TestConvertValidationRules_Empty(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AllPlugins(t *testing.T) {
+	t.Parallel()
 	autoCreate := true
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
@@ -259,6 +272,7 @@ func TestRegisterConfiguredPlugins_AllPlugins(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithDependencyCheck(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: &config.DependencyCheckConfig{
@@ -285,6 +299,7 @@ func TestRegisterConfiguredPlugins_WithDependencyCheck(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DependencyCheckDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: &config.DependencyCheckConfig{
@@ -302,6 +317,7 @@ func TestRegisterConfiguredPlugins_DependencyCheckDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_DependencyCheckNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			DependencyCheck: nil,
@@ -317,6 +333,7 @@ func TestRegisterConfiguredPlugins_DependencyCheckNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithChangelogParser(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: &config.ChangelogParserConfig{
@@ -343,6 +360,7 @@ func TestRegisterConfiguredPlugins_WithChangelogParser(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogParserDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: &config.ChangelogParserConfig{
@@ -360,6 +378,7 @@ func TestRegisterConfiguredPlugins_ChangelogParserDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogParserNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogParser: nil,
@@ -375,6 +394,7 @@ func TestRegisterConfiguredPlugins_ChangelogParserNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithChangelogGenerator(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: &config.ChangelogGeneratorConfig{
@@ -398,6 +418,7 @@ func TestRegisterConfiguredPlugins_WithChangelogGenerator(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogGeneratorDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: &config.ChangelogGeneratorConfig{
@@ -415,6 +436,7 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ChangelogGeneratorNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ChangelogGenerator: nil,
@@ -430,6 +452,7 @@ func TestRegisterConfiguredPlugins_ChangelogGeneratorNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithReleaseGate(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: &config.ReleaseGateConfig{
@@ -454,6 +477,7 @@ func TestRegisterConfiguredPlugins_WithReleaseGate(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ReleaseGateDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: &config.ReleaseGateConfig{
@@ -471,6 +495,7 @@ func TestRegisterConfiguredPlugins_ReleaseGateDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_ReleaseGateNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			ReleaseGate: nil,
@@ -486,6 +511,7 @@ func TestRegisterConfiguredPlugins_ReleaseGateNil(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_WithAuditLog(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: &config.AuditLogConfig{
@@ -510,6 +536,7 @@ func TestRegisterConfiguredPlugins_WithAuditLog(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AuditLogDisabled(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: &config.AuditLogConfig{
@@ -527,6 +554,7 @@ func TestRegisterConfiguredPlugins_AuditLogDisabled(t *testing.T) {
 }
 
 func TestRegisterConfiguredPlugins_AuditLogNil(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{
 		Plugins: &config.PluginConfig{
 			AuditLog: nil,
@@ -542,6 +570,7 @@ func TestRegisterConfiguredPlugins_AuditLogNil(t *testing.T) {
 }
 
 func TestConvertDependencyCheckConfig(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name         string
 		input        *config.DependencyCheckConfig
@@ -578,6 +607,7 @@ func TestConvertDependencyCheckConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := convertDependencyCheckConfig(tt.input)
 			if result.Enabled != tt.wantEnabled {
 				t.Errorf("expected Enabled %v, got %v", tt.wantEnabled, result.Enabled)
@@ -593,6 +623,7 @@ func TestConvertDependencyCheckConfig(t *testing.T) {
 }
 
 func TestConvertDependencyCheckConfig_FileDetails(t *testing.T) {
+	t.Parallel()
 	input := &config.DependencyCheckConfig{
 		Enabled: true,
 		Files: []config.DependencyFileConfig{
@@ -618,6 +649,7 @@ func TestConvertDependencyCheckConfig_FileDetails(t *testing.T) {
 }
 
 func TestConvertChangelogParserConfig(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                  string
 		input                 *config.ChangelogParserConfig
@@ -654,6 +686,7 @@ func TestConvertChangelogParserConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := convertChangelogParserConfig(tt.input)
 			if result.Path != tt.wantPath {
 				t.Errorf("expected path %q, got %q", tt.wantPath, result.Path)
@@ -672,6 +705,7 @@ func TestConvertChangelogParserConfig(t *testing.T) {
 }
 
 func TestConvertReleaseGateConfig(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                     string
 		input                    *config.ReleaseGateConfig
@@ -715,6 +749,7 @@ func TestConvertReleaseGateConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			result := convertReleaseGateConfig(tt.input)
 			if result.Enabled != tt.wantEnabled {
 				t.Errorf("expected Enabled %v, got %v", tt.wantEnabled, result.Enabled)

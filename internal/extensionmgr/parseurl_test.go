@@ -9,6 +9,7 @@ import (
 /* ------------------------------------------------------------------------- */
 
 func TestParseRepoURL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		urlStr      string
@@ -110,6 +111,7 @@ func TestParseRepoURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseRepoURL(tt.urlStr)
 
 			if (err != nil) != tt.wantErr {
@@ -143,6 +145,7 @@ func TestParseRepoURL(t *testing.T) {
 
 // TestParseRepoURL_AdvancedCases tests advanced URL parsing scenarios
 func TestParseRepoURL_AdvancedCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		urlStr      string
@@ -224,6 +227,7 @@ func TestParseRepoURL_AdvancedCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseRepoURL(tt.urlStr)
 
 			if (err != nil) != tt.wantErr {
@@ -253,6 +257,7 @@ func TestParseRepoURL_AdvancedCases(t *testing.T) {
 
 // TestParseRepoURL_VariousGitHosts tests URL parsing for various git hosting services
 func TestParseRepoURL_VariousGitHosts(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		urlStr    string
@@ -321,6 +326,7 @@ func TestParseRepoURL_VariousGitHosts(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got, err := ParseRepoURL(tt.urlStr)
 
 			if (err != nil) != tt.wantErr {

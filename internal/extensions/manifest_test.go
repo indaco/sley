@@ -8,6 +8,7 @@ import (
 )
 
 func TestExtensionManifest_Validate(t *testing.T) {
+	t.Parallel()
 	base := ExtensionManifest{
 		Name:        "commit-parser",
 		Version:     "0.1.0",
@@ -32,6 +33,7 @@ func TestExtensionManifest_Validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.field, func(t *testing.T) {
+			t.Parallel()
 			m := base
 			tt.modify(&m)
 
@@ -55,6 +57,7 @@ func TestExtensionManifest_Validate(t *testing.T) {
 	}
 
 	t.Run("valid manifest", func(t *testing.T) {
+		t.Parallel()
 		err := base.ValidateManifest()
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
@@ -68,6 +71,7 @@ func TestExtensionManifest_Validate(t *testing.T) {
 
 // TestExtensionManifest_ValidateManifest_TableDriven tests comprehensive validation scenarios
 func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		manifest    ExtensionManifest
@@ -220,6 +224,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := tt.manifest.ValidateManifest()
 
 			if (err != nil) != tt.wantErr {
@@ -238,6 +243,7 @@ func TestExtensionManifest_ValidateManifest_TableDriven(t *testing.T) {
 
 // TestExtensionManifest_Fields tests individual field properties
 func TestExtensionManifest_Fields(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		manifest ExtensionManifest
@@ -316,6 +322,7 @@ func TestExtensionManifest_Fields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := tt.manifest.ValidateManifest()
 			if err != nil {
 				t.Fatalf("unexpected validation error: %v", err)
@@ -331,6 +338,7 @@ func TestExtensionManifest_Fields(t *testing.T) {
 
 // TestManifestNotFoundError tests the ManifestNotFoundError type
 func TestManifestNotFoundError(t *testing.T) {
+	t.Parallel()
 	err := &ManifestNotFoundError{
 		Path: "/path/to/extension.yaml",
 		Dir:  "/path/to",
@@ -369,6 +377,7 @@ func TestManifestNotFoundError(t *testing.T) {
 
 // TestManifestParseError tests the ManifestParseError type
 func TestManifestParseError(t *testing.T) {
+	t.Parallel()
 	originalErr := errors.New("yaml: line 5: mapping values are not allowed in this context")
 	err := &ManifestParseError{
 		Path: "/path/to/extension.yaml",
@@ -394,6 +403,7 @@ func TestManifestParseError(t *testing.T) {
 
 // TestManifestValidationError tests the ManifestValidationError type
 func TestManifestValidationError(t *testing.T) {
+	t.Parallel()
 	err := &ManifestValidationError{
 		Path:          "/path/to/extension.yaml",
 		MissingFields: []string{"name", "version", "entry"},
@@ -429,6 +439,7 @@ func TestManifestValidationError(t *testing.T) {
 
 // TestSchemaVersionError tests the SchemaVersionError type
 func TestSchemaVersionError(t *testing.T) {
+	t.Parallel()
 	err := &SchemaVersionError{
 		Path:         "/path/to/extension.yaml",
 		Found:        99,
@@ -464,6 +475,7 @@ func TestSchemaVersionError(t *testing.T) {
 
 // TestSchemaVersion_Validation tests schema_version field behavior
 func TestSchemaVersion_Validation(t *testing.T) {
+	t.Parallel()
 	base := ExtensionManifest{
 		Name:        "test-ext",
 		Version:     "1.0.0",
@@ -508,6 +520,7 @@ func TestSchemaVersion_Validation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			m := base
 			m.SchemaVersion = tt.schemaVersion
 
@@ -540,6 +553,7 @@ func TestSchemaVersion_Validation(t *testing.T) {
 
 // TestSchemaVersionConstants tests that constants are consistent
 func TestSchemaVersionConstants(t *testing.T) {
+	t.Parallel()
 	if CurrentSchemaVersion < 1 {
 		t.Errorf("CurrentSchemaVersion should be >= 1, got %d", CurrentSchemaVersion)
 	}
@@ -554,6 +568,7 @@ func TestSchemaVersionConstants(t *testing.T) {
 
 // TestManifestValidation_MultipleErrors tests that all missing fields are reported
 func TestManifestValidation_MultipleErrors(t *testing.T) {
+	t.Parallel()
 	manifest := ExtensionManifest{
 		Name:        "",
 		Version:     "",
