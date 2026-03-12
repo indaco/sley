@@ -8,6 +8,8 @@ import (
 )
 
 func TestNewChangelogFileParser(t *testing.T) {
+	t.Parallel()
+
 	parser := newChangelogFileParser("CHANGELOG.md")
 	if parser.path != "CHANGELOG.md" {
 		t.Errorf("expected path 'CHANGELOG.md', got %s", parser.path)
@@ -15,6 +17,8 @@ func TestNewChangelogFileParser(t *testing.T) {
 }
 
 func TestParseUnreleasedSection(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name          string
 		changelog     string
@@ -110,6 +114,8 @@ func TestParseUnreleasedSection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			reader := strings.NewReader(tt.changelog)
 
 			section, err := parseKeepAChangelogUnreleased(reader)
@@ -145,6 +151,8 @@ func TestParseUnreleasedSection(t *testing.T) {
 }
 
 func TestInferBumpType(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		section  *UnreleasedSection
@@ -254,6 +262,8 @@ func TestInferBumpType(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			result, err := tt.section.InferBumpType()
 
 			if tt.wantErr {
@@ -276,15 +286,15 @@ func TestInferBumpType(t *testing.T) {
 }
 
 func TestParseUnreleased_FileOperations(t *testing.T) {
-	t.Run("file not found", func(t *testing.T) {
-		origOpenFile := openFileFn
-		defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, os.ErrNotExist
-		}
+	t.Run("file not found", func(t *testing.T) {
+		t.Parallel()
 
 		parser := newChangelogFileParser("nonexistent.md")
+		parser.openFileFn = func(name string) (*os.File, error) {
+			return nil, os.ErrNotExist
+		}
 		_, err := parser.ParseUnreleased()
 
 		if err == nil {
@@ -296,14 +306,12 @@ func TestParseUnreleased_FileOperations(t *testing.T) {
 	})
 
 	t.Run("file read error", func(t *testing.T) {
-		origOpenFile := openFileFn
-		defer func() { openFileFn = origOpenFile }()
-
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, errors.New("permission denied")
-		}
+		t.Parallel()
 
 		parser := newChangelogFileParser("test.md")
+		parser.openFileFn = func(name string) (*os.File, error) {
+			return nil, errors.New("permission denied")
+		}
 		_, err := parser.ParseUnreleased()
 
 		if err == nil {
@@ -316,7 +324,11 @@ func TestParseUnreleased_FileOperations(t *testing.T) {
 }
 
 func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
+	t.Parallel()
+
 	t.Run("multiple version sections", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
@@ -350,6 +362,8 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 	})
 
 	t.Run("entries with different bullet formats", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
@@ -375,6 +389,8 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 	})
 
 	t.Run("subsection without entries", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
@@ -401,7 +417,11 @@ func TestParseUnreleasedSection_ComplexScenarios(t *testing.T) {
 }
 
 func TestSectionRegexPatterns(t *testing.T) {
+	t.Parallel()
+
 	t.Run("section header regex", func(t *testing.T) {
+		t.Parallel()
+
 		tests := []struct {
 			line     string
 			expected string
@@ -430,6 +450,8 @@ func TestSectionRegexPatterns(t *testing.T) {
 	})
 
 	t.Run("subsection header regex", func(t *testing.T) {
+		t.Parallel()
+
 		tests := []struct {
 			line     string
 			expected string
@@ -458,6 +480,8 @@ func TestSectionRegexPatterns(t *testing.T) {
 }
 
 func TestParseUnreleasedSection_ScannerError(t *testing.T) {
+	t.Parallel()
+
 	errorReader := &erroringReader{}
 
 	_, err := parseKeepAChangelogUnreleased(errorReader)
@@ -473,6 +497,8 @@ func (e *erroringReader) Read(p []byte) (n int, err error) {
 }
 
 func TestToParsedSection(t *testing.T) {
+	t.Parallel()
+
 	section := &UnreleasedSection{
 		HasEntries: true,
 		Added:      []string{"Feature A", "Feature B"},
@@ -511,6 +537,8 @@ func TestToParsedSection(t *testing.T) {
 }
 
 func TestFromParsedSection(t *testing.T) {
+	t.Parallel()
+
 	parsed := &ParsedSection{
 		HasEntries: true,
 		Entries: []ParsedEntry{
@@ -539,6 +567,8 @@ func TestFromParsedSection(t *testing.T) {
 }
 
 func TestInferBumpFromEntries(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		entries        []ParsedEntry
@@ -603,6 +633,8 @@ func TestInferBumpFromEntries(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			bumpType, confidence := inferBumpFromEntries(tt.entries)
 			if bumpType != tt.wantBump {
 				t.Errorf("bumpType = %q, want %q", bumpType, tt.wantBump)

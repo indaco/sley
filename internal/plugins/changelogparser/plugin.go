@@ -17,7 +17,8 @@ type ChangelogInferrer interface {
 
 // ChangelogParserPlugin implements the ChangelogInferrer interface.
 type ChangelogParserPlugin struct {
-	config *Config
+	config     *Config
+	openFileFn OpenFileFunc
 }
 
 // Config holds configuration for the changelog parser plugin.
@@ -53,7 +54,7 @@ func NewChangelogParser(cfg *Config) *ChangelogParserPlugin {
 	if cfg.Format == "" {
 		cfg.Format = "keepachangelog"
 	}
-	return &ChangelogParserPlugin{config: cfg}
+	return &ChangelogParserPlugin{config: cfg, openFileFn: os.Open}
 }
 
 // DefaultConfig returns the default changelog parser configuration.
@@ -138,7 +139,7 @@ func (p *ChangelogParserPlugin) parseUnreleasedWithFormat() (*ParsedSection, err
 		return nil, err
 	}
 
-	file, err := openFileFn(p.config.Path)
+	file, err := p.openFileFn(p.config.Path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, errors.New("changelog file not found")

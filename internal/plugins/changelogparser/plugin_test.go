@@ -8,7 +8,11 @@ import (
 )
 
 func TestNewChangelogParser_Plugin(t *testing.T) {
+	t.Parallel()
+
 	t.Run("with nil config", func(t *testing.T) {
+		t.Parallel()
+
 		plugin := NewChangelogParser(nil)
 		if plugin == nil {
 			t.Fatal("expected non-nil plugin")
@@ -25,6 +29,8 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 	})
 
 	t.Run("with custom config", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{
 			Enabled:                  true,
 			Path:                     "docs/CHANGES.md",
@@ -46,6 +52,8 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 	})
 
 	t.Run("with empty path applies default", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{
 			Enabled: true,
 			Path:    "",
@@ -57,6 +65,8 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 	})
 
 	t.Run("with empty format applies default", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{
 			Enabled: true,
 			Format:  "",
@@ -69,6 +79,8 @@ func TestNewChangelogParser_Plugin(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
+
 	cfg := DefaultConfig()
 	if cfg.Enabled {
 		t.Error("expected Enabled to be false by default")
@@ -91,6 +103,8 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestPluginMetadata(t *testing.T) {
+	t.Parallel()
+
 	plugin := NewChangelogParser(nil)
 
 	if plugin.Name() != "changelog-parser" {
@@ -107,6 +121,8 @@ func TestPluginMetadata(t *testing.T) {
 }
 
 func TestIsEnabled(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		enabled bool
@@ -117,6 +133,8 @@ func TestIsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			cfg := &Config{Enabled: tt.enabled}
 			plugin := NewChangelogParser(cfg)
 
@@ -128,6 +146,8 @@ func TestIsEnabled(t *testing.T) {
 }
 
 func TestGetConfig(t *testing.T) {
+	t.Parallel()
+
 	cfg := &Config{
 		Enabled:  true,
 		Path:     "custom/CHANGELOG.md",
@@ -146,6 +166,8 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestGetFormat(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		format   string
 		expected string
@@ -160,6 +182,8 @@ func TestGetFormat(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.format, func(t *testing.T) {
+			t.Parallel()
+
 			cfg := &Config{Enabled: true, Format: tt.format}
 			plugin := NewChangelogParser(cfg)
 
@@ -172,7 +196,11 @@ func TestGetFormat(t *testing.T) {
 }
 
 func TestInferBumpType_Plugin_Errors(t *testing.T) {
+	t.Parallel()
+
 	t.Run("disabled plugin", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{Enabled: false, InferBumpType: true}
 		plugin := NewChangelogParser(cfg)
 
@@ -186,6 +214,8 @@ func TestInferBumpType_Plugin_Errors(t *testing.T) {
 	})
 
 	t.Run("inference disabled", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{Enabled: true, InferBumpType: false}
 		plugin := NewChangelogParser(cfg)
 
@@ -200,8 +230,7 @@ func TestInferBumpType_Plugin_Errors(t *testing.T) {
 }
 
 func TestInferBumpType_Plugin_Success(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	tests := []struct {
 		name     string
@@ -260,7 +289,7 @@ func TestInferBumpType_Plugin_Success(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			openFileFn = mockOpenFile(tt.content)
+			t.Parallel()
 
 			cfg := &Config{
 				Enabled:       true,
@@ -269,6 +298,7 @@ func TestInferBumpType_Plugin_Success(t *testing.T) {
 				Format:        tt.format,
 			}
 			plugin := NewChangelogParser(cfg)
+			plugin.openFileFn = mockOpenFile(tt.content)
 
 			bumpType, err := plugin.InferBumpType()
 			if err != nil {
@@ -282,13 +312,10 @@ func TestInferBumpType_Plugin_Success(t *testing.T) {
 }
 
 func TestInferBumpType_Plugin_FileErrors(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	t.Run("parse error", func(t *testing.T) {
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, os.ErrNotExist
-		}
+		t.Parallel()
 
 		cfg := &Config{
 			Enabled:       true,
@@ -296,6 +323,9 @@ func TestInferBumpType_Plugin_FileErrors(t *testing.T) {
 			InferBumpType: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = func(name string) (*os.File, error) {
+			return nil, os.ErrNotExist
+		}
 
 		_, err := plugin.InferBumpType()
 		if err == nil {
@@ -307,20 +337,21 @@ func TestInferBumpType_Plugin_FileErrors(t *testing.T) {
 	})
 
 	t.Run("no entries in unreleased section", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
 
 ## [1.0.0] - 2024-01-01
 `
-		openFileFn = mockOpenFile(changelog)
-
 		cfg := &Config{
 			Enabled:       true,
 			Path:          "CHANGELOG.md",
 			InferBumpType: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = mockOpenFile(changelog)
 
 		_, err := plugin.InferBumpType()
 		if err == nil {
@@ -330,10 +361,11 @@ func TestInferBumpType_Plugin_FileErrors(t *testing.T) {
 }
 
 func TestInferBumpTypeWithConfidence(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	t.Run("returns bump type and confidence", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `## [Unreleased]
 
 ### Added
@@ -341,8 +373,6 @@ func TestInferBumpTypeWithConfidence(t *testing.T) {
 
 ## [1.0.0]
 `
-		openFileFn = mockOpenFile(changelog)
-
 		cfg := &Config{
 			Enabled:       true,
 			Path:          "CHANGELOG.md",
@@ -350,6 +380,7 @@ func TestInferBumpTypeWithConfidence(t *testing.T) {
 			Format:        "keepachangelog",
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = mockOpenFile(changelog)
 
 		bumpType, confidence, err := plugin.InferBumpTypeWithConfidence()
 		if err != nil {
@@ -364,6 +395,8 @@ func TestInferBumpTypeWithConfidence(t *testing.T) {
 	})
 
 	t.Run("disabled returns error", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{Enabled: false, InferBumpType: true}
 		plugin := NewChangelogParser(cfg)
 
@@ -375,10 +408,11 @@ func TestInferBumpTypeWithConfidence(t *testing.T) {
 }
 
 func TestValidateHasEntries(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	t.Run("disabled plugin", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{Enabled: false, RequireUnreleasedSection: true}
 		plugin := NewChangelogParser(cfg)
 
@@ -389,6 +423,8 @@ func TestValidateHasEntries(t *testing.T) {
 	})
 
 	t.Run("validation disabled", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{Enabled: true, RequireUnreleasedSection: false}
 		plugin := NewChangelogParser(cfg)
 
@@ -399,6 +435,8 @@ func TestValidateHasEntries(t *testing.T) {
 	})
 
 	t.Run("valid changelog with entries", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
@@ -406,14 +444,13 @@ func TestValidateHasEntries(t *testing.T) {
 ### Added
 - New feature
 `
-		openFileFn = mockOpenFile(changelog)
-
 		cfg := &Config{
 			Enabled:                  true,
 			Path:                     "CHANGELOG.md",
 			RequireUnreleasedSection: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = mockOpenFile(changelog)
 
 		err := plugin.ValidateHasEntries()
 		if err != nil {
@@ -422,20 +459,21 @@ func TestValidateHasEntries(t *testing.T) {
 	})
 
 	t.Run("empty unreleased section", func(t *testing.T) {
+		t.Parallel()
+
 		changelog := `# Changelog
 
 ## [Unreleased]
 
 ## [1.0.0] - 2024-01-01
 `
-		openFileFn = mockOpenFile(changelog)
-
 		cfg := &Config{
 			Enabled:                  true,
 			Path:                     "CHANGELOG.md",
 			RequireUnreleasedSection: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = mockOpenFile(changelog)
 
 		err := plugin.ValidateHasEntries()
 		if err == nil {
@@ -447,9 +485,7 @@ func TestValidateHasEntries(t *testing.T) {
 	})
 
 	t.Run("file not found", func(t *testing.T) {
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, os.ErrNotExist
-		}
+		t.Parallel()
 
 		cfg := &Config{
 			Enabled:                  true,
@@ -457,6 +493,9 @@ func TestValidateHasEntries(t *testing.T) {
 			RequireUnreleasedSection: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = func(name string) (*os.File, error) {
+			return nil, os.ErrNotExist
+		}
 
 		err := plugin.ValidateHasEntries()
 		if err == nil {
@@ -466,6 +505,8 @@ func TestValidateHasEntries(t *testing.T) {
 }
 
 func TestShouldTakePrecedence(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name     string
 		enabled  bool
@@ -500,6 +541,8 @@ func TestShouldTakePrecedence(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			cfg := &Config{
 				Enabled:  tt.enabled,
 				Priority: tt.priority,
@@ -538,23 +581,25 @@ func mockOpenFile(content string) func(string) (*os.File, error) {
 }
 
 func TestPluginInterface(t *testing.T) {
+	t.Parallel()
+
 	var _ ChangelogInferrer = (*ChangelogParserPlugin)(nil)
 }
 
 func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	t.Run("infer with IO error", func(t *testing.T) {
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, errors.New("disk full")
-		}
+		t.Parallel()
 
 		cfg := &Config{
 			Enabled:       true,
 			InferBumpType: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = func(name string) (*os.File, error) {
+			return nil, errors.New("disk full")
+		}
 
 		_, err := plugin.InferBumpType()
 		if err == nil {
@@ -563,15 +608,16 @@ func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
 	})
 
 	t.Run("validate with IO error", func(t *testing.T) {
-		openFileFn = func(name string) (*os.File, error) {
-			return nil, errors.New("disk full")
-		}
+		t.Parallel()
 
 		cfg := &Config{
 			Enabled:                  true,
 			RequireUnreleasedSection: true,
 		}
 		plugin := NewChangelogParser(cfg)
+		plugin.openFileFn = func(name string) (*os.File, error) {
+			return nil, errors.New("disk full")
+		}
 
 		err := plugin.ValidateHasEntries()
 		if err == nil {
@@ -580,6 +626,8 @@ func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
 	})
 
 	t.Run("invalid format error", func(t *testing.T) {
+		t.Parallel()
+
 		cfg := &Config{
 			Enabled:       true,
 			InferBumpType: true,
@@ -595,8 +643,7 @@ func TestChangelogParserPlugin_ErrorScenarios(t *testing.T) {
 }
 
 func TestMultiFormatSupport(t *testing.T) {
-	origOpenFile := openFileFn
-	defer func() { openFileFn = origOpenFile }()
+	t.Parallel()
 
 	formats := []struct {
 		name     string
@@ -644,7 +691,7 @@ func TestMultiFormatSupport(t *testing.T) {
 
 	for _, tt := range formats {
 		t.Run(tt.name, func(t *testing.T) {
-			openFileFn = mockOpenFile(tt.content)
+			t.Parallel()
 
 			cfg := &Config{
 				Enabled:       true,
@@ -652,6 +699,7 @@ func TestMultiFormatSupport(t *testing.T) {
 				Format:        tt.format,
 			}
 			plugin := NewChangelogParser(cfg)
+			plugin.openFileFn = mockOpenFile(tt.content)
 
 			bumpType, err := plugin.InferBumpType()
 			if err != nil {

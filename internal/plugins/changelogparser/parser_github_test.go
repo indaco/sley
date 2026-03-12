@@ -6,6 +6,8 @@ import (
 )
 
 func TestGitHubParser_Format(t *testing.T) {
+	t.Parallel()
+
 	p := newGitHubParser(nil)
 	if p.Format() != "github" {
 		t.Errorf("expected 'github', got %s", p.Format())
@@ -13,6 +15,8 @@ func TestGitHubParser_Format(t *testing.T) {
 }
 
 func TestGitHubParser_ParseUnreleased(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		content        string
@@ -121,6 +125,8 @@ Some text without version.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := newGitHubParser(nil)
 			section, err := p.ParseUnreleased(strings.NewReader(tt.content))
 
@@ -166,6 +172,8 @@ Some text without version.
 }
 
 func TestGitHubParser_EntryParsing(t *testing.T) {
+	t.Parallel()
+
 	content := `## v1.2.0 - 2024-01-15
 
 ### Breaking Changes
@@ -215,8 +223,11 @@ func TestGitHubParser_EntryParsing(t *testing.T) {
 }
 
 func TestGitHubParser_LimitationsDocumented(t *testing.T) {
+	t.Parallel()
+
 	// This test documents that GitHub format cannot reliably distinguish
 	// between minor and patch changes in "What's Changed" section.
+
 	content := `## v1.2.0
 
 ### What's Changed

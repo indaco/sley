@@ -6,6 +6,8 @@ import (
 )
 
 func TestMinimalParser_Format(t *testing.T) {
+	t.Parallel()
+
 	p := newMinimalParser(nil)
 	if p.Format() != "minimal" {
 		t.Errorf("expected 'minimal', got %s", p.Format())
@@ -13,6 +15,8 @@ func TestMinimalParser_Format(t *testing.T) {
 }
 
 func TestMinimalParser_ParseUnreleased(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		content        string
@@ -132,6 +136,8 @@ Just some text without version headers.
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := newMinimalParser(nil)
 			section, err := p.ParseUnreleased(strings.NewReader(tt.content))
 
@@ -173,6 +179,8 @@ Just some text without version headers.
 }
 
 func TestMinimalParser_EntryParsing(t *testing.T) {
+	t.Parallel()
+
 	content := `## v1.0.0
 
 - [Feat] New authentication system

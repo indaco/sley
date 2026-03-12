@@ -6,6 +6,8 @@ import (
 )
 
 func TestKeepAChangelogParser_Format(t *testing.T) {
+	t.Parallel()
+
 	p := newKeepAChangelogParser(nil)
 	if p.Format() != "keepachangelog" {
 		t.Errorf("expected 'keepachangelog', got %s", p.Format())
@@ -13,6 +15,8 @@ func TestKeepAChangelogParser_Format(t *testing.T) {
 }
 
 func TestKeepAChangelogParser_ParseUnreleased(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name           string
 		content        string
@@ -152,6 +156,8 @@ func TestKeepAChangelogParser_ParseUnreleased(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			p := newKeepAChangelogParser(nil)
 			section, err := p.ParseUnreleased(strings.NewReader(tt.content))
 
@@ -189,6 +195,8 @@ func TestKeepAChangelogParser_ParseUnreleased(t *testing.T) {
 }
 
 func TestKeepAChangelogParser_EntryCategories(t *testing.T) {
+	t.Parallel()
+
 	content := `# Changelog
 
 ## [Unreleased]
