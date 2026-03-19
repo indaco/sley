@@ -61,7 +61,7 @@ clean:
 
 # Format code
 fmt:
-    @. {{ logger }} && log_info "Running fmt and gofumpt"
+    @. {{ logger }} && log_info "Running fmt"
     {{ go }} fmt ./...
 
 # Run go-modernize with auto-fix
