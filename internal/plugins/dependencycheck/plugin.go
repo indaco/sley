@@ -69,6 +69,20 @@ func (i Inconsistency) String() string {
 // DependencyCheckerPlugin implements the DependencyChecker interface.
 type DependencyCheckerPlugin struct {
 	config *Config
+
+	// Format-specific read functions (injected for testability).
+	readJSONVersionFn  func(path, field string) (string, error)
+	readYAMLVersionFn  func(path, field string) (string, error)
+	readTOMLVersionFn  func(path, field string) (string, error)
+	readRawVersionFn   func(path string) (string, error)
+	readRegexVersionFn func(path, pattern string) (string, error)
+
+	// Format-specific write functions (injected for testability).
+	writeJSONVersionFn  func(path, field, version string) error
+	writeYAMLVersionFn  func(path, field, version string) error
+	writeTOMLVersionFn  func(path, field, version string) error
+	writeRawVersionFn   func(path, version string) error
+	writeRegexVersionFn func(path, pattern, version string) error
 }
 
 // Ensure DependencyCheckerPlugin implements DependencyChecker.
@@ -85,7 +99,19 @@ func NewDependencyChecker(cfg *Config) *DependencyCheckerPlugin {
 	if cfg == nil {
 		cfg = DefaultConfig()
 	}
-	return &DependencyCheckerPlugin{config: cfg}
+	return &DependencyCheckerPlugin{
+		config:              cfg,
+		readJSONVersionFn:   readJSONVersion,
+		readYAMLVersionFn:   readYAMLVersion,
+		readTOMLVersionFn:   readTOMLVersion,
+		readRawVersionFn:    readRawVersion,
+		readRegexVersionFn:  readRegexVersion,
+		writeJSONVersionFn:  writeJSONVersion,
+		writeYAMLVersionFn:  writeYAMLVersion,
+		writeTOMLVersionFn:  writeTOMLVersion,
+		writeRawVersionFn:   writeRawVersion,
+		writeRegexVersionFn: writeRegexVersion,
+	}
 }
 
 // DefaultConfig returns the default dependency checker configuration.
@@ -155,18 +181,18 @@ func (p *DependencyCheckerPlugin) SyncVersions(newVersion string) error {
 func (p *DependencyCheckerPlugin) readVersionFromFile(file FileConfig) (string, error) {
 	switch file.Format {
 	case "json":
-		return readJSONVersionFn(file.Path, file.Field)
+		return p.readJSONVersionFn(file.Path, file.Field)
 	case "yaml":
-		return readYAMLVersionFn(file.Path, file.Field)
+		return p.readYAMLVersionFn(file.Path, file.Field)
 	case "toml":
-		return readTOMLVersionFn(file.Path, file.Field)
+		return p.readTOMLVersionFn(file.Path, file.Field)
 	case "raw":
-		return readRawVersionFn(file.Path)
+		return p.readRawVersionFn(file.Path)
 	case "regex":
 		if file.Pattern == "" {
 			return "", fmt.Errorf("regex format requires a pattern")
 		}
-		return readRegexVersionFn(file.Path, file.Pattern)
+		return p.readRegexVersionFn(file.Path, file.Pattern)
 	default:
 		return "", fmt.Errorf("unsupported format: %s", file.Format)
 	}
@@ -176,18 +202,18 @@ func (p *DependencyCheckerPlugin) readVersionFromFile(file FileConfig) (string, 
 func (p *DependencyCheckerPlugin) writeVersionToFile(file FileConfig, version string) error {
 	switch file.Format {
 	case "json":
-		return writeJSONVersionFn(file.Path, file.Field, version)
+		return p.writeJSONVersionFn(file.Path, file.Field, version)
 	case "yaml":
-		return writeYAMLVersionFn(file.Path, file.Field, version)
+		return p.writeYAMLVersionFn(file.Path, file.Field, version)
 	case "toml":
-		return writeTOMLVersionFn(file.Path, file.Field, version)
+		return p.writeTOMLVersionFn(file.Path, file.Field, version)
 	case "raw":
-		return writeRawVersionFn(file.Path, version)
+		return p.writeRawVersionFn(file.Path, version)
 	case "regex":
 		if file.Pattern == "" {
 			return fmt.Errorf("regex format requires a pattern")
 		}
-		return writeRegexVersionFn(file.Path, file.Pattern, version)
+		return p.writeRegexVersionFn(file.Path, file.Pattern, version)
 	default:
 		return fmt.Errorf("unsupported format: %s", file.Format)
 	}
