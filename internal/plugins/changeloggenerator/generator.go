@@ -206,7 +206,11 @@ func (g *Generator) writeContributorEntry(sb *strings.Builder, contrib Contribut
 	// Get format template
 	format := g.config.Contributors.Format
 	if format == "" {
-		format = "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+		if g.config.Contributors.ShowName {
+			format = DefaultContributorFormat
+		} else {
+			format = DefaultContributorFormatNoName
+		}
 	}
 
 	// Parse template once (thread-safe)

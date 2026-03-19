@@ -27,6 +27,12 @@ const DefaultNewContributorsIcon = "\U0001F389" // party popper 🎉
 // DefaultBreakingChangesIcon is the default icon for the breaking changes section.
 const DefaultBreakingChangesIcon = "\u26A0\uFE0F" // warning sign ⚠️
 
+// DefaultContributorFormat is the default Go template for contributor entries (with name).
+const DefaultContributorFormat = "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))"
+
+// DefaultContributorFormatNoName is the Go template for contributor entries without name.
+const DefaultContributorFormatNoName = "- [@{{.Username}}](https://{{.Host}}/{{.Username}})"
+
 // Config holds the internal configuration for the changelog generator plugin.
 type Config struct {
 	// Enabled controls whether the plugin is active.
@@ -111,6 +117,7 @@ type ContributorsConfig struct {
 	Enabled               bool
 	Format                string
 	Icon                  string
+	ShowName              bool
 	ShowNewContributors   bool
 	NewContributorsFormat string
 	NewContributorsIcon   string
@@ -132,7 +139,8 @@ func DefaultConfig() *Config {
 		ExcludePatterns: DefaultExcludePatterns(),
 		Contributors: &ContributorsConfig{
 			Enabled:             true,
-			Format:              "- [@{{.Username}}](https://{{.Host}}/{{.Username}})",
+			Format:              DefaultContributorFormat,
+			ShowName:            true,
 			ShowNewContributors: true,
 		},
 	}
@@ -263,15 +271,19 @@ func convertContributorsConfig(cfg *config.ChangelogGeneratorConfig) *Contributo
 		return defaultContributorsConfig(cfg.UseDefaultIcons)
 	}
 
+	showName := cfg.Contributors.GetShowName()
+
 	contrib := &ContributorsConfig{
 		Enabled:               cfg.Contributors.Enabled,
 		Format:                cfg.Contributors.Format,
 		Icon:                  cfg.Contributors.Icon,
+		ShowName:              showName,
 		ShowNewContributors:   cfg.Contributors.GetShowNewContributors(),
 		NewContributorsFormat: cfg.Contributors.NewContributorsFormat,
 		NewContributorsIcon:   cfg.Contributors.NewContributorsIcon,
 	}
 
+	applyDefaultContributorFormat(contrib)
 	applyDefaultContributorIcons(contrib, cfg.UseDefaultIcons)
 	return contrib
 }
@@ -280,7 +292,8 @@ func convertContributorsConfig(cfg *config.ChangelogGeneratorConfig) *Contributo
 func defaultContributorsConfig(useDefaultIcons bool) *ContributorsConfig {
 	contrib := &ContributorsConfig{
 		Enabled:             true,
-		Format:              "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
+		Format:              DefaultContributorFormat,
+		ShowName:            true,
 		ShowNewContributors: true,
 	}
 	if useDefaultIcons {
@@ -288,6 +301,19 @@ func defaultContributorsConfig(useDefaultIcons bool) *ContributorsConfig {
 		contrib.NewContributorsIcon = DefaultNewContributorsIcon
 	}
 	return contrib
+}
+
+// applyDefaultContributorFormat sets the default format when no custom format is specified.
+// When ShowName is false and no custom format is set, it uses the no-name format.
+func applyDefaultContributorFormat(contrib *ContributorsConfig) {
+	if contrib.Format != "" {
+		return
+	}
+	if contrib.ShowName {
+		contrib.Format = DefaultContributorFormat
+	} else {
+		contrib.Format = DefaultContributorFormatNoName
+	}
 }
 
 // applyDefaultContributorIcons applies default icons if UseDefaultIcons is enabled.
