@@ -38,18 +38,22 @@ entry: extension.go
 		t.Fatal(err)
 	}
 
-	// Override .sley-extensions dir for test
-	originalCopyDir := copyDirFn
-	defer func() { copyDirFn = originalCopyDir }()
-
-	copyDirFn = func(src, dst string) error {
-		if !strings.Contains(src, "myextension") || !strings.Contains(dst, "test-extension") {
-			t.Errorf("unexpected copy src=%q dst=%q", src, dst)
-		}
-		return nil
+	// Use DI to inject a mock file copier
+	mockFileCopier := &MockFileCopier{
+		CopyDirFunc: func(src, dst string) error {
+			if !strings.Contains(src, "myextension") || !strings.Contains(dst, "test-extension") {
+				t.Errorf("unexpected copy src=%q dst=%q", src, dst)
+			}
+			return nil
+		},
 	}
 
-	registrar := NewDefaultExtensionRegistrarInstance()
+	registrar := NewDefaultExtensionRegistrar(
+		&DefaultManifestLoader{},
+		NewDefaultConfigUpdater(&DefaultYAMLMarshaler{}),
+		mockFileCopier,
+		&OSHomeDirectory{},
+	)
 	err := registrar.Register(extensionDir, cfgPath, tmpDir)
 	if err != nil {
 		t.Fatalf("expected success, got error: %v", err)
