@@ -44,7 +44,7 @@ func runExtensionList() error {
 		desc := "(no manifest)"
 
 		if ext.Path != "" {
-			if manifest, err := extensions.LoadExtensionManifestFn(ext.Path); err == nil {
+			if manifest, err := extensions.LoadExtensionManifest(ext.Path); err == nil {
 				version = manifest.Version
 				desc = manifest.Description
 			}

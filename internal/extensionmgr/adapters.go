@@ -23,10 +23,10 @@ func (h *OSHomeDirectory) Get() (string, error) {
 	return os.UserHomeDir()
 }
 
-// DefaultManifestLoader implements ManifestLoader using extensions.LoadExtensionManifestFn
+// DefaultManifestLoader implements ManifestLoader using extensions.LoadExtensionManifest
 type DefaultManifestLoader struct{}
 
 // Load loads an extension manifest from the given path
 func (l *DefaultManifestLoader) Load(path string) (*extensions.ExtensionManifest, error) {
-	return extensions.LoadExtensionManifestFn(path)
+	return extensions.LoadExtensionManifest(path)
 }

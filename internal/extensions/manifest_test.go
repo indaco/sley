@@ -58,7 +58,8 @@ func TestExtensionManifest_Validate(t *testing.T) {
 
 	t.Run("valid manifest", func(t *testing.T) {
 		t.Parallel()
-		err := base.ValidateManifest()
+		m := base
+		err := m.ValidateManifest()
 		if err != nil {
 			t.Errorf("expected no error, got %v", err)
 		}
