@@ -43,7 +43,7 @@ build:
     @ls -lh {{ build_dir }}/{{ app_name }} | awk '{print "  " $5}'
 
 # Install the binary using Go install
-install: check test-force
+install: check test-race
     @. {{ logger }} && log_info "Install the binary using Go install"
     cd {{ cmd_dir }} && {{ go }} install {{ buildflags }} -ldflags="{{ ldflags }}" .
 
