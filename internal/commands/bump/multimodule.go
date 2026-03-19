@@ -20,12 +20,17 @@ func runMultiModuleBump(
 	cmd *cli.Command,
 	execCtx *clix.ExecutionContext,
 	registry *plugins.PluginRegistry,
+	deps *bumpDeps,
 	bumpType operations.BumpType,
 	preRelease, metadata string,
 	preserveMetadata bool,
 ) error {
 	fs := core.NewOSFileSystem()
-	bumper := newVersionBumper()
+	bumperFn := func() semver.VersionBumper { return semver.NewDefaultBumper() }
+	if deps != nil && deps.newBumper != nil {
+		bumperFn = deps.newBumper
+	}
+	bumper := bumperFn()
 	operation := operations.NewBumpOperation(fs, bumper, bumpType, preRelease, metadata, preserveMetadata)
 
 	// Create executor with options from flags

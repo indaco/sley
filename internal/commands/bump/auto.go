@@ -17,16 +17,33 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-var (
-	tryInferBumpTypeFromCommitParserPluginFn    = tryInferBumpTypeFromCommitParserPlugin
-	tryInferBumpTypeFromChangelogParserPluginFn = tryInferBumpTypeFromChangelogParserPlugin
+// bumpDeps holds injectable dependencies for auto bump operations.
+type bumpDeps struct {
+	inferFromCommits   func(registry *plugins.PluginRegistry, since, until string) string
+	inferFromChangelog func(registry *plugins.PluginRegistry) string
+	newBumper          func() semver.VersionBumper
+	getCommits         gitlog.GetCommitsFn
+}
 
-	// newVersionBumper creates the VersionBumper used for auto bump operations.
-	// Tests can override this to inject mock bumpers.
-	newVersionBumper = func() semver.VersionBumper {
-		return semver.NewDefaultBumper()
+// bumpDepsKey is used to inject bumpDeps via context (for testing).
+type bumpDepsKey struct{}
+
+func newBumpDeps() *bumpDeps {
+	return &bumpDeps{
+		inferFromCommits:   tryInferBumpTypeFromCommitParserPlugin,
+		inferFromChangelog: tryInferBumpTypeFromChangelogParserPlugin,
+		newBumper:          func() semver.VersionBumper { return semver.NewDefaultBumper() },
+		getCommits:         gitlog.DefaultGetCommitsFn(),
 	}
-)
+}
+
+// bumpDepsFromContext extracts bumpDeps from context, or returns defaults.
+func bumpDepsFromContext(ctx context.Context) *bumpDeps {
+	if deps, ok := ctx.Value(bumpDepsKey{}).(*bumpDeps); ok {
+		return deps
+	}
+	return newBumpDeps()
+}
 
 // autoCmd returns the "auto" subcommand.
 func autoCmd(cfg *config.Config, registry *plugins.PluginRegistry) *cli.Command {
@@ -101,19 +118,21 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 		return err
 	}
 
+	deps := bumpDepsFromContext(ctx)
+
 	// Handle single-module mode
 	if execCtx.IsSingleModule() {
-		return runSingleModuleAuto(ctx, cmd, cfg, registry, execCtx.Path, label, meta, since, until, isPreserveMeta, disableInfer, isSkipHooks)
+		return runSingleModuleAuto(ctx, cmd, cfg, registry, deps, execCtx.Path, label, meta, since, until, isPreserveMeta, disableInfer, isSkipHooks)
 	}
 
 	// Handle multi-module mode
 	// For auto bump, we need to determine the bump type first
-	bumpType := determineBumpType(registry, label, disableInfer, since, until)
-	return runMultiModuleBump(ctx, cmd, execCtx, registry, bumpType, "", meta, isPreserveMeta)
+	bumpType := determineBumpType(deps, registry, label, disableInfer, since, until)
+	return runMultiModuleBump(ctx, cmd, execCtx, registry, deps, bumpType, "", meta, isPreserveMeta)
 }
 
 // determineBumpType determines the bump type for multi-module auto bump.
-func determineBumpType(registry *plugins.PluginRegistry, label string, disableInfer bool, since, until string) operations.BumpType {
+func determineBumpType(deps *bumpDeps, registry *plugins.PluginRegistry, label string, disableInfer bool, since, until string) operations.BumpType {
 	switch label {
 	case "patch":
 		return operations.BumpPatch
@@ -124,10 +143,10 @@ func determineBumpType(registry *plugins.PluginRegistry, label string, disableIn
 	case "":
 		if !disableInfer {
 			// Try changelog parser first if it should take precedence
-			inferred := tryInferBumpTypeFromChangelogParserPluginFn(registry)
+			inferred := deps.inferFromChangelog(registry)
 			if inferred == "" {
 				// Fall back to commit parser
-				inferred = tryInferBumpTypeFromCommitParserPluginFn(registry, since, until)
+				inferred = deps.inferFromCommits(registry, since, until)
 			}
 
 			if inferred != "" {
@@ -151,7 +170,7 @@ func determineBumpType(registry *plugins.PluginRegistry, label string, disableIn
 }
 
 // runSingleModuleAuto handles the single-module auto bump operation.
-func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, path, label, meta, since, until string, isPreserveMeta, disableInfer, skipHooks bool) error {
+func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Config, registry *plugins.PluginRegistry, deps *bumpDeps, path, label, meta, since, until string, isPreserveMeta, disableInfer, skipHooks bool) error {
 	if _, err := clix.FromCommand(cmd); err != nil {
 		return err
 	}
@@ -161,8 +180,8 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 		return fmt.Errorf("failed to read version: %w", err)
 	}
 
-	bumper := newVersionBumper()
-	next, err := getNextVersion(bumper, registry, current, label, disableInfer, since, until, isPreserveMeta)
+	bumper := deps.newBumper()
+	next, err := getNextVersion(deps, bumper, registry, current, label, disableInfer, since, until, isPreserveMeta)
 	if err != nil {
 		return err
 	}
@@ -220,6 +239,7 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 // commit inference, or default bump logic. It returns an error if bumping fails
 // or if an invalid label is specified.
 func getNextVersion(
+	deps *bumpDeps,
 	bumper semver.VersionBumper,
 	registry *plugins.PluginRegistry,
 	current semver.SemVersion,
@@ -240,10 +260,10 @@ func getNextVersion(
 	case "":
 		if !disableInfer {
 			// Try changelog parser first if it should take precedence
-			inferred := tryInferBumpTypeFromChangelogParserPluginFn(registry)
+			inferred := deps.inferFromChangelog(registry)
 			if inferred == "" {
 				// Fall back to commit parser
-				inferred = tryInferBumpTypeFromCommitParserPluginFn(registry, since, until)
+				inferred = deps.inferFromCommits(registry, since, until)
 			}
 
 			if inferred != "" {
@@ -304,7 +324,8 @@ func tryInferBumpTypeFromCommitParserPlugin(registry *plugins.PluginRegistry, si
 		return ""
 	}
 
-	commits, err := gitlog.GetCommitsFn(since, until)
+	gl := gitlog.NewGitLog()
+	commits, err := gl.GetCommits(since, until)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read commits: %v\n", err)
 		return ""
