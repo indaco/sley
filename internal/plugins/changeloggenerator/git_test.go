@@ -383,20 +383,15 @@ func TestKnownProviders(t *testing.T) {
 
 func TestGetCommitsWithMeta_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetCommitsWithMetaFn
-	defer func() { GetCommitsWithMetaFn = originalFn }()
-
-	// Mock the function
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	gitOps := NewGitOps()
+	gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: test", Author: "Test", AuthorEmail: "test@example.com"},
 			{Hash: "def456", ShortHash: "def456", Subject: "fix: bug", Author: "User", AuthorEmail: "user@example.com"},
 		}, nil
 	}
 
-	commits, err := GetCommitsWithMetaFn("v1.0.0", "HEAD")
+	commits, err := gitOps.GetCommitsWithMetaFn("v1.0.0", "HEAD")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -407,13 +402,8 @@ func TestGetCommitsWithMeta_MockSuccess(t *testing.T) {
 
 func TestGetRemoteInfo_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetRemoteInfoFn
-	defer func() { GetRemoteInfoFn = originalFn }()
-
-	// Mock the function
-	GetRemoteInfoFn = func() (*RemoteInfo, error) {
+	gitOps := NewGitOps()
+	gitOps.GetRemoteInfoFn = func() (*RemoteInfo, error) {
 		return &RemoteInfo{
 			Provider: "github",
 			Host:     "github.com",
@@ -422,7 +412,7 @@ func TestGetRemoteInfo_MockSuccess(t *testing.T) {
 		}, nil
 	}
 
-	remote, err := GetRemoteInfoFn()
+	remote, err := gitOps.GetRemoteInfoFn()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -433,17 +423,12 @@ func TestGetRemoteInfo_MockSuccess(t *testing.T) {
 
 func TestGetLatestTag_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetLatestTagFn
-	defer func() { GetLatestTagFn = originalFn }()
-
-	// Mock the function
-	GetLatestTagFn = func() (string, error) {
+	gitOps := NewGitOps()
+	gitOps.GetLatestTagFn = func() (string, error) {
 		return "v1.0.0", nil
 	}
 
-	tag, err := GetLatestTagFn()
+	tag, err := gitOps.GetLatestTagFn()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -454,20 +439,15 @@ func TestGetLatestTag_MockSuccess(t *testing.T) {
 
 func TestGetContributors_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetContributorsFn
-	defer func() { GetContributorsFn = originalFn }()
-
-	// Mock the function
-	GetContributorsFn = func(commits []CommitInfo) []Contributor {
+	gitOps := NewGitOps()
+	gitOps.GetContributorsFn = func(commits []CommitInfo) []Contributor {
 		return []Contributor{
 			{Name: "Test User", Username: "testuser", Email: "test@example.com", Host: "github.com"},
 		}
 	}
 
 	commits := []CommitInfo{{Author: "Test", AuthorEmail: "test@example.com"}}
-	contributors := GetContributorsFn(commits)
+	contributors := gitOps.GetContributorsFn(commits)
 	if len(contributors) != 1 {
 		t.Errorf("expected 1 contributor, got %d", len(contributors))
 	}
@@ -552,11 +532,6 @@ func TestNewContributor_Fields(t *testing.T) {
 
 func TestGetNewContributors(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetHistoricalContributorsFn
-	defer func() { GetHistoricalContributorsFn = originalFn }()
-
 	tests := []struct {
 		name                string
 		commits             []CommitInfo
@@ -627,11 +602,12 @@ func TestGetNewContributors(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
+			gitOps := NewGitOps()
+			gitOps.GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
 				return tt.historicalUsernames, nil
 			}
 
-			got, err := getNewContributors(tt.commits, tt.previousVersion)
+			got, err := gitOps.getNewContributors(tt.commits, tt.previousVersion)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -657,12 +633,8 @@ func TestGetNewContributors(t *testing.T) {
 
 func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetHistoricalContributorsFn
-	defer func() { GetHistoricalContributorsFn = originalFn }()
-
-	GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
+	gitOps := NewGitOps()
+	gitOps.GetHistoricalContributorsFn = func(ref string) (map[string]struct{}, error) {
 		return map[string]struct{}{}, nil
 	}
 
@@ -695,7 +667,7 @@ func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
 				{Author: "Dev", AuthorEmail: "dev@users.noreply.github.com", ShortHash: "abc123", Subject: tt.subject},
 			}
 
-			got, err := getNewContributors(commits, "v1.0.0")
+			got, err := gitOps.getNewContributors(commits, "v1.0.0")
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -713,13 +685,8 @@ func TestGetNewContributors_PRNumberExtraction(t *testing.T) {
 
 func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetHistoricalContributorsFn
-	defer func() { GetHistoricalContributorsFn = originalFn }()
-
-	// Mock the function
-	GetHistoricalContributorsFn = func(beforeRef string) (map[string]struct{}, error) {
+	gitOps := NewGitOps()
+	gitOps.GetHistoricalContributorsFn = func(beforeRef string) (map[string]struct{}, error) {
 		return map[string]struct{}{
 			"alice":   {},
 			"bob":     {},
@@ -727,7 +694,7 @@ func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
 		}, nil
 	}
 
-	usernames, err := GetHistoricalContributorsFn("v1.0.0")
+	usernames, err := gitOps.GetHistoricalContributorsFn("v1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -741,13 +708,8 @@ func TestGetHistoricalContributors_MockSuccess(t *testing.T) {
 
 func TestGetNewContributorsFn_MockSuccess(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetNewContributorsFn
-	defer func() { GetNewContributorsFn = originalFn }()
-
-	// Mock the function
-	GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+	gitOps := NewGitOps()
+	gitOps.GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
 		return []NewContributor{
 			{
 				Contributor: Contributor{
@@ -761,7 +723,7 @@ func TestGetNewContributorsFn_MockSuccess(t *testing.T) {
 	}
 
 	commits := []CommitInfo{{Author: "New Dev", AuthorEmail: "newdev@users.noreply.github.com"}}
-	newContribs, err := GetNewContributorsFn(commits, "v1.0.0")
+	newContribs, err := gitOps.GetNewContributorsFn(commits, "v1.0.0")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

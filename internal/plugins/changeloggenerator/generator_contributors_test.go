@@ -7,7 +7,7 @@ import (
 
 func TestWriteContributorEntry(t *testing.T) {
 
-	g, err := NewGenerator(DefaultConfig())
+	g, err := NewGenerator(DefaultConfig(), NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 
 			cfg := DefaultConfig()
 			cfg.Contributors.Format = tt.format
-			g, err := NewGenerator(cfg)
+			g, err := NewGenerator(cfg, NewGitOps())
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -124,7 +124,7 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 func TestWriteContributorEntry_NoHost(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestWriteContributorEntry_TemplateExecutionError(t *testing.T) {
 		Enabled: true,
 		Format:  "- {{.NonExistentMethod}}",
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestWriteNewContributorsSection(t *testing.T) {
 		Enabled:             true,
 		ShowNewContributors: true,
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	remote := &RemoteInfo{
 		Provider: "github",
@@ -221,7 +221,7 @@ func TestWriteNewContributorsSection_WithIcon(t *testing.T) {
 		ShowNewContributors: true,
 		NewContributorsIcon: "🎉",
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	newContributors := []NewContributor{
 		{
@@ -251,7 +251,7 @@ func TestWriteNewContributorEntry_WithRemote(t *testing.T) {
 		Enabled:             true,
 		ShowNewContributors: true,
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	remote := &RemoteInfo{
 		Provider: "github",
@@ -289,7 +289,7 @@ func TestWriteNewContributorEntry_WithoutPR(t *testing.T) {
 		Enabled:             true,
 		ShowNewContributors: true,
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	remote := &RemoteInfo{
 		Provider: "github",
@@ -333,7 +333,7 @@ func TestWriteNewContributorEntry_WithoutRemote(t *testing.T) {
 		Enabled:             true,
 		ShowNewContributors: true,
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -364,7 +364,7 @@ func TestWriteNewContributorEntry_CustomFormat(t *testing.T) {
 		ShowNewContributors:   true,
 		NewContributorsFormat: "* {{.Username}} joined in #{{.PRNumber}}",
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -393,7 +393,7 @@ func TestWriteNewContributorEntry_TemplateParseError(t *testing.T) {
 		ShowNewContributors:   true,
 		NewContributorsFormat: "- {{.Invalid", // Invalid template syntax
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -423,7 +423,7 @@ func TestWriteNewContributorEntry_TemplateExecutionError(t *testing.T) {
 		ShowNewContributors:   true,
 		NewContributorsFormat: "- {{.NonExistent.Field}}", // Will fail on execution
 	}
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -448,7 +448,7 @@ func TestWriteNewContributorEntry_TemplateExecutionError(t *testing.T) {
 func TestWriteNewContributorFallback_WithPR(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	remote := &RemoteInfo{
 		Provider: "github",
@@ -482,7 +482,7 @@ func TestWriteNewContributorFallback_WithPR(t *testing.T) {
 func TestWriteNewContributorFallback_WithoutPR(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -520,7 +520,7 @@ func TestWriteNewContributorFallback_WithoutPR(t *testing.T) {
 func TestWriteNewContributorFallback_WithoutRemote(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -546,7 +546,7 @@ func TestWriteNewContributorFallback_WithoutRemote(t *testing.T) {
 func TestWriteNewContributorFallback_NoRemoteNoPR(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	nc := NewContributor{
 		Contributor: Contributor{
@@ -572,7 +572,7 @@ func TestWriteNewContributorFallback_NoRemoteNoPR(t *testing.T) {
 func TestGetDefaultNewContributorFormat_WithRemote(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	remote := &RemoteInfo{
 		Provider: "github",
@@ -597,7 +597,7 @@ func TestGetDefaultNewContributorFormat_WithRemote(t *testing.T) {
 func TestGetDefaultNewContributorFormat_WithoutRemote(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	format := g.getDefaultNewContributorFormat(nil)
 

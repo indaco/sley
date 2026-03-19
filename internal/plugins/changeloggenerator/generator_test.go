@@ -8,7 +8,7 @@ import (
 func TestNewGenerator(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -26,7 +26,7 @@ func TestNewGenerator_InvalidFormat(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Format = "invalid-format"
 
-	_, err := NewGenerator(cfg)
+	_, err := NewGenerator(cfg, NewGitOps())
 	if err == nil {
 		t.Error("expected error for invalid format")
 	}

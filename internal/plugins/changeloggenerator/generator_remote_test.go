@@ -13,7 +13,7 @@ func TestResolveRemote_FromConfig(t *testing.T) {
 		Owner:    "mygroup",
 		Repo:     "myproject",
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -42,7 +42,7 @@ func TestResolveRemote_FillDefaults(t *testing.T) {
 		Owner:    "owner",
 		Repo:     "repo",
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -60,13 +60,9 @@ func TestResolveRemote_FillDefaults(t *testing.T) {
 
 func TestResolveRemote_AutoDetect(t *testing.T) {
 
-	// Save and restore original function
-
-	originalFn := GetRemoteInfoFn
-	defer func() { GetRemoteInfoFn = originalFn }()
-
-	// Mock GetRemoteInfoFn
-	GetRemoteInfoFn = func() (*RemoteInfo, error) {
+	// Create a GitOps with mocked GetRemoteInfoFn
+	gitOps := NewGitOps()
+	gitOps.GetRemoteInfoFn = func() (*RemoteInfo, error) {
 		return &RemoteInfo{
 			Provider: "github",
 			Host:     "github.com",
@@ -79,7 +75,7 @@ func TestResolveRemote_AutoDetect(t *testing.T) {
 	cfg.Repository = &RepositoryConfig{
 		AutoDetect: true,
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, gitOps)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +94,7 @@ func TestResolveRemote_NoConfig(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.Repository = nil
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -118,7 +114,7 @@ func TestResolveRemote_Cached(t *testing.T) {
 		Owner:    "owner",
 		Repo:     "repo",
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +145,7 @@ func TestResolveRemote_FillProviderFromHost(t *testing.T) {
 		Repo:  "repo",
 		// Provider not set - should be filled from host
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

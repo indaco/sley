@@ -26,23 +26,15 @@ type ChangelogGenerator interface {
 
 // ChangelogGeneratorPlugin implements the ChangelogGenerator interface.
 type ChangelogGeneratorPlugin struct {
-	config    *Config
-	generator *Generator
+	config          *Config
+	generator       *Generator
+	gitOps          *GitOps
+	isInteractiveFn func() bool
+	confirmMergeFn  func(message string) (bool, error)
 }
 
 // Ensure ChangelogGeneratorPlugin implements ChangelogGenerator.
 var _ ChangelogGenerator = (*ChangelogGeneratorPlugin)(nil)
-
-// IsInteractiveFn is a function variable for checking if the environment is interactive.
-// Can be overridden in tests.
-var IsInteractiveFn = tui.IsInteractive
-
-// ConfirmMergeFn is a function variable for prompting user confirmation.
-// Can be overridden in tests.
-var ConfirmMergeFn = func(message string) (bool, error) {
-	prompter := tui.NewModulePrompt(nil)
-	return prompter.ConfirmOperation(message)
-}
 
 // NewChangelogGenerator creates a new changelog generator plugin.
 func NewChangelogGenerator(cfg *Config) (*ChangelogGeneratorPlugin, error) {
@@ -50,14 +42,22 @@ func NewChangelogGenerator(cfg *Config) (*ChangelogGeneratorPlugin, error) {
 		cfg = DefaultConfig()
 	}
 
-	generator, err := NewGenerator(cfg)
+	gitOps := NewGitOps()
+
+	generator, err := NewGenerator(cfg, gitOps)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create generator: %w", err)
 	}
 
 	return &ChangelogGeneratorPlugin{
-		config:    cfg,
-		generator: generator,
+		config:          cfg,
+		generator:       generator,
+		gitOps:          gitOps,
+		isInteractiveFn: tui.IsInteractive,
+		confirmMergeFn: func(message string) (bool, error) {
+			prompter := tui.NewModulePrompt(nil)
+			return prompter.ConfirmOperation(message)
+		},
 	}, nil
 }
 
@@ -89,7 +89,7 @@ func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, 
 	}
 
 	// Get commits between versions
-	commits, err := GetCommitsWithMetaFn(previousVersion, "HEAD")
+	commits, err := p.gitOps.GetCommitsWithMetaFn(previousVersion, "HEAD")
 	if err != nil {
 		return fmt.Errorf("failed to get commits: %w", err)
 	}
@@ -150,11 +150,11 @@ func (p *ChangelogGeneratorPlugin) handleMergeAfter() error {
 
 	case "prompt":
 		// Skip prompt if not in interactive environment
-		if !IsInteractiveFn() {
+		if !p.isInteractiveFn() {
 			fmt.Fprintf(os.Stdout, "Non-interactive environment detected, skipping changelog merge prompt.\n")
 			return nil
 		}
-		confirmed, err := ConfirmMergeFn(fmt.Sprintf("Merge versioned changelog files into %s?", p.config.ChangelogPath))
+		confirmed, err := p.confirmMergeFn(fmt.Sprintf("Merge versioned changelog files into %s?", p.config.ChangelogPath))
 		if err != nil {
 			// Treat prompt errors as declined
 			return nil

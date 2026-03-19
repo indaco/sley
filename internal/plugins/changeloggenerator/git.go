@@ -49,26 +49,48 @@ var KnownProviders = map[string]string{
 	"sr.ht":         "sourcehut",
 }
 
-// Mockable functions for testing.
-var (
-	execCommand                 = exec.Command
-	GetCommitsWithMetaFn        = getCommitsWithMeta
-	GetRemoteInfoFn             = getRemoteInfo
-	GetLatestTagFn              = getLatestTag
-	GetContributorsFn           = getContributors
-	GetHistoricalContributorsFn = getHistoricalContributors
-	GetNewContributorsFn        = getNewContributors
-)
+// ExecCommandFunc is the function signature for creating exec.Cmd instances.
+type ExecCommandFunc func(name string, arg ...string) *exec.Cmd
+
+// GitOps encapsulates git operations with injectable dependencies.
+// Each function field can be overridden in tests without shared mutable state.
+type GitOps struct {
+	ExecCommandFn               ExecCommandFunc
+	GetCommitsWithMetaFn        func(since, until string) ([]CommitInfo, error)
+	GetRemoteInfoFn             func() (*RemoteInfo, error)
+	GetLatestTagFn              func() (string, error)
+	GetContributorsFn           func(commits []CommitInfo) []Contributor
+	GetHistoricalContributorsFn func(beforeRef string) (map[string]struct{}, error)
+	GetNewContributorsFn        func(commits []CommitInfo, previousVersion string) ([]NewContributor, error)
+}
+
+// NewGitOps creates a new GitOps with default implementations.
+func NewGitOps() *GitOps {
+	g := &GitOps{}
+	g.ExecCommandFn = exec.Command
+	g.GetCommitsWithMetaFn = g.getCommitsWithMeta
+	g.GetRemoteInfoFn = g.getRemoteInfo
+	g.GetLatestTagFn = g.getLatestTag
+	g.GetContributorsFn = getContributors // pure function, no exec dependency
+	g.GetHistoricalContributorsFn = g.getHistoricalContributors
+	g.GetNewContributorsFn = g.getNewContributors
+	return g
+}
+
+// GetLatestTag is a convenience function that creates a default GitOps and returns the latest tag.
+func GetLatestTag() (string, error) {
+	return NewGitOps().GetLatestTagFn()
+}
 
 // getCommitsWithMeta retrieves commits between two refs with full metadata.
 // Format: hash|short_hash|subject|author|email
-func getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
+func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 	if until == "" {
 		until = "HEAD"
 	}
 
 	if since == "" {
-		lastTag, err := getLatestTag()
+		lastTag, err := g.getLatestTag()
 		if err != nil {
 			since = "HEAD~10"
 		} else {
@@ -79,7 +101,7 @@ func getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 	revRange := since + ".." + until
 	// Use a delimiter that's unlikely to appear in commit messages
 	format := "%H|%h|%s|%an|%ae"
-	cmd := execCommand("git", "log", "--pretty=format:"+format, revRange)
+	cmd := g.ExecCommandFn("git", "log", "--pretty=format:"+format, revRange)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -117,8 +139,8 @@ func getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 }
 
 // getLatestTag returns the most recent git tag.
-func getLatestTag() (string, error) {
-	cmd := execCommand("git", "describe", "--tags", "--abbrev=0")
+func (g *GitOps) getLatestTag() (string, error) {
+	cmd := g.ExecCommandFn("git", "describe", "--tags", "--abbrev=0")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -141,8 +163,8 @@ func getLatestTag() (string, error) {
 
 // getRemoteInfo parses the owner/repo from git remote origin.
 // Supports multiple git hosting providers.
-func getRemoteInfo() (*RemoteInfo, error) {
-	cmd := execCommand("git", "remote", "get-url", "origin")
+func (g *GitOps) getRemoteInfo() (*RemoteInfo, error) {
+	cmd := g.ExecCommandFn("git", "remote", "get-url", "origin")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -263,14 +285,14 @@ type NewContributor struct {
 
 // getHistoricalContributors returns all unique contributor usernames before a given ref.
 // This is used to determine if a contributor is new (first-time) in this release.
-func getHistoricalContributors(beforeRef string) (map[string]struct{}, error) {
+func (g *GitOps) getHistoricalContributors(beforeRef string) (map[string]struct{}, error) {
 	if beforeRef == "" {
 		return make(map[string]struct{}), nil
 	}
 
 	// git log --format="%ae|%an" beforeRef
 	// Returns all author emails and names from the beginning of history up to beforeRef
-	cmd := execCommand("git", "log", "--format=%ae|%an", beforeRef)
+	cmd := g.ExecCommandFn("git", "log", "--format=%ae|%an", beforeRef)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -309,9 +331,9 @@ var prNumberExtractRe = regexp.MustCompile(`#(\d+)`)
 
 // getNewContributors identifies first-time contributors in a set of commits.
 // It checks if the contributor has any commits before previousVersion.
-func getNewContributors(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+func (g *GitOps) getNewContributors(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
 	// Get historical contributor usernames (before this release)
-	historicalUsernames, err := GetHistoricalContributorsFn(previousVersion)
+	historicalUsernames, err := g.GetHistoricalContributorsFn(previousVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get historical contributors: %w", err)
 	}
