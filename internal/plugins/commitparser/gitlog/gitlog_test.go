@@ -80,14 +80,27 @@ func TestGetCommits(t *testing.T) {
 			expectedCommits: []string{},
 		},
 		{
-			name:  "Fallback to HEAD~10 when no tag found",
+			name:  "Fallback to HEAD~10 when no tag found and enough commits",
 			since: "",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
 				"git describe --tags --abbrev=0":           "", // simulate error
+				"git rev-list --count HEAD":                "25",
 				"git log --pretty=format:%s HEAD~10..HEAD": "fix: update",
 			},
 			expectedCommits: []string{"fix: update"},
+		},
+		{
+			name:  "Fallback to root commit when fewer than 10 commits",
+			since: "",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git describe --tags --abbrev=0":          "", // simulate error
+				"git rev-list --count HEAD":               "2",
+				"git rev-list --max-parents=0 HEAD":       "abc123",
+				"git log --pretty=format:%s abc123..HEAD": "feat: init",
+			},
+			expectedCommits: []string{"feat: init"},
 		},
 		{
 			name:  "Since is empty, getLastTag returns valid tag",
@@ -115,6 +128,7 @@ func TestGetCommits(t *testing.T) {
 			until: "HEAD",
 			mockGitCommands: map[string]string{
 				"git describe --tags --abbrev=0":           "ERROR",
+				"git rev-list --count HEAD":                "25",
 				"git log --pretty=format:%s HEAD~10..HEAD": "fix: fallback",
 			},
 			expectedCommits: []string{"fix: fallback"},

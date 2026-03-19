@@ -56,7 +56,9 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 	if since == "" {
 		lastTag, err := g.getLastTag()
 		if err != nil {
-			since = "HEAD~10"
+			// No tags found — fall back to a safe recent range.
+			// Use HEAD~10 if enough commits exist, otherwise use the repo root.
+			since = g.safeFallbackSince(10)
 		} else {
 			since = lastTag
 		}
@@ -90,6 +92,42 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 		return []string{}, nil
 	}
 	return lines, nil
+}
+
+// safeFallbackSince returns "HEAD~n" if the repo has more than n commits,
+// otherwise it returns the hash of the root (first) commit so that
+// `git log <ref>..HEAD` works even in repos with very few commits.
+func (g *GitLog) safeFallbackSince(n int) string {
+	// Count commits on the current branch.
+	cmd := g.ExecCommandFn("git", "rev-list", "--count", "HEAD")
+	out, err := cmd.Output()
+	if err != nil {
+		// Last resort: return HEAD~n and let git report an error later.
+		return fmt.Sprintf("HEAD~%d", n)
+	}
+
+	var count int
+	if _, err := fmt.Sscanf(strings.TrimSpace(string(out)), "%d", &count); err != nil || count == 0 {
+		return fmt.Sprintf("HEAD~%d", n)
+	}
+
+	if count > n {
+		return fmt.Sprintf("HEAD~%d", n)
+	}
+
+	// Fewer than n commits — use the root commit so the range covers everything.
+	root := g.ExecCommandFn("git", "rev-list", "--max-parents=0", "HEAD")
+	rootOut, err := root.Output()
+	if err != nil {
+		return fmt.Sprintf("HEAD~%d", n)
+	}
+
+	// rev-list --max-parents=0 can return multiple roots; take the first one.
+	rootHash := strings.TrimSpace(strings.SplitN(string(rootOut), "\n", 2)[0])
+	if rootHash == "" {
+		return fmt.Sprintf("HEAD~%d", n)
+	}
+	return rootHash
 }
 
 func (g *GitLog) getLastTag() (string, error) {
