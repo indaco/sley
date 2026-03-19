@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/indaco/sley/internal/git"
 )
 
 // validGitRef matches safe git reference names: alphanumeric, dots, hyphens, slashes, tildes, carets.
@@ -56,7 +58,9 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 	if since == "" {
 		lastTag, err := g.getLastTag()
 		if err != nil {
-			since = "HEAD~10"
+			// No tags found — fall back to a safe recent range.
+			// Use HEAD~10 if enough commits exist, otherwise use the repo root.
+			since = git.SafeFallbackSince(g.ExecCommandFn, 10)
 		} else {
 			since = lastTag
 		}
