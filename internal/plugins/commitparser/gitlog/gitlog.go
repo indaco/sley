@@ -26,18 +26,35 @@ func validateGitRef(ref string) error {
 	return nil
 }
 
-var (
-	GetCommitsFn = getCommits
-	execCommand  = exec.Command
-)
+// ExecCommandFunc is the function signature matching exec.Command.
+type ExecCommandFunc func(name string, arg ...string) *exec.Cmd
 
-func getCommits(since string, until string) ([]string, error) {
+// GitLog retrieves commit messages from a git repository.
+type GitLog struct {
+	ExecCommandFn ExecCommandFunc
+}
+
+// NewGitLog creates a GitLog with the real exec.Command implementation.
+func NewGitLog() *GitLog {
+	return &GitLog{ExecCommandFn: exec.Command}
+}
+
+// GetCommitsFn is the function type for GetCommits (used for dependency injection).
+type GetCommitsFn func(since, until string) ([]string, error)
+
+// DefaultGetCommitsFn returns a GetCommitsFn backed by a real GitLog instance.
+func DefaultGetCommitsFn() GetCommitsFn {
+	return NewGitLog().GetCommits
+}
+
+// GetCommits returns commit messages between since and until refs.
+func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 	if until == "" {
 		until = "HEAD"
 	}
 
 	if since == "" {
-		lastTag, err := getLastTag()
+		lastTag, err := g.getLastTag()
 		if err != nil {
 			since = "HEAD~10"
 		} else {
@@ -54,7 +71,7 @@ func getCommits(since string, until string) ([]string, error) {
 	}
 
 	revRange := since + ".." + until
-	cmd := execCommand("git", "log", "--pretty=format:%s", revRange)
+	cmd := g.ExecCommandFn("git", "log", "--pretty=format:%s", revRange)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -75,8 +92,8 @@ func getCommits(since string, until string) ([]string, error) {
 	return lines, nil
 }
 
-func getLastTag() (string, error) {
-	cmd := execCommand("git", "describe", "--tags", "--abbrev=0")
+func (g *GitLog) getLastTag() (string, error) {
+	cmd := g.ExecCommandFn("git", "describe", "--tags", "--abbrev=0")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 

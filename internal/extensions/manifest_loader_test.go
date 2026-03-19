@@ -30,7 +30,7 @@ entry: actions.json
 `
 	writeExtensionYAML(t, dir, content)
 
-	m, err := LoadExtensionManifestFn(dir)
+	m, err := LoadExtensionManifest(dir)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -57,7 +57,7 @@ entry: actions.json
 `
 	writeExtensionYAML(t, dir, content)
 
-	m, err := LoadExtensionManifestFn(dir)
+	m, err := LoadExtensionManifest(dir)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -80,7 +80,7 @@ entry: actions.json
 `
 	writeExtensionYAML(t, dir, content)
 
-	_, err := LoadExtensionManifestFn(dir)
+	_, err := LoadExtensionManifest(dir)
 	if err == nil {
 		t.Fatal("expected error for unsupported manifest version, got nil")
 	}
@@ -94,7 +94,7 @@ entry: actions.json
 func TestLoadExtensionManifest_MissingFile(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	_, err := LoadExtensionManifestFn(dir)
+	_, err := LoadExtensionManifest(dir)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -117,7 +117,7 @@ func TestLoadExtensionManifest_InvalidYAML(t *testing.T) {
 	content := ": this is not valid yaml"
 	writeExtensionYAML(t, dir, content)
 
-	_, err := LoadExtensionManifestFn(dir)
+	_, err := LoadExtensionManifest(dir)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -147,7 +147,7 @@ entry: ""
 `
 	writeExtensionYAML(t, dir, content)
 
-	_, err := LoadExtensionManifestFn(dir)
+	_, err := LoadExtensionManifest(dir)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

@@ -8,26 +8,12 @@ import (
 	"github.com/indaco/sley/internal/parser"
 )
 
-// Function variables for testability.
-// These allow tests to inject mock implementations without modifying the core logic.
+// readFileFn and writeFileFn are used by osFileSystemAdapter for low-level I/O.
+// They remain at package level since they are internal to the adapter and do not
+// affect plugin-level test isolation.
 var (
-	// File I/O functions
 	readFileFn  = os.ReadFile
 	writeFileFn = os.WriteFile
-
-	// Format-specific read functions
-	readJSONVersionFn  = readJSONVersion
-	readYAMLVersionFn  = readYAMLVersion
-	readTOMLVersionFn  = readTOMLVersion
-	readRawVersionFn   = readRawVersion
-	readRegexVersionFn = readRegexVersion
-
-	// Format-specific write functions
-	writeJSONVersionFn  = writeJSONVersion
-	writeYAMLVersionFn  = writeYAMLVersion
-	writeTOMLVersionFn  = writeTOMLVersion
-	writeRawVersionFn   = writeRawVersion
-	writeRegexVersionFn = writeRegexVersion
 )
 
 // osFileSystemAdapter wraps os functions to implement core.FileSystem.

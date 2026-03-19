@@ -218,7 +218,7 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 
 	// Use actual git tag for commit range, not version file content
 	// The version file may contain pre-release/metadata that doesn't match a real tag
-	prevVersionStr, err := changeloggenerator.GetLatestTagFn()
+	prevVersionStr, err := changeloggenerator.GetLatestTag()
 	if err != nil {
 		// If no tags exist, generate from all commits
 		prevVersionStr = ""

@@ -6,6 +6,7 @@ import (
 )
 
 func TestDependencyCheckerPlugin_Name(t *testing.T) {
+	t.Parallel()
 
 	dc := NewDependencyChecker(nil)
 	if got := dc.Name(); got != "dependency-check" {
@@ -14,6 +15,7 @@ func TestDependencyCheckerPlugin_Name(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_Description(t *testing.T) {
+	t.Parallel()
 
 	dc := NewDependencyChecker(nil)
 	if got := dc.Description(); got == "" {
@@ -22,6 +24,7 @@ func TestDependencyCheckerPlugin_Description(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_Version(t *testing.T) {
+	t.Parallel()
 
 	dc := NewDependencyChecker(nil)
 	if got := dc.Version(); got != "v0.1.0" {
@@ -30,6 +33,7 @@ func TestDependencyCheckerPlugin_Version(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name   string
@@ -55,6 +59,7 @@ func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			dc := NewDependencyChecker(tt.config)
 			if got := dc.IsEnabled(); got != tt.want {
@@ -65,6 +70,7 @@ func TestDependencyCheckerPlugin_IsEnabled(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_GetConfig(t *testing.T) {
+	t.Parallel()
 
 	cfg := &Config{
 		Enabled:  true,
@@ -91,17 +97,7 @@ func TestDependencyCheckerPlugin_GetConfig(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalReadJSON := readJSONVersionFn
-	originalReadYAML := readYAMLVersionFn
-	originalReadTOML := readTOMLVersionFn
-	defer func() {
-		readJSONVersionFn = originalReadJSON
-		readYAMLVersionFn = originalReadYAML
-		readTOMLVersionFn = originalReadTOML
-	}()
+	t.Parallel()
 
 	tests := []struct {
 		name          string
@@ -194,22 +190,23 @@ func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-			// Set up mocks
+			dc := NewDependencyChecker(tt.config)
 
+			// Inject mocks per-instance
 			if tt.mockReaders != nil {
 				if mockJSON, ok := tt.mockReaders["json"]; ok {
-					readJSONVersionFn = mockJSON
+					dc.readJSONVersionFn = mockJSON
 				}
 				if mockYAML, ok := tt.mockReaders["yaml"]; ok {
-					readYAMLVersionFn = mockYAML
+					dc.readYAMLVersionFn = mockYAML
 				}
 				if mockTOML, ok := tt.mockReaders["toml"]; ok {
-					readTOMLVersionFn = mockTOML
+					dc.readTOMLVersionFn = mockTOML
 				}
 			}
 
-			dc := NewDependencyChecker(tt.config)
 			inconsistencies, err := dc.CheckConsistency(tt.currentVer)
 
 			if (err != nil) != tt.wantErr {
@@ -225,17 +222,7 @@ func TestDependencyCheckerPlugin_CheckConsistency(t *testing.T) {
 }
 
 func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalWriteJSON := writeJSONVersionFn
-	originalWriteYAML := writeYAMLVersionFn
-	originalWriteTOML := writeTOMLVersionFn
-	defer func() {
-		writeJSONVersionFn = originalWriteJSON
-		writeYAMLVersionFn = originalWriteYAML
-		writeTOMLVersionFn = originalWriteTOML
-	}()
+	t.Parallel()
 
 	tests := []struct {
 		name        string
@@ -294,22 +281,23 @@ func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-			// Set up mocks
+			dc := NewDependencyChecker(tt.config)
 
+			// Inject mocks per-instance
 			if tt.mockWriters != nil {
 				if mockJSON, ok := tt.mockWriters["json"]; ok {
-					writeJSONVersionFn = mockJSON
+					dc.writeJSONVersionFn = mockJSON
 				}
 				if mockYAML, ok := tt.mockWriters["yaml"]; ok {
-					writeYAMLVersionFn = mockYAML
+					dc.writeYAMLVersionFn = mockYAML
 				}
 				if mockTOML, ok := tt.mockWriters["toml"]; ok {
-					writeTOMLVersionFn = mockTOML
+					dc.writeTOMLVersionFn = mockTOML
 				}
 			}
 
-			dc := NewDependencyChecker(tt.config)
 			err := dc.SyncVersions(tt.newVersion)
 
 			if (err != nil) != tt.wantErr {
@@ -320,6 +308,7 @@ func TestDependencyCheckerPlugin_SyncVersions(t *testing.T) {
 }
 
 func TestInconsistency_String(t *testing.T) {
+	t.Parallel()
 
 	inc := Inconsistency{
 		Path:     "package.json",
@@ -336,6 +325,7 @@ func TestInconsistency_String(t *testing.T) {
 }
 
 func TestNormalizeVersion(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		input string
@@ -350,6 +340,7 @@ func TestNormalizeVersion(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
+			t.Parallel()
 
 			got := normalizeVersion(tt.input)
 			if got != tt.want {
@@ -360,6 +351,7 @@ func TestNormalizeVersion(t *testing.T) {
 }
 
 func TestDefaultConfig(t *testing.T) {
+	t.Parallel()
 
 	cfg := DefaultConfig()
 
@@ -375,30 +367,16 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestReadVersionFromFile_AllFormats(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalReadJSON := readJSONVersionFn
-	originalReadYAML := readYAMLVersionFn
-	originalReadTOML := readTOMLVersionFn
-	originalReadRaw := readRawVersionFn
-	originalReadRegex := readRegexVersionFn
-	defer func() {
-		readJSONVersionFn = originalReadJSON
-		readYAMLVersionFn = originalReadYAML
-		readTOMLVersionFn = originalReadTOML
-		readRawVersionFn = originalReadRaw
-		readRegexVersionFn = originalReadRegex
-	}()
-
-	// Mock all readers to return expected version
-	readJSONVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
-	readYAMLVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
-	readTOMLVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
-	readRawVersionFn = func(path string) (string, error) { return "1.0.0", nil }
-	readRegexVersionFn = func(path, pattern string) (string, error) { return "1.0.0", nil }
+	t.Parallel()
 
 	dc := NewDependencyChecker(&Config{Enabled: true})
+
+	// Override with mocks per-instance
+	dc.readJSONVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
+	dc.readYAMLVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
+	dc.readTOMLVersionFn = func(path, field string) (string, error) { return "1.0.0", nil }
+	dc.readRawVersionFn = func(path string) (string, error) { return "1.0.0", nil }
+	dc.readRegexVersionFn = func(path, pattern string) (string, error) { return "1.0.0", nil }
 
 	tests := []struct {
 		name    string
@@ -447,6 +425,7 @@ func TestReadVersionFromFile_AllFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			_, err := dc.readVersionFromFile(tt.file)
 			if (err != nil) != tt.wantErr {
@@ -462,30 +441,16 @@ func TestReadVersionFromFile_AllFormats(t *testing.T) {
 }
 
 func TestWriteVersionToFile_AllFormats(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalWriteJSON := writeJSONVersionFn
-	originalWriteYAML := writeYAMLVersionFn
-	originalWriteTOML := writeTOMLVersionFn
-	originalWriteRaw := writeRawVersionFn
-	originalWriteRegex := writeRegexVersionFn
-	defer func() {
-		writeJSONVersionFn = originalWriteJSON
-		writeYAMLVersionFn = originalWriteYAML
-		writeTOMLVersionFn = originalWriteTOML
-		writeRawVersionFn = originalWriteRaw
-		writeRegexVersionFn = originalWriteRegex
-	}()
-
-	// Mock all writers to succeed
-	writeJSONVersionFn = func(path, field, version string) error { return nil }
-	writeYAMLVersionFn = func(path, field, version string) error { return nil }
-	writeTOMLVersionFn = func(path, field, version string) error { return nil }
-	writeRawVersionFn = func(path, version string) error { return nil }
-	writeRegexVersionFn = func(path, pattern, version string) error { return nil }
+	t.Parallel()
 
 	dc := NewDependencyChecker(&Config{Enabled: true})
+
+	// Override with mocks per-instance
+	dc.writeJSONVersionFn = func(path, field, version string) error { return nil }
+	dc.writeYAMLVersionFn = func(path, field, version string) error { return nil }
+	dc.writeTOMLVersionFn = func(path, field, version string) error { return nil }
+	dc.writeRawVersionFn = func(path, version string) error { return nil }
+	dc.writeRegexVersionFn = func(path, pattern, version string) error { return nil }
 
 	tests := []struct {
 		name    string
@@ -534,6 +499,7 @@ func TestWriteVersionToFile_AllFormats(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			err := dc.writeVersionToFile(tt.file, "1.0.0")
 			if (err != nil) != tt.wantErr {
@@ -549,28 +515,7 @@ func TestWriteVersionToFile_AllFormats(t *testing.T) {
 }
 
 func TestCheckConsistency_AllFormats(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalReadJSON := readJSONVersionFn
-	originalReadYAML := readYAMLVersionFn
-	originalReadTOML := readTOMLVersionFn
-	originalReadRaw := readRawVersionFn
-	originalReadRegex := readRegexVersionFn
-	defer func() {
-		readJSONVersionFn = originalReadJSON
-		readYAMLVersionFn = originalReadYAML
-		readTOMLVersionFn = originalReadTOML
-		readRawVersionFn = originalReadRaw
-		readRegexVersionFn = originalReadRegex
-	}()
-
-	// Mock all readers
-	readJSONVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
-	readYAMLVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
-	readTOMLVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
-	readRawVersionFn = func(path string) (string, error) { return "1.2.3", nil }
-	readRegexVersionFn = func(path, pattern string) (string, error) { return "1.2.3", nil }
+	t.Parallel()
 
 	cfg := &Config{
 		Enabled: true,
@@ -584,6 +529,14 @@ func TestCheckConsistency_AllFormats(t *testing.T) {
 	}
 
 	dc := NewDependencyChecker(cfg)
+
+	// Override with mocks per-instance
+	dc.readJSONVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
+	dc.readYAMLVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
+	dc.readTOMLVersionFn = func(path, field string) (string, error) { return "1.2.3", nil }
+	dc.readRawVersionFn = func(path string) (string, error) { return "1.2.3", nil }
+	dc.readRegexVersionFn = func(path, pattern string) (string, error) { return "1.2.3", nil }
+
 	inconsistencies, err := dc.CheckConsistency("1.2.3")
 
 	if err != nil {
@@ -595,29 +548,10 @@ func TestCheckConsistency_AllFormats(t *testing.T) {
 }
 
 func TestSyncVersions_AllFormats(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalWriteJSON := writeJSONVersionFn
-	originalWriteYAML := writeYAMLVersionFn
-	originalWriteTOML := writeTOMLVersionFn
-	originalWriteRaw := writeRawVersionFn
-	originalWriteRegex := writeRegexVersionFn
-	defer func() {
-		writeJSONVersionFn = originalWriteJSON
-		writeYAMLVersionFn = originalWriteYAML
-		writeTOMLVersionFn = originalWriteTOML
-		writeRawVersionFn = originalWriteRaw
-		writeRegexVersionFn = originalWriteRegex
-	}()
+	t.Parallel()
 
 	// Track which writers were called
 	called := make(map[string]bool)
-	writeJSONVersionFn = func(path, field, version string) error { called["json"] = true; return nil }
-	writeYAMLVersionFn = func(path, field, version string) error { called["yaml"] = true; return nil }
-	writeTOMLVersionFn = func(path, field, version string) error { called["toml"] = true; return nil }
-	writeRawVersionFn = func(path, version string) error { called["raw"] = true; return nil }
-	writeRegexVersionFn = func(path, pattern, version string) error { called["regex"] = true; return nil }
 
 	cfg := &Config{
 		Enabled:  true,
@@ -632,6 +566,14 @@ func TestSyncVersions_AllFormats(t *testing.T) {
 	}
 
 	dc := NewDependencyChecker(cfg)
+
+	// Override with mocks per-instance
+	dc.writeJSONVersionFn = func(path, field, version string) error { called["json"] = true; return nil }
+	dc.writeYAMLVersionFn = func(path, field, version string) error { called["yaml"] = true; return nil }
+	dc.writeTOMLVersionFn = func(path, field, version string) error { called["toml"] = true; return nil }
+	dc.writeRawVersionFn = func(path, version string) error { called["raw"] = true; return nil }
+	dc.writeRegexVersionFn = func(path, pattern, version string) error { called["regex"] = true; return nil }
+
 	err := dc.SyncVersions("2.0.0")
 
 	if err != nil {
@@ -647,17 +589,9 @@ func TestSyncVersions_AllFormats(t *testing.T) {
 }
 
 func TestSyncVersions_PluginDisabled(t *testing.T) {
-
-	// Save original functions and restore after test
-
-	originalWriteJSON := writeJSONVersionFn
-	defer func() { writeJSONVersionFn = originalWriteJSON }()
+	t.Parallel()
 
 	writeCalled := false
-	writeJSONVersionFn = func(path, field, version string) error {
-		writeCalled = true
-		return nil
-	}
 
 	cfg := &Config{
 		Enabled:  false, // Plugin disabled
@@ -668,6 +602,11 @@ func TestSyncVersions_PluginDisabled(t *testing.T) {
 	}
 
 	dc := NewDependencyChecker(cfg)
+	dc.writeJSONVersionFn = func(path, field, version string) error {
+		writeCalled = true
+		return nil
+	}
+
 	err := dc.SyncVersions("2.0.0")
 
 	if err != nil {
@@ -679,6 +618,7 @@ func TestSyncVersions_PluginDisabled(t *testing.T) {
 }
 
 func TestGetConfig_AutoSync(t *testing.T) {
+	t.Parallel()
 
 	cfg := &Config{
 		Enabled:  true,
@@ -693,6 +633,7 @@ func TestGetConfig_AutoSync(t *testing.T) {
 }
 
 func TestCheckConsistency_NilConfig(t *testing.T) {
+	t.Parallel()
 
 	dc := NewDependencyChecker(nil)
 	inconsistencies, err := dc.CheckConsistency("1.0.0")
@@ -706,6 +647,7 @@ func TestCheckConsistency_NilConfig(t *testing.T) {
 }
 
 func TestSyncVersions_NilConfig(t *testing.T) {
+	t.Parallel()
 
 	dc := NewDependencyChecker(nil)
 	err := dc.SyncVersions("1.0.0")

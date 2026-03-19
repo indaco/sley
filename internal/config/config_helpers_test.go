@@ -1,7 +1,6 @@
 package config
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -10,27 +9,13 @@ import (
 /* HELPERS                                                                   */
 /* ------------------------------------------------------------------------- */
 
-// runInTempDir runs a function in a temporary directory, then restores to a safe directory.
-// This handles the case where the CWD has been deleted by previous test cleanup.
+// runInTempDir runs a function in a temporary directory using t.Chdir,
+// which automatically saves and restores the working directory and is
+// safe for use with t.Parallel().
 func runInTempDir(t *testing.T, tmpPath string, fn func()) {
 	t.Helper()
-
-	// First, ensure we're in a valid directory. The CWD might have been
-	// deleted by a previous test's cleanup. Use /tmp as a safe fallback.
-	origDir, err := os.Getwd()
-	if err != nil {
-		// CWD doesn't exist - use /tmp as fallback
-		origDir = os.TempDir()
-		if chErr := os.Chdir(origDir); chErr != nil {
-			t.Fatalf("failed to chdir to temp dir: %v", chErr)
-		}
-	}
-
 	targetDir := filepath.Dir(tmpPath)
-	if err := os.Chdir(targetDir); err != nil {
-		t.Fatalf("failed to chdir to %s: %v", targetDir, err)
-	}
-	defer func() { _ = os.Chdir(origDir) }()
+	t.Chdir(targetDir)
 	fn()
 }
 

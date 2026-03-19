@@ -21,6 +21,7 @@ type bumpParams struct {
 	skipHooks    bool
 	bumpType     string
 	opBumpType   operations.BumpType
+	newBumper    func() semver.VersionBumper // nil uses default
 }
 
 // executeSingleModuleBump is the unified execution pipeline for single-module bump operations.
@@ -41,7 +42,11 @@ func executeSingleModuleBump(
 
 	// Create BumpOperation - the same path used by multi-module bumps
 	fs := core.NewOSFileSystem()
-	bumper := newVersionBumper()
+	bumperFn := params.newBumper
+	if bumperFn == nil {
+		bumperFn = func() semver.VersionBumper { return semver.NewDefaultBumper() }
+	}
+	bumper := bumperFn()
 	op := operations.NewBumpOperation(
 		fs, bumper, params.opBumpType,
 		params.pre, params.meta, params.preserveMeta,
@@ -159,7 +164,7 @@ func executeStandardBump(
 
 	if !execCtx.IsSingleModule() {
 		// Multi-module mode delegates to runMultiModuleBump
-		return runMultiModuleBump(ctx, cmd, execCtx, registry, params.opBumpType, params.pre, params.meta, params.preserveMeta)
+		return runMultiModuleBump(ctx, cmd, execCtx, registry, nil, params.opBumpType, params.pre, params.meta, params.preserveMeta)
 	}
 
 	// Single-module mode uses the unified executor

@@ -151,9 +151,6 @@ func classifyFileCopyError(err error, src, dst, operation string) error {
 	return fmt.Errorf("failed to %s from %q to %q: %w", operation, src, dst, err)
 }
 
-// defaultFileCopier is the default file copier for backward compatibility.
-var defaultFileCopier = NewOSFileCopier()
-
 // skipNames defines a set of directory or file names excluded during directory copying.
 var skipNames = map[string]struct{}{
 	".git":         {},
@@ -165,9 +162,6 @@ var skipNames = map[string]struct{}{
 
 // skipSuffixes defines file suffixes to exclude during directory copying.
 var skipSuffixes = []string{".key"}
-
-// copyDirFn is kept for backward compatibility during migration.
-var copyDirFn = func(src, dst string) error { return defaultFileCopier.CopyDir(src, dst) }
 
 // shouldSkipEntry determines whether a file should be skipped or a directory subtree should be skipped.
 func shouldSkipEntry(info os.FileInfo) (skipFile bool, skipDir bool) {

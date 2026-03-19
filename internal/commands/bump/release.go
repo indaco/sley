@@ -46,7 +46,7 @@ func runBumpRelease(ctx context.Context, cmd *cli.Command, cfg *config.Config, r
 	}
 
 	if !execCtx.IsSingleModule() {
-		return runMultiModuleBump(ctx, cmd, execCtx, registry, operations.BumpRelease, "", "", isPreserveMeta)
+		return runMultiModuleBump(ctx, cmd, execCtx, registry, nil, operations.BumpRelease, "", "", isPreserveMeta)
 	}
 
 	// Single-module: use the unified path

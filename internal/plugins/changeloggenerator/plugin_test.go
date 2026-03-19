@@ -168,14 +168,12 @@ func TestGenerateForVersion_Enabled_VersionedMode(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Mock GetCommitsWithMetaFn to return test commits
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	// Mock GetCommitsWithMetaFn on the plugin's gitOps instance
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: test feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "minor")
 	if err != nil {
@@ -223,13 +221,11 @@ func TestGenerateForVersion_Enabled_UnifiedMode(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "def456", ShortHash: "def456", Subject: "fix: test fix", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
@@ -274,13 +270,11 @@ func TestGenerateForVersion_Enabled_BothMode(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "ghi789", ShortHash: "ghi789", Subject: "docs: update docs", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
@@ -308,11 +302,9 @@ func TestGenerateForVersion_NoCommits(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn to return empty
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err != nil {
@@ -340,13 +332,11 @@ func TestGenerateForVersion_UnknownMode(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: test", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
 	if err == nil {
@@ -397,13 +387,11 @@ func TestHandleMergeAfter_Immediate(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.1.0", "v1.0.0", "minor")
 	if err != nil {
@@ -455,13 +443,11 @@ func TestHandleMergeAfter_Manual(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalFn }()
 
 	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
 	if err != nil {
@@ -504,18 +490,14 @@ func TestHandleMergeAfter_Prompt_NonInteractive(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalCommitsFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
 
-	// Mock IsInteractiveFn to return false (non-interactive environment)
-	originalInteractiveFn := IsInteractiveFn
-	IsInteractiveFn = func() bool { return false }
-	defer func() { IsInteractiveFn = originalInteractiveFn }()
+	// Mock isInteractiveFn to return false (non-interactive environment)
+	plugin.isInteractiveFn = func() bool { return false }
 
 	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
 	if err != nil {
@@ -567,23 +549,17 @@ func TestHandleMergeAfter_Prompt_Interactive_Confirmed(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalCommitsFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
 
-	// Mock IsInteractiveFn to return true (interactive environment)
-	originalInteractiveFn := IsInteractiveFn
-	IsInteractiveFn = func() bool { return true }
-	defer func() { IsInteractiveFn = originalInteractiveFn }()
+	// Mock isInteractiveFn to return true (interactive environment)
+	plugin.isInteractiveFn = func() bool { return true }
 
-	// Mock ConfirmMergeFn to return true (user confirmed)
-	originalConfirmFn := ConfirmMergeFn
-	ConfirmMergeFn = func(message string) (bool, error) { return true, nil }
-	defer func() { ConfirmMergeFn = originalConfirmFn }()
+	// Mock confirmMergeFn to return true (user confirmed)
+	plugin.confirmMergeFn = func(message string) (bool, error) { return true, nil }
 
 	err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "minor")
 	if err != nil {
@@ -620,23 +596,17 @@ func TestHandleMergeAfter_Prompt_Interactive_Declined(t *testing.T) {
 	}
 
 	// Mock GetCommitsWithMetaFn
-	originalCommitsFn := GetCommitsWithMetaFn
-	GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+	plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
 		return []CommitInfo{
 			{Hash: "abc123", ShortHash: "abc123", Subject: "feat: new feature", Author: "Test", AuthorEmail: "test@example.com"},
 		}, nil
 	}
-	defer func() { GetCommitsWithMetaFn = originalCommitsFn }()
 
-	// Mock IsInteractiveFn to return true (interactive environment)
-	originalInteractiveFn := IsInteractiveFn
-	IsInteractiveFn = func() bool { return true }
-	defer func() { IsInteractiveFn = originalInteractiveFn }()
+	// Mock isInteractiveFn to return true (interactive environment)
+	plugin.isInteractiveFn = func() bool { return true }
 
-	// Mock ConfirmMergeFn to return false (user declined)
-	originalConfirmFn := ConfirmMergeFn
-	ConfirmMergeFn = func(message string) (bool, error) { return false, nil }
-	defer func() { ConfirmMergeFn = originalConfirmFn }()
+	// Mock confirmMergeFn to return false (user declined)
+	plugin.confirmMergeFn = func(message string) (bool, error) { return false, nil }
 
 	err = plugin.GenerateForVersion("v1.0.0", "", "minor")
 	if err != nil {

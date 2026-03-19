@@ -34,7 +34,7 @@ func createTestGenerator(t *testing.T, changesDir, changelogPath string) *Genera
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
 	cfg.ChangelogPath = changelogPath
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("failed to create generator: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestWriteVersionedFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestWriteVersionedFile_Error(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/readonly/path"
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestWriteUnifiedChangelog_New(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -149,7 +149,7 @@ func TestWriteUnifiedChangelog_Existing(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestWriteUnifiedChangelog_Error(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangelogPath = "/nonexistent/readonly/CHANGELOG.md"
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestMergeVersionedFiles(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
 	cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestMergeVersionedFiles_EmptyDir(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -323,7 +323,7 @@ func TestMergeVersionedFiles_NonexistentDir(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangesDir = "/nonexistent/path"
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -496,7 +496,7 @@ func TestBuildMergedContent(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.ChangesDir = changesDir
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, NewGitOps())
 
 	files := []string{
 		filepath.Join(changesDir, "v2.0.0.md"),
@@ -519,7 +519,7 @@ func TestBuildMergedContent(t *testing.T) {
 func TestGetDefaultHeader(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -545,7 +545,7 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 
 	cfg := DefaultConfig()
 	cfg.HeaderTemplate = templatePath
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -560,7 +560,7 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 func TestInsertAfterHeader(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -588,7 +588,7 @@ Old content
 func TestInsertAfterHeader_NoVersionFound(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

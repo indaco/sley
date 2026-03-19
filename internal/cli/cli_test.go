@@ -17,7 +17,7 @@ import (
 /* SUCCESS CASES                                                             */
 /* ------------------------------------------------------------------------- */
 func TestNew_BasicStructure(t *testing.T) {
-	os.Unsetenv("SLEY_PATH")
+	t.Setenv("SLEY_PATH", "")
 
 	tmpDir := t.TempDir()
 	versionPath := filepath.Join(tmpDir, ".version")
@@ -87,25 +87,13 @@ func TestNew_UsesConfigPath(t *testing.T) {
 	_ = os.WriteFile(yamlPath, []byte("path: ./custom.version\n"), 0644)
 	_ = os.WriteFile(versionPath, []byte("1.0.0\n"), semver.VersionFilePerm)
 
-	origDir, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("failed to get working directory: %v", err)
-	}
-
-	if err := os.Chdir(tmp); err != nil {
-		t.Fatalf("failed to change to temp directory: %v", err)
-	}
-	t.Cleanup(func() {
-		if err := os.Chdir(origDir); err != nil {
-			t.Fatalf("failed to restore original working directory: %v", err)
-		}
-	})
+	t.Chdir(tmp)
 
 	cfg := &config.Config{Path: versionPath}
 	registry := plugins.NewPluginRegistry()
 	app := New(cfg, registry)
 
-	err = app.Run(context.Background(), []string{"sley", "bump", "patch"})
+	err := app.Run(context.Background(), []string{"sley", "bump", "patch"})
 	if err != nil {
 		t.Fatalf("app.Run failed: %v", err)
 	}

@@ -15,7 +15,7 @@ func TestGenerateVersionChangelog(t *testing.T) {
 		Repo:     "testrepo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -59,7 +59,7 @@ func TestGenerateVersionChangelog_WithContributors(t *testing.T) {
 		Repo:     "testrepo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: true}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestGenerateVersionChangelog_WithContributorsIcon(t *testing.T) {
 		Repo:     "testrepo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: true, Icon: "❤️"}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestGenerateVersionChangelog_WithCustomContributorFormat(t *testing.T) {
 		Enabled: true,
 		Format:  "- {{.Name}} ([@{{.Username}}](https://{{.Host}}/{{.Username}}))",
 	}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -163,7 +163,7 @@ func TestGenerateVersionChangelog_WithCustomContributorFormat(t *testing.T) {
 func TestGenerateVersionChangelog_EmptyCommits(t *testing.T) {
 
 	cfg := DefaultConfig()
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -184,7 +184,7 @@ func TestGenerateVersionChangelog_NoRemote(t *testing.T) {
 	cfg := DefaultConfig()
 	cfg.Repository = nil
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -219,7 +219,7 @@ func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
 		Repo:     "repo",
 	}
 	cfg.Contributors = &ContributorsConfig{Enabled: false}
-	g, err := NewGenerator(cfg)
+	g, err := NewGenerator(cfg, NewGitOps())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -247,17 +247,9 @@ func TestGenerateVersionChangelog_NoPreviousVersion(t *testing.T) {
 
 func TestGenerateVersionChangelog_WithNewContributors(t *testing.T) {
 
-	// Save and restore original functions
-
-	originalGetNewContributorsFn := GetNewContributorsFn
-	originalGetContributorsFn := GetContributorsFn
-	defer func() {
-		GetNewContributorsFn = originalGetNewContributorsFn
-		GetContributorsFn = originalGetContributorsFn
-	}()
-
-	// Mock new contributors
-	GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+	// Create a GitOps with mocked functions
+	gitOps := NewGitOps()
+	gitOps.GetNewContributorsFn = func(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
 		return []NewContributor{
 			{
 				Contributor: Contributor{
@@ -270,9 +262,7 @@ func TestGenerateVersionChangelog_WithNewContributors(t *testing.T) {
 			},
 		}, nil
 	}
-
-	// Mock contributors
-	GetContributorsFn = func(commits []CommitInfo) []Contributor {
+	gitOps.GetContributorsFn = func(commits []CommitInfo) []Contributor {
 		return []Contributor{
 			{Name: "New Dev", Username: "newdev", Host: "github.com"},
 		}
@@ -290,7 +280,7 @@ func TestGenerateVersionChangelog_WithNewContributors(t *testing.T) {
 		Repo:     "repo",
 	}
 
-	g, _ := NewGenerator(cfg)
+	g, _ := NewGenerator(cfg, gitOps)
 
 	commits := []CommitInfo{
 		{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add feature (#42)", Author: "New Dev", AuthorEmail: "newdev@users.noreply.github.com"},

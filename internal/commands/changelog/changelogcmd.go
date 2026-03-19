@@ -88,7 +88,7 @@ func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
 	genCfg := buildGeneratorConfig(cmd, cfg)
 
 	// Create generator instance
-	gen, err := changeloggenerator.NewGenerator(genCfg)
+	gen, err := changeloggenerator.NewGenerator(genCfg, changeloggenerator.NewGitOps())
 	if err != nil {
 		return fmt.Errorf("failed to create changelog generator: %w", err)
 	}

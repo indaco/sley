@@ -10,11 +10,9 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-var LoadExtensionManifestFn = loadExtensionManifest
-
-// loadExtensionManifest loads and validates a extension.yaml file from the given directory.
+// LoadExtensionManifest loads and validates a extension.yaml file from the given directory.
 // Returns context-aware errors for common failure scenarios.
-func loadExtensionManifest(dir string) (*ExtensionManifest, error) {
+func LoadExtensionManifest(dir string) (*ExtensionManifest, error) {
 	manifestPath := filepath.Join(dir, "extension.yaml")
 
 	data, err := os.ReadFile(manifestPath)

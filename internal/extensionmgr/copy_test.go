@@ -26,7 +26,7 @@ func TestCopyDir_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := copyDirFn(src, dst); err != nil {
+	if err := NewOSFileCopier().CopyDir(src, dst); err != nil {
 		t.Fatalf("expected success, got: %v", err)
 	}
 
@@ -45,7 +45,7 @@ func TestCopyDir_FailsOnWalk(t *testing.T) {
 	// Create a broken source path that doesn't exist
 	)
 
-	err := copyDirFn("non-existent-src", t.TempDir())
+	err := NewOSFileCopier().CopyDir("non-existent-src", t.TempDir())
 	if err == nil {
 		t.Fatal("expected error due to non-existent source directory, got nil")
 	}
@@ -68,7 +68,7 @@ func TestCopyDir_SkipsExcludedFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := copyDirFn(src, dst); err != nil {
+	if err := NewOSFileCopier().CopyDir(src, dst); err != nil {
 		t.Fatalf("CopyDir failed: %v", err)
 	}
 
@@ -130,7 +130,7 @@ func TestCopyDir_FailsOnOpenSource(t *testing.T) {
 	_ = os.MkdirAll(srcDir, 0755)
 	_ = os.Rename(srcFile, filepath.Join(srcDir, "readonly.txt"))
 
-	err := copyDirFn(srcDir, dstDir)
+	err := NewOSFileCopier().CopyDir(srcDir, dstDir)
 	if err == nil {
 		t.Fatal("expected error opening unreadable source file, got nil")
 	}
@@ -150,7 +150,7 @@ func TestCopyDir_FailsOnOpenTarget(t *testing.T) {
 
 	t.Cleanup(func() { _ = os.Chmod(dstDir, 0755) })
 
-	err := copyDirFn(srcDir, dstDir)
+	err := NewOSFileCopier().CopyDir(srcDir, dstDir)
 	if err == nil {
 		t.Fatal("expected error opening unwritable target file, got nil")
 	}

@@ -11,7 +11,6 @@ var fakeGitCommands = map[string]string{}
 
 func fakeExecCommand(command string, args ...string) *exec.Cmd {
 	cmdStr := command + " " + strings.Join(args, " ")
-	// println("[fakeExecCommand] registering mock:", cmdStr)
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", cmdStr) //nolint:gosec // G702: standard test re-exec pattern
 
 	cmd.Env = append(os.Environ(),
@@ -44,18 +43,7 @@ func TestHelperProcess(t *testing.T) {
 	os.Exit(0)
 }
 
-func stubExecCommand() func() {
-	orig := execCommand
-	execCommand = fakeExecCommand
-	return func() {
-		execCommand = orig
-	}
-}
-
 func TestGetCommits(t *testing.T) {
-	restore := stubExecCommand()
-	defer restore()
-
 	tests := []struct {
 		name            string
 		since           string
@@ -138,7 +126,8 @@ func TestGetCommits(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			fakeGitCommands = tt.mockGitCommands
 
-			commits, err := GetCommitsFn(tt.since, tt.until)
+			gl := &GitLog{ExecCommandFn: fakeExecCommand}
+			commits, err := gl.GetCommits(tt.since, tt.until)
 
 			if (err != nil) != tt.expectErr {
 				t.Fatalf("unexpected error: %v", err)

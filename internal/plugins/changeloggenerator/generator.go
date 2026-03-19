@@ -19,6 +19,7 @@ type Generator struct {
 	config    *Config
 	remote    *RemoteInfo
 	formatter Formatter
+	gitOps    *GitOps
 
 	// Template caches with thread-safe initialization via sync.Once.
 	cachedContribTmpl    *template.Template
@@ -30,7 +31,7 @@ type Generator struct {
 }
 
 // NewGenerator creates a new changelog generator.
-func NewGenerator(config *Config) (*Generator, error) {
+func NewGenerator(config *Config, gitOps *GitOps) (*Generator, error) {
 	formatter, err := NewFormatter(config.Format, config)
 	if err != nil {
 		return nil, err
@@ -39,6 +40,7 @@ func NewGenerator(config *Config) (*Generator, error) {
 	return &Generator{
 		config:    config,
 		formatter: formatter,
+		gitOps:    gitOps,
 	}, nil
 }
 
@@ -67,7 +69,7 @@ func (g *Generator) resolveRemote() (*RemoteInfo, error) {
 		}
 
 		if g.config.Repository.AutoDetect {
-			remote, err := GetRemoteInfoFn()
+			remote, err := g.gitOps.GetRemoteInfoFn()
 			if err != nil {
 				return nil, err
 			}
@@ -140,7 +142,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 
 	// New Contributors section (before Full Changelog link)
 	if g.config.Contributors != nil && g.config.Contributors.Enabled && g.config.Contributors.ShowNewContributors {
-		newContributors, err := GetNewContributorsFn(commits, previousVersion)
+		newContributors, err := g.gitOps.GetNewContributorsFn(commits, previousVersion)
 		if err == nil && len(newContributors) > 0 {
 			g.writeNewContributorsSection(&sb, newContributors, remote)
 		}
@@ -156,7 +158,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 
 	// Contributors section (applies to both formats)
 	if g.config.Contributors != nil && g.config.Contributors.Enabled {
-		contributors := GetContributorsFn(commits)
+		contributors := g.gitOps.GetContributorsFn(commits)
 		if len(contributors) > 0 {
 			if g.config.Contributors.Icon != "" {
 				fmt.Fprintf(&sb, "### %s Contributors\n\n", g.config.Contributors.Icon)
