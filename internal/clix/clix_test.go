@@ -64,20 +64,19 @@ func TestGetOrInitVersionFile(t *testing.T) {
 }
 
 func TestGetOrInitVersionFile_InitError(t *testing.T) {
-	t.Parallel(
-	// Use MockFileSystem with write error to simulate initialization failure
-	)
+	t.Parallel()
 
+	// Use MockFileSystem with write error to simulate initialization failure.
+	// Call getOrInitVersionFileWith directly with the mock manager to avoid
+	// mutating the package-level global defaultManager.
 	mockFS := core.NewMockFileSystem()
 	mockFS.WriteErr = errors.New("mock init failure")
 
 	mgr := semver.NewVersionManager(mockFS, nil)
-	restore := semver.SetDefaultManager(mgr)
-	defer restore()
 
 	targetPath := "/test/.version"
 
-	created, err := GetOrInitVersionFile(targetPath, false)
+	created, err := getOrInitVersionFileWith(targetPath, false, mgr)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

@@ -27,6 +27,12 @@ func FromCommand(cmd *cli.Command) (bool, error) {
 // It returns true if the file was created, false if it already existed.
 // Returns a typed error (*apperrors.VersionFileNotFoundError) instead of cli.Exit.
 func GetOrInitVersionFile(path string, strict bool) (bool, error) {
+	return getOrInitVersionFileWith(path, strict, semver.DefaultVersionManager())
+}
+
+// getOrInitVersionFileWith is the internal implementation that accepts a
+// VersionManager, avoiding reliance on package-level mutable state.
+func getOrInitVersionFileWith(path string, strict bool, mgr *semver.VersionManager) (bool, error) {
 	if strict {
 		if _, err := os.Stat(path); err != nil {
 			return false, &apperrors.VersionFileNotFoundError{Path: path}
@@ -34,7 +40,7 @@ func GetOrInitVersionFile(path string, strict bool) (bool, error) {
 		return false, nil
 	}
 
-	created, err := semver.InitializeVersionFileWithFeedback(path)
+	created, err := mgr.InitializeWithFeedback(context.Background(), path)
 	if err != nil {
 		return false, err
 	}
