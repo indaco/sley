@@ -34,17 +34,21 @@ type TemplateData struct {
 	Build      string
 }
 
-// nowFunc is a function variable for getting the current time.
-// Can be overridden in tests for deterministic date values.
-var nowFunc = time.Now
+// NowFunc returns the current time. Used to allow deterministic testing.
+type NowFunc func() time.Time
 
 // NewTemplateData creates TemplateData from a version and prefix.
-func NewTemplateData(version semver.SemVersion, prefix string) TemplateData {
+// An optional NowFunc can be provided to override time.Now (for testing).
+func NewTemplateData(version semver.SemVersion, prefix string, opts ...NowFunc) TemplateData {
+	now := time.Now
+	if len(opts) > 0 && opts[0] != nil {
+		now = opts[0]
+	}
 	return TemplateData{
 		Version:    version.String(),
 		Tag:        prefix + version.String(),
 		Prefix:     prefix,
-		Date:       nowFunc().Format("2006-01-02"),
+		Date:       now().Format("2006-01-02"),
 		Major:      fmt.Sprintf("%d", version.Major),
 		Minor:      fmt.Sprintf("%d", version.Minor),
 		Patch:      fmt.Sprintf("%d", version.Patch),

@@ -9,15 +9,11 @@ import (
 )
 
 func TestNewTemplateData(t *testing.T) {
+	t.Parallel()
 
-	// Save and restore nowFunc
-
-	originalNowFunc := nowFunc
-	defer func() { nowFunc = originalNowFunc }()
-
-	// Set a fixed time for deterministic testing
+	// Use a fixed time for deterministic testing via the optional NowFunc parameter
 	fixedTime := time.Date(2024, 6, 15, 12, 0, 0, 0, time.UTC)
-	nowFunc = func() time.Time { return fixedTime }
+	fixedNow := NowFunc(func() time.Time { return fixedTime })
 
 	tests := []struct {
 		name     string
@@ -93,8 +89,9 @@ func TestNewTemplateData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-			got := NewTemplateData(tt.version, tt.prefix)
+			got := NewTemplateData(tt.version, tt.prefix, fixedNow)
 
 			if got.Version != tt.wantData.Version {
 				t.Errorf("Version = %q, want %q", got.Version, tt.wantData.Version)
@@ -128,6 +125,7 @@ func TestNewTemplateData(t *testing.T) {
 }
 
 func TestFormatMessage(t *testing.T) {
+	t.Parallel()
 
 	tests := []struct {
 		name     string
@@ -234,6 +232,7 @@ func TestFormatMessage(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
 			got := FormatMessage(tt.template, tt.data)
 			if got != tt.want {
@@ -244,6 +243,7 @@ func TestFormatMessage(t *testing.T) {
 }
 
 func TestTemplatePlaceholders(t *testing.T) {
+	t.Parallel()
 
 	// Verify all expected placeholders are defined
 
