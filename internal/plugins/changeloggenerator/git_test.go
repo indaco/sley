@@ -1,8 +1,130 @@
 package changeloggenerator
 
 import (
+	"os"
+	"os/exec"
+	"strings"
 	"testing"
 )
+
+var fakeGitCommands = map[string]string{}
+
+func fakeExecCommand(command string, args ...string) *exec.Cmd {
+	cmdStr := command + " " + strings.Join(args, " ")
+	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", cmdStr) //nolint:gosec // standard test re-exec pattern
+
+	cmd.Env = append(os.Environ(),
+		"GO_TEST_HELPER_PROCESS=1",
+		"MOCK_KEY="+cmdStr,
+		"MOCK_VAL="+fakeGitCommands[cmdStr],
+	)
+
+	return cmd
+}
+
+func TestHelperProcess(t *testing.T) {
+	if os.Getenv("GO_TEST_HELPER_PROCESS") != "1" {
+		return
+	}
+
+	val := os.Getenv("MOCK_VAL")
+
+	if val == "ERROR" {
+		_, _ = os.Stderr.WriteString("mock failure")
+		os.Exit(1)
+	}
+
+	_, _ = os.Stdout.WriteString(val)
+	os.Exit(0)
+}
+
+func TestGetCommitsWithMeta(t *testing.T) {
+	tests := []struct {
+		name            string
+		since           string
+		until           string
+		mockGitCommands map[string]string
+		expectedCount   int
+		expectErr       bool
+	}{
+		{
+			name:  "with explicit since and until",
+			since: "v1.0.0",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "abc123|abc123|feat: login|Alice|alice@example.com\ndef456|def456|fix: bug|Bob|bob@example.com",
+			},
+			expectedCount: 2,
+		},
+		{
+			name:  "fallback to HEAD~10 when no tag and enough commits",
+			since: "",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git describe --tags --abbrev=0":                         "", // no tags
+				"git rev-list --count HEAD":                              "25",
+				"git log --pretty=format:%H|%h|%s|%an|%ae HEAD~10..HEAD": "abc123|abc123|feat: update|Alice|alice@example.com",
+			},
+			expectedCount: 1,
+		},
+		{
+			name:  "fallback to root commit when fewer than 10 commits",
+			since: "",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git describe --tags --abbrev=0":                         "", // no tags
+				"git rev-list --count HEAD":                              "2",
+				"git rev-list --max-parents=0 HEAD":                      "root123",
+				"git log --pretty=format:%H|%h|%s|%an|%ae root123..HEAD": "abc123|abc123|feat: init|Alice|alice@example.com",
+			},
+			expectedCount: 1,
+		},
+		{
+			name:  "fallback to last tag when tag exists",
+			since: "",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git describe --tags --abbrev=0":                        "v2.0.0",
+				"git log --pretty=format:%H|%h|%s|%an|%ae v2.0.0..HEAD": "abc123|abc123|feat: new|Alice|alice@example.com",
+			},
+			expectedCount: 1,
+		},
+		{
+			name:  "git log returns error",
+			since: "v1.0.0",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "ERROR",
+			},
+			expectErr: true,
+		},
+		{
+			name:  "empty commit log",
+			since: "v1.0.0",
+			until: "HEAD",
+			mockGitCommands: map[string]string{
+				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "",
+			},
+			expectedCount: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeGitCommands = tt.mockGitCommands
+
+			g := &GitOps{ExecCommandFn: fakeExecCommand}
+			commits, err := g.getCommitsWithMeta(tt.since, tt.until)
+
+			if (err != nil) != tt.expectErr {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(commits) != tt.expectedCount {
+				t.Fatalf("expected %d commits, got %d", tt.expectedCount, len(commits))
+			}
+		})
+	}
+}
 
 func TestParseRemoteURL(t *testing.T) {
 

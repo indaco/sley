@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/indaco/sley/internal/git"
 )
 
 // Pre-compiled regexes for URL parsing (compiled once at package init).
@@ -92,7 +94,9 @@ func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 	if since == "" {
 		lastTag, err := g.getLatestTag()
 		if err != nil {
-			since = "HEAD~10"
+			// No tags found — fall back to a safe recent range.
+			// Use HEAD~10 if enough commits exist, otherwise use the repo root.
+			since = git.SafeFallbackSince(g.ExecCommandFn, 10)
 		} else {
 			since = lastTag
 		}
