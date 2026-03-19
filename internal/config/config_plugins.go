@@ -369,6 +369,10 @@ type ContributorsConfig struct {
 	// Icon is the icon/emoji for the contributors section header (optional).
 	Icon string `yaml:"icon,omitempty"`
 
+	// ShowName controls whether contributor names are displayed alongside their username link.
+	// Default: true. Set to false to show only the username link (e.g., "[@user](...)").
+	ShowName *bool `yaml:"show-name,omitempty"`
+
 	// ShowNewContributors enables the "New Contributors" section showing first-time contributors.
 	// Default: true when contributors are enabled.
 	ShowNewContributors *bool `yaml:"show-new-contributors,omitempty"`
@@ -380,6 +384,14 @@ type ContributorsConfig struct {
 
 	// NewContributorsIcon is the icon for the "New Contributors" section header.
 	NewContributorsIcon string `yaml:"new-contributors-icon,omitempty"`
+}
+
+// GetShowName returns the show-name setting with default true.
+func (c *ContributorsConfig) GetShowName() bool {
+	if c.ShowName == nil {
+		return true
+	}
+	return *c.ShowName
 }
 
 // GetShowNewContributors returns the show-new-contributors setting with default true.

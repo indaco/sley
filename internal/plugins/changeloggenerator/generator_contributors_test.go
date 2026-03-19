@@ -89,7 +89,7 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 			format:   "",
 			contrib:  Contributor{Name: "Dave", Username: "dave", Host: "github.com"},
 			remote:   &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"},
-			expected: "- [@dave](https://github.com/dave)\n",
+			expected: "- Dave ([@dave](https://github.com/dave))\n",
 		},
 		{
 			name:     "Fallback on invalid template",
@@ -118,6 +118,28 @@ func TestWriteContributorEntry_CustomFormat(t *testing.T) {
 				t.Errorf("writeContributorEntry() = %q, want %q", got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestWriteContributorEntry_ShowNameFalse(t *testing.T) {
+	cfg := DefaultConfig()
+	cfg.Contributors.Format = "" // no custom format
+	cfg.Contributors.ShowName = false
+	g, err := NewGenerator(cfg, NewGitOps())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	contrib := Contributor{Name: "Alice Smith", Username: "alice", Host: "github.com"}
+	remote := &RemoteInfo{Host: "github.com", Owner: "test", Repo: "repo"}
+
+	var sb strings.Builder
+	g.writeContributorEntry(&sb, contrib, remote)
+	got := sb.String()
+
+	expected := "- [@alice](https://github.com/alice)\n"
+	if got != expected {
+		t.Errorf("writeContributorEntry() with ShowName=false = %q, want %q", got, expected)
 	}
 }
 
