@@ -9,15 +9,21 @@ on:
       - "go.sum"
   workflow_dispatch:
 
+permissions: {}
+
 env:
   GO_VERSION: "1.25"
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@v6
