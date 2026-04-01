@@ -10,7 +10,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/tidwall/sjson v1.2.5
-	github.com/urfave/cli/v3 v3.7.0
+	github.com/urfave/cli/v3 v3.8.0
 	golang.org/x/term v0.40.0
 )
 
