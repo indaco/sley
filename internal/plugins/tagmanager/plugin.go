@@ -163,7 +163,7 @@ func (p *TagManagerPlugin) CreateTag(version semver.SemVersion, message string) 
 		if template == "" {
 			template = "Release {version}"
 		}
-		data := NewTemplateData(version, p.config.Prefix)
+		data := NewTemplateData(version, p.config.Prefix, "")
 		message = FormatMessage(template, data)
 	}
 
@@ -203,7 +203,7 @@ func (p *TagManagerPlugin) FormatTagMessage(version semver.SemVersion) string {
 	if template == "" {
 		template = "Release {version}"
 	}
-	data := NewTemplateData(version, p.config.Prefix)
+	data := NewTemplateData(version, p.config.Prefix, "")
 	return FormatMessage(template, data)
 }
 
@@ -287,7 +287,7 @@ func (p *TagManagerPlugin) CommitChanges(version semver.SemVersion, extraFiles [
 	if template == "" {
 		template = "chore(release): {tag}"
 	}
-	data := NewTemplateData(version, p.config.Prefix)
+	data := NewTemplateData(version, p.config.Prefix, "")
 	message := FormatMessage(template, data)
 
 	// Create commit
@@ -317,6 +317,11 @@ func deduplicateStrings(items []string) []string {
 // GetConfig returns the plugin configuration.
 func (p *TagManagerPlugin) GetConfig() *Config {
 	return p.config
+}
+
+// SetPrefix temporarily overrides the tag prefix for per-module configuration.
+func (p *TagManagerPlugin) SetPrefix(prefix string) {
+	p.config.Prefix = prefix
 }
 
 // ShouldCreateTag determines if a tag should be created for the given version.
