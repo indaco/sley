@@ -20,13 +20,21 @@ plugins:
 
     # Custom Commit Message Template (optional)
     # Used when auto-create is true to format the commit message before tagging.
-    # Available placeholders: {version}, {tag}, {prefix}, {date},
+    # Available placeholders: {version}, {tag}, {prefix}, {module_path}, {date},
     #                         {major}, {minor}, {patch}, {prerelease}, {build}
     commit-message-template: "chore(release): {tag}"
 
     # Custom Tag Message Template (optional)
     # Supports the same placeholders as commit-message-template.
     message-template: "Release {version}"
+
+    # Monorepo / Multi-Module Prefix (optional)
+    # Use {module_path} to produce path-prefixed tags for Go monorepos:
+    #   Root module  → v1.0.0
+    #   cobra/       → cobra/v1.0.0
+    #   services/api → services/api/v1.0.0
+    # Requires workspace.discovery.enabled: true
+    # prefix: "{module_path}/v"
 
     # GPG Signing (optional)
     # Requires git to be configured with a GPG signing key

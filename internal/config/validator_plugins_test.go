@@ -889,6 +889,85 @@ func TestValidator_ValidateChangelogGeneratorCustomProvider(t *testing.T) {
 	}
 }
 
+func TestValidator_ModulePathPrefixWarning(t *testing.T) {
+
+	enabled := true
+
+	tests := []struct {
+		name        string
+		config      *Config
+		wantWarning bool
+	}{
+		{
+			name: "module_path prefix with workspace discovery enabled",
+			config: &Config{
+				Plugins: &PluginConfig{
+					TagManager: &TagManagerConfig{
+						Enabled: true,
+						Prefix:  "{module_path}/v",
+					},
+				},
+				Workspace: &WorkspaceConfig{
+					Discovery: &DiscoveryConfig{
+						Enabled: &enabled,
+					},
+				},
+			},
+			wantWarning: false,
+		},
+		{
+			name: "module_path prefix without workspace",
+			config: &Config{
+				Plugins: &PluginConfig{
+					TagManager: &TagManagerConfig{
+						Enabled: true,
+						Prefix:  "{module_path}/v",
+					},
+				},
+			},
+			wantWarning: true,
+		},
+		{
+			name: "static prefix without workspace",
+			config: &Config{
+				Plugins: &PluginConfig{
+					TagManager: &TagManagerConfig{
+						Enabled: true,
+						Prefix:  "v",
+					},
+				},
+			},
+			wantWarning: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ctx := context.Background()
+			fs := core.NewMockFileSystem()
+			validator := NewValidator(fs, tt.config, "", ".")
+
+			results, err := validator.Validate(ctx)
+			if err != nil {
+				t.Fatalf("Validate() error = %v", err)
+			}
+
+			hasWarning := false
+			for _, r := range results {
+				if r.Category == "Plugin: tag-manager" && r.Warning {
+					hasWarning = true
+					break
+				}
+			}
+
+			if hasWarning != tt.wantWarning {
+				t.Errorf("tag-manager module_path warning = %v, want %v", hasWarning, tt.wantWarning)
+			}
+		})
+	}
+}
+
 func TestValidator_ValidateChangelogGeneratorMergeAfter(t *testing.T) {
 
 	tests := []struct {

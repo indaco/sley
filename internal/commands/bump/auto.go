@@ -227,7 +227,7 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 	}
 
 	// Create tag after successful bump
-	if err := createTagAfterBump(registry, next, "auto"); err != nil {
+	if err := createTagAfterBump(registry, next, "auto", cfg); err != nil {
 		return err
 	}
 

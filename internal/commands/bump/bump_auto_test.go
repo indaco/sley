@@ -659,7 +659,7 @@ func TestBumpAuto_CallsCreateTagAfterBump_WithEnabledTagManager(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := createTagAfterBump(registry, version, "auto")
+	err := createTagAfterBump(registry, version, "auto", nil)
 
 	if err != nil {
 		errStr := err.Error()
@@ -766,7 +766,7 @@ func TestBumpAuto_TagCreatedWithCorrectParameters(t *testing.T) {
 		if err := registry.RegisterTagManager(plugin); err != nil {
 			t.Fatalf("failed to register tag manager: %v", err)
 		}
-		err := createTagAfterBump(registry, version, "auto")
+		err := createTagAfterBump(registry, version, "auto", nil)
 
 		if err != nil && !strings.Contains(err.Error(), "failed to create tag") && !strings.Contains(err.Error(), "failed to commit") {
 			t.Errorf("unexpected error type: %v", err)
@@ -775,7 +775,7 @@ func TestBumpAuto_TagCreatedWithCorrectParameters(t *testing.T) {
 
 	t.Run("returns nil when tag manager is nil", func(t *testing.T) {
 		registry := plugins.NewPluginRegistry()
-		err := createTagAfterBump(registry, version, "auto")
+		err := createTagAfterBump(registry, version, "auto", nil)
 		if err != nil {
 			t.Errorf("expected nil error when tag manager is nil, got: %v", err)
 		}
@@ -791,7 +791,7 @@ func TestBumpAuto_TagCreatedWithCorrectParameters(t *testing.T) {
 		if err := registry.RegisterTagManager(plugin); err != nil {
 			t.Fatalf("failed to register tag manager: %v", err)
 		}
-		err := createTagAfterBump(registry, version, "auto")
+		err := createTagAfterBump(registry, version, "auto", nil)
 		if err != nil {
 			t.Errorf("expected nil error when tag manager is disabled, got: %v", err)
 		}

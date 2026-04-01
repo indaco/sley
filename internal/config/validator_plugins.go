@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // validateYAMLSyntax checks if the config file is valid YAML.
@@ -45,7 +46,15 @@ func (v *Validator) validateTagManagerConfig() {
 
 	prefix := v.cfg.Plugins.TagManager.GetPrefix()
 	if prefix != "" {
-		if containsInvalidTagChars(prefix) {
+		if strings.Contains(prefix, "{module_path}") {
+			v.addValidation("Plugin: tag-manager", true,
+				fmt.Sprintf("Tag prefix '%s' uses template variable {module_path}", prefix), false)
+			if !v.isWorkspaceEnabled() {
+				v.addValidation("Plugin: tag-manager", true,
+					"Prefix uses {module_path} but workspace is not enabled; "+
+						"template variable will resolve to empty string", true)
+			}
+		} else if containsInvalidTagChars(prefix) {
 			v.addValidation("Plugin: tag-manager", false,
 				fmt.Sprintf("Invalid prefix '%s': contains whitespace or path separators", prefix), false)
 		} else {
@@ -53,6 +62,18 @@ func (v *Validator) validateTagManagerConfig() {
 				fmt.Sprintf("Tag prefix '%s' is valid", prefix), false)
 		}
 	}
+}
+
+// isWorkspaceEnabled checks if workspace configuration is active,
+// either through discovery or explicit module definitions.
+func (v *Validator) isWorkspaceEnabled() bool {
+	if v.cfg == nil || v.cfg.Workspace == nil {
+		return false
+	}
+	if v.cfg.Workspace.Discovery != nil && v.cfg.Workspace.Discovery.Enabled != nil && *v.cfg.Workspace.Discovery.Enabled {
+		return true
+	}
+	return len(v.cfg.Workspace.Modules) > 0
 }
 
 // containsInvalidTagChars checks if a string contains invalid tag characters.

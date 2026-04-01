@@ -3,6 +3,7 @@ package bump
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/plugins/auditlog"
 	"github.com/indaco/sley/internal/plugins/changeloggenerator"
+	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 )
@@ -93,15 +95,55 @@ func validateTagAvailable(registry *plugins.PluginRegistry, version semver.SemVe
 	return tm.ValidateTagAvailable(version)
 }
 
+// applyModuleTagPrefix resolves the effective tag prefix for a module and
+// overrides the tag manager's prefix if it differs from root. Returns a
+// cleanup function that restores the original prefix (caller should defer it).
+func applyModuleTagPrefix(tm tagmanager.TagManager, bumpedPath string, cfg *config.Config) (cleanup func(), err error) {
+	noop := func() {}
+	moduleDir := "."
+	if bumpedPath != "" {
+		moduleDir = filepath.Dir(bumpedPath)
+		// Make relative to CWD so tag prefixes use relative paths
+		if cwd, cwdErr := os.Getwd(); cwdErr == nil {
+			if relDir, relErr := filepath.Rel(cwd, moduleDir); relErr == nil {
+				moduleDir = relDir
+			}
+		}
+	}
+	if moduleDir == "." || moduleDir == "" || cfg == nil {
+		return noop, nil
+	}
+	moduleCfg, err := config.LoadConfigFromDir(moduleDir)
+	if err != nil {
+		return noop, err
+	}
+	if moduleCfg == nil {
+		return noop, nil
+	}
+	mergedCfg := config.MergePluginConfig(cfg, moduleCfg)
+	if mergedCfg.Plugins == nil || mergedCfg.Plugins.TagManager == nil {
+		return noop, nil
+	}
+	effectivePrefix := tagmanager.InterpolatePrefix(
+		mergedCfg.Plugins.TagManager.GetPrefix(), moduleDir,
+	)
+	originalPrefix := tm.GetConfig().Prefix
+	if effectivePrefix != originalPrefix {
+		tm.(*tagmanager.TagManagerPlugin).SetPrefix(effectivePrefix)
+		return func() { tm.(*tagmanager.TagManagerPlugin).SetPrefix(originalPrefix) }, nil
+	}
+	return noop, nil
+}
+
 // createTagAfterBump creates a git tag for the version if tag manager is enabled.
-func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string) error {
-	return commitAndTagAfterBump(registry, version, bumpType, "")
+func createTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string, cfg *config.Config) error {
+	return commitAndTagAfterBump(registry, version, bumpType, "", cfg)
 }
 
 // commitAndTagAfterBump commits bump-modified files and creates a git tag.
 // When auto-create is enabled, it stages and commits the bumpedPath and any other
 // modified files before creating the tag so the tag points to the correct release commit.
-func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string, bumpedPath string) error {
+func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemVersion, bumpType string, bumpedPath string, cfg *config.Config) error {
 	tm := registry.GetTagManager()
 	if tm == nil {
 		return nil
@@ -110,6 +152,13 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 	if !tm.IsAutoCreateEnabled() {
 		return nil
 	}
+
+	// Apply per-module tag prefix if bumping a subdirectory module
+	restorePrefix, err := applyModuleTagPrefix(tm, bumpedPath, cfg)
+	if err != nil {
+		return err
+	}
+	defer restorePrefix()
 
 	// Commit bump-modified files before creating the tag
 	var extraFiles []string
