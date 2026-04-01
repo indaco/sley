@@ -3,6 +3,8 @@ package tag
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -127,6 +129,27 @@ func (tc *TagCommand) deleteCmd(cfg *config.Config) *cli.Command {
 	}
 }
 
+// resolveModuleConfig loads and merges per-module config for a given version path.
+// Returns the effective config and the module's relative directory path.
+func resolveModuleConfig(cfg *config.Config, path string) (*config.Config, string) {
+	moduleDir := filepath.Dir(path)
+	// Make the module directory relative to CWD so tag prefixes use
+	// relative paths (e.g., "cobra/v0.1.0" not "/abs/path/cobra/v0.1.0").
+	if cwd, err := os.Getwd(); err == nil {
+		if relDir, err := filepath.Rel(cwd, moduleDir); err == nil {
+			moduleDir = relDir
+		}
+	}
+	if moduleDir == "." || moduleDir == "" {
+		return cfg, ""
+	}
+	moduleCfg, err := config.LoadConfigFromDir(moduleDir)
+	if err != nil || moduleCfg == nil {
+		return cfg, moduleDir
+	}
+	return config.MergePluginConfig(cfg, moduleCfg), moduleDir
+}
+
 // runCreateCmd creates a git tag for the current version.
 func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
 	path, err := resolveVersionPath(ctx, cmd, cfg)
@@ -139,8 +162,9 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 		return fmt.Errorf("failed to read version from %s: %w", path, err)
 	}
 
-	tmConfig := buildTagManagerConfig(cfg)
-	prefix := tmConfig.Prefix
+	effectiveCfg, modulePath := resolveModuleConfig(cfg, path)
+	tmConfig := buildTagManagerConfig(effectiveCfg)
+	prefix := tagmanager.InterpolatePrefix(tmConfig.Prefix, modulePath)
 	tagName := prefix + version.String()
 
 	exists, err := tc.gitOps.TagExists(ctx, tagName)
@@ -153,7 +177,7 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 
 	message := cmd.String("message")
 	if message == "" {
-		data := tagmanager.NewTemplateData(version, prefix)
+		data := tagmanager.NewTemplateData(version, prefix, modulePath)
 		message = tagmanager.FormatMessage(tmConfig.MessageTemplate, data)
 	}
 
@@ -195,7 +219,16 @@ func (tc *TagCommand) createTag(ctx context.Context, tagName, message string, cf
 
 // runListCmd lists existing version tags.
 func (tc *TagCommand) runListCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
-	prefix := getTagPrefix(cfg)
+	effectiveCfg := cfg
+	modulePath := ""
+	if cfg != nil {
+		path, err := resolveVersionPath(ctx, cmd, cfg)
+		if err != nil {
+			return err
+		}
+		effectiveCfg, modulePath = resolveModuleConfig(cfg, path)
+	}
+	prefix := tagmanager.InterpolatePrefix(getTagPrefix(effectiveCfg), modulePath)
 	pattern := prefix + "*"
 
 	tags, err := tc.gitOps.ListTags(ctx, pattern)
@@ -239,7 +272,8 @@ func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *con
 			return fmt.Errorf("failed to read version from %s: %w", path, err)
 		}
 
-		prefix := getTagPrefix(cfg)
+		effectiveCfg, modulePath := resolveModuleConfig(cfg, path)
+		prefix := tagmanager.InterpolatePrefix(getTagPrefix(effectiveCfg), modulePath)
 		tagName = prefix + version.String()
 	}
 
