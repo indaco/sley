@@ -60,7 +60,7 @@ func TestCreateTagAfterBump(t *testing.T) {
 	t.Run("nil tag manager returns nil", func(t *testing.T) {
 
 		registry := plugins.NewPluginRegistry()
-		err := createTagAfterBump(registry, version, "minor")
+		err := createTagAfterBump(registry, version, "minor", nil)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -285,7 +285,7 @@ func TestCreateTagAfterBump_Enabled(t *testing.T) {
 			t.Fatalf("failed to register tag manager: %v", err)
 		}
 
-		err := createTagAfterBump(registry, version, "patch")
+		err := createTagAfterBump(registry, version, "patch", nil)
 		if err != nil {
 			t.Errorf("expected nil error for disabled plugin, got %v", err)
 		}

@@ -59,3 +59,10 @@ func WriteTempConfig(t *testing.T, content string) string {
 	WriteFile(t, tmpPath, content, core.PermPublicRead)
 	return tmpPath
 }
+
+// WriteTempConfigInDir writes a .sley.yaml file in dir with the given YAML content.
+func WriteTempConfigInDir(t *testing.T, dir, content string) {
+	t.Helper()
+	path := filepath.Join(dir, ".sley.yaml")
+	WriteFile(t, path, content, core.PermPublicRead)
+}

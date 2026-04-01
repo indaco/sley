@@ -34,7 +34,7 @@ func TestCommitAndTagAfterBump_AutoCreateDisabled(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", "")
+	err := commitAndTagAfterBump(registry, version, "patch", "", nil)
 	if err != nil {
 		t.Errorf("expected nil error for disabled auto-create, got %v", err)
 	}
@@ -75,7 +75,7 @@ func TestCommitAndTagAfterBump_Success(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -119,7 +119,7 @@ func TestCommitAndTagAfterBump_WithModifiedFiles(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -147,7 +147,7 @@ func TestCommitAndTagAfterBump_CommitFails(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -178,7 +178,7 @@ func TestCommitAndTagAfterBump_TagCreationFails(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -210,7 +210,7 @@ func TestCommitAndTagAfterBump_WithoutBumpedPath(t *testing.T) {
 	}
 
 	// Call with empty bumpedPath (via createTagAfterBump)
-	err := createTagAfterBump(registry, version, "patch")
+	err := createTagAfterBump(registry, version, "patch", nil)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -245,7 +245,7 @@ func TestCommitAndTagAfterBump_WithPush(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
@@ -282,7 +282,7 @@ func TestCommitAndTagAfterBump_CustomCommitMessageTemplate(t *testing.T) {
 		t.Fatalf("failed to register tag manager: %v", err)
 	}
 
-	err := commitAndTagAfterBump(registry, version, "patch", ".version")
+	err := commitAndTagAfterBump(registry, version, "patch", ".version", nil)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}

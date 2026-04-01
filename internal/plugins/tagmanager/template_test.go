@@ -1,6 +1,7 @@
 package tagmanager
 
 import (
+	"path/filepath"
 	"slices"
 	"testing"
 	"time"
@@ -91,7 +92,7 @@ func TestNewTemplateData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := NewTemplateData(tt.version, tt.prefix, fixedNow)
+			got := NewTemplateData(tt.version, tt.prefix, "", fixedNow)
 
 			if got.Version != tt.wantData.Version {
 				t.Errorf("Version = %q, want %q", got.Version, tt.wantData.Version)
@@ -242,6 +243,145 @@ func TestFormatMessage(t *testing.T) {
 	}
 }
 
+func TestFormatMessage_ModulePath(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		template string
+		data     TemplateData
+		want     string
+	}{
+		{
+			name:     "module_path basic",
+			template: "{module_path}/v{version}",
+			data: TemplateData{
+				Version:    "1.2.3",
+				ModulePath: "adapters/redis",
+			},
+			want: "adapters/redis/v1.2.3",
+		},
+		{
+			name:     "empty module_path",
+			template: "{module_path}/v{version}",
+			data: TemplateData{
+				Version:    "1.2.3",
+				ModulePath: "",
+			},
+			want: "/v1.2.3",
+		},
+		{
+			name:     "no placeholder",
+			template: "v{version}",
+			data: TemplateData{
+				Version:    "1.2.3",
+				ModulePath: "adapters/redis",
+			},
+			want: "v1.2.3",
+		},
+		{
+			name:     "nested path",
+			template: "{module_path}/v{version}",
+			data: TemplateData{
+				Version:    "1.2.3",
+				ModulePath: "a/b/c",
+			},
+			want: "a/b/c/v1.2.3",
+		},
+		{
+			name:     "windows backslash",
+			template: "{module_path}/v{version}",
+			data: TemplateData{
+				Version:    "1.2.3",
+				ModulePath: "adapters\\redis",
+			},
+			want: filepath.ToSlash("adapters\\redis") + "/v1.2.3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := FormatMessage(tt.template, tt.data)
+			if got != tt.want {
+				t.Errorf("FormatMessage() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestInterpolatePrefix(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		prefix     string
+		modulePath string
+		want       string
+	}{
+		{
+			name:       "basic module path",
+			prefix:     "{module_path}/v",
+			modulePath: "adapters/redis",
+			want:       "adapters/redis/v",
+		},
+		{
+			name:       "root module empty",
+			prefix:     "{module_path}/v",
+			modulePath: "",
+			want:       "v",
+		},
+		{
+			name:       "root module dot",
+			prefix:     "{module_path}/v",
+			modulePath: ".",
+			want:       "v",
+		},
+		{
+			name:       "no placeholder",
+			prefix:     "v",
+			modulePath: "adapters/redis",
+			want:       "v",
+		},
+		{
+			name:       "nested path",
+			prefix:     "{module_path}/v",
+			modulePath: "a/b/c",
+			want:       "a/b/c/v",
+		},
+		{
+			name:       "module_path only",
+			prefix:     "{module_path}",
+			modulePath: "adapters/redis",
+			want:       "adapters/redis",
+		},
+		{
+			name:       "windows backslash",
+			prefix:     "{module_path}/v",
+			modulePath: "adapters\\redis",
+			want:       filepath.ToSlash("adapters\\redis") + "/v",
+		},
+		{
+			name:       "empty prefix empty path",
+			prefix:     "",
+			modulePath: "",
+			want:       "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := InterpolatePrefix(tt.prefix, tt.modulePath)
+			if got != tt.want {
+				t.Errorf("InterpolatePrefix(%q, %q) = %q, want %q", tt.prefix, tt.modulePath, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestTemplatePlaceholders(t *testing.T) {
 	t.Parallel()
 
@@ -251,6 +391,7 @@ func TestTemplatePlaceholders(t *testing.T) {
 		"{version}",
 		"{tag}",
 		"{prefix}",
+		"{module_path}",
 		"{date}",
 		"{major}",
 		"{minor}",
