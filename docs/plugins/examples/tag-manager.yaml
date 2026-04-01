@@ -29,7 +29,7 @@ plugins:
     message-template: "Release {version}"
 
     # Monorepo / Multi-Module Prefix (optional)
-    # Use {module_path} to produce path-prefixed tags for Go monorepos:
+    # Use {module_path} to produce path-prefixed tags for monorepos:
     #   Root module  → v1.0.0
     #   cobra/       → cobra/v1.0.0
     #   services/api → services/api/v1.0.0

@@ -92,7 +92,7 @@ plugins:
   tag-manager:
     enabled: true
     auto-create: true # Default is false; set to true for automatic tagging during bump
-    prefix: v # Use "{module_path}/v" for Go monorepo path-prefixed tags
+    prefix: v # Use "{module_path}/v" for monorepo path-prefixed tags
     annotate: true
     push: false
     tag-prereleases: false # Set to true to also tag pre-releases
