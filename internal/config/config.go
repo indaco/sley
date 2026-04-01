@@ -149,18 +149,24 @@ func loadConfig() (*Config, error) {
 	}
 
 	// Second priority: YAML file
-	data, err := os.ReadFile(".sley.yaml")
+	return loadConfigFromPath(".sley.yaml")
+}
+
+// loadConfigFromPath reads and parses a .sley.yaml file at the given path.
+// If the file does not exist, it returns (nil, nil).
+func loadConfigFromPath(filePath string) (*Config, error) {
+	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil // fallback to default
 		}
-		return nil, err
+		return nil, fmt.Errorf("failed to read config file %q: %w", filePath, err)
 	}
 
 	var cfg Config
 	decoder := yaml.NewDecoder(bytes.NewReader(data), yaml.Strict())
 	if err := decoder.Decode(&cfg); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse config file %q: %w", filePath, err)
 	}
 
 	if cfg.Path == "" {
@@ -178,6 +184,76 @@ func loadConfig() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// LoadConfigFromDir loads a .sley.yaml configuration from the specified directory.
+// If no config file exists in that directory, it returns (nil, nil).
+func LoadConfigFromDir(dir string) (*Config, error) {
+	return loadConfigFromPath(filepath.Join(dir, ".sley.yaml"))
+}
+
+// MergePluginConfig merges a module-level config into a root config.
+// Plugin pointer fields from module override root when non-nil.
+// CommitParser always comes from root (workspace-level setting).
+// Returns a new *Config without mutating the inputs.
+func MergePluginConfig(root, module *Config) *Config {
+	if root == nil && module == nil {
+		return nil
+	}
+	if module == nil {
+		return root
+	}
+	if root == nil {
+		return module
+	}
+
+	merged := &Config{
+		Path:            root.Path,
+		Theme:           root.Theme,
+		Extensions:      root.Extensions,
+		PreReleaseHooks: root.PreReleaseHooks,
+		Workspace:       root.Workspace,
+	}
+
+	rootPlugins := root.Plugins
+	modulePlugins := module.Plugins
+
+	if rootPlugins == nil && modulePlugins == nil {
+		return merged
+	}
+
+	mp := &PluginConfig{}
+
+	// CommitParser: root wins (workspace-level).
+	if rootPlugins != nil {
+		mp.CommitParser = rootPlugins.CommitParser
+	}
+
+	// For each pointer field: module non-nil wins, otherwise root.
+	mp.TagManager = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *TagManagerConfig { return p.TagManager })
+	mp.VersionValidator = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *VersionValidatorConfig { return p.VersionValidator })
+	mp.DependencyCheck = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *DependencyCheckConfig { return p.DependencyCheck })
+	mp.ChangelogParser = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *ChangelogParserConfig { return p.ChangelogParser })
+	mp.ChangelogGenerator = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *ChangelogGeneratorConfig { return p.ChangelogGenerator })
+	mp.ReleaseGate = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *ReleaseGateConfig { return p.ReleaseGate })
+	mp.AuditLog = pickNonNil(rootPlugins, modulePlugins, func(p *PluginConfig) *AuditLogConfig { return p.AuditLog })
+
+	merged.Plugins = mp
+	return merged
+}
+
+// pickNonNil returns the module's field value if non-nil, otherwise the root's.
+// Handles nil PluginConfig pointers safely.
+func pickNonNil[T any](root, module *PluginConfig, get func(*PluginConfig) *T) *T {
+	if module != nil {
+		if v := get(module); v != nil {
+			return v
+		}
+	}
+	if root != nil {
+		return get(root)
+	}
+	return nil
 }
 
 // NormalizeVersionPath ensures the path is a file, not just a directory.
