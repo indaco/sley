@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -376,9 +377,7 @@ func copyExtension(ext ExtensionConfig) ExtensionConfig {
 	cp := ext
 	if ext.Config != nil {
 		cp.Config = make(map[string]any, len(ext.Config))
-		for k, v := range ext.Config {
-			cp.Config[k] = v
-		}
+		maps.Copy(cp.Config, ext.Config)
 	}
 	return cp
 }
@@ -389,8 +388,6 @@ func copyHookMap(m map[string]PreReleaseHookConfig) map[string]PreReleaseHookCon
 		return nil
 	}
 	cp := make(map[string]PreReleaseHookConfig, len(m))
-	for k, v := range m {
-		cp[k] = v
-	}
+	maps.Copy(cp, m)
 	return cp
 }
