@@ -1632,13 +1632,11 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 		},
 	}
 
-	var createdTag string
 	mockOps := &mockGitTagOps{
 		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
 		createAnnotatedTag: func(ctx context.Context, name, message string) error {
-			createdTag = name
 			return nil
 		},
 	}
@@ -1674,13 +1672,12 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 		t.Fatalf("Failed to capture stdout: %v", err)
 	}
 
-	if createdTag != "v3.0.0" {
-		t.Errorf("tag create in multi-module mode created tag = %v, want v3.0.0", createdTag)
+	// With --all and multiple modules, all modules should be processed
+	if !strings.Contains(output, "Processing module") {
+		t.Errorf("expected output to mention processing modules, got: %q", output)
 	}
-
-	// Output should mention which module the version was sourced from
-	if !strings.Contains(output, "Using version from module") {
-		t.Errorf("expected output to mention source module, got: %q", output)
+	if !strings.Contains(output, "Created tag") {
+		t.Errorf("expected output to mention created tags, got: %q", output)
 	}
 }
 
@@ -1984,10 +1981,8 @@ func TestCreateTagsForAllModules(t *testing.T) {
 				if tt.wantErrContain != "" && !strings.Contains(err.Error(), tt.wantErrContain) {
 					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrContain)
 				}
-			} else {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 
 			// Sort created tags for deterministic comparison.
