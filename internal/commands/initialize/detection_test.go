@@ -374,3 +374,241 @@ func findSubstring(s, substr string) bool {
 	}
 	return false
 }
+
+// --- Monorepo Detection Tests ---
+
+func writeTestFile(t *testing.T, path, content string) {
+	t.Helper()
+	dir := filepath.Dir(path)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write %s: %v", path, err)
+	}
+}
+
+func sliceContainsStr(haystack []string, needle string) bool {
+	for _, s := range haystack {
+		if s == needle {
+			return true
+		}
+	}
+	return false
+}
+
+func TestDetectMonorepo_GoWork(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", `go 1.21
+
+use (
+	./cobra
+	./kong
+	./urfave
+)
+`)
+	os.MkdirAll("cobra", 0o755)
+	os.MkdirAll("kong", 0o755)
+	os.MkdirAll("urfave", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "go-work" {
+		t.Errorf("expected type go-work, got %s", info.Type)
+	}
+	if len(info.Modules) != 3 {
+		t.Fatalf("expected 3 modules, got %d: %v", len(info.Modules), info.Modules)
+	}
+	for _, name := range []string{"cobra", "kong", "urfave"} {
+		if !sliceContainsStr(info.Modules, name) {
+			t.Errorf("expected module %q in %v", name, info.Modules)
+		}
+	}
+}
+
+func TestDetectMonorepo_GoWork_SingleLine(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", "go 1.21\n\nuse ./single\n")
+	os.MkdirAll("single", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if len(info.Modules) != 1 || info.Modules[0] != "single" {
+		t.Errorf("expected [single], got %v", info.Modules)
+	}
+}
+
+func TestDetectMonorepo_GoWork_ExternalPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", "go 1.21\n\nuse (\n\t./local\n\t../external\n)\n")
+	os.MkdirAll("local", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if len(info.Modules) != 1 {
+		t.Errorf("expected 1 module (external excluded), got %d: %v", len(info.Modules), info.Modules)
+	}
+	if info.Modules[0] != "local" {
+		t.Errorf("expected module 'local', got %q", info.Modules[0])
+	}
+}
+
+func TestDetectMonorepo_PnpmWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
+	os.MkdirAll("packages/foo", 0o755)
+	os.MkdirAll("packages/bar", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "pnpm" {
+		t.Errorf("expected type pnpm, got %s", info.Type)
+	}
+	if len(info.Modules) != 2 {
+		t.Fatalf("expected 2 modules, got %d: %v", len(info.Modules), info.Modules)
+	}
+}
+
+func TestDetectMonorepo_NpmWorkspaces(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "package.json", `{"name":"root","workspaces":["packages/*"]}`)
+	os.MkdirAll("packages/app", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "npm" {
+		t.Errorf("expected type npm, got %s", info.Type)
+	}
+	if len(info.Modules) != 1 {
+		t.Fatalf("expected 1 module, got %d: %v", len(info.Modules), info.Modules)
+	}
+}
+
+func TestDetectMonorepo_CargoWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "Cargo.toml", `[package]
+name = "root"
+
+[workspace]
+members = ["crate-a", "crate-b"]
+`)
+	os.MkdirAll("crate-a", 0o755)
+	os.MkdirAll("crate-b", 0o755)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "cargo" {
+		t.Errorf("expected type cargo, got %s", info.Type)
+	}
+}
+
+func TestDetectMonorepo_None(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info != nil {
+		t.Errorf("expected nil for no markers, got %+v", info)
+	}
+}
+
+func TestDetectMonorepo_Priority(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	// Both go.work and pnpm-workspace.yaml present — go.work should win
+	writeTestFile(t, "go.work", "go 1.21\nuse ./mod1\n")
+	os.MkdirAll("mod1", 0o755)
+	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "go-work" {
+		t.Errorf("expected go-work to take priority, got %s", info.Type)
+	}
+}
+
+func TestCreateMonorepoVersionFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	os.MkdirAll("mod-new", 0o755)
+	os.MkdirAll("mod-existing", 0o755)
+	writeTestFile(t, "mod-existing/.version", "1.5.0\n")
+
+	info := &MonorepoInfo{
+		Type:    "go-work",
+		Modules: []string{"mod-new", "mod-existing"},
+	}
+	createMonorepoVersionFiles(info)
+
+	// mod-new should have .version with 0.0.0
+	data, err := os.ReadFile("mod-new/.version")
+	if err != nil {
+		t.Fatalf("expected mod-new/.version to exist: %v", err)
+	}
+	if string(data) != "0.0.0\n" {
+		t.Errorf("expected '0.0.0\\n', got %q", string(data))
+	}
+
+	// mod-existing should NOT be overwritten
+	data, err = os.ReadFile("mod-existing/.version")
+	if err != nil {
+		t.Fatalf("expected mod-existing/.version to exist: %v", err)
+	}
+	if string(data) != "1.5.0\n" {
+		t.Errorf("expected '1.5.0\\n' (unchanged), got %q", string(data))
+	}
+}
