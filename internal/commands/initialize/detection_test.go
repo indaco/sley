@@ -595,7 +595,7 @@ func TestCreateMonorepoVersionFiles(t *testing.T) {
 		Type:    "go-work",
 		Modules: []string{"mod-new", "mod-existing"},
 	}
-	createMonorepoVersionFiles(info)
+	CreateMonorepoVersionFiles(info)
 
 	// mod-new should have .version with 0.0.0
 	data, err := os.ReadFile("mod-new/.version")

@@ -8,6 +8,7 @@ import (
 
 	"charm.land/huh/v2"
 	"github.com/goccy/go-yaml"
+	"github.com/indaco/sley/internal/commands/initialize"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/discovery"
 	"github.com/indaco/sley/internal/parser"
@@ -67,6 +68,11 @@ func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 
 	// Check if we have useful suggestions
 	if len(w.result.SyncCandidates) == 0 && len(w.result.Modules) == 0 {
+		// No .version files found — check for monorepo workspace markers
+		// (go.work, pnpm-workspace.yaml, package.json workspaces, Cargo.toml [workspace])
+		if monoInfo, err := initialize.DetectMonorepo(); err == nil && monoInfo != nil {
+			return w.runMonorepoInitWorkflow(ctx, monoInfo)
+		}
 		printer.PrintFaint("Run 'sley init' to create a configuration file.")
 		return false, nil
 	}
@@ -97,6 +103,88 @@ func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 
 	// No sync candidates - create config with default plugins only
 	return w.createConfigWithDefaults(ctx)
+}
+
+// runMonorepoInitWorkflow handles the case when no .version files exist but
+// a monorepo workspace marker (go.work, pnpm-workspace.yaml, etc.) is found.
+// It shows the detected workspace info and offers to run the full workspace
+// initialization flow.
+func (w *Workflow) runMonorepoInitWorkflow(_ context.Context, monoInfo *initialize.MonorepoInfo) (bool, error) {
+	fmt.Println()
+	printer.PrintInfo(fmt.Sprintf("Monorepo detected: %s workspace (%s) with %d module(s):",
+		monoInfo.Type, monoInfo.MarkerFile, len(monoInfo.Modules)))
+	for _, m := range monoInfo.Modules {
+		fmt.Printf("  - %s/\n", m)
+	}
+	fmt.Println()
+
+	confirmed, err := w.prompter.Confirm(
+		"Would you like to initialize as a workspace project?",
+		"This will create .sley.yaml with workspace discovery, set tag prefix to {module_path}/v,\ncreate .version files in each module, and set versioning to independent.",
+	)
+	if err != nil {
+		return false, err
+	}
+
+	if !confirmed {
+		printer.PrintFaint("Run 'sley init --workspace' when ready.")
+		return false, nil
+	}
+
+	// Prompt for plugin selection (same as sley init)
+	detectionSummary := fmt.Sprintf("Detected: %s workspace (%s)", monoInfo.Type, monoInfo.MarkerFile)
+	plugins, err := initialize.PromptPluginSelection(detectionSummary)
+	if err != nil {
+		return false, err
+	}
+	if len(plugins) == 0 {
+		plugins = initialize.DefaultPluginNames()
+	}
+
+	// Ensure root .version exists
+	if err := w.ensureVersionFile(context.Background()); err != nil {
+		return false, err
+	}
+
+	// Build DiscoveredModule list from detected monorepo modules
+	var modules []initialize.DiscoveredModule
+	for _, m := range monoInfo.Modules {
+		modules = append(modules, initialize.DiscoveredModule{
+			Name:    m,
+			RelPath: m + "/.version",
+		})
+	}
+	configData, err := initialize.GenerateWorkspaceConfigWithMonorepo(plugins, modules, monoInfo)
+	if err != nil {
+		return false, fmt.Errorf("failed to generate config: %w", err)
+	}
+	if err := os.WriteFile(".sley.yaml", configData, config.ConfigFilePerm); err != nil {
+		return false, fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	// Create .version files in module directories
+	initialize.CreateMonorepoVersionFiles(monoInfo)
+
+	// Print summary
+	fmt.Println()
+	printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with workspace configuration and %d plugin(s)", len(plugins)))
+	fmt.Println()
+	printer.PrintInfo("Enabled plugins:")
+	for _, p := range plugins {
+		fmt.Printf("  - %s\n", p)
+	}
+	fmt.Println()
+	printer.PrintInfo("Applied monorepo defaults:")
+	fmt.Println("  - Versioning: independent")
+	fmt.Println("  - Tag prefix: {module_path}/v")
+	fmt.Printf("  - Modules: %d\n", len(monoInfo.Modules))
+	fmt.Println()
+	printer.PrintInfo("Next steps:")
+	fmt.Println("  - Review .sley.yaml and adjust settings")
+	fmt.Println("  - Run 'sley bump patch --all' to bump all modules")
+	fmt.Println("  - Run 'sley doctor' to verify setup")
+
+	return true, nil
 }
 
 // WorkspaceChoice represents the user's choice for multi-module configuration.
