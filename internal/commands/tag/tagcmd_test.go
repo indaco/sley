@@ -6,13 +6,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
+	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/testutils"
+	"github.com/indaco/sley/internal/workspace"
 	"github.com/urfave/cli/v3"
 )
 
@@ -1629,13 +1632,11 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 		},
 	}
 
-	var createdTag string
 	mockOps := &mockGitTagOps{
 		tagExists: func(ctx context.Context, name string) (bool, error) {
 			return false, nil
 		},
 		createAnnotatedTag: func(ctx context.Context, name, message string) error {
-			createdTag = name
 			return nil
 		},
 	}
@@ -1671,13 +1672,12 @@ func TestCLI_TagCreate_MultiModule(t *testing.T) {
 		t.Fatalf("Failed to capture stdout: %v", err)
 	}
 
-	if createdTag != "v3.0.0" {
-		t.Errorf("tag create in multi-module mode created tag = %v, want v3.0.0", createdTag)
+	// With --all and multiple modules, all modules should be processed
+	if !strings.Contains(output, "Processing module") {
+		t.Errorf("expected output to mention processing modules, got: %q", output)
 	}
-
-	// Output should mention which module the version was sourced from
-	if !strings.Contains(output, "Using version from module") {
-		t.Errorf("expected output to mention source module, got: %q", output)
+	if !strings.Contains(output, "Created tag") {
+		t.Errorf("expected output to mention created tags, got: %q", output)
 	}
 }
 
@@ -1765,5 +1765,273 @@ func TestCLI_TagPush_MultiModule_NoArg(t *testing.T) {
 	// Output should mention which module the version was sourced from
 	if !strings.Contains(output, "Using version from module") {
 		t.Errorf("expected output to mention source module, got: %q", output)
+	}
+}
+
+// newTestCmd creates a minimal cli.Command with the flags that
+// createTagsForAllModules reads (push, message). The returned command
+// is suitable for direct method calls (not full CLI parsing).
+func newTestCmd(t *testing.T) *cli.Command {
+	t.Helper()
+	return &cli.Command{
+		Flags: []cli.Flag{
+			&cli.BoolFlag{Name: "push"},
+			&cli.StringFlag{Name: "message"},
+		},
+	}
+}
+
+// makeModule is a helper that creates a temp directory with a .version file
+// and returns a workspace.Module pointing to it.
+func makeModule(t *testing.T, parent, name, version string) *workspace.Module {
+	t.Helper()
+	dir := filepath.Join(parent, name)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("failed to create module dir %s: %v", dir, err)
+	}
+	path := testutils.WriteTempVersionFile(t, dir, version)
+	return &workspace.Module{
+		Name:    name,
+		Path:    path,
+		RelPath: filepath.Join(name, ".version"),
+	}
+}
+
+// defaultTagEnabledConfig returns a minimal config with tag-manager enabled.
+func defaultTagEnabledConfig(t *testing.T) *config.Config {
+	t.Helper()
+	return &config.Config{
+		Plugins: &config.PluginConfig{
+			TagManager: &config.TagManagerConfig{
+				Enabled: true,
+			},
+		},
+	}
+}
+
+func TestCreateTagsForAllModules(t *testing.T) {
+	// Default tagmanager config uses Annotate:true, so createTag dispatches
+	// to CreateAnnotatedTag. The default prefix is "v" with no {module_path}
+	// placeholder, so all tags are simply "v<version>".
+	tests := []struct {
+		name           string
+		moduleVersions map[string]string // name -> version; empty string means no .version file
+		mockSetup      func(created *[]string) *mockGitTagOps
+		wantErr        bool
+		wantErrContain string
+		wantCreated    []string
+	}{
+		{
+			name: "all modules succeed",
+			moduleVersions: map[string]string{
+				"alpha": "1.0.0",
+				"beta":  "2.0.0",
+				"gamma": "3.0.0",
+			},
+			mockSetup: func(created *[]string) *mockGitTagOps {
+				return &mockGitTagOps{
+					tagExists: func(_ context.Context, _ string) (bool, error) {
+						return false, nil
+					},
+					createAnnotatedTag: func(_ context.Context, name, _ string) error {
+						*created = append(*created, name)
+						return nil
+					},
+				}
+			},
+			wantErr:     false,
+			wantCreated: []string{"v1.0.0", "v2.0.0", "v3.0.0"},
+		},
+		{
+			name: "one module has no version file",
+			moduleVersions: map[string]string{
+				"alpha": "1.0.0",
+				"beta":  "", // will not create .version
+				"gamma": "3.0.0",
+			},
+			mockSetup: func(created *[]string) *mockGitTagOps {
+				return &mockGitTagOps{
+					tagExists: func(_ context.Context, _ string) (bool, error) {
+						return false, nil
+					},
+					createAnnotatedTag: func(_ context.Context, name, _ string) error {
+						*created = append(*created, name)
+						return nil
+					},
+				}
+			},
+			wantErr:        true,
+			wantErrContain: "1 of 3 module(s) failed",
+			wantCreated:    []string{"v1.0.0", "v3.0.0"},
+		},
+		{
+			name: "duplicate tag exists for one module",
+			moduleVersions: map[string]string{
+				"alpha": "1.0.0",
+				"beta":  "2.0.0",
+				"gamma": "3.0.0",
+			},
+			mockSetup: func(created *[]string) *mockGitTagOps {
+				return &mockGitTagOps{
+					tagExists: func(_ context.Context, name string) (bool, error) {
+						// beta's version produces tag "v2.0.0"
+						if name == "v2.0.0" {
+							return true, nil
+						}
+						return false, nil
+					},
+					createAnnotatedTag: func(_ context.Context, name, _ string) error {
+						*created = append(*created, name)
+						return nil
+					},
+				}
+			},
+			wantErr:     false,
+			wantCreated: []string{"v1.0.0", "v3.0.0"},
+		},
+		{
+			name: "tag creation fails for one module",
+			moduleVersions: map[string]string{
+				"alpha": "1.0.0",
+				"beta":  "2.0.0",
+				"gamma": "3.0.0",
+			},
+			mockSetup: func(created *[]string) *mockGitTagOps {
+				return &mockGitTagOps{
+					tagExists: func(_ context.Context, _ string) (bool, error) {
+						return false, nil
+					},
+					createAnnotatedTag: func(_ context.Context, name, _ string) error {
+						if name == "v2.0.0" {
+							return fmt.Errorf("git tag failed")
+						}
+						*created = append(*created, name)
+						return nil
+					},
+				}
+			},
+			wantErr:        true,
+			wantErrContain: "1 of 3 module(s) failed",
+			wantCreated:    []string{"v1.0.0", "v3.0.0"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+
+			// Change to tmpDir so resolveModuleConfig computes relative paths.
+			origDir, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chdir(tmpDir); err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() {
+				if err := os.Chdir(origDir); err != nil {
+					t.Fatalf("failed to restore working directory: %v", err)
+				}
+			})
+
+			// Build modules in deterministic sorted order.
+			names := make([]string, 0, len(tt.moduleVersions))
+			for n := range tt.moduleVersions {
+				names = append(names, n)
+			}
+			sort.Strings(names)
+
+			var modules []*workspace.Module
+			for _, name := range names {
+				ver := tt.moduleVersions[name]
+				if ver == "" {
+					// Create directory but no .version file.
+					dir := filepath.Join(tmpDir, name)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+					modules = append(modules, &workspace.Module{
+						Name:    name,
+						Path:    filepath.Join(dir, ".version"),
+						RelPath: filepath.Join(name, ".version"),
+					})
+				} else {
+					modules = append(modules, makeModule(t, tmpDir, name, ver))
+				}
+			}
+
+			var created []string
+			mockOps := tt.mockSetup(&created)
+			tc := NewTagCommand(mockOps)
+
+			cfg := defaultTagEnabledConfig(t)
+			cmd := newTestCmd(t)
+
+			execCtx := &clix.ExecutionContext{
+				Mode:    clix.MultiModuleMode,
+				Modules: modules,
+			}
+
+			err = tc.createTagsForAllModules(context.Background(), cmd, cfg, execCtx)
+
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("expected an error but got nil")
+				}
+				if tt.wantErrContain != "" && !strings.Contains(err.Error(), tt.wantErrContain) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrContain)
+				}
+			} else if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Sort created tags for deterministic comparison.
+			sort.Strings(created)
+			wantSorted := make([]string, len(tt.wantCreated))
+			copy(wantSorted, tt.wantCreated)
+			sort.Strings(wantSorted)
+
+			if len(created) != len(wantSorted) {
+				t.Fatalf("created tags = %v, want %v", created, wantSorted)
+			}
+			for i := range created {
+				if created[i] != wantSorted[i] {
+					t.Errorf("created[%d] = %q, want %q", i, created[i], wantSorted[i])
+				}
+			}
+		})
+	}
+}
+
+func TestResolveModuleConfig(t *testing.T) {
+	tests := []struct {
+		name          string
+		path          string
+		wantModuleDir string
+	}{
+		{
+			name:          "root dir returns empty moduleDir",
+			path:          ".version",
+			wantModuleDir: "",
+		},
+		{
+			name:          "submodule returns relative moduleDir",
+			path:          "cobra/.version",
+			wantModuleDir: "cobra",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := defaultTagEnabledConfig(t)
+
+			gotCfg, gotModuleDir := resolveModuleConfig(cfg, tt.path)
+			if gotCfg == nil {
+				t.Fatal("resolveModuleConfig() returned nil config")
+			}
+			if gotModuleDir != tt.wantModuleDir {
+				t.Errorf("resolveModuleConfig() moduleDir = %q, want %q", gotModuleDir, tt.wantModuleDir)
+			}
+		})
 	}
 }
