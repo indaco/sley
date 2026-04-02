@@ -78,7 +78,7 @@ func runDiscoverCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 	format := ParseOutputFormat(cmd.String("format"))
 	quiet := cmd.Bool("quiet")
 
-	formatter := NewFormatter(format)
+	formatter := NewFormatterWithConfig(format, cfg)
 
 	if quiet {
 		// In quiet mode, only show summary
@@ -91,7 +91,7 @@ func runDiscoverCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 	noInteractive := cmd.Bool("no-interactive")
 	if !noInteractive && format == FormatText {
 		prompter := NewPrompter()
-		workflow := NewWorkflow(prompter, result, rootDir)
+		workflow := NewWorkflowWithConfig(prompter, result, rootDir, cfg)
 		if _, err := workflow.Run(ctx); err != nil {
 			return err
 		}
