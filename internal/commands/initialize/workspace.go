@@ -235,7 +235,7 @@ func createMonorepoVersionFiles(monoInfo *MonorepoInfo) {
 			// Already exists, skip
 			continue
 		}
-		if err := os.WriteFile(versionFile, []byte("0.0.0\n"), 0o644); err != nil {
+		if err := os.WriteFile(versionFile, []byte("0.0.0\n"), 0o600); err != nil {
 			printer.PrintWarning(fmt.Sprintf("Failed to create %s: %v", versionFile, err))
 			continue
 		}

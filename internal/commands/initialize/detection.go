@@ -383,23 +383,25 @@ func expandGlobPatterns(patterns []string) []string {
 		matches, err := filepath.Glob(cleanPattern)
 		if err != nil {
 			// If the pattern itself is not a valid glob, try it as a literal directory
-			if info, statErr := os.Stat(cleanPattern); statErr == nil && info.IsDir() {
-				if !seen[cleanPattern] {
-					dirs = append(dirs, cleanPattern)
-					seen[cleanPattern] = true
+			safePath := filepath.Clean(cleanPattern)
+			if info, statErr := os.Stat(safePath); statErr == nil && info.IsDir() { //nolint:gosec // paths come from workspace config files, not user input
+				if !seen[safePath] {
+					dirs = append(dirs, safePath)
+					seen[safePath] = true
 				}
 			}
 			continue
 		}
 
 		for _, m := range matches {
-			info, err := os.Stat(m)
+			safeMatch := filepath.Clean(m)
+			info, err := os.Stat(safeMatch) //nolint:gosec // paths come from filepath.Glob expansion
 			if err != nil || !info.IsDir() {
 				continue
 			}
-			if !seen[m] {
-				dirs = append(dirs, m)
-				seen[m] = true
+			if !seen[safeMatch] {
+				dirs = append(dirs, safeMatch)
+				seen[safeMatch] = true
 			}
 		}
 	}

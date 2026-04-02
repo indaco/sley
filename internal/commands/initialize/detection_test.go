@@ -390,6 +390,13 @@ func writeTestFile(t *testing.T, path, content string) {
 	}
 }
 
+func mkdirTest(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("failed to create dir %s: %v", dir, err)
+	}
+}
+
 func sliceContainsStr(haystack []string, needle string) bool {
 	for _, s := range haystack {
 		if s == needle {
@@ -411,9 +418,9 @@ use (
 	./urfave
 )
 `)
-	os.MkdirAll("cobra", 0o755)
-	os.MkdirAll("kong", 0o755)
-	os.MkdirAll("urfave", 0o755)
+	mkdirTest(t, "cobra")
+	mkdirTest(t, "kong")
+	mkdirTest(t, "urfave")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -440,7 +447,7 @@ func TestDetectMonorepo_GoWork_SingleLine(t *testing.T) {
 	t.Chdir(tmpDir)
 
 	writeTestFile(t, "go.work", "go 1.21\n\nuse ./single\n")
-	os.MkdirAll("single", 0o755)
+	mkdirTest(t, "single")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -459,7 +466,7 @@ func TestDetectMonorepo_GoWork_ExternalPath(t *testing.T) {
 	t.Chdir(tmpDir)
 
 	writeTestFile(t, "go.work", "go 1.21\n\nuse (\n\t./local\n\t../external\n)\n")
-	os.MkdirAll("local", 0o755)
+	mkdirTest(t, "local")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -481,8 +488,8 @@ func TestDetectMonorepo_PnpmWorkspace(t *testing.T) {
 	t.Chdir(tmpDir)
 
 	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
-	os.MkdirAll("packages/foo", 0o755)
-	os.MkdirAll("packages/bar", 0o755)
+	mkdirTest(t, "packages/foo")
+	mkdirTest(t, "packages/bar")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -504,7 +511,7 @@ func TestDetectMonorepo_NpmWorkspaces(t *testing.T) {
 	t.Chdir(tmpDir)
 
 	writeTestFile(t, "package.json", `{"name":"root","workspaces":["packages/*"]}`)
-	os.MkdirAll("packages/app", 0o755)
+	mkdirTest(t, "packages/app")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -531,8 +538,8 @@ name = "root"
 [workspace]
 members = ["crate-a", "crate-b"]
 `)
-	os.MkdirAll("crate-a", 0o755)
-	os.MkdirAll("crate-b", 0o755)
+	mkdirTest(t, "crate-a")
+	mkdirTest(t, "crate-b")
 
 	info, err := DetectMonorepo()
 	if err != nil {
@@ -565,7 +572,7 @@ func TestDetectMonorepo_Priority(t *testing.T) {
 
 	// Both go.work and pnpm-workspace.yaml present — go.work should win
 	writeTestFile(t, "go.work", "go 1.21\nuse ./mod1\n")
-	os.MkdirAll("mod1", 0o755)
+	mkdirTest(t, "mod1")
 	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
 
 	info, err := DetectMonorepo()
@@ -584,8 +591,8 @@ func TestCreateMonorepoVersionFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	os.MkdirAll("mod-new", 0o755)
-	os.MkdirAll("mod-existing", 0o755)
+	mkdirTest(t, "mod-new")
+	mkdirTest(t, "mod-existing")
 	writeTestFile(t, "mod-existing/.version", "1.5.0\n")
 
 	info := &MonorepoInfo{
