@@ -120,7 +120,7 @@ func applyModuleTagPrefix(tm tagmanager.TagManager, bumpedPath string, cfg *conf
 	if moduleCfg == nil {
 		return noop, nil
 	}
-	mergedCfg := config.MergePluginConfig(cfg, moduleCfg)
+	mergedCfg := config.MergeConfig(cfg, moduleCfg)
 	if mergedCfg.Plugins == nil || mergedCfg.Plugins.TagManager == nil {
 		return noop, nil
 	}

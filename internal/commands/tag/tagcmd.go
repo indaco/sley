@@ -147,7 +147,7 @@ func resolveModuleConfig(cfg *config.Config, path string) (*config.Config, strin
 	if err != nil || moduleCfg == nil {
 		return cfg, moduleDir
 	}
-	return config.MergePluginConfig(cfg, moduleCfg), moduleDir
+	return config.MergeConfig(cfg, moduleCfg), moduleDir
 }
 
 // runCreateCmd creates a git tag for the current version.
