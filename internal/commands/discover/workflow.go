@@ -21,6 +21,7 @@ type Workflow struct {
 	prompter Prompter
 	result   *discovery.Result
 	rootDir  string
+	cfg      *config.Config
 }
 
 // NewWorkflow creates a new workflow handler.
@@ -29,6 +30,16 @@ func NewWorkflow(prompter Prompter, result *discovery.Result, rootDir string) *W
 		prompter: prompter,
 		result:   result,
 		rootDir:  rootDir,
+	}
+}
+
+// NewWorkflowWithConfig creates a new workflow handler with config awareness.
+func NewWorkflowWithConfig(prompter Prompter, result *discovery.Result, rootDir string, cfg *config.Config) *Workflow {
+	return &Workflow{
+		prompter: prompter,
+		result:   result,
+		rootDir:  rootDir,
+		cfg:      cfg,
 	}
 }
 
@@ -345,9 +356,14 @@ func (w *Workflow) runExistingConfigWorkflow(ctx context.Context) (bool, error) 
 // runMismatchWorkflow offers to help resolve version mismatches.
 func (w *Workflow) runMismatchWorkflow(_ context.Context) (bool, error) {
 	fmt.Println()
-	printer.PrintWarning(fmt.Sprintf("Found %d version mismatch(es).", len(w.result.Mismatches)))
-	printer.PrintFaint("Consider enabling the dependency-check plugin with auto-sync to keep versions in sync.")
-	printer.PrintFaint("Run 'sley bump auto --sync' to sync versions during bumps.")
+	if w.cfg != nil && w.cfg.Workspace != nil && w.cfg.Workspace.IsIndependentVersioning() {
+		printer.PrintInfo(fmt.Sprintf("Version summary: %d module(s) at different versions (independent versioning).", len(w.result.Mismatches)))
+		printer.PrintFaint("Each module manages its own version independently.")
+	} else {
+		printer.PrintWarning(fmt.Sprintf("Found %d version mismatch(es).", len(w.result.Mismatches)))
+		printer.PrintFaint("Consider enabling the dependency-check plugin with auto-sync to keep versions in sync.")
+		printer.PrintFaint("Run 'sley bump auto --sync' to sync versions during bumps.")
+	}
 	return false, nil
 }
 

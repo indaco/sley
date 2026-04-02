@@ -179,6 +179,16 @@ func loadConfigFromPath(filePath string) (*Config, error) {
 		return nil, fmt.Errorf("invalid path in config: path traversal not allowed, use absolute path instead")
 	}
 
+	// Validate workspace versioning mode if set
+	if cfg.Workspace != nil && cfg.Workspace.Versioning != "" {
+		switch cfg.Workspace.Versioning {
+		case "independent", "coordinated":
+			// valid
+		default:
+			return nil, fmt.Errorf("invalid workspace versioning %q in config: must be \"independent\" or \"coordinated\"", cfg.Workspace.Versioning)
+		}
+	}
+
 	if cfg.Plugins == nil {
 		cfg.Plugins = &PluginConfig{CommitParser: true}
 	}
