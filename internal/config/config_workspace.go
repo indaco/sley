@@ -42,11 +42,31 @@ func (m *ModuleConfig) IsEnabled() bool {
 
 // WorkspaceConfig configures multi-module/monorepo behavior.
 type WorkspaceConfig struct {
+	// Versioning controls how module versions are managed.
+	// Valid values: "independent" (each module versioned separately) or "coordinated" (default, all modules share root version).
+	// An empty string is treated as "coordinated".
+	Versioning string `yaml:"versioning,omitempty"`
+
 	// Discovery configures automatic module discovery.
 	Discovery *DiscoveryConfig `yaml:"discovery,omitempty"`
 
 	// Modules explicitly defines modules (overrides discovery if non-empty).
 	Modules []ModuleConfig `yaml:"modules,omitempty"`
+}
+
+// IsIndependentVersioning returns true if the workspace is configured for independent versioning,
+// where each module manages its own version independently.
+func (w *WorkspaceConfig) IsIndependentVersioning() bool {
+	return w != nil && w.Versioning == "independent"
+}
+
+// VersioningMode returns the effective versioning mode string.
+// Returns "independent" if set, otherwise "coordinated" (the default).
+func (w *WorkspaceConfig) VersioningMode() string {
+	if w != nil && w.Versioning == "independent" {
+		return "independent"
+	}
+	return "coordinated"
 }
 
 // DefaultExcludePatterns returns the default patterns to exclude during module discovery.

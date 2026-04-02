@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/discovery"
 	"github.com/indaco/sley/internal/printer"
 )
@@ -13,11 +14,31 @@ import (
 // Formatter handles display of discovery results.
 type Formatter struct {
 	format OutputFormat
+	cfg    *config.Config
 }
 
 // NewFormatter creates a new Formatter with the specified output format.
 func NewFormatter(format OutputFormat) *Formatter {
 	return &Formatter{format: format}
+}
+
+// NewFormatterWithConfig creates a new Formatter with the specified output format and config.
+// The config is used to adjust output severity (e.g., independent versioning shows info instead of warnings).
+func NewFormatterWithConfig(format OutputFormat, cfg *config.Config) *Formatter {
+	return &Formatter{format: format, cfg: cfg}
+}
+
+// isIndependentVersioning returns true if the config indicates independent versioning mode.
+func (f *Formatter) isIndependentVersioning() bool {
+	return f.cfg != nil && f.cfg.Workspace != nil && f.cfg.Workspace.IsIndependentVersioning()
+}
+
+// versioningMode returns the effective versioning mode string from the config.
+func (f *Formatter) versioningMode() string {
+	if f.cfg != nil && f.cfg.Workspace != nil {
+		return f.cfg.Workspace.VersioningMode()
+	}
+	return "coordinated"
 }
 
 // FormatResult formats the discovery result for display.
@@ -72,12 +93,22 @@ func (f *Formatter) formatText(result *discovery.Result) string {
 
 	// Mismatches section
 	if len(result.Mismatches) > 0 {
-		sb.WriteString(printer.Warning("Version Mismatches:"))
-		sb.WriteString("\n")
-		for _, m := range result.Mismatches {
-			status := printer.Warning("⚠")
-			fmt.Fprintf(&sb, "  %s %s: expected %s, found %s\n",
-				status, m.Source, m.ExpectedVersion, m.ActualVersion)
+		if f.isIndependentVersioning() {
+			sb.WriteString(printer.Info(fmt.Sprintf("Version Summary (independent versioning): %d module(s) at different versions", len(result.Mismatches))))
+			sb.WriteString("\n")
+			for _, m := range result.Mismatches {
+				status := printer.Info("ℹ")
+				fmt.Fprintf(&sb, "  %s %s: %s (root: %s)\n",
+					status, m.Source, m.ActualVersion, m.ExpectedVersion)
+			}
+		} else {
+			sb.WriteString(printer.Warning("Version Mismatches:"))
+			sb.WriteString("\n")
+			for _, m := range result.Mismatches {
+				status := printer.Warning("⚠")
+				fmt.Fprintf(&sb, "  %s %s: expected %s, found %s\n",
+					status, m.Source, m.ExpectedVersion, m.ActualVersion)
+			}
 		}
 		sb.WriteString("\n")
 	}
@@ -133,7 +164,11 @@ func (f *Formatter) formatTable(result *discovery.Result) string {
 
 	// Mismatches table
 	if len(result.Mismatches) > 0 {
-		sb.WriteString("Version Mismatches:\n")
+		if f.isIndependentVersioning() {
+			fmt.Fprintf(&sb, "Version Summary (independent versioning): %d module(s) at different versions\n", len(result.Mismatches))
+		} else {
+			sb.WriteString("Version Mismatches:\n")
+		}
 		fmt.Fprintf(&sb, "%-30s %-15s %-15s\n", "SOURCE", "EXPECTED", "ACTUAL")
 		sb.WriteString(strings.Repeat("-", 60) + "\n")
 		for _, m := range result.Mismatches {
@@ -180,6 +215,7 @@ func (f *Formatter) formatJSON(result *discovery.Result) string {
 
 	output := struct {
 		Mode           string              `json:"mode"`
+		VersioningMode string              `json:"versioning_mode"`
 		Modules        []jsonModule        `json:"modules"`
 		Manifests      []jsonManifest      `json:"manifests"`
 		Mismatches     []jsonMismatch      `json:"mismatches"`
@@ -194,6 +230,7 @@ func (f *Formatter) formatJSON(result *discovery.Result) string {
 		} `json:"summary"`
 	}{
 		Mode:           result.Mode.String(),
+		VersioningMode: f.versioningMode(),
 		Modules:        make([]jsonModule, len(result.Modules)),
 		Manifests:      make([]jsonManifest, len(result.Manifests)),
 		Mismatches:     make([]jsonMismatch, len(result.Mismatches)),
@@ -269,7 +306,11 @@ func (f *Formatter) formatSummary(result *discovery.Result) string {
 	}
 
 	if mismatchCount > 0 {
-		parts = append(parts, printer.Warning(fmt.Sprintf("%d mismatch(es)", mismatchCount)))
+		if f.isIndependentVersioning() {
+			parts = append(parts, printer.Info(fmt.Sprintf("%d version difference(s) (independent)", mismatchCount)))
+		} else {
+			parts = append(parts, printer.Warning(fmt.Sprintf("%d mismatch(es)", mismatchCount)))
+		}
 	}
 
 	if len(parts) == 0 {

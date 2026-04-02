@@ -3,6 +3,7 @@ package initialize
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -373,4 +374,244 @@ func findSubstring(s, substr string) bool {
 		}
 	}
 	return false
+}
+
+// --- Monorepo Detection Tests ---
+
+func writeTestFile(t *testing.T, path, content string) {
+	t.Helper()
+	dir := filepath.Dir(path)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatalf("failed to create dir %s: %v", dir, err)
+		}
+	}
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatalf("failed to write %s: %v", path, err)
+	}
+}
+
+func mkdirTest(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatalf("failed to create dir %s: %v", dir, err)
+	}
+}
+
+func sliceContainsStr(haystack []string, needle string) bool {
+	return slices.Contains(haystack, needle)
+}
+
+func TestDetectMonorepo_GoWork(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", `go 1.21
+
+use (
+	./cobra
+	./kong
+	./urfave
+)
+`)
+	mkdirTest(t, "cobra")
+	mkdirTest(t, "kong")
+	mkdirTest(t, "urfave")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "go-work" {
+		t.Errorf("expected type go-work, got %s", info.Type)
+	}
+	if len(info.Modules) != 3 {
+		t.Fatalf("expected 3 modules, got %d: %v", len(info.Modules), info.Modules)
+	}
+	for _, name := range []string{"cobra", "kong", "urfave"} {
+		if !sliceContainsStr(info.Modules, name) {
+			t.Errorf("expected module %q in %v", name, info.Modules)
+		}
+	}
+}
+
+func TestDetectMonorepo_GoWork_SingleLine(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", "go 1.21\n\nuse ./single\n")
+	mkdirTest(t, "single")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if len(info.Modules) != 1 || info.Modules[0] != "single" {
+		t.Errorf("expected [single], got %v", info.Modules)
+	}
+}
+
+func TestDetectMonorepo_GoWork_ExternalPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "go.work", "go 1.21\n\nuse (\n\t./local\n\t../external\n)\n")
+	mkdirTest(t, "local")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if len(info.Modules) != 1 {
+		t.Errorf("expected 1 module (external excluded), got %d: %v", len(info.Modules), info.Modules)
+	}
+	if info.Modules[0] != "local" {
+		t.Errorf("expected module 'local', got %q", info.Modules[0])
+	}
+}
+
+func TestDetectMonorepo_PnpmWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
+	mkdirTest(t, "packages/foo")
+	mkdirTest(t, "packages/bar")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "pnpm" {
+		t.Errorf("expected type pnpm, got %s", info.Type)
+	}
+	if len(info.Modules) != 2 {
+		t.Fatalf("expected 2 modules, got %d: %v", len(info.Modules), info.Modules)
+	}
+}
+
+func TestDetectMonorepo_NpmWorkspaces(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "package.json", `{"name":"root","workspaces":["packages/*"]}`)
+	mkdirTest(t, "packages/app")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "npm" {
+		t.Errorf("expected type npm, got %s", info.Type)
+	}
+	if len(info.Modules) != 1 {
+		t.Fatalf("expected 1 module, got %d: %v", len(info.Modules), info.Modules)
+	}
+}
+
+func TestDetectMonorepo_CargoWorkspace(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	writeTestFile(t, "Cargo.toml", `[package]
+name = "root"
+
+[workspace]
+members = ["crate-a", "crate-b"]
+`)
+	mkdirTest(t, "crate-a")
+	mkdirTest(t, "crate-b")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "cargo" {
+		t.Errorf("expected type cargo, got %s", info.Type)
+	}
+}
+
+func TestDetectMonorepo_None(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info != nil {
+		t.Errorf("expected nil for no markers, got %+v", info)
+	}
+}
+
+func TestDetectMonorepo_Priority(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	// Both go.work and pnpm-workspace.yaml present — go.work should win
+	writeTestFile(t, "go.work", "go 1.21\nuse ./mod1\n")
+	mkdirTest(t, "mod1")
+	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")
+
+	info, err := DetectMonorepo()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if info == nil {
+		t.Fatal("expected MonorepoInfo, got nil")
+	}
+	if info.Type != "go-work" {
+		t.Errorf("expected go-work to take priority, got %s", info.Type)
+	}
+}
+
+func TestCreateMonorepoVersionFiles(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	mkdirTest(t, "mod-new")
+	mkdirTest(t, "mod-existing")
+	writeTestFile(t, "mod-existing/.version", "1.5.0\n")
+
+	info := &MonorepoInfo{
+		Type:    "go-work",
+		Modules: []string{"mod-new", "mod-existing"},
+	}
+	createMonorepoVersionFiles(info)
+
+	// mod-new should have .version with 0.0.0
+	data, err := os.ReadFile("mod-new/.version")
+	if err != nil {
+		t.Fatalf("expected mod-new/.version to exist: %v", err)
+	}
+	if string(data) != "0.0.0\n" {
+		t.Errorf("expected '0.0.0\\n', got %q", string(data))
+	}
+
+	// mod-existing should NOT be overwritten
+	data, err = os.ReadFile("mod-existing/.version")
+	if err != nil {
+		t.Fatalf("expected mod-existing/.version to exist: %v", err)
+	}
+	if string(data) != "1.5.0\n" {
+		t.Errorf("expected '1.5.0\\n' (unchanged), got %q", string(data))
+	}
 }

@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	"strings"
 
 	"charm.land/huh/v2"
 	"github.com/indaco/sley/internal/tui"
@@ -108,6 +109,19 @@ func confirmVersionMigration(version, file string) (bool, error) {
 		fmt.Sprintf("Use version %s from %s?", version, file),
 		"This will initialize .version with the detected version.",
 	)
+}
+
+// ConfirmMonorepoDefaults asks the user whether to apply monorepo defaults.
+func ConfirmMonorepoDefaults(info *MonorepoInfo) (bool, error) {
+	var description strings.Builder
+	fmt.Fprintf(&description, "Detected %s workspace with %d module%s:\n",
+		info.Type, len(info.Modules), tui.Pluralize(len(info.Modules)))
+	for _, m := range info.Modules {
+		fmt.Fprintf(&description, "  - %s/\n", m)
+	}
+	description.WriteString("Apply monorepo defaults (tag prefix, .version files, independent versioning)?")
+
+	return tui.Confirm(description.String(), "")
 }
 
 // selectVersionSource prompts the user to select a version source from multiple options.
