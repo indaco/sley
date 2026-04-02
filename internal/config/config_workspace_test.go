@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"strings"
 	"testing"
 
 	"github.com/indaco/sley/internal/testutils"
@@ -523,5 +525,112 @@ func TestModuleConfig_IsEnabled(t *testing.T) {
 				t.Errorf("expected %v, got %v", tt.expected, result)
 			}
 		})
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* WORKSPACE CONFIG - VERSIONING MODE                                        */
+/* ------------------------------------------------------------------------- */
+
+func TestWorkspaceConfig_IsIndependentVersioning(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		workspace  *WorkspaceConfig
+		wantResult bool
+	}{
+		{
+			name:       "independent",
+			workspace:  &WorkspaceConfig{Versioning: "independent"},
+			wantResult: true,
+		},
+		{
+			name:       "coordinated",
+			workspace:  &WorkspaceConfig{Versioning: "coordinated"},
+			wantResult: false,
+		},
+		{
+			name:       "empty string",
+			workspace:  &WorkspaceConfig{Versioning: ""},
+			wantResult: false,
+		},
+		{
+			name:       "nil receiver",
+			workspace:  nil,
+			wantResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := tt.workspace.IsIndependentVersioning()
+			if got != tt.wantResult {
+				t.Errorf("IsIndependentVersioning() = %v, want %v", got, tt.wantResult)
+			}
+		})
+	}
+}
+
+func TestWorkspaceConfig_VersioningMode(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		workspace *WorkspaceConfig
+		want      string
+	}{
+		{
+			name:      "independent",
+			workspace: &WorkspaceConfig{Versioning: "independent"},
+			want:      "independent",
+		},
+		{
+			name:      "coordinated",
+			workspace: &WorkspaceConfig{Versioning: "coordinated"},
+			want:      "coordinated",
+		},
+		{
+			name:      "empty defaults to coordinated",
+			workspace: &WorkspaceConfig{Versioning: ""},
+			want:      "coordinated",
+		},
+		{
+			name:      "nil receiver defaults to coordinated",
+			workspace: nil,
+			want:      "coordinated",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := tt.workspace.VersioningMode()
+			if got != tt.want {
+				t.Errorf("VersioningMode() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLoadConfig_InvalidVersioning(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	content := "workspace:\n  versioning: foobar\n"
+	if err := os.WriteFile(dir+"/.sley.yaml", []byte(content), 0644); err != nil {
+		t.Fatalf("failed to write config: %v", err)
+	}
+
+	_, err := LoadConfigFromDir(dir)
+	if err == nil {
+		t.Fatal("expected error for invalid versioning value, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "invalid workspace versioning") {
+		t.Errorf("error message = %q, want it to contain %q", err.Error(), "invalid workspace versioning")
 	}
 }

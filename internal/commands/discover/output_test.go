@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/discovery"
 	"github.com/indaco/sley/internal/parser"
 	"github.com/indaco/sley/internal/testutils"
@@ -699,4 +700,179 @@ func TestFormatter_FormatResult_DefaultCase(t *testing.T) {
 	if !strings.Contains(output, "Discovery Results") {
 		t.Error("expected text format output for invalid format")
 	}
+}
+
+func TestFormatJSON_VersioningMode(t *testing.T) {
+	result := &discovery.Result{
+		Mode: discovery.MultiModule,
+		Modules: []discovery.Module{
+			{Name: "root", RelPath: ".version", Version: "1.0.0"},
+			{Name: "sub", RelPath: "sub/.version", Version: "2.0.0"},
+		},
+		Mismatches: []discovery.Mismatch{
+			{Source: "sub/.version", ExpectedVersion: "1.0.0", ActualVersion: "2.0.0"},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		cfg      *config.Config
+		wantMode string
+	}{
+		{
+			name: "independent config",
+			cfg: &config.Config{
+				Workspace: &config.WorkspaceConfig{Versioning: "independent"},
+			},
+			wantMode: `"versioning_mode": "independent"`,
+		},
+		{
+			name: "coordinated config",
+			cfg: &config.Config{
+				Workspace: &config.WorkspaceConfig{Versioning: "coordinated"},
+			},
+			wantMode: `"versioning_mode": "coordinated"`,
+		},
+		{
+			name:     "nil config defaults to coordinated",
+			cfg:      nil,
+			wantMode: `"versioning_mode": "coordinated"`,
+		},
+		{
+			name:     "empty workspace defaults to coordinated",
+			cfg:      &config.Config{},
+			wantMode: `"versioning_mode": "coordinated"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var formatter *Formatter
+			if tt.cfg != nil {
+				formatter = NewFormatterWithConfig(FormatJSON, tt.cfg)
+			} else {
+				formatter = NewFormatter(FormatJSON)
+			}
+			output := formatter.FormatResult(result)
+
+			if !strings.Contains(output, tt.wantMode) {
+				t.Errorf("JSON output missing expected versioning_mode.\nwant substring: %s\ngot: %s", tt.wantMode, output)
+			}
+		})
+	}
+}
+
+func TestFormatText_VersioningMode_IndependentMismatches(t *testing.T) {
+	result := &discovery.Result{
+		Mode: discovery.MultiModule,
+		Modules: []discovery.Module{
+			{Name: "root", RelPath: ".version", Version: "1.0.0"},
+			{Name: "sub", RelPath: "sub/.version", Version: "2.0.0"},
+		},
+		Mismatches: []discovery.Mismatch{
+			{Source: "sub/.version", ExpectedVersion: "1.0.0", ActualVersion: "2.0.0"},
+		},
+	}
+
+	t.Run("independent shows info language", func(t *testing.T) {
+		cfg := &config.Config{
+			Workspace: &config.WorkspaceConfig{Versioning: "independent"},
+		}
+		formatter := NewFormatterWithConfig(FormatText, cfg)
+		output := formatter.FormatResult(result)
+
+		if !strings.Contains(output, "independent versioning") {
+			t.Errorf("expected 'independent versioning' in output, got:\n%s", output)
+		}
+		if strings.Contains(output, "expected 1.0.0") {
+			t.Errorf("independent mode should not use 'expected' warning language, got:\n%s", output)
+		}
+	})
+
+	t.Run("coordinated shows warning language", func(t *testing.T) {
+		cfg := &config.Config{
+			Workspace: &config.WorkspaceConfig{Versioning: "coordinated"},
+		}
+		formatter := NewFormatterWithConfig(FormatText, cfg)
+		output := formatter.FormatResult(result)
+
+		if !strings.Contains(output, "Version Mismatch") {
+			t.Errorf("expected 'Version Mismatch' in output, got:\n%s", output)
+		}
+		if !strings.Contains(output, "expected 1.0.0") {
+			t.Errorf("expected warning language with 'expected', got:\n%s", output)
+		}
+	})
+}
+
+func TestFormatTable_VersioningMode_IndependentMismatches(t *testing.T) {
+	result := &discovery.Result{
+		Mode: discovery.MultiModule,
+		Modules: []discovery.Module{
+			{Name: "root", RelPath: ".version", Version: "1.0.0"},
+		},
+		Mismatches: []discovery.Mismatch{
+			{Source: "sub/.version", ExpectedVersion: "1.0.0", ActualVersion: "2.0.0"},
+		},
+	}
+
+	t.Run("independent shows version summary", func(t *testing.T) {
+		cfg := &config.Config{
+			Workspace: &config.WorkspaceConfig{Versioning: "independent"},
+		}
+		formatter := NewFormatterWithConfig(FormatTable, cfg)
+		output := formatter.formatTable(result)
+
+		if !strings.Contains(output, "independent versioning") {
+			t.Errorf("expected 'independent versioning' in table output, got:\n%s", output)
+		}
+		if strings.Contains(output, "Version Mismatches:") {
+			t.Errorf("independent mode should not show 'Version Mismatches:' header, got:\n%s", output)
+		}
+	})
+
+	t.Run("coordinated shows mismatches header", func(t *testing.T) {
+		formatter := NewFormatter(FormatTable)
+		output := formatter.formatTable(result)
+
+		if !strings.Contains(output, "Version Mismatches:") {
+			t.Errorf("expected 'Version Mismatches:' in table output, got:\n%s", output)
+		}
+	})
+}
+
+func TestFormatter_formatSummary_VersioningMode(t *testing.T) {
+	result := &discovery.Result{
+		Modules: []discovery.Module{
+			{Version: "1.0.0", RelPath: ".version"},
+		},
+		Mismatches: []discovery.Mismatch{
+			{Source: "sub/.version"},
+			{Source: "other/.version"},
+		},
+	}
+
+	t.Run("independent shows difference count", func(t *testing.T) {
+		cfg := &config.Config{
+			Workspace: &config.WorkspaceConfig{Versioning: "independent"},
+		}
+		formatter := NewFormatterWithConfig(FormatText, cfg)
+		summary := formatter.formatSummary(result)
+
+		if !strings.Contains(summary, "version difference") {
+			t.Errorf("expected 'version difference' in summary, got: %q", summary)
+		}
+		if !strings.Contains(summary, "independent") {
+			t.Errorf("expected 'independent' in summary, got: %q", summary)
+		}
+	})
+
+	t.Run("coordinated shows mismatch count", func(t *testing.T) {
+		formatter := NewFormatter(FormatText)
+		summary := formatter.formatSummary(result)
+
+		if !strings.Contains(summary, "mismatch") {
+			t.Errorf("expected 'mismatch' in summary, got: %q", summary)
+		}
+	})
 }
