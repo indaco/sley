@@ -3,6 +3,7 @@ package initialize
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -398,12 +399,7 @@ func mkdirTest(t *testing.T, dir string) {
 }
 
 func sliceContainsStr(haystack []string, needle string) bool {
-	for _, s := range haystack {
-		if s == needle {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(haystack, needle)
 }
 
 func TestDetectMonorepo_GoWork(t *testing.T) {

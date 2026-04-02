@@ -197,8 +197,8 @@ func detectGoWork() (*MonorepoInfo, error) {
 		}
 
 		// Handle single-line: use ./cobra
-		if strings.HasPrefix(line, "use ") {
-			mod := cleanGoWorkPath(strings.TrimPrefix(line, "use "))
+		if after, ok := strings.CutPrefix(line, "use "); ok {
+			mod := cleanGoWorkPath(after)
 			if mod != "" {
 				modules = append(modules, mod)
 			}
