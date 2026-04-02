@@ -42,14 +42,47 @@ func runWorkspaceInit(path string, yesFlag bool, templateFlag, enableFlag string
 		return nil
 	}
 
-	// Step 4: Create .sley.yaml with workspace configuration
-	configCreated, err := createWorkspaceConfigFile(selectedPlugins, modules, forceFlag)
+	// Step 4: Detect monorepo workspace markers
+	monoInfo, err := DetectMonorepo()
+	if err != nil {
+		return fmt.Errorf("failed to detect monorepo: %w", err)
+	}
+
+	applyMonorepo := false
+	if monoInfo != nil && len(monoInfo.Modules) > 0 {
+		if yesFlag || !isTerminalInteractive() {
+			applyMonorepo = true
+		} else {
+			confirmed, promptErr := ConfirmMonorepoDefaults(monoInfo)
+			if promptErr != nil {
+				return promptErr
+			}
+			applyMonorepo = confirmed
+		}
+	}
+
+	// Step 5: Create .sley.yaml with workspace configuration
+	var configCreated bool
+	if applyMonorepo {
+		configCreated, err = createWorkspaceConfigFileWithMonorepo(selectedPlugins, modules, monoInfo, forceFlag)
+	} else {
+		configCreated, err = createWorkspaceConfigFile(selectedPlugins, modules, forceFlag)
+	}
 	if err != nil {
 		return err
 	}
 
-	// Step 5: Print success messages
+	// Step 6: Create .version files for detected monorepo modules
+	if applyMonorepo {
+		createMonorepoVersionFiles(monoInfo)
+	}
+
+	// Step 7: Print success messages
 	printWorkspaceSuccessSummary(configCreated, selectedPlugins, modules, projectCtx)
+
+	if applyMonorepo {
+		printMonorepoSummary(monoInfo)
+	}
 
 	return nil
 }
@@ -159,6 +192,170 @@ func createWorkspaceConfigFile(plugins []string, modules []DiscoveredModule, for
 	}
 
 	return true, nil
+}
+
+// createWorkspaceConfigFileWithMonorepo generates and writes the .sley.yaml with monorepo defaults applied.
+func createWorkspaceConfigFileWithMonorepo(plugins []string, modules []DiscoveredModule, monoInfo *MonorepoInfo, forceFlag bool) (bool, error) {
+	configPath := ".sley.yaml"
+
+	// Check if config already exists
+	if _, err := os.Stat(configPath); err == nil && !forceFlag {
+		if !isTerminalInteractive() {
+			return false, nil
+		}
+
+		confirmed, err := ConfirmOverwrite()
+		if err != nil {
+			return false, err
+		}
+		if !confirmed {
+			return false, nil
+		}
+	}
+
+	// Generate config with workspace + monorepo section
+	configData, err := GenerateWorkspaceConfigWithMonorepo(plugins, modules, monoInfo)
+	if err != nil {
+		return false, fmt.Errorf("failed to generate config: %w", err)
+	}
+
+	if err := os.WriteFile(configPath, configData, config.ConfigFilePerm); err != nil {
+		return false, fmt.Errorf("failed to write config file: %w", err)
+	}
+
+	return true, nil
+}
+
+// createMonorepoVersionFiles creates .version files in each detected module directory
+// if one does not already exist. Each file is initialized with "0.0.0".
+func createMonorepoVersionFiles(monoInfo *MonorepoInfo) {
+	for _, modDir := range monoInfo.Modules {
+		versionFile := filepath.Join(modDir, ".version")
+		if _, err := os.Stat(versionFile); err == nil {
+			// Already exists, skip
+			continue
+		}
+		if err := os.WriteFile(versionFile, []byte("0.0.0\n"), 0o644); err != nil {
+			printer.PrintWarning(fmt.Sprintf("Failed to create %s: %v", versionFile, err))
+			continue
+		}
+		printer.PrintSuccess(fmt.Sprintf("Created %s with version 0.0.0", versionFile))
+	}
+}
+
+// printMonorepoSummary prints additional information about the monorepo setup.
+func printMonorepoSummary(monoInfo *MonorepoInfo) {
+	fmt.Println()
+	printer.PrintInfo(fmt.Sprintf("Monorepo detected: %s workspace (%s)", monoInfo.Type, monoInfo.MarkerFile))
+	printer.PrintInfo("Applied monorepo defaults:")
+	fmt.Println("  - Versioning: independent")
+	fmt.Println("  - Tag prefix: {module_path}/v")
+	fmt.Printf("  - Modules: %d\n", len(monoInfo.Modules))
+}
+
+// GenerateWorkspaceConfigWithMonorepo generates YAML config with workspace section and monorepo defaults.
+// This sets versioning to "independent" and configures the tag-manager prefix.
+func GenerateWorkspaceConfigWithMonorepo(plugins []string, modules []DiscoveredModule, monoInfo *MonorepoInfo) ([]byte, error) {
+	var sb strings.Builder
+
+	// Header
+	sb.WriteString("# sley configuration file\n")
+	sb.WriteString("# Documentation: https://github.com/indaco/sley\n")
+	sb.WriteString("\n")
+
+	// List enabled plugins in header
+	if len(plugins) > 0 {
+		sb.WriteString("# Enabled plugins:\n")
+		for _, p := range plugins {
+			fmt.Fprintf(&sb, "#   - %s\n", p)
+		}
+		sb.WriteString("\n")
+	}
+
+	// Plugins section
+	sb.WriteString("plugins:\n")
+	for _, pluginName := range plugins {
+		writePluginConfigWithMonorepo(&sb, pluginName)
+	}
+	sb.WriteString("\n")
+
+	// Workspace section with monorepo defaults
+	sb.WriteString("# Workspace configuration for monorepo support\n")
+	sb.WriteString("workspace:\n")
+	sb.WriteString("  # Versioning mode: \"independent\" (each module versioned separately)\n")
+	sb.WriteString("  versioning: independent\n")
+	sb.WriteString("  # Discovery settings for automatic module detection\n")
+	sb.WriteString("  discovery:\n")
+	sb.WriteString("    enabled: true\n")
+	sb.WriteString("    recursive: true\n")
+	sb.WriteString("    module_max_depth: 10\n")
+	sb.WriteString("    exclude:\n")
+	for _, pattern := range config.DefaultExcludePatterns {
+		fmt.Fprintf(&sb, "      - %q\n", pattern)
+	}
+
+	// Add discovered modules as explicit entries
+	if len(modules) > 0 {
+		sb.WriteString("\n")
+		sb.WriteString("  # Discovered modules (uncomment to use explicit configuration)\n")
+		sb.WriteString("  # modules:\n")
+		for _, mod := range modules {
+			fmt.Fprintf(&sb, "  #   - name: %s\n", mod.Name)
+			fmt.Fprintf(&sb, "  #     path: %s\n", mod.RelPath)
+		}
+	}
+
+	// Add monorepo module list if discovery found modules not in existing .version files
+	if monoInfo != nil && len(monoInfo.Modules) > 0 && len(modules) == 0 {
+		sb.WriteString("\n")
+		sb.WriteString("  # Detected monorepo modules (uncomment to use explicit configuration)\n")
+		sb.WriteString("  # modules:\n")
+		for _, modPath := range monoInfo.Modules {
+			name := filepath.Base(modPath)
+			fmt.Fprintf(&sb, "  #   - name: %s\n", name)
+			fmt.Fprintf(&sb, "  #     path: %s/.version\n", modPath)
+		}
+	}
+
+	return []byte(sb.String()), nil
+}
+
+// writePluginConfigWithMonorepo writes a single plugin configuration to the builder,
+// applying monorepo-specific defaults (e.g., tag-manager prefix).
+func writePluginConfigWithMonorepo(sb *strings.Builder, pluginName string) {
+	descriptions := map[string]string{
+		"commit-parser":       "Analyzes conventional commits to suggest version bumps",
+		"tag-manager":         "Automatically creates git tags after version changes",
+		"version-validator":   "Enforces versioning policies and constraints",
+		"dependency-check":    "Syncs version to package.json and other files",
+		"changelog-parser":    "Infers bump type from CHANGELOG.md entries",
+		"changelog-generator": "Generates changelogs from git commits",
+		"release-gate":        "Pre-bump validation (clean worktree, branch checks)",
+		"audit-log":           "Records version history with metadata",
+	}
+
+	desc := descriptions[pluginName]
+	if desc != "" {
+		fmt.Fprintf(sb, "  # %s\n", desc)
+	}
+
+	// commit-parser is a simple boolean
+	if pluginName == "commit-parser" {
+		sb.WriteString("  commit-parser: true\n")
+		return
+	}
+
+	// tag-manager gets monorepo prefix
+	if pluginName == "tag-manager" {
+		sb.WriteString("  tag-manager:\n")
+		sb.WriteString("    enabled: true\n")
+		sb.WriteString("    prefix: \"{module_path}/v\"\n")
+		return
+	}
+
+	// Other plugins use enabled: true format
+	fmt.Fprintf(sb, "  %s:\n", pluginName)
+	sb.WriteString("    enabled: true\n")
 }
 
 // GenerateWorkspaceConfigWithComments generates YAML config with workspace section.

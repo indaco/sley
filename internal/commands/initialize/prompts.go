@@ -110,6 +110,18 @@ func confirmVersionMigration(version, file string) (bool, error) {
 	)
 }
 
+// ConfirmMonorepoDefaults asks the user whether to apply monorepo defaults.
+func ConfirmMonorepoDefaults(info *MonorepoInfo) (bool, error) {
+	description := fmt.Sprintf("Detected %s workspace with %d module%s:\n",
+		info.Type, len(info.Modules), tui.Pluralize(len(info.Modules)))
+	for _, m := range info.Modules {
+		description += fmt.Sprintf("  - %s/\n", m)
+	}
+	description += "Apply monorepo defaults (tag prefix, .version files, independent versioning)?"
+
+	return tui.Confirm(description, "")
+}
+
 // selectVersionSource prompts the user to select a version source from multiple options.
 func selectVersionSource(sources []VersionSource) (*VersionSource, error) {
 	if len(sources) == 0 {
