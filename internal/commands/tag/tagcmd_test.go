@@ -1919,87 +1919,104 @@ func TestCreateTagsForAllModules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
+			chdirTest(t, tmpDir)
 
-			// Change to tmpDir so resolveModuleConfig computes relative paths.
-			origDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chdir(tmpDir); err != nil {
-				t.Fatal(err)
-			}
-			t.Cleanup(func() {
-				if err := os.Chdir(origDir); err != nil {
-					t.Fatalf("failed to restore working directory: %v", err)
-				}
-			})
-
-			// Build modules in deterministic sorted order.
-			names := make([]string, 0, len(tt.moduleVersions))
-			for n := range tt.moduleVersions {
-				names = append(names, n)
-			}
-			sort.Strings(names)
-
-			var modules []*workspace.Module
-			for _, name := range names {
-				ver := tt.moduleVersions[name]
-				if ver == "" {
-					// Create directory but no .version file.
-					dir := filepath.Join(tmpDir, name)
-					if err := os.MkdirAll(dir, 0755); err != nil {
-						t.Fatal(err)
-					}
-					modules = append(modules, &workspace.Module{
-						Name:    name,
-						Path:    filepath.Join(dir, ".version"),
-						RelPath: filepath.Join(name, ".version"),
-					})
-				} else {
-					modules = append(modules, makeModule(t, tmpDir, name, ver))
-				}
-			}
+			modules := buildTestModules(t, tmpDir, tt.moduleVersions)
 
 			var created []string
 			mockOps := tt.mockSetup(&created)
 			tc := NewTagCommand(mockOps)
-
-			cfg := defaultTagEnabledConfig(t)
-			cmd := newTestCmd(t)
 
 			execCtx := &clix.ExecutionContext{
 				Mode:    clix.MultiModuleMode,
 				Modules: modules,
 			}
 
-			err = tc.createTagsForAllModules(context.Background(), cmd, cfg, execCtx)
+			err := tc.createTagsForAllModules(context.Background(), newTestCmd(t), defaultTagEnabledConfig(t), execCtx)
 
-			if tt.wantErr {
-				if err == nil {
-					t.Fatal("expected an error but got nil")
-				}
-				if tt.wantErrContain != "" && !strings.Contains(err.Error(), tt.wantErrContain) {
-					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrContain)
-				}
-			} else if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			// Sort created tags for deterministic comparison.
-			sort.Strings(created)
-			wantSorted := make([]string, len(tt.wantCreated))
-			copy(wantSorted, tt.wantCreated)
-			sort.Strings(wantSorted)
-
-			if len(created) != len(wantSorted) {
-				t.Fatalf("created tags = %v, want %v", created, wantSorted)
-			}
-			for i := range created {
-				if created[i] != wantSorted[i] {
-					t.Errorf("created[%d] = %q, want %q", i, created[i], wantSorted[i])
-				}
-			}
+			assertError(t, err, tt.wantErr, tt.wantErrContain)
+			assertCreatedTags(t, created, tt.wantCreated)
 		})
+	}
+}
+
+// chdirTest changes to dir for the duration of the test.
+func chdirTest(t *testing.T, dir string) {
+	t.Helper()
+	origDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(origDir); err != nil {
+			t.Fatalf("failed to restore working directory: %v", err)
+		}
+	})
+}
+
+// buildTestModules creates workspace modules from a name->version map.
+// An empty version string creates the directory without a .version file.
+func buildTestModules(t *testing.T, tmpDir string, versions map[string]string) []*workspace.Module {
+	t.Helper()
+	names := make([]string, 0, len(versions))
+	for n := range versions {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+
+	var modules []*workspace.Module
+	for _, name := range names {
+		ver := versions[name]
+		if ver == "" {
+			dir := filepath.Join(tmpDir, name)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			modules = append(modules, &workspace.Module{
+				Name:    name,
+				Path:    filepath.Join(dir, ".version"),
+				RelPath: filepath.Join(name, ".version"),
+			})
+		} else {
+			modules = append(modules, makeModule(t, tmpDir, name, ver))
+		}
+	}
+	return modules
+}
+
+// assertError checks that err matches expectations.
+func assertError(t *testing.T, err error, wantErr bool, wantContain string) {
+	t.Helper()
+	if wantErr {
+		if err == nil {
+			t.Fatal("expected an error but got nil")
+		}
+		if wantContain != "" && !strings.Contains(err.Error(), wantContain) {
+			t.Errorf("error = %q, want it to contain %q", err.Error(), wantContain)
+		}
+	} else if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// assertCreatedTags compares created tags against expected (order-independent).
+func assertCreatedTags(t *testing.T, created, want []string) {
+	t.Helper()
+	sort.Strings(created)
+	wantSorted := make([]string, len(want))
+	copy(wantSorted, want)
+	sort.Strings(wantSorted)
+
+	if len(created) != len(wantSorted) {
+		t.Fatalf("created tags = %v, want %v", created, wantSorted)
+	}
+	for i := range created {
+		if created[i] != wantSorted[i] {
+			t.Errorf("created[%d] = %q, want %q", i, created[i], wantSorted[i])
+		}
 	}
 }
 
