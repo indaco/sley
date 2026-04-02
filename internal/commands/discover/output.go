@@ -214,13 +214,13 @@ func (f *Formatter) formatJSON(result *discovery.Result) string {
 	}
 
 	output := struct {
-		Mode            string              `json:"mode"`
-		VersioningMode  string              `json:"versioning_mode"`
-		Modules         []jsonModule        `json:"modules"`
-		Manifests       []jsonManifest      `json:"manifests"`
-		Mismatches      []jsonMismatch      `json:"mismatches"`
-		SyncCandidates  []jsonSyncCandidate `json:"sync_candidates"`
-		Summary         struct {
+		Mode           string              `json:"mode"`
+		VersioningMode string              `json:"versioning_mode"`
+		Modules        []jsonModule        `json:"modules"`
+		Manifests      []jsonManifest      `json:"manifests"`
+		Mismatches     []jsonMismatch      `json:"mismatches"`
+		SyncCandidates []jsonSyncCandidate `json:"sync_candidates"`
+		Summary        struct {
 			ModuleCount         int    `json:"module_count"`
 			ManifestCount       int    `json:"manifest_count"`
 			MismatchCount       int    `json:"mismatch_count"`
@@ -229,8 +229,8 @@ func (f *Formatter) formatJSON(result *discovery.Result) string {
 			IsVersionConsistent bool   `json:"is_version_consistent"`
 		} `json:"summary"`
 	}{
-		Mode:            result.Mode.String(),
-		VersioningMode:  f.versioningMode(),
+		Mode:           result.Mode.String(),
+		VersioningMode: f.versioningMode(),
 		Modules:        make([]jsonModule, len(result.Modules)),
 		Manifests:      make([]jsonManifest, len(result.Manifests)),
 		Mismatches:     make([]jsonMismatch, len(result.Mismatches)),
