@@ -192,11 +192,22 @@ func LoadConfigFromDir(dir string) (*Config, error) {
 	return loadConfigFromPath(filepath.Join(dir, ".sley.yaml"))
 }
 
-// MergePluginConfig merges a module-level config into a root config.
+// MergePluginConfig is a deprecated alias for [MergeConfig].
+var MergePluginConfig = MergeConfig
+
+// MergeConfig merges a module-level config into a root config.
 // Plugin pointer fields from module override root when non-nil.
 // CommitParser always comes from root (workspace-level setting).
+//
+// Non-plugin field semantics:
+//   - Path: always root
+//   - Workspace: always root
+//   - Theme: module wins if non-empty, else root
+//   - Extensions: additive merge (root + module, dedup by Name, module wins)
+//   - PreReleaseHooks: additive merge (root hooks then module hooks appended)
+//
 // Returns a new *Config without mutating the inputs.
-func MergePluginConfig(root, module *Config) *Config {
+func MergeConfig(root, module *Config) *Config {
 	if root == nil && module == nil {
 		return nil
 	}
@@ -207,11 +218,17 @@ func MergePluginConfig(root, module *Config) *Config {
 		return module
 	}
 
+	// Theme: module wins if non-empty.
+	theme := root.Theme
+	if module.Theme != "" {
+		theme = module.Theme
+	}
+
 	merged := &Config{
 		Path:            root.Path,
-		Theme:           root.Theme,
-		Extensions:      root.Extensions,
-		PreReleaseHooks: root.PreReleaseHooks,
+		Theme:           theme,
+		Extensions:      mergeExtensions(root.Extensions, module.Extensions),
+		PreReleaseHooks: mergePreReleaseHooks(root.PreReleaseHooks, module.PreReleaseHooks),
 		Workspace:       root.Workspace,
 	}
 
@@ -270,3 +287,100 @@ func NormalizeVersionPath(path string) string {
 // ConfigFilePerm defines secure file permissions for config files (owner read/write only).
 // References core.PermOwnerRW for consistency across the codebase.
 const ConfigFilePerm = core.PermOwnerRW
+
+// mergeExtensions performs an additive merge of root and module extension slices.
+// Deduplication is by Name: if the same Name appears in both, the module version wins.
+// Order: root extensions first (with duplicates replaced), then module-only extensions appended.
+// Returns a new slice; inputs are not modified.
+func mergeExtensions(root, module []ExtensionConfig) []ExtensionConfig {
+	if len(module) == 0 {
+		return copyExtensions(root)
+	}
+	if len(root) == 0 {
+		return copyExtensions(module)
+	}
+
+	// Build lookup of module extensions by Name.
+	moduleByName := make(map[string]ExtensionConfig, len(module))
+	for _, ext := range module {
+		moduleByName[ext.Name] = ext
+	}
+
+	seen := make(map[string]bool, len(root)+len(module))
+	result := make([]ExtensionConfig, 0, len(root)+len(module))
+
+	// Start with root order; replace duplicates with module version.
+	for _, ext := range root {
+		if mExt, ok := moduleByName[ext.Name]; ok {
+			result = append(result, copyExtension(mExt))
+		} else {
+			result = append(result, copyExtension(ext))
+		}
+		seen[ext.Name] = true
+	}
+
+	// Append module-only extensions.
+	for _, ext := range module {
+		if !seen[ext.Name] {
+			result = append(result, copyExtension(ext))
+		}
+	}
+
+	return result
+}
+
+// mergePreReleaseHooks performs an additive merge: deep-copied root hooks followed
+// by deep-copied module hooks. Returns a new slice; inputs are not modified.
+func mergePreReleaseHooks(root, module []map[string]PreReleaseHookConfig) []map[string]PreReleaseHookConfig {
+	total := len(root) + len(module)
+	if total == 0 {
+		return nil
+	}
+
+	result := make([]map[string]PreReleaseHookConfig, 0, total)
+	for _, m := range root {
+		result = append(result, copyHookMap(m))
+	}
+	for _, m := range module {
+		result = append(result, copyHookMap(m))
+	}
+	return result
+}
+
+// copyExtensions returns a deep copy of the given extension slice.
+// Returns nil for nil or empty input.
+func copyExtensions(exts []ExtensionConfig) []ExtensionConfig {
+	if len(exts) == 0 {
+		return nil
+	}
+	out := make([]ExtensionConfig, len(exts))
+	for i, ext := range exts {
+		out[i] = copyExtension(ext)
+	}
+	return out
+}
+
+// copyExtension returns a deep copy of a single ExtensionConfig,
+// including its Config map.
+func copyExtension(ext ExtensionConfig) ExtensionConfig {
+	cp := ext
+	if ext.Config != nil {
+		cp.Config = make(map[string]any, len(ext.Config))
+		for k, v := range ext.Config {
+			cp.Config[k] = v
+		}
+	}
+	return cp
+}
+
+// copyHookMap returns a deep copy of a single pre-release hook map.
+func copyHookMap(m map[string]PreReleaseHookConfig) map[string]PreReleaseHookConfig {
+	if m == nil {
+		return nil
+	}
+	cp := make(map[string]PreReleaseHookConfig, len(m))
+	for k, v := range m {
+		cp[k] = v
+	}
+	return cp
+}
