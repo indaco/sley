@@ -151,12 +151,32 @@ func resolveModuleConfig(cfg *config.Config, path string) (*config.Config, strin
 }
 
 // runCreateCmd creates a git tag for the current version.
+// When --all is used with multiple modules, it iterates all modules and creates
+// a tag for each one instead of only tagging the first module.
 func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) error {
-	path, err := resolveVersionPath(ctx, cmd, cfg)
+	execCtx, err := clix.GetExecutionContext(ctx, cmd, cfg)
 	if err != nil {
 		return err
 	}
 
+	// Multi-module mode: create tags for all modules.
+	if execCtx.IsMultiModule() && len(execCtx.Modules) > 1 {
+		return tc.createTagsForAllModules(ctx, cmd, cfg, execCtx)
+	}
+
+	// Single-module mode (or multi-module with only one selected module).
+	path := execCtx.Path
+	if execCtx.IsMultiModule() && len(execCtx.Modules) == 1 {
+		mod := execCtx.Modules[0]
+		printer.PrintInfo(fmt.Sprintf("Using version from module %q (%s)", mod.Name, mod.RelPath))
+		path = mod.Path
+	}
+
+	return tc.createTagForPath(ctx, cmd, cfg, path)
+}
+
+// createTagForPath creates a single git tag for the version at the given path.
+func (tc *TagCommand) createTagForPath(ctx context.Context, cmd *cli.Command, cfg *config.Config, path string) error {
 	version, err := semver.ReadVersion(path)
 	if err != nil {
 		return fmt.Errorf("failed to read version from %s: %w", path, err)
@@ -193,6 +213,74 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 			return fmt.Errorf("failed to push tag: %w", err)
 		}
 		printer.PrintSuccess(fmt.Sprintf("Pushed tag %s to remote", tagName))
+	}
+
+	return nil
+}
+
+// createTagsForAllModules iterates all modules in the execution context and
+// creates a tag for each one. It continues on individual module failure and
+// returns a summary error if any modules failed.
+func (tc *TagCommand) createTagsForAllModules(ctx context.Context, cmd *cli.Command, cfg *config.Config, execCtx *clix.ExecutionContext) error {
+	var failedModules []string
+	totalModules := len(execCtx.Modules)
+
+	shouldPush := cmd.Bool("push")
+
+	for _, mod := range execCtx.Modules {
+		printer.PrintInfo(fmt.Sprintf("Processing module %q (%s)", mod.Name, mod.RelPath))
+
+		version, err := semver.ReadVersion(mod.Path)
+		if err != nil {
+			printer.PrintError(fmt.Sprintf("  Failed to read version for module %q: %v", mod.Name, err))
+			failedModules = append(failedModules, mod.Name)
+			continue
+		}
+
+		effectiveCfg, modulePath := resolveModuleConfig(cfg, mod.Path)
+		tmConfig := buildTagManagerConfig(effectiveCfg)
+		prefix := tagmanager.InterpolatePrefix(tmConfig.Prefix, modulePath)
+		tagName := prefix + version.String()
+
+		exists, err := tc.gitOps.TagExists(ctx, tagName)
+		if err != nil {
+			printer.PrintError(fmt.Sprintf("  Failed to check tag existence for module %q: %v", mod.Name, err))
+			failedModules = append(failedModules, mod.Name)
+			continue
+		}
+		if exists {
+			printer.PrintInfo(fmt.Sprintf("  Tag %s already exists, skipping module %q", tagName, mod.Name))
+			continue
+		}
+
+		message := cmd.String("message")
+		if message == "" {
+			data := tagmanager.NewTemplateData(version, prefix, modulePath)
+			message = tagmanager.FormatMessage(tmConfig.MessageTemplate, data)
+		}
+
+		if err := tc.createTag(ctx, tagName, message, tmConfig); err != nil {
+			printer.PrintError(fmt.Sprintf("  Failed to create tag for module %q: %v", mod.Name, err))
+			failedModules = append(failedModules, mod.Name)
+			continue
+		}
+
+		printer.PrintSuccess(fmt.Sprintf("  Created tag %s for module %q", tagName, mod.Name))
+
+		pushThis := shouldPush || tmConfig.Push
+		if pushThis {
+			if err := tc.gitOps.PushTag(ctx, tagName); err != nil {
+				printer.PrintError(fmt.Sprintf("  Failed to push tag %s for module %q: %v", tagName, mod.Name, err))
+				failedModules = append(failedModules, mod.Name)
+				continue
+			}
+			printer.PrintSuccess(fmt.Sprintf("  Pushed tag %s to remote", tagName))
+		}
+	}
+
+	if len(failedModules) > 0 {
+		return fmt.Errorf("%d of %d module(s) failed tag creation: %s",
+			len(failedModules), totalModules, strings.Join(failedModules, ", "))
 	}
 
 	return nil
