@@ -74,7 +74,7 @@ func runWorkspaceInit(path string, yesFlag bool, templateFlag, enableFlag string
 
 	// Step 6: Create .version files for detected monorepo modules
 	if applyMonorepo {
-		createMonorepoVersionFiles(monoInfo)
+		CreateMonorepoVersionFiles(monoInfo)
 	}
 
 	// Step 7: Print success messages
@@ -226,9 +226,9 @@ func createWorkspaceConfigFileWithMonorepo(plugins []string, modules []Discovere
 	return true, nil
 }
 
-// createMonorepoVersionFiles creates .version files in each detected module directory
+// CreateMonorepoVersionFiles creates .version files in each detected module directory
 // if one does not already exist. Each file is initialized with "0.0.0".
-func createMonorepoVersionFiles(monoInfo *MonorepoInfo) {
+func CreateMonorepoVersionFiles(monoInfo *MonorepoInfo) {
 	for _, modDir := range monoInfo.Modules {
 		versionFile := filepath.Join(modDir, ".version")
 		if _, err := os.Stat(versionFile); err == nil {
@@ -272,14 +272,7 @@ func GenerateWorkspaceConfigWithMonorepo(plugins []string, modules []DiscoveredM
 		sb.WriteString("\n")
 	}
 
-	// Plugins section
-	sb.WriteString("plugins:\n")
-	for _, pluginName := range plugins {
-		writePluginConfigWithMonorepo(&sb, pluginName)
-	}
-	sb.WriteString("\n")
-
-	// Workspace section with monorepo defaults
+	// Workspace section first (structure before behavior)
 	sb.WriteString("# Workspace configuration for monorepo support\n")
 	sb.WriteString("workspace:\n")
 	sb.WriteString("  # Versioning mode: \"independent\" (each module versioned separately)\n")
@@ -315,6 +308,15 @@ func GenerateWorkspaceConfigWithMonorepo(plugins []string, modules []DiscoveredM
 			fmt.Fprintf(&sb, "  #   - name: %s\n", name)
 			fmt.Fprintf(&sb, "  #     path: %s/.version\n", modPath)
 		}
+	}
+
+	sb.WriteString("\n")
+
+	// Plugins section
+	sb.WriteString("# Plugin configuration\n")
+	sb.WriteString("plugins:\n")
+	for _, pluginName := range plugins {
+		writePluginConfigWithMonorepo(&sb, pluginName)
 	}
 
 	return []byte(sb.String()), nil
@@ -377,14 +379,7 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 		sb.WriteString("\n")
 	}
 
-	// Plugins section
-	sb.WriteString("plugins:\n")
-	for _, pluginName := range plugins {
-		writePluginConfig(&sb, pluginName)
-	}
-	sb.WriteString("\n")
-
-	// Workspace section
+	// Workspace section first (structure before behavior)
 	sb.WriteString("# Workspace configuration for monorepo support\n")
 	sb.WriteString("workspace:\n")
 	sb.WriteString("  # Discovery settings for automatic module detection\n")
@@ -406,6 +401,15 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 			fmt.Fprintf(&sb, "  #   - name: %s\n", mod.Name)
 			fmt.Fprintf(&sb, "  #     path: %s\n", mod.RelPath)
 		}
+	}
+
+	sb.WriteString("\n")
+
+	// Plugins section
+	sb.WriteString("# Plugin configuration\n")
+	sb.WriteString("plugins:\n")
+	for _, pluginName := range plugins {
+		writePluginConfig(&sb, pluginName)
 	}
 
 	return []byte(sb.String()), nil
