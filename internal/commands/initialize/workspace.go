@@ -73,12 +73,13 @@ func runWorkspaceInit(path string, yesFlag bool, templateFlag, enableFlag string
 	}
 
 	// Step 6: Create .version files for detected monorepo modules
+	var createdVersionFiles []string
 	if applyMonorepo {
-		CreateMonorepoVersionFiles(monoInfo)
+		createdVersionFiles = CreateMonorepoVersionFiles(monoInfo)
 	}
 
 	// Step 7: Print success messages
-	printWorkspaceSuccessSummary(configCreated, selectedPlugins, modules, projectCtx)
+	printWorkspaceSuccessSummary(configCreated, selectedPlugins, modules, createdVersionFiles, projectCtx)
 
 	if applyMonorepo {
 		printMonorepoSummary(monoInfo)
@@ -228,7 +229,10 @@ func createWorkspaceConfigFileWithMonorepo(plugins []string, modules []Discovere
 
 // CreateMonorepoVersionFiles creates .version files in each detected module directory
 // if one does not already exist. Each file is initialized with "0.0.0".
-func CreateMonorepoVersionFiles(monoInfo *MonorepoInfo) {
+// CreateMonorepoVersionFiles creates .version files in module directories
+// and returns the list of created file paths.
+func CreateMonorepoVersionFiles(monoInfo *MonorepoInfo) []string {
+	var created []string
 	for _, modDir := range monoInfo.Modules {
 		versionFile := filepath.Join(modDir, ".version")
 		if _, err := os.Stat(versionFile); err == nil {
@@ -239,18 +243,22 @@ func CreateMonorepoVersionFiles(monoInfo *MonorepoInfo) {
 			printer.PrintWarning(fmt.Sprintf("Failed to create %s: %v", versionFile, err))
 			continue
 		}
-		printer.PrintSuccess(fmt.Sprintf("Created %s with version 0.0.0", versionFile))
+		created = append(created, versionFile)
 	}
+	return created
 }
 
 // printMonorepoSummary prints additional information about the monorepo setup.
 func printMonorepoSummary(monoInfo *MonorepoInfo) {
-	fmt.Println()
-	printer.PrintInfo(fmt.Sprintf("Monorepo detected: %s workspace (%s)", monoInfo.Type, monoInfo.MarkerFile))
-	printer.PrintInfo("Applied monorepo defaults:")
-	fmt.Println("  - Versioning: independent")
-	fmt.Println("  - Tag prefix: {module_path}/v")
-	fmt.Printf("  - Modules: %d\n", len(monoInfo.Modules))
+	ty := printer.Typography()
+	fmt.Println(ty.Compose(
+		printer.Info(fmt.Sprintf("Monorepo detected: %s workspace (%s)", monoInfo.Type, monoInfo.MarkerFile)),
+		ty.Section(ty.H4("Applied monorepo defaults"), ty.KVGroup([][2]string{
+			{"Versioning", "independent"},
+			{"Tag prefix", "{module_path}/v"},
+			{"Modules", fmt.Sprintf("%d", len(monoInfo.Modules))},
+		})),
+	))
 }
 
 // GenerateWorkspaceConfigWithMonorepo generates YAML config with workspace section and monorepo defaults.
@@ -445,34 +453,54 @@ func writePluginConfig(sb *strings.Builder, pluginName string) {
 }
 
 // printWorkspaceSuccessSummary prints the success message for workspace init.
-func printWorkspaceSuccessSummary(configCreated bool, plugins []string, modules []DiscoveredModule, _ *ProjectContext) {
+func printWorkspaceSuccessSummary(configCreated bool, plugins []string, modules []DiscoveredModule, createdFiles []string, _ *ProjectContext) {
+	ty := printer.Typography()
+	var blocks []string
+
+	if len(createdFiles) > 0 {
+		faintFiles := make([]string, len(createdFiles))
+		for i, f := range createdFiles {
+			faintFiles[i] = ty.Small(f)
+		}
+		blocks = append(blocks, ty.Section(ty.H4("Created version files"), ty.UL(faintFiles...)))
+	}
+
 	if configCreated {
-		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s and workspace configuration",
-			len(plugins), tui.Pluralize(len(plugins))))
+		blocks = append(blocks, printer.Success(fmt.Sprintf("Created .sley.yaml with %d plugin%s and workspace configuration",
+			len(plugins), tui.Pluralize(len(plugins)))))
 	}
 
 	if len(modules) > 0 {
-		printer.PrintInfo(fmt.Sprintf("Discovered %d module%s:", len(modules), tui.Pluralize(len(modules))))
-		for _, mod := range modules {
+		modItems := make([]string, len(modules))
+		for i, mod := range modules {
 			version := mod.Version
 			if version == "" {
 				version = "unknown"
 			}
-			fmt.Printf("  - %s (%s) at %s\n", mod.Name, version, mod.RelPath)
+			modItems[i] = fmt.Sprintf("%s (%s) at %s", mod.Name, version, mod.RelPath)
 		}
+		blocks = append(blocks, ty.Section(
+			ty.H4(fmt.Sprintf("Discovered %d module%s", len(modules), tui.Pluralize(len(modules)))),
+			ty.UL(modItems...),
+		))
 	} else {
-		printer.PrintInfo("No existing .version files found in subdirectories")
-		fmt.Println("  Create .version files in your module directories, then run:")
-		fmt.Println("    sley modules list")
+		blocks = append(blocks,
+			printer.Info("No existing .version files found in subdirectories"),
+			ty.P("Create .version files in your module directories, then run:"),
+			ty.Code("sley modules list"),
+		)
 	}
 
-	// Print next steps
-	fmt.Println()
-	printer.PrintInfo("Next steps:")
-	fmt.Println("  - Review .sley.yaml and adjust settings")
+	// Next steps
+	nextSteps := []string{"Review .sley.yaml and adjust settings"}
 	if len(modules) == 0 {
-		fmt.Println("  - Create .version files in your module directories")
+		nextSteps = append(nextSteps, "Create .version files in your module directories")
 	}
-	fmt.Println("  - Run 'sley modules list' to see discovered modules")
-	fmt.Println("  - Run 'sley bump patch --all' to bump all modules")
+	nextSteps = append(nextSteps,
+		"Run 'sley modules list' to see discovered modules",
+		"Run 'sley bump patch --all' to bump all modules",
+	)
+	blocks = append(blocks, ty.Section(ty.H4("Next steps"), ty.UL(nextSteps...)))
+
+	fmt.Println(ty.Compose(blocks...))
 }

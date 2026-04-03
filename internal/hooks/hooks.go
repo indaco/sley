@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/indaco/sley/internal/console"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // PreReleaseHook is the interface for pre-release hooks.
@@ -51,11 +51,11 @@ func (p *defaultPrinter) Printf(format string, args ...any) {
 }
 
 func (p *defaultPrinter) PrintSuccess(msg string) {
-	console.PrintSuccess(msg)
+	printer.PrintSuccess(msg)
 }
 
 func (p *defaultPrinter) PrintFailure(msg string) {
-	console.PrintFailure(msg)
+	printer.PrintError(msg)
 }
 
 // NewPreReleaseHookRunner creates a PreReleaseHookRunner with the given dependencies.

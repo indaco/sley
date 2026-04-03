@@ -49,11 +49,13 @@ func SyncDependencies(registry *plugins.PluginRegistry, version semver.SemVersio
 
 	// Only print section if there are additional files to show
 	if len(additionalFiles) > 0 {
-		fmt.Println("Sync dependencies")
-		for _, file := range additionalFiles {
+		ty := printer.Typography()
+		items := make([]string, len(additionalFiles))
+		for i, file := range additionalFiles {
 			name := DeriveDependencyName(file.Path)
-			fmt.Printf("  %s %s %s%s\n", printer.SuccessBadge("✓"), name, printer.Faint("("+file.Path+")"), printer.Faint(": "+version.String()))
+			items[i] = fmt.Sprintf("%s %s %s%s", printer.SuccessBadge("✓"), name, printer.Faint("("+file.Path+")"), printer.Faint(": "+version.String()))
 		}
+		fmt.Println(ty.Section(ty.H4("Sync dependencies"), ty.UL(items...)))
 	}
 
 	return nil

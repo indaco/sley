@@ -19,10 +19,11 @@ import (
 
 // Workflow handles the interactive discovery workflow.
 type Workflow struct {
-	prompter Prompter
-	result   *discovery.Result
-	rootDir  string
-	cfg      *config.Config
+	prompter           Prompter
+	result             *discovery.Result
+	rootDir            string
+	cfg                *config.Config
+	rootVersionCreated bool
 }
 
 // NewWorkflow creates a new workflow handler.
@@ -64,7 +65,7 @@ func (w *Workflow) Run(ctx context.Context) (bool, error) {
 // runInitWorkflow handles the case when no .sley.yaml exists.
 func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 	fmt.Println()
-	printer.PrintInfo("No .sley.yaml configuration found.")
+	printer.PrintFaint("No .sley.yaml configuration found.")
 
 	// Check if we have useful suggestions
 	if len(w.result.SyncCandidates) == 0 && len(w.result.Modules) == 0 {
@@ -110,14 +111,18 @@ func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 // It shows the detected workspace info and offers to run the full workspace
 // initialization flow.
 func (w *Workflow) runMonorepoInitWorkflow(_ context.Context, monoInfo *initialize.MonorepoInfo) (bool, error) {
-	fmt.Println()
-	printer.PrintInfo(fmt.Sprintf("Monorepo detected: %s workspace (%s) with %d module(s):",
-		monoInfo.Type, monoInfo.MarkerFile, len(monoInfo.Modules)))
-	for _, m := range monoInfo.Modules {
-		fmt.Printf("  - %s/\n", m)
+	ty := printer.Typography()
+	moduleNames := make([]string, len(monoInfo.Modules))
+	for i, m := range monoInfo.Modules {
+		moduleNames[i] = m + "/"
 	}
-	fmt.Println()
+	fmt.Println(ty.Compose(
+		printer.Info(fmt.Sprintf("Monorepo detected: %s workspace (%s) with %d module(s)",
+			monoInfo.Type, monoInfo.MarkerFile, len(monoInfo.Modules))),
+		ty.UL(moduleNames...),
+	))
 
+	fmt.Println()
 	confirmed, err := w.prompter.Confirm(
 		"Would you like to initialize as a workspace project?",
 		"This will create .sley.yaml with workspace discovery, set tag prefix to {module_path}/v,\ncreate .version files in each module, and set versioning to independent.",
@@ -139,6 +144,19 @@ func (w *Workflow) runMonorepoInitWorkflow(_ context.Context, monoInfo *initiali
 	}
 	if len(plugins) == 0 {
 		plugins = initialize.DefaultPluginNames()
+	}
+
+	// Confirm before writing
+	proceed, err := w.prompter.Confirm(
+		"Proceed with initialization?",
+		fmt.Sprintf("This will create .sley.yaml and .version files in %d module directories.", len(monoInfo.Modules)),
+	)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		printer.PrintFaint("Initialization canceled.")
+		return false, nil
 	}
 
 	// Ensure root .version exists
@@ -163,26 +181,37 @@ func (w *Workflow) runMonorepoInitWorkflow(_ context.Context, monoInfo *initiali
 	}
 
 	// Create .version files in module directories
-	initialize.CreateMonorepoVersionFiles(monoInfo)
+	createdFiles := initialize.CreateMonorepoVersionFiles(monoInfo)
+
+	// Include root .version if it was just created
+	if w.rootVersionCreated {
+		createdFiles = append([]string{".version"}, createdFiles...)
+	}
 
 	// Print summary
-	fmt.Println()
-	printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with workspace configuration and %d plugin(s)", len(plugins)))
-	fmt.Println()
-	printer.PrintInfo("Enabled plugins:")
-	for _, p := range plugins {
-		fmt.Printf("  - %s\n", p)
+	blocks := []string{}
+	if len(createdFiles) > 0 {
+		faintFiles := make([]string, len(createdFiles))
+		for i, f := range createdFiles {
+			faintFiles[i] = ty.Small(f)
+		}
+		blocks = append(blocks, ty.Section(ty.H4("Created version files"), ty.UL(faintFiles...)))
 	}
-	fmt.Println()
-	printer.PrintInfo("Applied monorepo defaults:")
-	fmt.Println("  - Versioning: independent")
-	fmt.Println("  - Tag prefix: {module_path}/v")
-	fmt.Printf("  - Modules: %d\n", len(monoInfo.Modules))
-	fmt.Println()
-	printer.PrintInfo("Next steps:")
-	fmt.Println("  - Review .sley.yaml and adjust settings")
-	fmt.Println("  - Run 'sley bump patch --all' to bump all modules")
-	fmt.Println("  - Run 'sley doctor' to verify setup")
+	blocks = append(blocks,
+		printer.Success(fmt.Sprintf("Created .sley.yaml with workspace configuration and %d plugin(s)", len(plugins))),
+		ty.Section(ty.H4("Enabled plugins"), ty.UL(plugins...)),
+		ty.Section(ty.H4("Applied monorepo defaults"), ty.KVGroup([][2]string{
+			{"Versioning", "independent"},
+			{"Tag prefix", "{module_path}/v"},
+			{"Modules", fmt.Sprintf("%d", len(monoInfo.Modules))},
+		})),
+		ty.Section(ty.H4("Next steps"), ty.UL(
+			"Review .sley.yaml and adjust settings",
+			"Run 'sley bump patch --all' to bump all modules",
+			"Run 'sley doctor' to verify setup",
+		)),
+	)
+	fmt.Println(ty.Compose(blocks...))
 
 	return true, nil
 }
@@ -201,16 +230,15 @@ const (
 
 // runMultiModuleSetup handles configuration for multi-module/monorepo projects.
 func (w *Workflow) runMultiModuleSetup(ctx context.Context) (bool, error) {
-	fmt.Println()
-	printer.PrintInfo(fmt.Sprintf("Found %d modules - this appears to be a monorepo.", len(w.result.Modules)))
-	fmt.Println()
-
-	// Show discovered modules
-	printer.PrintFaint("Discovered modules:")
-	for _, m := range w.result.Modules {
-		fmt.Printf("  - %s (%s)\n", m.Name, m.RelPath)
+	ty := printer.Typography()
+	modItems := make([]string, len(w.result.Modules))
+	for i, m := range w.result.Modules {
+		modItems[i] = fmt.Sprintf("%s (%s)", m.Name, m.RelPath)
 	}
-	fmt.Println()
+	fmt.Println(ty.Compose(
+		printer.Info(fmt.Sprintf("Found %d modules - this appears to be a monorepo.", len(w.result.Modules))),
+		ty.Section(ty.H4("Discovered modules"), ty.UL(modItems...)),
+	))
 
 	// Ask how to configure the project
 	choice, err := w.prompter.Select(
@@ -303,42 +331,39 @@ func (w *Workflow) createConfigWithWorkspace(ctx context.Context) (bool, error) 
 
 // printWorkspaceInitSuccess prints success messages after workspace initialization.
 func (w *Workflow) printWorkspaceInitSuccess(plugins []string) {
-	fmt.Println()
-	printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with workspace configuration and %d plugin(s)", len(plugins)))
+	ty := printer.Typography()
 
-	// Show enabled plugins
-	fmt.Println()
-	printer.PrintInfo("Enabled plugins:")
-	for _, p := range plugins {
-		fmt.Printf("  - %s\n", p)
+	moduleItems := make([]string, len(w.result.Modules))
+	for i, m := range w.result.Modules {
+		moduleItems[i] = fmt.Sprintf("%s (%s)", m.Name, m.RelPath)
 	}
 
-	// Show workspace info
-	fmt.Println()
-	printer.PrintInfo("Workspace configuration:")
-	fmt.Println("  - Auto-discovery enabled")
-	fmt.Println("  - Each module manages its own .version file")
+	var blocks []string
 
-	// Show discovered modules
-	fmt.Println()
-	printer.PrintInfo(fmt.Sprintf("Discovered %d module(s):", len(w.result.Modules)))
-	for _, m := range w.result.Modules {
-		fmt.Printf("  - %s (%s)\n", m.Name, m.RelPath)
+	if w.rootVersionCreated {
+		blocks = append(blocks, ty.Section(ty.H4("Created version files"), ty.UL(ty.Small(".version"))))
 	}
 
-	// Note about per-module dependency-check
+	blocks = append(blocks,
+		printer.Success(fmt.Sprintf("Created .sley.yaml with workspace configuration and %d plugin(s)", len(plugins))),
+		ty.Section(ty.H4("Enabled plugins"), ty.UL(plugins...)),
+		ty.Section(ty.H4("Workspace configuration"), ty.UL("Auto-discovery enabled", "Each module manages its own .version file")),
+		ty.Section(ty.H4(fmt.Sprintf("Discovered %d module(s)", len(w.result.Modules))), ty.UL(moduleItems...)),
+	)
+
 	if len(w.result.SyncCandidates) > 0 {
-		fmt.Println()
-		printer.PrintFaint("Tip: Each module can have its own .sley.yaml with dependency-check")
-		printer.PrintFaint("     configured for manifests in that module's directory.")
+		blocks = append(blocks, ty.Small(
+			"Tip: Each module can have its own .sley.yaml with dependency-check\n"+
+				"     configured for manifests in that module's directory."))
 	}
 
-	// Next steps
-	fmt.Println()
-	printer.PrintInfo("Next steps:")
-	fmt.Println("  - Review .sley.yaml and adjust settings")
-	fmt.Println("  - Run 'sley bump patch' to see available modules")
-	fmt.Println("  - Run 'sley doctor' to verify setup")
+	blocks = append(blocks, ty.Section(ty.H4("Next steps"), ty.UL(
+		"Review .sley.yaml and adjust settings",
+		"Run 'sley bump patch' to see available modules",
+		"Run 'sley doctor' to verify setup",
+	)))
+
+	fmt.Println(ty.Compose(blocks...))
 }
 
 // generateConfigYAMLWithWorkspace generates the YAML configuration content with workspace settings.
@@ -443,14 +468,18 @@ func (w *Workflow) runExistingConfigWorkflow(ctx context.Context) (bool, error) 
 
 // runMismatchWorkflow offers to help resolve version mismatches.
 func (w *Workflow) runMismatchWorkflow(_ context.Context) (bool, error) {
-	fmt.Println()
+	ty := printer.Typography()
 	if w.cfg != nil && w.cfg.Workspace != nil && w.cfg.Workspace.IsIndependentVersioning() {
-		printer.PrintInfo(fmt.Sprintf("Version summary: %d module(s) at different versions (independent versioning).", len(w.result.Mismatches)))
-		printer.PrintFaint("Each module manages its own version independently.")
+		fmt.Println(ty.Compose(
+			printer.Info(fmt.Sprintf("Version summary: %d module(s) at different versions (independent versioning).", len(w.result.Mismatches))),
+			ty.Small("Each module manages its own version independently."),
+		))
 	} else {
-		printer.PrintWarning(fmt.Sprintf("Found %d version mismatch(es).", len(w.result.Mismatches)))
-		printer.PrintFaint("Consider enabling the dependency-check plugin with auto-sync to keep versions in sync.")
-		printer.PrintFaint("Run 'sley bump auto --sync' to sync versions during bumps.")
+		fmt.Println(ty.Compose(
+			printer.Warning(fmt.Sprintf("Found %d version mismatch(es).", len(w.result.Mismatches))),
+			ty.Small("Consider enabling the dependency-check plugin with auto-sync to keep versions in sync."),
+			ty.Code("sley bump auto --sync"),
+		))
 	}
 	return false, nil
 }
@@ -464,15 +493,12 @@ func (w *Workflow) suggestAdditionalSyncFiles(_ context.Context) (bool, error) {
 // runDependencyCheckSetup guides the user through dependency-check configuration
 // and creates the config file with dependency-check plugin enabled.
 func (w *Workflow) runDependencyCheckSetup(ctx context.Context) (bool, error) {
-	fmt.Println()
-	printer.PrintInfo("Discovered files that can sync with .version:")
-	fmt.Println()
-
-	// Show discovered files that can be synced
-	for _, c := range w.result.SyncCandidates {
-		fmt.Printf("  - %s (%s)\n", c.Path, c.Description)
+	ty := printer.Typography()
+	syncItems := make([]string, len(w.result.SyncCandidates))
+	for i, c := range w.result.SyncCandidates {
+		syncItems[i] = fmt.Sprintf("%s (%s)", c.Path, c.Description)
 	}
-	fmt.Println()
+	fmt.Println(ty.Section(ty.H4("Discovered files that can sync with .version"), ty.UL(syncItems...)))
 
 	// Ask which files to include
 	selected, err := w.selectSyncFiles()
@@ -604,12 +630,7 @@ func (w *Workflow) ensureVersionFile(_ context.Context) error {
 	}
 
 	if created {
-		version, err := semver.ReadVersion(versionPath)
-		if err == nil {
-			printer.PrintSuccess(fmt.Sprintf("Created %s with version %s", versionPath, version.String()))
-		} else {
-			printer.PrintSuccess(fmt.Sprintf("Created %s", versionPath))
-		}
+		w.rootVersionCreated = true
 	}
 
 	return nil
@@ -622,31 +643,34 @@ func defaultVersionPath() string {
 
 // printInitSuccess prints success messages after initialization.
 func (w *Workflow) printInitSuccess(plugins []string, syncCandidates []discovery.SyncCandidate) {
-	fmt.Println()
-	printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin(s) enabled", len(plugins)))
+	ty := printer.Typography()
 
-	// Show enabled plugins
-	fmt.Println()
-	printer.PrintInfo("Enabled plugins:")
-	for _, p := range plugins {
-		fmt.Printf("  - %s\n", p)
+	var blocks []string
+
+	if w.rootVersionCreated {
+		blocks = append(blocks, ty.Section(ty.H4("Created version files"), ty.UL(ty.Small(".version"))))
 	}
 
-	// Show sync files if dependency-check is configured
+	blocks = append(blocks,
+		printer.Success(fmt.Sprintf("Created .sley.yaml with %d plugin(s) enabled", len(plugins))),
+		ty.Section(ty.H4("Enabled plugins"), ty.UL(plugins...)),
+	)
+
 	if len(syncCandidates) > 0 {
-		fmt.Println()
-		printer.PrintInfo("Configured sync files:")
-		for _, c := range syncCandidates {
-			fmt.Printf("  - %s\n", c.Path)
+		syncPaths := make([]string, len(syncCandidates))
+		for i, c := range syncCandidates {
+			syncPaths[i] = c.Path
 		}
+		blocks = append(blocks, ty.Section(ty.H4("Configured sync files"), ty.UL(syncPaths...)))
 	}
 
-	// Next steps
-	fmt.Println()
-	printer.PrintInfo("Next steps:")
-	fmt.Println("  - Review .sley.yaml and adjust settings")
-	fmt.Println("  - Run 'sley bump patch' to increment version")
-	fmt.Println("  - Run 'sley doctor' to verify setup")
+	blocks = append(blocks, ty.Section(ty.H4("Next steps"), ty.UL(
+		"Review .sley.yaml and adjust settings",
+		"Run 'sley bump patch' to increment version",
+		"Run 'sley doctor' to verify setup",
+	)))
+
+	fmt.Println(ty.Compose(blocks...))
 }
 
 // generateConfigYAML generates the YAML configuration content.

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/indaco/sley/internal/cliflags"
 	"github.com/indaco/sley/internal/clix"
@@ -116,27 +115,21 @@ func printConfigValidationResults(results []config.ValidationResult, format stri
 	}
 
 	// Text/table format
-	fmt.Println() // Empty line before header
-	printer.PrintInfo("Configuration Validation:")
-	printer.PrintFaint(strings.Repeat("-", 70))
+	fmt.Println(printer.Typography().H2("Configuration Validation"))
 
 	for _, result := range results {
 		var formatted string
 		switch {
 		case !result.Passed:
-			// FAIL - bold red symbol and badge, normal category, faint message
-			formatted = printer.FormatValidationFail("✗", "[FAIL]", result.Category, result.Message)
+			formatted = printer.FormatValidationFail(result.Category, result.Message)
 		case result.Warning:
-			// WARN - bold yellow symbol and badge, normal category, faint message
-			formatted = printer.FormatValidationWarn("⚠", "[WARN]", result.Category, result.Message)
+			formatted = printer.FormatValidationWarn(result.Category, result.Message)
 		default:
-			// PASS - bold green symbol and badge, normal category, faint message
-			formatted = printer.FormatValidationPass("✓", "[PASS]", result.Category, result.Message)
+			formatted = printer.FormatValidationPass(result.Category, result.Message)
 		}
 		fmt.Println(formatted)
 	}
 
-	printer.PrintFaint(strings.Repeat("-", 70))
 	printConfigValidationSummary(results)
 	fmt.Println()
 }
@@ -191,11 +184,11 @@ func printConfigValidationSummary(results []config.ValidationResult) {
 
 	switch {
 	case errors > 0:
-		printer.PrintError(fmt.Sprintf("Summary: %d passed, %d errors, %d warnings", passed, errors, warnings))
+		printer.PrintFaint(fmt.Sprintf("Summary: %d passed, %d errors, %d warnings", passed, errors, warnings))
 	case warnings > 0:
-		printer.PrintWarning(fmt.Sprintf("Summary: %d passed, %d warnings", passed, warnings))
+		printer.PrintFaint(fmt.Sprintf("Summary: %d passed, %d warnings", passed, warnings))
 	default:
-		printer.PrintSuccess(fmt.Sprintf("Summary: All %d validation(s) passed", total))
+		printer.PrintFaint(fmt.Sprintf("Summary: All %d validation(s) passed", total))
 	}
 }
 
@@ -210,7 +203,8 @@ func runSingleModuleValidate(cmd *cli.Command, path string) error {
 		return fmt.Errorf("invalid version file at %s: %w", path, err)
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Valid version file at %s", path))
+	fmt.Println()
+	printer.PrintFaint(fmt.Sprintf("Valid version file at %s", printer.Info(path)))
 	return nil
 }
 
@@ -278,32 +272,33 @@ func printPluginStatus(cfg *config.Config, format string) {
 	}
 
 	// Text/table format
-	fmt.Println()
-	printer.PrintInfo("Plugin Status:")
-	printer.PrintFaint(strings.Repeat("-", 70))
+	ty := printer.Typography()
 
-	enabledCount := 0
+	var enabled, disabled []string
 	for _, p := range builtinPlugins {
-		enabled := isPluginEnabled(cfg, p.Type)
-		if enabled {
-			enabledCount++
-		}
-
-		// Format: status symbol, badge, name, version, description
-		name := fmt.Sprintf("%-20s", p.Name)
-		version := fmt.Sprintf("%-7s", p.Version)
-		desc := truncateString(p.Description, 30)
-
-		if enabled {
-			fmt.Println(printer.FormatValidationPass("✓", "[ON] ", name, version+"  "+desc))
+		if isPluginEnabled(cfg, p.Type) {
+			enabled = append(enabled, p.Name)
 		} else {
-			fmt.Println(printer.FormatValidationFaint("-", "[OFF]", name, version+"  "+desc))
+			disabled = append(disabled, p.Name)
 		}
 	}
 
-	printer.PrintFaint(strings.Repeat("-", 70))
-	printer.PrintInfo(fmt.Sprintf("Summary: %d/%d plugins enabled", enabledCount, len(builtinPlugins)))
-	fmt.Println()
+	blocks := []string{
+		ty.H2("Plugin Status"),
+		printer.Faint(fmt.Sprintf("%d/%d plugins enabled", len(enabled), len(builtinPlugins))),
+	}
+	if len(enabled) > 0 {
+		blocks = append(blocks, ty.Section(ty.H4("Enabled"), ty.UL(enabled...)))
+	}
+	if len(disabled) > 0 {
+		items := make([]string, len(disabled))
+		for i, name := range disabled {
+			items[i] = ty.Small(name)
+		}
+		blocks = append(blocks, ty.Section(ty.H4("Disabled"), ty.UL(items...)))
+	}
+
+	fmt.Println(ty.Compose(blocks...))
 }
 
 // printPluginStatusJSON prints plugin status in JSON format.

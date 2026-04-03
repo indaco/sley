@@ -2,11 +2,13 @@ package initialize
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
 
 	"github.com/goccy/go-yaml"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // VersionSource represents a detected version from an existing file.
@@ -201,16 +203,9 @@ func FormatVersionSources(sources []VersionSource) string {
 		return ""
 	}
 
-	var sb strings.Builder
-	for _, s := range sources {
-		sb.WriteString("  - ")
-		sb.WriteString(s.Version)
-		sb.WriteString(" from ")
-		sb.WriteString(s.File)
-		sb.WriteString(" (")
-		sb.WriteString(s.Format)
-		sb.WriteString(")\n")
+	items := make([]string, len(sources))
+	for i, s := range sources {
+		items[i] = fmt.Sprintf("%s from %s (%s)", s.Version, s.File, s.Format)
 	}
-
-	return sb.String()
+	return printer.Typography().UL(items...) + "\n"
 }

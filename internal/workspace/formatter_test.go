@@ -69,7 +69,7 @@ func TestTextFormatter_FormatResults_Success(t *testing.T) {
 	if !strings.Contains(output, "1.0.0 -> 1.1.0") {
 		t.Error("Output should contain version change")
 	}
-	if !strings.Contains(output, "Success: 2 modules updated") {
+	if !strings.Contains(output, "2 modules updated") {
 		t.Error("Output should contain success summary")
 	}
 }
@@ -101,11 +101,11 @@ func TestTextFormatter_FormatResults_MixedResults(t *testing.T) {
 
 	output := formatter.FormatResults(results)
 
-	if !strings.Contains(output, "✓ module-success") {
-		t.Error("Output should contain success indicator")
+	if !strings.Contains(output, "module-success") {
+		t.Error("Output should contain successful module name")
 	}
-	if !strings.Contains(output, "✗ module-fail") {
-		t.Error("Output should contain error indicator")
+	if !strings.Contains(output, "module-fail") {
+		t.Error("Output should contain failed module name")
 	}
 	if !strings.Contains(output, "test error") {
 		t.Error("Output should contain error message")
@@ -131,7 +131,7 @@ func TestTextFormatter_FormatResults_NoVersionChange(t *testing.T) {
 
 	output := formatter.FormatResults(results)
 
-	if !strings.Contains(output, "module-a: 1.0.0") {
+	if !strings.Contains(output, "module-a") || !strings.Contains(output, "1.0.0") {
 		t.Error("Output should show version without arrow when no change")
 	}
 }
@@ -536,7 +536,7 @@ func TestTableFormatter_FormatResults_Success(t *testing.T) {
 	if !strings.Contains(output, "+") && !strings.Contains(output, "|") {
 		t.Error("Output should contain table borders")
 	}
-	if !strings.Contains(output, "Success: 2 modules updated") {
+	if !strings.Contains(output, "2 modules updated") {
 		t.Error("Output should contain success summary")
 	}
 }

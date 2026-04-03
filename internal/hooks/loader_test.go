@@ -101,7 +101,7 @@ func TestLoadPreReleaseHooksFromConfig_SkipMissingCommand(t *testing.T) {
 		t.Fatalf("failed to capture stdout: %v", err)
 	}
 
-	if !strings.Contains(output, "⚠️  Skipping pre-release hook \"no-command\": no command defined") {
+	if !strings.Contains(output, "Skipping pre-release hook") || !strings.Contains(output, "no-command") {
 		t.Errorf("expected warning output about missing command, got: %q", output)
 	}
 

@@ -66,39 +66,33 @@ func formatModulePath(mod *Module) string {
 	return ""
 }
 
-// writeTextResultLine writes a single result line to the builder.
-func writeTextResultLine(sb *strings.Builder, result ExecutionResult) {
+// formatTextResultItem formats a single result as a list item string.
+func formatTextResultItem(result ExecutionResult) string {
+	var sb strings.Builder
 	path := formatModulePath(result.Module)
 	if result.Success {
-		fmt.Fprintf(sb, "  %s %s", printer.SuccessBadge("✓"), result.Module.Name)
-		// Add path in faint style for disambiguation
+		sb.WriteString(result.Module.Name)
 		if path != "" {
-			fmt.Fprintf(sb, " %s", printer.Faint("("+path+")"))
+			fmt.Fprintf(&sb, " %s", printer.Faint("("+path+")"))
 		}
 		sb.WriteString(printer.Faint(formatTextVersionInfo(result)))
 	} else {
-		fmt.Fprintf(sb, "  %s %s", printer.ErrorBadge("✗"), result.Module.Name)
-		// Add path in faint style for disambiguation
+		sb.WriteString(result.Module.Name)
 		if path != "" {
-			fmt.Fprintf(sb, " %s", printer.Faint("("+path+")"))
+			fmt.Fprintf(&sb, " %s", printer.Faint("("+path+")"))
 		}
-		fmt.Fprintf(sb, ": %s", printer.Faint(result.Error.Error()))
+		fmt.Fprintf(&sb, ": %s", printer.Error(result.Error.Error()))
 	}
-	sb.WriteString("\n")
+	return sb.String()
 }
 
-// writeTextSummary writes the summary line to the builder.
-func (f *TextFormatter) writeTextSummary(sb *strings.Builder, results []ExecutionResult, successCount int) {
-	sb.WriteString("\n")
+// formatTextSummary returns a faint summary line.
+func (f *TextFormatter) formatTextSummary(results []ExecutionResult, successCount int) string {
 	if successCount == len(results) {
-		msg := fmt.Sprintf("Success: %d module%s %s in %s",
-			len(results), pluralize(len(results)), f.actionVerb, formatDuration(TotalDuration(results)))
-		sb.WriteString(printer.Success(msg))
-	} else {
-		msg := fmt.Sprintf("Completed: %d succeeded, %d failed", successCount, len(results)-successCount)
-		sb.WriteString(printer.Warning(msg))
+		return printer.Faint(fmt.Sprintf("%d module%s %s in %s",
+			len(results), pluralize(len(results)), f.actionVerb, formatDuration(TotalDuration(results))))
 	}
-	sb.WriteString("\n")
+	return printer.Faint(fmt.Sprintf("Completed: %d succeeded, %d failed", successCount, len(results)-successCount))
 }
 
 // FormatResults formats execution results as text.
@@ -107,21 +101,24 @@ func (f *TextFormatter) FormatResults(results []ExecutionResult) string {
 		return "No results to display."
 	}
 
-	var sb strings.Builder
+	ty := printer.Typography()
+	var blocks []string
+
 	if f.operation != "" {
-		fmt.Fprintf(&sb, "%s\n", f.operation)
+		blocks = append(blocks, ty.H2(f.operation))
 	}
 
+	items := make([]string, len(results))
 	successCount := 0
-	for _, result := range results {
-		writeTextResultLine(&sb, result)
+	for i, result := range results {
+		items[i] = formatTextResultItem(result)
 		if result.Success {
 			successCount++
 		}
 	}
+	blocks = append(blocks, ty.UL(items...), f.formatTextSummary(results, successCount))
 
-	f.writeTextSummary(&sb, results, successCount)
-	return sb.String()
+	return ty.Compose(blocks...)
 }
 
 // FormatModuleList formats a list of modules as text.

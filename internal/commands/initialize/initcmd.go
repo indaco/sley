@@ -157,12 +157,12 @@ func initializeVersionFileWithMigration(path string, migratedVersion string) (bo
 func handleMigration(yesFlag bool) string {
 	sources := DetectExistingVersions()
 	if len(sources) == 0 {
-		printer.PrintInfo("No existing version files detected for migration")
+		printer.PrintFaint("No existing version files detected for migration")
 		return ""
 	}
 
 	// Show detected versions
-	printer.PrintInfo(fmt.Sprintf("Detected %d version source%s:", len(sources), tui.Pluralize(len(sources))))
+	printer.PrintFaint(fmt.Sprintf("Detected %d version source%s:", len(sources), tui.Pluralize(len(sources))))
 	fmt.Print(FormatVersionSources(sources))
 
 	// Get best version
@@ -173,7 +173,7 @@ func handleMigration(yesFlag bool) string {
 
 	// In non-interactive mode or with --yes, use the best version automatically
 	if yesFlag || !isTerminalInteractive() {
-		printer.PrintSuccess(fmt.Sprintf("Using version %s from %s", best.Version, best.File))
+		printer.PrintFaint(fmt.Sprintf("Using version %s from %s", printer.Info(best.Version), printer.Info(best.File)))
 		return best.Version
 	}
 
@@ -323,10 +323,10 @@ func discoverSyncCandidates() []discovery.SyncCandidate {
 func printVersionOnlySuccess(path string) {
 	version, err := semver.ReadVersion(path)
 	if err != nil {
-		printer.PrintSuccess(fmt.Sprintf("Initialized %s", path))
+		printer.PrintFaint(fmt.Sprintf("Initialized %s", printer.Info(path)))
 		return
 	}
-	printer.PrintSuccess(fmt.Sprintf("Initialized %s with version %s", path, version.String()))
+	printer.PrintFaint(fmt.Sprintf("Initialized %s with version %s", printer.Info(path), printer.Info(version.String())))
 }
 
 // printSuccessSummary prints the final success message with next steps.
@@ -335,30 +335,31 @@ func printSuccessSummary(path string, versionCreated, configCreated bool, plugin
 
 	if versionCreated {
 		if err == nil {
-			printer.PrintSuccess(fmt.Sprintf("Created %s with version %s", path, version.String()))
+			printer.PrintFaint(fmt.Sprintf("Created %s with version %s", printer.Info(path), printer.Info(version.String())))
 		} else {
-			printer.PrintSuccess(fmt.Sprintf("Created %s", path))
+			printer.PrintFaint(fmt.Sprintf("Created %s", printer.Info(path)))
 		}
 	}
 
 	if configCreated {
 		pluginCount := len(plugins)
-		printer.PrintSuccess(fmt.Sprintf("Created .sley.yaml with %d plugin%s enabled", pluginCount, tui.Pluralize(pluginCount)))
+		printer.PrintFaint(fmt.Sprintf("Created %s with %d plugin%s enabled", printer.Info(".sley.yaml"), pluginCount, tui.Pluralize(pluginCount)))
 	}
 
 	// Print next steps
 	if configCreated || versionCreated {
-		fmt.Println()
-		printer.PrintInfo("Next steps:")
+		ty := printer.Typography()
+		var steps []string
 		if configCreated {
-			fmt.Println("  - Review .sley.yaml and adjust settings")
+			steps = append(steps, "Review .sley.yaml and adjust settings")
 		}
 		if ctx.IsGitRepo {
-			fmt.Println("  - Run 'sley bump patch' to increment version")
+			steps = append(steps, "Run 'sley bump patch' to increment version")
 		}
 		if len(plugins) > 0 {
-			fmt.Println("  - Run 'sley doctor' to verify setup (if available)")
+			steps = append(steps, "Run 'sley doctor' to verify setup (if available)")
 		}
+		fmt.Println(ty.Section(ty.H4("Next steps"), ty.UL(steps...)))
 	}
 }
 
