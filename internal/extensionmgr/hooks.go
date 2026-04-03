@@ -8,7 +8,6 @@ import (
 	"slices"
 
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/console"
 	"github.com/indaco/sley/internal/extensions"
 	"github.com/indaco/sley/internal/printer"
 )
@@ -80,18 +79,19 @@ func (r *ExtensionHookRunner) RunHooks(ctx context.Context, hookType HookType, i
 		extInput.Config = extCfg.Config
 
 		// Execute the hook
-		fmt.Printf("Running extension %s (%s)... ", printer.Info(extCfg.Name), printer.Faint(string(hookType)))
+		ty := printer.Typography()
+		fmt.Printf("Running extension %s (%s)... ", printer.Info(extCfg.Name), ty.Small(string(hookType)))
 
 		output, err := r.Executor.Execute(ctx, scriptPath, &extInput)
 		if err != nil {
-			console.PrintFailure("FAIL")
+			fmt.Println(ty.ErrorBadge("FAIL"))
 			return fmt.Errorf("extension %q hook %q failed: %w", extCfg.Name, hookType, err)
 		}
 
-		console.PrintSuccess("OK")
+		fmt.Println(ty.SuccessBadge("OK"))
 
 		if output.Message != "" {
-			fmt.Printf("  %s\n", printer.Faint(output.Message))
+			fmt.Printf("  %s\n", ty.Small(output.Message))
 		}
 
 		hooksExecuted++

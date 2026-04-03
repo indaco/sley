@@ -62,25 +62,23 @@ Examples:
 // runMergeCmd executes the merge operation.
 func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
 	// Check if changelog-generator plugin is enabled
+	ty := printer.Typography()
 	if !isChangelogGeneratorEnabled(cfg) {
-		printer.PrintWarning("Warning: The changelog-generator plugin is not enabled.")
-		printer.PrintInfo("To enable it, add the following to your .sley.yaml:")
-		fmt.Println("")
-		fmt.Println("  plugins:")
-		fmt.Println("    changelog-generator:")
-		fmt.Println("      enabled: true")
-		fmt.Println("      mode: \"versioned\"")
-		fmt.Println("")
-		printer.PrintInfo("Proceeding with merge using default settings...")
-		fmt.Println("")
+		fmt.Println(ty.Compose(
+			printer.Warning("Warning: The changelog-generator plugin is not enabled."),
+			printer.Info("To enable it, add the following to your .sley.yaml:"),
+			ty.CodeBlock("plugins:\n  changelog-generator:\n    enabled: true\n    mode: \"versioned\"", "yaml"),
+			printer.Info("Proceeding with merge using default settings..."),
+		))
 	} else {
 		// Warn if merge-after is set to something other than manual
 		mergeAfter := cfg.Plugins.ChangelogGenerator.GetMergeAfter()
 		if mergeAfter != "manual" {
-			printer.PrintWarning(fmt.Sprintf("Warning: 'merge-after' is set to '%s' in your configuration.", mergeAfter))
-			printer.PrintInfo("Versioned changelog files are already being merged automatically.")
-			printer.PrintInfo("This manual merge command may result in duplicate entries or unexpected behavior.")
-			fmt.Println("")
+			fmt.Println(ty.Compose(
+				printer.Warning(fmt.Sprintf("Warning: 'merge-after' is set to '%s' in your configuration.", mergeAfter)),
+				printer.Info("Versioned changelog files are already being merged automatically."),
+				printer.Info("This manual merge command may result in duplicate entries or unexpected behavior."),
+			))
 		}
 	}
 
@@ -98,8 +96,8 @@ func runMergeCmd(cmd *cli.Command, cfg *config.Config) error {
 		return fmt.Errorf("failed to merge changelog files: %w", err)
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Successfully merged changelog files from %s into %s",
-		genCfg.ChangesDir, genCfg.ChangelogPath))
+	printer.PrintFaint(fmt.Sprintf("Merged changelog files from %s into %s",
+		printer.Info(genCfg.ChangesDir), printer.Info(genCfg.ChangelogPath)))
 
 	return nil
 }

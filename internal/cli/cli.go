@@ -17,7 +17,6 @@ import (
 	"github.com/indaco/sley/internal/commands/show"
 	"github.com/indaco/sley/internal/commands/tag"
 	"github.com/indaco/sley/internal/config"
-	"github.com/indaco/sley/internal/console"
 	"github.com/indaco/sley/internal/plugins"
 	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/tui"
@@ -64,7 +63,6 @@ func New(cfg *config.Config, registry *plugins.PluginRegistry) *urfavecli.Comman
 			},
 		},
 		Before: func(ctx context.Context, cmd *urfavecli.Command) (context.Context, error) {
-			console.SetNoColor(noColorFlag)
 			printer.SetNoColor(noColorFlag)
 
 			// Theme priority: CLI flag > env var > config file > default
@@ -80,6 +78,7 @@ func New(cfg *config.Config, registry *plugins.PluginRegistry) *urfavecli.Comman
 			}
 
 			tui.SetTheme(theme)
+			printer.Init(theme)
 			return ctx, nil
 		},
 		Commands: []*urfavecli.Command{

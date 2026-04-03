@@ -3,25 +3,68 @@ package printer
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/indaco/herald"
 )
 
 var (
-	// Style definitions for consistent console output across the application.
-	faintStyle   = lipgloss.NewStyle().Faint(true)
-	boldStyle    = lipgloss.NewStyle().Bold(true)
-	successStyle = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(2)) // Green
-	errorStyle   = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(1)) // Red
-	warningStyle = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(3)) // Yellow
-	infoStyle    = lipgloss.NewStyle().Foreground(lipgloss.ANSIColor(6)) // Cyan
+	mu sync.RWMutex
+	ty *herald.Typography
 
-	// Combined styles for status badges
-	successBadgeStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.ANSIColor(2)) // Bold green
-	errorBadgeStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.ANSIColor(1)) // Bold red
-	warningBadgeStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.ANSIColor(3)) // Bold yellow
+	// Standalone styles for semantic text coloring.
+	// These use the SemanticPalette from the active theme so that
+	// Success/Error/Warning/Info render in the expected colors without
+	// needing a full herald element (H1, P, Badge, etc.).
+	successStyle lipgloss.Style
+	errorStyle   lipgloss.Style
+	warningStyle lipgloss.Style
+	infoStyle    lipgloss.Style
 )
+
+// Init sets the package-level Typography from the named theme.
+// Call once at startup (e.g. in cli.go Before hook).
+func Init(theme string) {
+	mu.Lock()
+	defer mu.Unlock()
+	ty = NewTypography(theme)
+	rebuildSemanticStyles()
+}
+
+// typography returns the package-level Typography, lazily initializing
+// with the default sley theme if Init was never called.
+func typography() *herald.Typography {
+	mu.RLock()
+	t := ty
+	mu.RUnlock()
+	if t != nil {
+		return t
+	}
+	// Lazy init with default theme.
+	Init("")
+	mu.RLock()
+	defer mu.RUnlock()
+	return ty
+}
+
+// Typography returns the package-level herald Typography instance.
+// Use this when you need direct access to herald elements like H1, H2, HR, etc.
+func Typography() *herald.Typography {
+	return typography()
+}
+
+// rebuildSemanticStyles derives colored text styles from the active theme's
+// semantic badge styles. We extract the background color of each badge
+// (which is the semantic color) and use it as a foreground color for text.
+func rebuildSemanticStyles() {
+	th := ty.Theme()
+	successStyle = lipgloss.NewStyle().Foreground(th.SuccessBadge.GetBackground())
+	errorStyle = lipgloss.NewStyle().Foreground(th.ErrorBadge.GetBackground())
+	warningStyle = lipgloss.NewStyle().Foreground(th.WarningBadge.GetBackground())
+	infoStyle = lipgloss.NewStyle().Foreground(th.InfoBadge.GetBackground())
+}
 
 // SetNoColor controls whether the printer uses colors.
 // This respects the --no-color flag and NO_COLOR environment variable.
@@ -31,45 +74,51 @@ func SetNoColor(disabled bool) {
 	}
 }
 
-// render applies a style and downsamples ANSI codes through lipgloss.Writer
-// so the output respects the detected color profile (e.g., no colors in non-TTY).
-func render(style lipgloss.Style, text string) string {
-	return lipgloss.Sprint(style.Render(text))
-}
-
-// Render functions return styled strings without printing.
+// ---------------------------------------------------------------------------
+// Render functions — return styled strings without printing
+// ---------------------------------------------------------------------------
 
 // Faint returns text with faint styling.
 func Faint(text string) string {
-	return render(faintStyle, text)
+	return typography().Small(text)
 }
 
 // Bold returns text with bold styling.
 func Bold(text string) string {
-	return render(boldStyle, text)
+	return typography().Bold(text)
 }
 
 // Success returns text with success (green) styling.
 func Success(text string) string {
-	return render(successStyle, text)
+	mu.RLock()
+	defer mu.RUnlock()
+	return lipgloss.Sprint(successStyle.Render(text))
 }
 
 // Error returns text with error (red) styling.
 func Error(text string) string {
-	return render(errorStyle, text)
+	mu.RLock()
+	defer mu.RUnlock()
+	return lipgloss.Sprint(errorStyle.Render(text))
 }
 
 // Warning returns text with warning (yellow) styling.
 func Warning(text string) string {
-	return render(warningStyle, text)
+	mu.RLock()
+	defer mu.RUnlock()
+	return lipgloss.Sprint(warningStyle.Render(text))
 }
 
 // Info returns text with info (cyan) styling.
 func Info(text string) string {
-	return render(infoStyle, text)
+	mu.RLock()
+	defer mu.RUnlock()
+	return lipgloss.Sprint(infoStyle.Render(text))
 }
 
-// Print functions output styled text to stdout with a newline.
+// ---------------------------------------------------------------------------
+// Print functions — output styled text to stdout with a newline
+// ---------------------------------------------------------------------------
 
 // PrintFaint prints text with faint styling.
 func PrintFaint(text string) {
@@ -101,54 +150,53 @@ func PrintInfo(text string) {
 	fmt.Println(Info(text))
 }
 
+// ---------------------------------------------------------------------------
+// Badge functions
+// ---------------------------------------------------------------------------
+
 // SuccessBadge returns a bold, green styled badge.
 func SuccessBadge(text string) string {
-	return render(successBadgeStyle, text)
+	return typography().SuccessBadge(text)
 }
 
 // ErrorBadge returns a bold, red styled badge.
 func ErrorBadge(text string) string {
-	return render(errorBadgeStyle, text)
+	return typography().ErrorBadge(text)
 }
 
 // WarningBadge returns a bold, yellow styled badge.
 func WarningBadge(text string) string {
-	return render(warningBadgeStyle, text)
+	return typography().WarningBadge(text)
 }
 
+// ---------------------------------------------------------------------------
+// Validation format functions
+// ---------------------------------------------------------------------------
+
 // FormatValidationPass formats a validation result with PASS status.
-// Symbol and badge are bold green, category is normal, message is faint.
-func FormatValidationPass(symbol, badge, category, message string) string {
-	styledSymbol := render(successBadgeStyle, symbol)
-	styledBadge := render(successBadgeStyle, badge)
-	styledMessage := render(faintStyle, message)
-	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, category, styledMessage)
+// Uses a subtle green tag, category in normal text, message in faint.
+func FormatValidationPass(category, message string) string {
+	t := typography()
+	return fmt.Sprintf("%s %s: %s", t.SuccessTag("PASS"), category, t.Small(message))
 }
 
 // FormatValidationFail formats a validation result with FAIL status.
-// Symbol and badge are bold red, category is normal, message is faint.
-func FormatValidationFail(symbol, badge, category, message string) string {
-	styledSymbol := render(errorBadgeStyle, symbol)
-	styledBadge := render(errorBadgeStyle, badge)
-	styledMessage := render(faintStyle, message)
-	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, category, styledMessage)
+// Uses a subtle red tag, category in normal text, message in faint.
+func FormatValidationFail(category, message string) string {
+	t := typography()
+	return fmt.Sprintf("%s %s: %s", t.ErrorTag("FAIL"), category, t.Small(message))
 }
 
 // FormatValidationWarn formats a validation result with WARN status.
-// Symbol and badge are bold yellow, category is normal, message is faint.
-func FormatValidationWarn(symbol, badge, category, message string) string {
-	styledSymbol := render(warningBadgeStyle, symbol)
-	styledBadge := render(warningBadgeStyle, badge)
-	styledMessage := render(faintStyle, message)
-	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, category, styledMessage)
+// Uses a subtle yellow tag, category in normal text, message in faint.
+func FormatValidationWarn(category, message string) string {
+	t := typography()
+	return fmt.Sprintf("%s %s: %s", t.WarningTag("WARN"), category, t.Small(message))
 }
 
 // FormatValidationFaint formats a validation result with all faint styling.
 // Used for disabled or inactive items.
-func FormatValidationFaint(symbol, badge, category, message string) string {
-	styledSymbol := render(faintStyle, symbol)
-	styledBadge := render(faintStyle, badge)
-	styledCategory := render(faintStyle, category)
-	styledMessage := render(faintStyle, message)
-	return fmt.Sprintf("%s %s %s: %s", styledSymbol, styledBadge, styledCategory, styledMessage)
+func FormatValidationFaint(category, message string) string {
+	t := typography()
+	return fmt.Sprintf("%s %s: %s", t.Small("[OFF]"), t.Small(category), t.Small(message))
 }

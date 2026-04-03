@@ -37,9 +37,12 @@ func (u *DefaultConfigUpdater) AddExtension(path string, extension config.Extens
 	// Check for duplicates and inform user
 	for _, ext := range cfg.Extensions {
 		if ext.Name == extension.Name {
-			printer.PrintInfo(fmt.Sprintf("Extension %q is already installed at: %s", extension.Name, ext.Path))
-			printer.PrintInfo("To reinstall, remove it first:")
-			fmt.Printf("  sley extension uninstall --name %s\n", extension.Name)
+			ty := printer.Typography()
+			fmt.Println(ty.Compose(
+				printer.Info(fmt.Sprintf("Extension %q is already installed at: %s", extension.Name, ext.Path)),
+				printer.Info("To reinstall, remove it first:"),
+				ty.Code(fmt.Sprintf("sley extension uninstall --name %s", extension.Name)),
+			))
 			return fmt.Errorf("extension %q already registered in configuration", extension.Name)
 		}
 	}

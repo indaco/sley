@@ -652,18 +652,16 @@ func TestPluginStatus_InDoctorOutput(t *testing.T) {
 	}
 
 	// Verify plugin status section appears
-	if !strings.Contains(output, "Plugin Status:") {
+	if !strings.Contains(output, "Plugin Status") {
 		t.Errorf("expected output to contain 'Plugin Status:', got: %q", output)
 	}
 
-	// Verify enabled plugins show [ON]
-	if !strings.Contains(output, "[ON]") {
-		t.Errorf("expected output to contain '[ON]' for enabled plugins, got: %q", output)
+	// Verify enabled/disabled sections
+	if !strings.Contains(output, "Enabled") {
+		t.Errorf("expected output to contain 'Enabled' section, got: %q", output)
 	}
-
-	// Verify disabled plugins show [OFF]
-	if !strings.Contains(output, "[OFF]") {
-		t.Errorf("expected output to contain '[OFF]' for disabled plugins, got: %q", output)
+	if !strings.Contains(output, "Disabled") {
+		t.Errorf("expected output to contain 'Disabled' section, got: %q", output)
 	}
 
 	// Verify summary shows correct count
@@ -694,7 +692,7 @@ func TestPluginStatus_QuietMode(t *testing.T) {
 	}
 
 	// Quiet mode should NOT show plugin status
-	if strings.Contains(output, "Plugin Status:") {
+	if strings.Contains(output, "Plugin Status") {
 		t.Errorf("quiet mode should not show plugin status, got: %q", output)
 	}
 }

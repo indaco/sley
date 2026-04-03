@@ -178,7 +178,7 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 	if repoURL.Ref != "" {
 		cloneMsg = fmt.Sprintf("Cloning %s@%s...", repoURL.String(), repoURL.Ref)
 	}
-	printer.PrintInfo(cloneMsg)
+	printer.PrintFaint(cloneMsg)
 
 	tempDir, err := CloneRepository(repoURL)
 	if err != nil {
@@ -209,9 +209,9 @@ func InstallFromURL(urlStr, configPath, extensionDirectory string) error {
 
 	// Install from the cloned directory (or subdirectory)
 	if repoURL.Subdir != "" {
-		printer.PrintInfo(fmt.Sprintf("Installing extension from %s (subdirectory: %s)...", repoURL.String(), repoURL.Subdir))
+		printer.PrintFaint(fmt.Sprintf("Installing extension from %s (subdirectory: %s)...", printer.Info(repoURL.String()), printer.Info(repoURL.Subdir)))
 	} else {
-		printer.PrintInfo(fmt.Sprintf("Installing extension from %s...", repoURL.String()))
+		printer.PrintFaint(fmt.Sprintf("Installing extension from %s...", printer.Info(repoURL.String())))
 	}
 
 	// Register the extension using the default registrar

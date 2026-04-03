@@ -112,6 +112,6 @@ func printQuietSummary(results []workspace.ExecutionResult) {
 	if errors > 0 {
 		printer.PrintWarning(fmt.Sprintf("Completed: %d succeeded, %d failed", success, errors))
 	} else {
-		printer.PrintInfo(fmt.Sprintf("Success: %d module(s)", success))
+		printer.PrintFaint(fmt.Sprintf("Success: %d module(s)", success))
 	}
 }

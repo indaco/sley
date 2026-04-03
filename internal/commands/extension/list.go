@@ -30,15 +30,15 @@ func runExtensionList() error {
 	}
 
 	if len(cfg.Extensions) == 0 {
-		printer.PrintInfo("No extensions registered.")
+		printer.PrintFaint("No extensions registered.")
 		return nil
 	}
 
-	printer.PrintBold("List of Registered Extensions:")
-	fmt.Println()
-	fmt.Printf("  %s\n", printer.Faint("NAME              VERSION     ENABLED   DESCRIPTION"))
-	fmt.Printf("  %s\n", printer.Faint("----------------------------------------------------------"))
+	ty := printer.Typography()
 
+	rows := [][]string{
+		{"Name", "Version", "Enabled", "Description"},
+	}
 	for _, ext := range cfg.Extensions {
 		version := "?"
 		desc := "(no manifest)"
@@ -50,10 +50,10 @@ func runExtensionList() error {
 			}
 		}
 
-		fmt.Printf("  %-17s %-10s %-9v %s\n", ext.Name, version, ext.Enabled, desc)
+		rows = append(rows, []string{ext.Name, version, fmt.Sprintf("%v", ext.Enabled), desc})
 	}
 
-	fmt.Println()
+	fmt.Println(ty.Section(ty.H4("Registered Extensions"), ty.Table(rows)))
 
 	return nil
 }

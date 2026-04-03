@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/indaco/sley/internal/config"
+	"github.com/indaco/sley/internal/printer"
 )
 
 // LoadPreReleaseHooksFromConfig loads pre-release hooks from the configuration.
@@ -20,7 +21,7 @@ func LoadPreReleaseHooksFromConfig(cfg *config.Config) error {
 					Command: def.Command,
 				})
 			} else {
-				fmt.Printf("⚠️  Skipping pre-release hook %q: no command defined\n", name)
+				printer.PrintWarning(fmt.Sprintf("Skipping pre-release hook %q: no command defined", name))
 			}
 		}
 	}

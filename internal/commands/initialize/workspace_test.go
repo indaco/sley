@@ -388,7 +388,7 @@ func TestPrintWorkspaceSuccessSummary(t *testing.T) {
 		ctx := &ProjectContext{IsGitRepo: true}
 
 		output, _ := captureStdout(func() {
-			printWorkspaceSuccessSummary(true, plugins, modules, ctx)
+			printWorkspaceSuccessSummary(true, plugins, modules, nil, ctx)
 		})
 
 		if !strings.Contains(output, "2 plugins") {
@@ -411,7 +411,7 @@ func TestPrintWorkspaceSuccessSummary(t *testing.T) {
 		ctx := &ProjectContext{}
 
 		output, _ := captureStdout(func() {
-			printWorkspaceSuccessSummary(true, plugins, modules, ctx)
+			printWorkspaceSuccessSummary(true, plugins, modules, nil, ctx)
 		})
 
 		if !strings.Contains(output, "No existing .version files found") {
@@ -430,7 +430,7 @@ func TestPrintWorkspaceSuccessSummary(t *testing.T) {
 		ctx := &ProjectContext{}
 
 		output, _ := captureStdout(func() {
-			printWorkspaceSuccessSummary(true, plugins, modules, ctx)
+			printWorkspaceSuccessSummary(true, plugins, modules, nil, ctx)
 		})
 
 		if !strings.Contains(output, "unknown") {
@@ -444,7 +444,7 @@ func TestPrintWorkspaceSuccessSummary(t *testing.T) {
 		ctx := &ProjectContext{}
 
 		output, _ := captureStdout(func() {
-			printWorkspaceSuccessSummary(false, plugins, modules, ctx)
+			printWorkspaceSuccessSummary(false, plugins, modules, nil, ctx)
 		})
 
 		if strings.Contains(output, "Created .sley.yaml") {

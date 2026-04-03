@@ -109,7 +109,7 @@ func TestChangelogMergeCmd_Success(t *testing.T) {
 	}
 
 	// Check success message
-	expectedMsg := "Successfully merged changelog files"
+	expectedMsg := "Merged changelog files"
 	if !strings.Contains(output, expectedMsg) {
 		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
 	}
@@ -225,7 +225,7 @@ func TestChangelogMergeCmd_NoVersionedFiles(t *testing.T) {
 	}
 
 	// Should still report success (nothing to merge)
-	expectedMsg := "Successfully merged changelog files"
+	expectedMsg := "Merged changelog files"
 	if !strings.Contains(output, expectedMsg) {
 		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
 	}
@@ -424,7 +424,7 @@ func TestChangelogMergeCmd_WarningWhenPluginDisabled(t *testing.T) {
 	}
 
 	// Should still succeed with merge
-	expectedMsg := "Successfully merged changelog files"
+	expectedMsg := "Merged changelog files"
 	if !strings.Contains(output, expectedMsg) {
 		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
 	}
@@ -469,7 +469,7 @@ func TestChangelogMergeCmd_WarningWhenMergeAfterImmediate(t *testing.T) {
 	}
 
 	// Should still succeed with merge
-	expectedMsg := "Successfully merged changelog files"
+	expectedMsg := "Merged changelog files"
 	if !strings.Contains(output, expectedMsg) {
 		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
 	}
@@ -520,7 +520,7 @@ func TestChangelogMergeCmd_NoWarningWhenMergeAfterManual(t *testing.T) {
 	}
 
 	// Should still succeed with merge
-	expectedMsg := "Successfully merged changelog files"
+	expectedMsg := "Merged changelog files"
 	if !strings.Contains(output, expectedMsg) {
 		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
 	}

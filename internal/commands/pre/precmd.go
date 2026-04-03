@@ -77,7 +77,7 @@ func runSingleModulePre(path, label string, isInc bool, registry *plugins.Plugin
 			if err := semver.SaveVersion(path, version); err != nil {
 				return fmt.Errorf("failed to initialize version file: %w", err)
 			}
-			printer.PrintSuccess(fmt.Sprintf("Auto-initialized %s with default version", path))
+			printer.PrintFaint(fmt.Sprintf("Auto-initialized %s with default version", printer.Info(path)))
 		} else {
 			return fmt.Errorf("failed to read version: %w", err)
 		}
@@ -98,7 +98,7 @@ func runSingleModulePre(path, label string, isInc bool, registry *plugins.Plugin
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Updated version from %s to %s", oldVersion, version.String()))
+	printer.PrintFaint(fmt.Sprintf("Updated version from %s to %s", oldVersion, printer.Info(version.String())))
 
 	// Sync dependencies if configured
 	if err := depsync.SyncDependencies(registry, version, path); err != nil {

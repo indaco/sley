@@ -168,7 +168,7 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 	if err := tm.CommitChanges(version, extraFiles); err != nil {
 		return fmt.Errorf("failed to commit release changes: %w", err)
 	}
-	printer.PrintSuccess(fmt.Sprintf("Committed release changes for %s", version.String()))
+	printer.PrintFaint(fmt.Sprintf("Committed release changes for %s", printer.Info(version.String())))
 
 	// Create tag on the new commit
 	message := fmt.Sprintf("Release %s (%s bump)", version.String(), bumpType)
@@ -177,10 +177,10 @@ func commitAndTagAfterBump(registry *plugins.PluginRegistry, version semver.SemV
 	}
 
 	tagName := tm.FormatTagName(version)
-	printer.PrintSuccess(fmt.Sprintf("Created tag: %s", tagName))
+	printer.PrintFaint(fmt.Sprintf("Created tag: %s", printer.Info(tagName)))
 
 	if tm.GetConfig().Push {
-		printer.PrintSuccess(fmt.Sprintf("Pushed tag: %s", tagName))
+		printer.PrintFaint(fmt.Sprintf("Pushed tag: %s", printer.Info(tagName)))
 	}
 
 	return nil
@@ -280,12 +280,12 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 	cfg := cg.GetConfig()
 	switch cfg.Mode {
 	case "versioned":
-		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md", cfg.ChangesDir, versionStr))
+		printer.PrintFaint(fmt.Sprintf("Generated changelog: %s", printer.Info(fmt.Sprintf("%s/%s.md", cfg.ChangesDir, versionStr))))
 	case "unified":
-		printer.PrintSuccess(fmt.Sprintf("Updated changelog: %s", cfg.ChangelogPath))
+		printer.PrintFaint(fmt.Sprintf("Updated changelog: %s", printer.Info(cfg.ChangelogPath)))
 	case "both":
-		printer.PrintSuccess(fmt.Sprintf("Generated changelog: %s/%s.md and %s",
-			cfg.ChangesDir, versionStr, cfg.ChangelogPath))
+		printer.PrintFaint(fmt.Sprintf("Generated changelog: %s and %s",
+			printer.Info(fmt.Sprintf("%s/%s.md", cfg.ChangesDir, versionStr)), printer.Info(cfg.ChangelogPath)))
 	}
 
 	return nil

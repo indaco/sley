@@ -46,6 +46,6 @@ func runExtensionEnable(cmd *cli.Command) error {
 		return nil
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Extension %q enabled.", extensionName))
+	printer.PrintFaint(fmt.Sprintf("Extension %s enabled.", printer.Info(extensionName)))
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/indaco/sley/internal/apperrors"
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 	"github.com/indaco/sley/internal/tui"
 	"github.com/indaco/sley/internal/workspace"
@@ -45,7 +46,7 @@ func getOrInitVersionFileWith(path string, strict bool, mgr *semver.VersionManag
 		return false, err
 	}
 	if created {
-		fmt.Printf("Auto-initialized %s with default version\n", path)
+		printer.PrintFaint(fmt.Sprintf("Auto-initialized %s with default version", printer.Info(path)))
 	}
 	return created, nil
 }
@@ -322,7 +323,8 @@ func shouldShowTUIPrompt(cmd *cli.Command, options *executionOptions) bool {
 	if !tui.IsInteractive() {
 		return false
 	}
-	if cmd.Bool("yes") || cmd.Bool("non-interactive") || cmd.Bool("all") {
+	if cmd.Bool("yes") || cmd.Bool("non-interactive") || cmd.Bool("all") ||
+		cmd.IsSet("module") || len(cmd.StringSlice("modules")) > 0 || cmd.IsSet("pattern") {
 		return false
 	}
 	return !options.defaultToAll

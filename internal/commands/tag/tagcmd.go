@@ -168,7 +168,7 @@ func (tc *TagCommand) runCreateCmd(ctx context.Context, cmd *cli.Command, cfg *c
 	path := execCtx.Path
 	if execCtx.IsMultiModule() && len(execCtx.Modules) == 1 {
 		mod := execCtx.Modules[0]
-		printer.PrintInfo(fmt.Sprintf("Using version from module %q (%s)", mod.Name, mod.RelPath))
+		printer.PrintFaint(fmt.Sprintf("Using version from module %s %s", printer.Info(mod.Name), printer.Faint("("+mod.RelPath+")")))
 		path = mod.Path
 	}
 
@@ -205,14 +205,14 @@ func (tc *TagCommand) createTagForPath(ctx context.Context, cmd *cli.Command, cf
 		return err
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Created tag %s", tagName))
+	printer.PrintFaint(fmt.Sprintf("Created tag %s", printer.Info(tagName)))
 
 	shouldPush := cmd.Bool("push") || tmConfig.Push
 	if shouldPush {
 		if err := tc.gitOps.PushTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to push tag: %w", err)
 		}
-		printer.PrintSuccess(fmt.Sprintf("Pushed tag %s to remote", tagName))
+		printer.PrintFaint(fmt.Sprintf("Pushed tag %s to remote", printer.Info(tagName)))
 	}
 
 	return nil
@@ -228,7 +228,7 @@ func (tc *TagCommand) createTagsForAllModules(ctx context.Context, cmd *cli.Comm
 	shouldPush := cmd.Bool("push")
 
 	for _, mod := range execCtx.Modules {
-		printer.PrintInfo(fmt.Sprintf("Processing module %q (%s)", mod.Name, mod.RelPath))
+		printer.PrintFaint(fmt.Sprintf("Processing module %s %s", printer.Info(mod.Name), printer.Faint("("+mod.RelPath+")")))
 
 		version, err := semver.ReadVersion(mod.Path)
 		if err != nil {
@@ -249,7 +249,7 @@ func (tc *TagCommand) createTagsForAllModules(ctx context.Context, cmd *cli.Comm
 			continue
 		}
 		if exists {
-			printer.PrintInfo(fmt.Sprintf("  Tag %s already exists, skipping module %q", tagName, mod.Name))
+			printer.PrintFaint(fmt.Sprintf("  Tag %s already exists, skipping module %s", printer.Info(tagName), printer.Info(mod.Name)))
 			continue
 		}
 
@@ -265,7 +265,7 @@ func (tc *TagCommand) createTagsForAllModules(ctx context.Context, cmd *cli.Comm
 			continue
 		}
 
-		printer.PrintSuccess(fmt.Sprintf("  Created tag %s for module %q", tagName, mod.Name))
+		printer.PrintFaint(fmt.Sprintf("  Created tag %s for module %s", printer.Info(tagName), printer.Info(mod.Name)))
 
 		pushThis := shouldPush || tmConfig.Push
 		if pushThis {
@@ -274,7 +274,7 @@ func (tc *TagCommand) createTagsForAllModules(ctx context.Context, cmd *cli.Comm
 				failedModules = append(failedModules, mod.Name)
 				continue
 			}
-			printer.PrintSuccess(fmt.Sprintf("  Pushed tag %s to remote", tagName))
+			printer.PrintFaint(fmt.Sprintf("  Pushed tag %s to remote", printer.Info(tagName)))
 		}
 	}
 
@@ -325,7 +325,7 @@ func (tc *TagCommand) runListCmd(ctx context.Context, cmd *cli.Command, cfg *con
 	}
 
 	if len(tags) == 0 {
-		printer.PrintInfo(fmt.Sprintf("No tags found matching pattern %q", pattern))
+		printer.PrintFaint(fmt.Sprintf("No tags found matching pattern %s", printer.Info(pattern)))
 		return nil
 	}
 
@@ -377,7 +377,7 @@ func (tc *TagCommand) runPushCmd(ctx context.Context, cmd *cli.Command, cfg *con
 		return fmt.Errorf("failed to push tag: %w", err)
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Pushed tag %s to remote", tagName))
+	printer.PrintFaint(fmt.Sprintf("Pushed tag %s to remote", printer.Info(tagName)))
 	return nil
 }
 
@@ -400,13 +400,13 @@ func (tc *TagCommand) runDeleteCmd(ctx context.Context, cmd *cli.Command, _ *con
 	if err := tc.gitOps.DeleteTag(ctx, tagName); err != nil {
 		return fmt.Errorf("failed to delete local tag: %w", err)
 	}
-	printer.PrintSuccess(fmt.Sprintf("Deleted local tag %s", tagName))
+	printer.PrintFaint(fmt.Sprintf("Deleted local tag %s", printer.Info(tagName)))
 
 	if cmd.Bool("remote") {
 		if err := tc.gitOps.DeleteRemoteTag(ctx, tagName); err != nil {
 			return fmt.Errorf("failed to delete remote tag: %w", err)
 		}
-		printer.PrintSuccess(fmt.Sprintf("Deleted remote tag %s", tagName))
+		printer.PrintFaint(fmt.Sprintf("Deleted remote tag %s", printer.Info(tagName)))
 	}
 
 	return nil
@@ -457,7 +457,7 @@ func resolveVersionPath(ctx context.Context, cmd *cli.Command, cfg *config.Confi
 	}
 
 	mod := execCtx.Modules[0]
-	printer.PrintInfo(fmt.Sprintf("Using version from module %q (%s)", mod.Name, mod.RelPath))
+	printer.PrintFaint(fmt.Sprintf("Using version from module %s %s", printer.Info(mod.Name), printer.Faint("("+mod.RelPath+")")))
 	return mod.Path, nil
 }
 

@@ -66,7 +66,7 @@ entry: mock-entry`
 	})
 
 	// Check the output for success
-	if !strings.Contains(output, "Extension \"mock-extension\" registered successfully.") {
+	if !strings.Contains(output, "Extension mock-extension registered successfully.") {
 		t.Fatalf("expected success message, got: %s", output)
 	}
 }

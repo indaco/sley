@@ -150,7 +150,7 @@ func determineBumpType(deps *bumpDeps, registry *plugins.PluginRegistry, label s
 			}
 
 			if inferred != "" {
-				printer.PrintInfo(fmt.Sprintf("Inferred bump type: %s", inferred))
+				printer.PrintFaint(fmt.Sprintf("Inferred bump type: %s", printer.Info(inferred)))
 				switch inferred {
 				case "minor":
 					return operations.BumpMinor
@@ -231,7 +231,7 @@ func runSingleModuleAuto(ctx context.Context, cmd *cli.Command, cfg *config.Conf
 		return err
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Bumped version from %s to %s", current.String(), next.String()))
+	printer.PrintFaint(fmt.Sprintf("Bumped version from %s to %s", current.String(), printer.Info(next.String())))
 	return nil
 }
 
@@ -267,7 +267,7 @@ func getNextVersion(
 			}
 
 			if inferred != "" {
-				printer.PrintInfo(fmt.Sprintf("Inferred bump type: %s", inferred))
+				printer.PrintFaint(fmt.Sprintf("Inferred bump type: %s", printer.Info(inferred)))
 
 				if current.PreRelease != "" {
 					return promotePreRelease(current, preserveMeta), nil

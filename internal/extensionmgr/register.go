@@ -113,13 +113,13 @@ func (r *DefaultExtensionRegistrar) Register(localPath, configPath, extensionDir
 
 	if _, err := os.Stat(absConfigPath); os.IsNotExist(err) {
 		// Print user-friendly guidance for missing config file
-		printer.PrintError(fmt.Sprintf("Config file not found: %s", absConfigPath))
-		fmt.Println()
-		printer.PrintInfo("To enable extension support, create a .sley.yaml file:")
-		fmt.Println()
-		fmt.Println("    echo 'extensions: []' > .sley.yaml")
-		fmt.Println()
-		printer.PrintInfo("Then run this command again.")
+		ty := printer.Typography()
+		fmt.Println(ty.Compose(
+			printer.Error(fmt.Sprintf("Config file not found: %s", absConfigPath)),
+			printer.Info("To enable extension support, create a .sley.yaml file:"),
+			ty.Code("echo 'extensions: []' > .sley.yaml"),
+			printer.Info("Then run this command again."),
+		))
 		return fmt.Errorf("config file not found at %s", absConfigPath)
 	}
 
@@ -149,7 +149,7 @@ func (r *DefaultExtensionRegistrar) Register(localPath, configPath, extensionDir
 	}
 
 	// 9. Success message
-	printer.PrintSuccess(fmt.Sprintf("Extension %q registered successfully.", manifest.Name))
+	printer.PrintFaint(fmt.Sprintf("Extension %s registered successfully.", printer.Info(manifest.Name)))
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/discovery"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/urfave/cli/v3"
 )
 
@@ -102,21 +103,26 @@ func runDiscoverCmd(ctx context.Context, cmd *cli.Command, cfg *config.Config) e
 
 // printQuietSummary prints a minimal summary of discovery results.
 func printQuietSummary(result *discovery.Result) {
+	ty := printer.Typography()
 	moduleCount := len(result.Modules)
 	manifestCount := len(result.Manifests)
 	mismatchCount := len(result.Mismatches)
 
-	fmt.Printf("Mode: %s | Modules: %d | Manifests: %d", result.Mode, moduleCount, manifestCount)
+	pairs := [][2]string{
+		{"Mode", result.Mode.String()},
+		{"Modules", fmt.Sprintf("%d", moduleCount)},
+		{"Manifests", fmt.Sprintf("%d", manifestCount)},
+	}
 
 	if mismatchCount > 0 {
-		fmt.Printf(" | Mismatches: %d", mismatchCount)
+		pairs = append(pairs, [2]string{"Mismatches", fmt.Sprintf("%d", mismatchCount)})
 	}
 
 	if result.PrimaryVersion() != "" {
-		fmt.Printf(" | Version: %s", result.PrimaryVersion())
+		pairs = append(pairs, [2]string{"Version", result.PrimaryVersion()})
 	}
 
-	fmt.Println()
+	fmt.Println(ty.KVGroup(pairs))
 }
 
 // DiscoverAndSuggest is a helper function that performs discovery and returns

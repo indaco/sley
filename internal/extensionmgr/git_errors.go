@@ -212,22 +212,18 @@ func (e *GitCloneError) Unwrap() error {
 // PrintGitError prints a formatted git error to the console using the printer package.
 // This provides a styled, user-friendly error message in the terminal.
 func PrintGitError(err error) {
+	ty := printer.Typography()
 	var gitErr *GitCloneError
 	if errors.As(err, &gitErr) {
-		// Print using printer package for consistent styling
-		printer.PrintError(fmt.Sprintf("Failed to clone repository: %s", gitErr.RepoURL.String()))
-		fmt.Println()
-		printer.PrintError(fmt.Sprintf("Error: %s", gitErr.ErrorInfo.Message))
-
-		if len(gitErr.ErrorInfo.Suggestions) > 0 {
-			fmt.Println()
-			printer.PrintInfo("Suggestions:")
-			for _, suggestion := range gitErr.ErrorInfo.Suggestions {
-				fmt.Printf("  - %s\n", suggestion)
-			}
+		blocks := []string{
+			printer.Error(fmt.Sprintf("Failed to clone repository: %s", gitErr.RepoURL.String())),
+			printer.Error(fmt.Sprintf("Error: %s", gitErr.ErrorInfo.Message)),
 		}
+		if len(gitErr.ErrorInfo.Suggestions) > 0 {
+			blocks = append(blocks, ty.Section(ty.H4("Suggestions"), ty.UL(gitErr.ErrorInfo.Suggestions...)))
+		}
+		fmt.Println(ty.Compose(blocks...))
 	} else {
-		// Fallback for non-GitCloneError errors
 		printer.PrintError(fmt.Sprintf("Error: %v", err))
 	}
 }
