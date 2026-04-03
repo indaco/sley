@@ -290,10 +290,8 @@ func GenerateWorkspaceConfigWithMonorepo(plugins []string, modules []DiscoveredM
 	sb.WriteString("    enabled: true\n")
 	sb.WriteString("    recursive: true\n")
 	sb.WriteString("    module_max_depth: 10\n")
-	sb.WriteString("    exclude:\n")
-	for _, pattern := range config.DefaultExcludePatterns {
-		fmt.Fprintf(&sb, "      - %q\n", pattern)
-	}
+	sb.WriteString("    # exclude:\n")
+	sb.WriteString("    #   - \"custom-dir\"\n")
 
 	// Add discovered modules as explicit entries
 	if len(modules) > 0 {
@@ -370,6 +368,8 @@ func writePluginConfigWithMonorepo(sb *strings.Builder, pluginName string) {
 
 // GenerateWorkspaceConfigWithComments generates YAML config with workspace section.
 // In workspace mode, the root path field is omitted since each module defines its own path.
+// GenerateWorkspaceConfigWithComments generates a .sley.yaml for workspace mode.
+// Used by both "sley init --workspace" and "sley discover".
 func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredModule) ([]byte, error) {
 	var sb strings.Builder
 
@@ -390,17 +390,17 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 	// Workspace section first (structure before behavior)
 	sb.WriteString("# Workspace configuration for monorepo support\n")
 	sb.WriteString("workspace:\n")
+	sb.WriteString("  # Versioning mode: \"independent\" (each module versioned separately)\n")
+	sb.WriteString("  versioning: independent\n")
 	sb.WriteString("  # Discovery settings for automatic module detection\n")
 	sb.WriteString("  discovery:\n")
 	sb.WriteString("    enabled: true\n")
 	sb.WriteString("    recursive: true\n")
 	sb.WriteString("    module_max_depth: 10\n")
-	sb.WriteString("    exclude:\n")
-	for _, pattern := range config.DefaultExcludePatterns {
-		fmt.Fprintf(&sb, "      - %q\n", pattern)
-	}
+	sb.WriteString("    # exclude:\n")
+	sb.WriteString("    #   - \"custom-dir\"\n")
 
-	// If modules were discovered, add them as explicit modules
+	// Discovered modules as commented-out explicit entries
 	if len(modules) > 0 {
 		sb.WriteString("\n")
 		sb.WriteString("  # Discovered modules (uncomment to use explicit configuration)\n")
@@ -415,16 +415,17 @@ func GenerateWorkspaceConfigWithComments(plugins []string, modules []DiscoveredM
 
 	// Plugins section
 	sb.WriteString("# Plugin configuration\n")
+	sb.WriteString("# Each module can have its own .sley.yaml to override these settings.\n")
 	sb.WriteString("plugins:\n")
 	for _, pluginName := range plugins {
-		writePluginConfig(&sb, pluginName)
+		WritePluginConfig(&sb, pluginName)
 	}
 
 	return []byte(sb.String()), nil
 }
 
-// writePluginConfig writes a single plugin configuration to the builder.
-func writePluginConfig(sb *strings.Builder, pluginName string) {
+// WritePluginConfig writes a single plugin configuration for workspace mode.
+func WritePluginConfig(sb *strings.Builder, pluginName string) {
 	descriptions := map[string]string{
 		"commit-parser":       "Analyzes conventional commits to suggest version bumps",
 		"tag-manager":         "Automatically creates git tags after version changes",
@@ -450,6 +451,11 @@ func writePluginConfig(sb *strings.Builder, pluginName string) {
 	// Other plugins use enabled: true format
 	fmt.Fprintf(sb, "  %s:\n", pluginName)
 	sb.WriteString("    enabled: true\n")
+
+	// tag-manager needs {module_path}/v prefix for per-module tags
+	if pluginName == "tag-manager" {
+		sb.WriteString("    prefix: \"{module_path}/v\"\n")
+	}
 }
 
 // printWorkspaceSuccessSummary prints the success message for workspace init.

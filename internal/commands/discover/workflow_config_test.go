@@ -117,6 +117,14 @@ func TestGenerateConfigYAML_AllPluginTypes(t *testing.T) {
 	}
 }
 
+// assertContains is a test helper that checks if content contains a substring.
+func assertContains(t *testing.T, content, substr, label string) {
+	t.Helper()
+	if !contains(content, substr) {
+		t.Errorf("missing %s (expected substring %q)", label, substr)
+	}
+}
+
 func TestGenerateConfigYAMLWithWorkspace(t *testing.T) {
 
 	plugins := []string{"commit-parser", "tag-manager"}
@@ -124,48 +132,32 @@ func TestGenerateConfigYAMLWithWorkspace(t *testing.T) {
 		{Path: "package.json", Format: parser.FormatJSON, Field: "version"},
 	}
 
-	data, err := generateConfigYAMLWithWorkspace(".version", plugins, candidates)
+	modules := []discovery.Module{
+		{Name: "api", RelPath: "api/.version"},
+		{Name: "web", RelPath: "web/.version"},
+	}
+	data, err := generateConfigYAMLWithWorkspace(".version", plugins, modules, candidates)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	content := string(data)
 
-	// Check header comments
-	if !contains(content, "# sley configuration file") {
-		t.Error("missing header comment")
-	}
-	if !contains(content, "workspace configuration") {
-		t.Error("missing workspace comment")
-	}
-
-	// Check workspace config
-	if !contains(content, "workspace:") {
-		t.Error("missing workspace section")
-	}
-	if !contains(content, "discovery:") {
-		t.Error("missing discovery section")
-	}
-	if !contains(content, "enabled: true") {
-		t.Error("missing enabled: true")
-	}
-	if !contains(content, "recursive: true") {
-		t.Error("missing recursive: true")
-	}
-	if !contains(content, "module_max_depth: 10") {
-		t.Error("missing module_max_depth")
-	}
-	if !contains(content, "testdata") {
-		t.Error("missing testdata in exclude")
-	}
-
-	// Check plugins
-	if !contains(content, "commit-parser: true") {
-		t.Error("missing commit-parser")
-	}
-	if !contains(content, "tag-manager:") {
-		t.Error("missing tag-manager")
-	}
+	assertContains(t, content, "# sley configuration file", "header comment")
+	assertContains(t, content, "Workspace configuration", "workspace comment")
+	assertContains(t, content, "workspace:", "workspace section")
+	assertContains(t, content, "versioning: independent", "versioning mode")
+	assertContains(t, content, "discovery:", "discovery section")
+	assertContains(t, content, "enabled: true", "discovery enabled")
+	assertContains(t, content, "recursive: true", "discovery recursive")
+	assertContains(t, content, "module_max_depth: 10", "module max depth")
+	assertContains(t, content, "# exclude:", "commented-out exclude")
+	assertContains(t, content, "# modules:", "commented-out modules")
+	assertContains(t, content, "api/.version", "api module in list")
+	assertContains(t, content, "commit-parser: true", "commit-parser plugin")
+	assertContains(t, content, "tag-manager:", "tag-manager plugin")
+	assertContains(t, content, `prefix: "{module_path}/v"`, "tag-manager prefix")
+	assertContains(t, content, "own .sley.yaml", "per-module config comment")
 }
 
 func TestMarshalConfigWithComments(t *testing.T) {

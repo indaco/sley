@@ -467,7 +467,7 @@ func TestWritePluginConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var sb strings.Builder
-			writePluginConfig(&sb, tt.plugin)
+			WritePluginConfig(&sb, tt.plugin)
 			result := sb.String()
 
 			if !strings.Contains(result, tt.expected) {

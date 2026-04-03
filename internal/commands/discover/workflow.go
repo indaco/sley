@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"charm.land/huh/v2"
@@ -24,6 +25,32 @@ type Workflow struct {
 	rootDir            string
 	cfg                *config.Config
 	rootVersionCreated bool
+}
+
+// confirmAction prompts for confirmation in interactive mode.
+// Returns true automatically in non-interactive environments or when prompter is nil.
+func (w *Workflow) confirmAction(title, description string) (bool, error) {
+	if w.prompter == nil || !tui.IsInteractive() {
+		return true, nil
+	}
+	return w.prompter.Confirm(title, description)
+}
+
+// selectPlugins prompts for plugin selection in interactive mode,
+// or returns defaults in non-interactive (CI/test) environments.
+func (w *Workflow) selectPlugins() ([]string, error) {
+	if !tui.IsInteractive() {
+		return initialize.DefaultPluginNames(), nil
+	}
+	projectCtx := initialize.DetectProjectContext()
+	selected, err := initialize.PromptPluginSelection(projectCtx.FormatDetectionSummary())
+	if err != nil {
+		return initialize.DefaultPluginNames(), nil //nolint:nilerr // Fall back to defaults on prompt error
+	}
+	if len(selected) == 0 {
+		return initialize.DefaultPluginNames(), nil
+	}
+	return selected, nil
 }
 
 // NewWorkflow creates a new workflow handler.
@@ -311,11 +338,27 @@ func (w *Workflow) createConfigWithWorkspace(ctx context.Context) (bool, error) 
 		return false, err
 	}
 
-	// Default plugins: commit-parser and tag-manager
-	selectedPlugins := []string{"commit-parser", "tag-manager"}
+	// Prompt for plugin selection (same as init --workspace)
+	selectedPlugins, err := w.selectPlugins()
+	if err != nil {
+		return false, err
+	}
+
+	// Confirm before writing
+	proceed, err := w.confirmAction(
+		"Proceed with initialization?",
+		fmt.Sprintf("This will create .sley.yaml with workspace discovery and %d plugin(s).", len(selectedPlugins)),
+	)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		printer.PrintFaint("Initialization canceled.")
+		return false, nil
+	}
 
 	// Generate config with workspace discovery enabled
-	configData, err := generateConfigYAMLWithWorkspace(defaultVersionPath(), selectedPlugins, w.result.SyncCandidates)
+	configData, err := generateConfigYAMLWithWorkspace(defaultVersionPath(), selectedPlugins, w.result.Modules, w.result.SyncCandidates)
 	if err != nil {
 		return false, fmt.Errorf("failed to generate config: %w", err)
 	}
@@ -366,89 +409,18 @@ func (w *Workflow) printWorkspaceInitSuccess(plugins []string) {
 	fmt.Println(ty.Compose(blocks...))
 }
 
-// generateConfigYAMLWithWorkspace generates the YAML configuration content with workspace settings.
-func generateConfigYAMLWithWorkspace(versionPath string, plugins []string, syncCandidates []discovery.SyncCandidate) ([]byte, error) {
-	cfg := &config.Config{
-		Path: versionPath,
-	}
-
-	// Create workspace config with discovery enabled
-	enabled := true
-	recursive := true
-	moduleMaxDepth := 10
-	cfg.Workspace = &config.WorkspaceConfig{
-		Discovery: &config.DiscoveryConfig{
-			Enabled:        &enabled,
-			Recursive:      &recursive,
-			ModuleMaxDepth: &moduleMaxDepth,
-			Exclude:        []string{"testdata", "node_modules"},
-		},
-	}
-
-	// Create plugins config based on selections
-	pluginsCfg := &config.PluginConfig{}
-
-	for _, name := range plugins {
-		switch name {
-		case "commit-parser":
-			pluginsCfg.CommitParser = true
-		case "tag-manager":
-			pluginsCfg.TagManager = &config.TagManagerConfig{
-				Enabled: true,
-			}
-		case "dependency-check":
-			depCheck := &config.DependencyCheckConfig{
-				Enabled:  true,
-				AutoSync: true,
-			}
-			if len(syncCandidates) > 0 {
-				depCheck.Files = make([]config.DependencyFileConfig, len(syncCandidates))
-				for i, c := range syncCandidates {
-					depCheck.Files[i] = config.DependencyFileConfig{
-						Path:    c.Path,
-						Format:  c.Format.String(),
-						Field:   c.Field,
-						Pattern: c.Pattern,
-					}
-				}
-			}
-			pluginsCfg.DependencyCheck = depCheck
+// generateConfigYAMLWithWorkspace generates workspace config by converting
+// discovery.Module to initialize.DiscoveredModule and delegating to the
+// shared generator in the initialize package.
+func generateConfigYAMLWithWorkspace(_ string, plugins []string, modules []discovery.Module, _ []discovery.SyncCandidate) ([]byte, error) {
+	initModules := make([]initialize.DiscoveredModule, len(modules))
+	for i, m := range modules {
+		initModules[i] = initialize.DiscoveredModule{
+			Name:    m.Name,
+			RelPath: m.RelPath,
 		}
 	}
-
-	cfg.Plugins = pluginsCfg
-
-	return marshalConfigWithWorkspaceComments(cfg, plugins)
-}
-
-// marshalConfigWithWorkspaceComments marshals config to YAML with helpful comments for workspace.
-func marshalConfigWithWorkspaceComments(cfg *config.Config, plugins []string) ([]byte, error) {
-	data, err := marshalToYAML(cfg)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add header comments
-	var result strings.Builder
-	result.WriteString("# sley configuration file\n")
-	result.WriteString("# Documentation: https://github.com/indaco/sley\n")
-	result.WriteString("# Generated by 'sley discover'\n")
-	result.WriteString("\n")
-	result.WriteString("# This is a workspace configuration for a multi-module project.\n")
-	result.WriteString("# Each module with a .version file is discovered automatically.\n")
-	result.WriteString("# Modules can have their own .sley.yaml for module-specific settings.\n")
-	result.WriteString("\n")
-
-	if len(plugins) > 0 {
-		result.WriteString("# Enabled plugins:\n")
-		for _, name := range plugins {
-			fmt.Fprintf(&result, "#   - %s\n", name)
-		}
-		result.WriteString("\n")
-	}
-
-	result.Write(data)
-	return []byte(result.String()), nil
+	return initialize.GenerateWorkspaceConfigWithComments(plugins, initModules)
 }
 
 // runExistingConfigWorkflow handles the case when .sley.yaml already exists.
@@ -564,15 +536,31 @@ func filterCandidatesByPaths(candidates []discovery.SyncCandidate, selectedPaths
 	return selected
 }
 
-// createConfigWithDefaults creates .sley.yaml with default plugins (commit-parser, tag-manager).
+// createConfigWithDefaults creates .sley.yaml after plugin selection.
 func (w *Workflow) createConfigWithDefaults(ctx context.Context) (bool, error) {
 	// Initialize .version file if needed
 	if err := w.ensureVersionFile(ctx); err != nil {
 		return false, err
 	}
 
-	// Default plugins: commit-parser and tag-manager
-	selectedPlugins := []string{"commit-parser", "tag-manager"}
+	// Prompt for plugin selection (same as init --workspace)
+	selectedPlugins, err := w.selectPlugins()
+	if err != nil {
+		return false, err
+	}
+
+	// Confirm before writing
+	proceed, err := w.confirmAction(
+		"Proceed with initialization?",
+		fmt.Sprintf("This will create .sley.yaml with %d plugin(s).", len(selectedPlugins)),
+	)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		printer.PrintFaint("Initialization canceled.")
+		return false, nil
+	}
 
 	// Generate config
 	configData, err := generateConfigYAML(defaultVersionPath(), selectedPlugins, nil)
@@ -596,8 +584,29 @@ func (w *Workflow) createConfigWithDependencyCheck(ctx context.Context, syncCand
 		return false, err
 	}
 
-	// Plugins: default plugins + dependency-check
-	selectedPlugins := []string{"commit-parser", "tag-manager", "dependency-check"}
+	// Prompt for plugin selection (same as init --workspace)
+	selectedPlugins, err := w.selectPlugins()
+	if err != nil {
+		return false, err
+	}
+
+	// Ensure dependency-check is included since we have sync candidates
+	if !containsPlugin(selectedPlugins, "dependency-check") {
+		selectedPlugins = append(selectedPlugins, "dependency-check")
+	}
+
+	// Confirm before writing
+	proceed, err := w.confirmAction(
+		"Proceed with initialization?",
+		fmt.Sprintf("This will create .sley.yaml with %d plugin(s) and %d sync file(s).", len(selectedPlugins), len(syncCandidates)),
+	)
+	if err != nil {
+		return false, err
+	}
+	if !proceed {
+		printer.PrintFaint("Initialization canceled.")
+		return false, nil
+	}
 
 	// Generate config with discovery
 	configData, err := generateConfigYAML(defaultVersionPath(), selectedPlugins, syncCandidates)
@@ -612,6 +621,11 @@ func (w *Workflow) createConfigWithDependencyCheck(ctx context.Context, syncCand
 
 	w.printInitSuccess(selectedPlugins, syncCandidates)
 	return true, nil
+}
+
+// containsPlugin checks if a plugin name exists in the list.
+func containsPlugin(plugins []string, name string) bool {
+	return slices.Contains(plugins, name)
 }
 
 // ensureVersionFile creates the .version file if it doesn't exist.
