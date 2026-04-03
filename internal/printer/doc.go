@@ -1,8 +1,18 @@
 // Package printer provides rich terminal styling for CLI output.
 //
-// This package uses lipgloss for consistent, attractive console output
-// across the sley CLI. It provides both render functions (returning styled
-// strings) and print functions (outputting to stdout).
+// This package uses herald (github.com/indaco/herald) for consistent,
+// themed console output across the sley CLI. It provides both render
+// functions (returning styled strings) and print functions (outputting
+// to stdout).
+//
+// # Initialization
+//
+// Call Init with a theme name at startup to configure colors:
+//
+//	printer.Init("sley")   // sley brand teal palette
+//	printer.Init("dracula") // dracula dark theme
+//
+// If Init is not called, the default sley theme is used.
 //
 // # Styling Functions
 //
@@ -36,9 +46,9 @@
 //
 // Specialized functions for doctor command validation output:
 //
-//	line := printer.FormatValidationPass("*", "PASS", "Config", "Valid YAML")
-//	line := printer.FormatValidationFail("x", "FAIL", "Version", "Invalid format")
-//	line := printer.FormatValidationWarn("!", "WARN", "Plugin", "Deprecated option")
+//	line := printer.FormatValidationPass("Config", "Valid YAML")
+//	line := printer.FormatValidationFail("Version", "Invalid format")
+//	line := printer.FormatValidationWarn("Plugin", "Deprecated option")
 //
 // # Color Control
 //

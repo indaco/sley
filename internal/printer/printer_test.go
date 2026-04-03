@@ -154,33 +154,25 @@ func TestBadgeFunctions(t *testing.T) {
 func TestValidationFormatFunctions(t *testing.T) {
 	tests := []struct {
 		name     string
-		function func(string, string, string, string) string
-		symbol   string
-		badge    string
+		function func(string, string) string
 		category string
 		message  string
 	}{
 		{
 			name:     "FormatValidationPass",
 			function: FormatValidationPass,
-			symbol:   "✓",
-			badge:    "[PASS]",
 			category: "YAML Syntax",
 			message:  "Configuration file is valid YAML",
 		},
 		{
 			name:     "FormatValidationFail",
 			function: FormatValidationFail,
-			symbol:   "✗",
-			badge:    "[FAIL]",
 			category: "Plugin: audit-log",
 			message:  "Invalid format 'xml': must be 'json' or 'yaml'",
 		},
 		{
 			name:     "FormatValidationWarn",
 			function: FormatValidationWarn,
-			symbol:   "⚠",
-			badge:    "[WARN]",
 			category: "Plugin: tag-manager",
 			message:  "Tag prefix 'v' is valid",
 		},
@@ -188,20 +180,12 @@ func TestValidationFormatFunctions(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := tt.function(tt.symbol, tt.badge, tt.category, tt.message)
+			result := tt.function(tt.category, tt.message)
 
-			// Verify result is not empty
 			if result == "" {
 				t.Errorf("%s() returned empty string", tt.name)
 			}
 
-			// Verify result contains all components
-			if !strings.Contains(result, tt.symbol) {
-				t.Errorf("%s() result does not contain symbol. got %q, want to contain %q", tt.name, result, tt.symbol)
-			}
-			if !strings.Contains(result, tt.badge) {
-				t.Errorf("%s() result does not contain badge. got %q, want to contain %q", tt.name, result, tt.badge)
-			}
 			if !strings.Contains(result, tt.category) {
 				t.Errorf("%s() result does not contain category. got %q, want to contain %q", tt.name, result, tt.category)
 			}
@@ -209,8 +193,6 @@ func TestValidationFormatFunctions(t *testing.T) {
 				t.Errorf("%s() result does not contain message. got %q, want to contain %q", tt.name, result, tt.message)
 			}
 
-			// Verify the format follows the expected pattern: "symbol badge category: message"
-			// We check that category comes before message
 			categoryIndex := strings.Index(result, tt.category)
 			messageIndex := strings.Index(result, tt.message)
 			if categoryIndex == -1 || messageIndex == -1 {
