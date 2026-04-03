@@ -80,7 +80,7 @@ func runSingleModuleSet(path string, version semver.SemVersion) error {
 		return fmt.Errorf("failed to save version: %w", err)
 	}
 
-	printer.PrintSuccess(fmt.Sprintf("Set version to %s in %s", version.String(), path))
+	printer.PrintFaint(fmt.Sprintf("Set version to %s in %s", printer.Info(version.String()), printer.Info(path)))
 	return nil
 }
 

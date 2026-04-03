@@ -42,7 +42,7 @@ func TestExtensionDisableCmd_Success(t *testing.T) {
 		t.Fatalf("CLI run failed: %v", err)
 	}
 
-	expected := `Extension "mock-extension" disabled.`
+	expected := "Extension mock-extension disabled."
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output to contain %q, got:\n%s", expected, output)
 	}

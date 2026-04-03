@@ -33,9 +33,9 @@ func checkCLIOutput(t *testing.T, output, extensionName string, deleted bool) {
 	t.Helper()
 	var expected string
 	if deleted {
-		expected = fmt.Sprintf("Extension %q and its directory uninstalled successfully.", extensionName)
+		expected = fmt.Sprintf("Extension %s and its directory uninstalled successfully.", extensionName)
 	} else {
-		expected = fmt.Sprintf("Extension %q uninstalled, but its directory is preserved.", extensionName)
+		expected = fmt.Sprintf("Extension %s uninstalled, but its directory is preserved.", extensionName)
 	}
 	if !strings.Contains(output, expected) {
 		t.Errorf("expected output to contain %q, got:\n%s", expected, output)

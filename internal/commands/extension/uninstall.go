@@ -78,9 +78,9 @@ func runExtensionUninstall(cmd *cli.Command) error {
 			return fmt.Errorf("failed to clean up extensions directory: %w", err)
 		}
 
-		printer.PrintSuccess(fmt.Sprintf("Extension %q and its directory uninstalled successfully.", extensionName))
+		printer.PrintFaint(fmt.Sprintf("Extension %s and its directory uninstalled successfully.", printer.Info(extensionName)))
 	} else {
-		printer.PrintInfo(fmt.Sprintf("Extension %q uninstalled, but its directory is preserved.", extensionName))
+		printer.PrintFaint(fmt.Sprintf("Extension %s uninstalled, but its directory is preserved.", printer.Info(extensionName)))
 	}
 
 	return nil
