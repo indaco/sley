@@ -31,6 +31,9 @@ type ChangelogGeneratorPlugin struct {
 	gitOps          *GitOps
 	isInteractiveFn func() bool
 	confirmMergeFn  func(message string) (bool, error)
+	// moduleName is set per-module in multi-module workspaces.
+	// When non-empty, unified mode prepends a "## Module: <name>" section header.
+	moduleName string
 }
 
 // Ensure ChangelogGeneratorPlugin implements ChangelogGenerator.
@@ -82,6 +85,32 @@ func (p *ChangelogGeneratorPlugin) GetConfig() *Config {
 	return p.config
 }
 
+// SetChangesDir overrides the changes directory for the next generation cycle.
+// Used to scope output paths per module in multi-module workspaces.
+func (p *ChangelogGeneratorPlugin) SetChangesDir(dir string) {
+	p.config.ChangesDir = dir
+	p.generator.config.ChangesDir = dir
+}
+
+// SetModuleName sets the module name for multi-module context.
+// When set, unified mode prepends a "## <name>" section header
+// to the changelog content, keeping a single root CHANGELOG.md.
+func (p *ChangelogGeneratorPlugin) SetModuleName(name string) {
+	p.moduleName = name
+}
+
+// SetModulePath scopes git log to commits touching the given directory.
+// Pass "" to clear the filter and include all commits.
+func (p *ChangelogGeneratorPlugin) SetModulePath(path string) {
+	p.gitOps.ModulePath = path
+}
+
+// SetTagPrefix scopes tag resolution to tags matching the given prefix.
+// Pass "" to clear the filter and use the latest tag globally.
+func (p *ChangelogGeneratorPlugin) SetTagPrefix(prefix string) {
+	p.gitOps.TagPrefix = prefix
+}
+
 // GenerateForVersion generates changelog for a version bump.
 func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, bumpType string) error {
 	if !p.config.Enabled {
@@ -119,6 +148,13 @@ func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, 
 func (p *ChangelogGeneratorPlugin) writeChangelog(version, content string) error {
 	mode := p.config.Mode
 
+	// For unified mode with module context, inject the module name into the
+	// version heading: "## v0.1.0 - date" becomes "## <module> — v0.1.0 - date"
+	unifiedContent := content
+	if p.moduleName != "" {
+		unifiedContent = prefixVersionHeading(content, p.moduleName)
+	}
+
 	switch mode {
 	case "versioned":
 		if err := p.generator.WriteVersionedFile(version, content); err != nil {
@@ -127,12 +163,12 @@ func (p *ChangelogGeneratorPlugin) writeChangelog(version, content string) error
 		// Handle merge-after for versioned mode
 		return p.handleMergeAfter()
 	case "unified":
-		return p.generator.WriteUnifiedChangelog(content)
+		return p.generator.WriteUnifiedChangelog(unifiedContent)
 	case "both":
 		if err := p.generator.WriteVersionedFile(version, content); err != nil {
 			return err
 		}
-		return p.generator.WriteUnifiedChangelog(content)
+		return p.generator.WriteUnifiedChangelog(unifiedContent)
 	default:
 		return fmt.Errorf("unknown mode: %s", mode)
 	}

@@ -3,6 +3,7 @@ package changeloggenerator
 import (
 	"bytes"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -452,39 +453,81 @@ func (g *Generator) insertAfterHeader(existing, newContent string) string {
 }
 
 // collectVersionFiles returns all version files in the directory.
+// collectVersionFiles returns all version files in the directory, recursing
+// into subdirectories to find module-scoped files (e.g. .changes/mymod/v0.1.0.md).
 func collectVersionFiles(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
+	var files []string
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		name := d.Name()
+		if strings.HasPrefix(name, "v") && strings.HasSuffix(name, ".md") {
+			files = append(files, path)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read changes directory %q: %w", dir, err)
-	}
-
-	var files []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if strings.HasPrefix(name, "v") && strings.HasSuffix(name, ".md") {
-			files = append(files, filepath.Join(dir, name))
-		}
 	}
 	return files, nil
 }
 
 // buildMergedContent concatenates all version file contents with a header.
+// Files in subdirectories get a "## <module>" section header prepended.
 func (g *Generator) buildMergedContent(files []string) string {
 	var sb strings.Builder
 	sb.WriteString(g.getDefaultHeader())
 	sb.WriteString("\n\n")
 
 	for _, file := range files {
-		if data, err := os.ReadFile(file); err == nil {
-			content := strings.TrimRight(string(data), "\n\r\t ")
+		data, err := os.ReadFile(file)
+		if err != nil {
+			continue
+		}
+		content := strings.TrimRight(string(data), "\n\r\t ")
+
+		// Derive module name from the path relative to ChangesDir
+		// and inject it into the version heading.
+		if moduleName := moduleNameFromPath(g.config.ChangesDir, file); moduleName != "" {
+			content = prefixVersionHeading(content, moduleName)
+			sb.WriteString(content)
+			sb.WriteString("\n\n")
+		} else {
 			sb.WriteString(content)
 			sb.WriteString("\n\n")
 		}
 	}
 	return strings.TrimRight(sb.String(), "\n\r\t ") + "\n"
+}
+
+// moduleNameFromPath derives the module name from a version file's path
+// relative to the changes directory. Returns "" for top-level files.
+func moduleNameFromPath(changesDir, filePath string) string {
+	rel, err := filepath.Rel(changesDir, filePath)
+	if err != nil {
+		return ""
+	}
+	dir := filepath.Dir(rel)
+	if dir == "." || dir == "" {
+		return ""
+	}
+	return filepath.ToSlash(dir)
+}
+
+// prefixVersionHeading injects a module name into the first ## heading of
+// changelog content. "## v0.1.0 - date" becomes "## <module> — v0.1.0 - date".
+// If no ## heading is found, the content is returned unchanged.
+func prefixVersionHeading(content, moduleName string) string {
+	const h2 = "## "
+	before, after, ok := strings.Cut(content, h2)
+	if !ok {
+		return content
+	}
+	return before + h2 + moduleName + " — " + after
 }
 
 // MergeVersionedFiles merges all versioned changelog files into a unified CHANGELOG.md.
