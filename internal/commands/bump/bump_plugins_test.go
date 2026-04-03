@@ -11,6 +11,7 @@ import (
 	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
+	"github.com/indaco/sley/internal/plugins/changeloggenerator"
 	"github.com/indaco/sley/internal/plugins/dependencycheck"
 	"github.com/indaco/sley/internal/plugins/tagmanager"
 	"github.com/indaco/sley/internal/semver"
@@ -188,7 +189,7 @@ func TestGenerateChangelogAfterBump(t *testing.T) {
 	t.Run("nil generator returns nil", func(t *testing.T) {
 
 		registry := plugins.NewPluginRegistry()
-		err := generateChangelogAfterBump(registry, version, prevVersion, "major")
+		err := generateChangelogAfterBump(registry, version, prevVersion, "major", "", "")
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -645,4 +646,131 @@ func TestSingleModuleBump_UpdateVersionFails(t *testing.T) {
 	if err == nil {
 		t.Error("expected error when updating read-only version file")
 	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* APPLY MODULE CHANGELOG DIR TESTS                                          */
+/* ------------------------------------------------------------------------- */
+
+func TestApplyModuleChangelogDir(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		modulePath     string
+		wantChangesDir string
+	}{
+		{
+			name:           "empty modulePath returns noop with config unchanged",
+			modulePath:     "",
+			wantChangesDir: ".changes",
+		},
+		{
+			name:           "simple module path scopes changes directory",
+			modulePath:     "cobra",
+			wantChangesDir: filepath.Join(".changes", "cobra"),
+		},
+		{
+			name:           "nested module path scopes changes directory",
+			modulePath:     filepath.Join("packages", "core"),
+			wantChangesDir: filepath.Join(".changes", "packages", "core"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			cfg := &changeloggenerator.Config{
+				Enabled:       true,
+				Mode:          "versioned",
+				Format:        "grouped",
+				ChangesDir:    ".changes",
+				ChangelogPath: "CHANGELOG.md",
+			}
+			plugin, err := changeloggenerator.NewChangelogGenerator(cfg)
+			if err != nil {
+				t.Fatalf("failed to create changelog generator: %v", err)
+			}
+
+			cleanup := applyModuleChangelog(plugin, tt.modulePath, tt.modulePath, "")
+
+			gotCfg := plugin.GetConfig()
+			if gotCfg.ChangesDir != tt.wantChangesDir {
+				t.Errorf("ChangesDir: expected %q, got %q", tt.wantChangesDir, gotCfg.ChangesDir)
+			}
+			// ChangelogPath should remain unchanged (unified mode uses module name header instead)
+			if gotCfg.ChangelogPath != "CHANGELOG.md" {
+				t.Errorf("ChangelogPath: expected %q, got %q", "CHANGELOG.md", gotCfg.ChangelogPath)
+			}
+
+			// Call cleanup and verify originals are restored
+			cleanup()
+
+			restoredCfg := plugin.GetConfig()
+			if restoredCfg.ChangesDir != ".changes" {
+				t.Errorf("after cleanup ChangesDir: expected %q, got %q", ".changes", restoredCfg.ChangesDir)
+			}
+			if restoredCfg.ChangelogPath != "CHANGELOG.md" {
+				t.Errorf("after cleanup ChangelogPath: expected %q, got %q", "CHANGELOG.md", restoredCfg.ChangelogPath)
+			}
+		})
+	}
+}
+
+func TestApplyModuleChangelogDir_NonPluginType(t *testing.T) {
+
+	mock := &mockChangelogGenerator{
+		config: &changeloggenerator.Config{
+			Enabled:       true,
+			Mode:          "versioned",
+			ChangesDir:    ".changes",
+			ChangelogPath: "CHANGELOG.md",
+		},
+	}
+
+	// Should return noop and not panic when cg is not *ChangelogGeneratorPlugin
+	cleanup := applyModuleChangelog(mock, "cobra", "cobra", "")
+
+	// Config should be unchanged because the type assertion fails
+	gotCfg := mock.GetConfig()
+	if gotCfg.ChangesDir != ".changes" {
+		t.Errorf("ChangesDir should be unchanged, got %q", gotCfg.ChangesDir)
+	}
+	if gotCfg.ChangelogPath != "CHANGELOG.md" {
+		t.Errorf("ChangelogPath should be unchanged, got %q", gotCfg.ChangelogPath)
+	}
+
+	// Cleanup should be safe to call (noop)
+	cleanup()
+}
+
+func TestGenerateChangelogAfterBump_NilGeneratorWithModulePath(t *testing.T) {
+
+	registry := plugins.NewPluginRegistry()
+	version := semver.SemVersion{Major: 2, Minor: 0, Patch: 0}
+	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
+
+	// modulePath="cobra" with nil generator should return nil without panic
+	err := generateChangelogAfterBump(registry, version, prevVersion, "major", "cobra", "cobra")
+	if err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+}
+
+/* ------------------------------------------------------------------------- */
+/* MOCK CHANGELOG GENERATOR FOR NON-PLUGIN TYPE TESTS                        */
+/* ------------------------------------------------------------------------- */
+
+// mockChangelogGenerator implements changeloggenerator.ChangelogGenerator
+// but is not a *ChangelogGeneratorPlugin, used to test type assertion paths.
+type mockChangelogGenerator struct {
+	config *changeloggenerator.Config
+}
+
+func (m *mockChangelogGenerator) Name() string                          { return "mock-changelog-generator" }
+func (m *mockChangelogGenerator) Description() string                   { return "mock changelog generator" }
+func (m *mockChangelogGenerator) Version() string                       { return "1.0.0" }
+func (m *mockChangelogGenerator) IsEnabled() bool                       { return m.config.Enabled }
+func (m *mockChangelogGenerator) GetConfig() *changeloggenerator.Config { return m.config }
+func (m *mockChangelogGenerator) GenerateForVersion(_, _, _ string) error {
+	return nil
 }

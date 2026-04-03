@@ -82,7 +82,7 @@ func executeSingleModuleBump(
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, result.NewVersion, result.PreviousVersion, params.bumpType, execCtx.Path); err != nil {
+	if err := executePostBumpActions(registry, result.NewVersion, result.PreviousVersion, params.bumpType, execCtx.Path, "", ""); err != nil {
 		return err
 	}
 
@@ -119,16 +119,17 @@ func executePreBumpValidations(registry *plugins.PluginRegistry, newVersion, pre
 
 // executePostBumpActions runs all post-bump operations like syncing dependencies,
 // generating changelog, and recording audit logs.
-// The bumpedPath parameter is the path to the .version file that was just bumped,
-// used to avoid showing it twice in the dependency sync output.
-func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath string) error {
+// bumpedPath is the .version file path (used to exclude from dep-sync output).
+// moduleName identifies the module in changelog headings (empty for single-module).
+// modulePath scopes versioned output dirs and git log (empty for root or single-module).
+func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath, moduleName, modulePath string) error {
 	// Sync dependency files after updating .version
 	if err := operations.SyncDependencies(registry, newVersion, bumpedPath); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, bumpType); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, bumpType, moduleName, modulePath); err != nil {
 		return err
 	}
 
@@ -164,7 +165,7 @@ func executeStandardBump(
 
 	if !execCtx.IsSingleModule() {
 		// Multi-module mode delegates to runMultiModuleBump
-		return runMultiModuleBump(ctx, cmd, execCtx, registry, nil, params.opBumpType, params.pre, params.meta, params.preserveMeta)
+		return runMultiModuleBump(ctx, cmd, cfg, execCtx, registry, nil, params.opBumpType, params.pre, params.meta, params.preserveMeta)
 	}
 
 	// Single-module mode uses the unified executor

@@ -63,7 +63,7 @@ func runBumpPre(ctx context.Context, cmd *cli.Command, cfg *config.Config, regis
 	}
 
 	if !execCtx.IsSingleModule() {
-		return runMultiModuleBump(ctx, cmd, execCtx, registry, nil, operations.BumpPre, label, meta, isPreserveMeta)
+		return runMultiModuleBump(ctx, cmd, cfg, execCtx, registry, nil, operations.BumpPre, label, meta, isPreserveMeta)
 	}
 
 	// Single-module: use the unified path via BumpOperation

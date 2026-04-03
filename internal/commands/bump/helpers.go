@@ -251,9 +251,63 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 	return nil
 }
 
+// applyModuleChangelog temporarily overrides the changelog generator's output
+// directories and git scoping per module. Returns a cleanup function that restores
+// the originals.
+//
+// moduleName is used for unified mode section headers (always set in multi-module mode).
+// modulePath scopes versioned output dirs and git log (empty for root module).
+// tagPrefix scopes tag resolution (empty for root module).
+func applyModuleChangelog(cg changeloggenerator.ChangelogGenerator, moduleName, modulePath, tagPrefix string) func() {
+	noop := func() {}
+
+	plugin, ok := cg.(*changeloggenerator.ChangelogGeneratorPlugin)
+	if !ok {
+		return noop
+	}
+
+	cfg := cg.GetConfig()
+	originalChangesDir := cfg.ChangesDir
+
+	// Always set module name for unified mode heading
+	if moduleName != "" {
+		plugin.SetModuleName(moduleName)
+	}
+
+	// Scope versioned output dir and git operations for non-root modules
+	if modulePath != "" {
+		plugin.SetChangesDir(filepath.Join(originalChangesDir, modulePath))
+		plugin.SetModulePath(modulePath)
+		plugin.SetTagPrefix(tagPrefix)
+	}
+
+	return func() {
+		plugin.SetChangesDir(originalChangesDir)
+		plugin.SetModuleName("")
+		plugin.SetModulePath("")
+		plugin.SetTagPrefix("")
+	}
+}
+
+// resolveTagPrefix returns the effective tag prefix for a module.
+// If tag-manager is enabled, it interpolates the prefix template with the module path.
+// Otherwise returns an empty string (no prefix filtering).
+func resolveTagPrefix(registry *plugins.PluginRegistry, modulePath string) string {
+	if modulePath == "" {
+		return ""
+	}
+	tm := registry.GetTagManager()
+	if tm == nil || !tm.IsAutoCreateEnabled() {
+		return ""
+	}
+	return tagmanager.InterpolatePrefix(tm.GetConfig().Prefix, modulePath)
+}
+
 // generateChangelogAfterBump generates changelog entries if changelog generator is enabled.
 // Returns nil if changelog generator is not enabled.
-func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ semver.SemVersion, bumpType string) error {
+// moduleName identifies the module in unified changelog headings (empty for single-module).
+// modulePath scopes versioned output dirs and git log (empty for root or single-module).
+func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ semver.SemVersion, bumpType, moduleName, modulePath string) error {
 	cg := registry.GetChangelogGenerator()
 	if cg == nil {
 		return nil
@@ -262,6 +316,13 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 	if !cg.IsEnabled() {
 		return nil
 	}
+
+	// Resolve the effective tag prefix for this module
+	tagPrefix := resolveTagPrefix(registry, modulePath)
+
+	// Apply per-module changelog and git scoping
+	restore := applyModuleChangelog(cg, moduleName, modulePath, tagPrefix)
+	defer restore()
 
 	versionStr := "v" + version.String()
 

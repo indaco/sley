@@ -3,8 +3,11 @@ package bump
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/indaco/sley/internal/clix"
+	"github.com/indaco/sley/internal/config"
 	"github.com/indaco/sley/internal/core"
 	"github.com/indaco/sley/internal/operations"
 	"github.com/indaco/sley/internal/plugins"
@@ -18,6 +21,7 @@ import (
 func runMultiModuleBump(
 	ctx context.Context,
 	cmd *cli.Command,
+	cfg *config.Config,
 	execCtx *clix.ExecutionContext,
 	registry *plugins.PluginRegistry,
 	deps *bumpDeps,
@@ -33,6 +37,13 @@ func runMultiModuleBump(
 	bumper := bumperFn()
 	operation := operations.NewBumpOperation(fs, bumper, bumpType, preRelease, metadata, preserveMetadata)
 
+	skipHooks := cmd.Bool("skip-hooks")
+
+	// Pre-bump phase: run extension hooks and validations per module before any writes.
+	if err := runPreBumpPhase(ctx, cfg, registry, operation, execCtx.Modules, string(bumpType), skipHooks); err != nil {
+		return err
+	}
+
 	// Create executor with options from flags
 	parallel := cmd.Bool("parallel")
 	failFast := cmd.Bool("fail-fast") && !cmd.Bool("continue-on-error")
@@ -42,7 +53,7 @@ func runMultiModuleBump(
 		workspace.WithFailFast(failFast),
 	)
 
-	// Execute the operation on all modules
+	// Execute the operation on all modules (write versions)
 	results, err := executor.Run(ctx, execCtx.Modules, operation)
 	if err != nil && failFast {
 		// In fail-fast mode, we may have partial results
@@ -63,37 +74,125 @@ func runMultiModuleBump(
 		fmt.Println(formatter.FormatResults(results))
 	}
 
-	// Return error if any failures occurred
+	// Return error if any failures occurred during version bumps
 	if workspace.HasErrors(results) {
 		return fmt.Errorf("%d module(s) failed", workspace.ErrorCount(results))
 	}
 
-	// Sync dependencies after all modules are bumped successfully.
-	// The dependency-check plugin syncs files globally, so we call it once
-	// using the new version from the first successful result.
-	// We pass the paths of all bumped modules to avoid showing them twice.
-	if newVersion := getFirstSuccessfulVersion(results); newVersion != "" {
-		parsedVersion, err := semver.ParseVersion(newVersion)
-		if err == nil {
-			bumpedPaths := getBumpedModulePaths(results)
-			if err := operations.SyncDependencies(registry, parsedVersion, bumpedPaths...); err != nil {
-				return err
-			}
+	// Run post-bump actions sequentially per module.
+	// This loop is ALWAYS sequential regardless of --parallel, because
+	// post-bump actions mutate shared plugin state (e.g. tag prefix).
+	return runPerModulePostBump(ctx, results, registry, cfg, string(bumpType), skipHooks)
+}
+
+// runPerModulePostBump executes post-bump actions, extension hooks, and commit/tag
+// sequentially for each successfully bumped module.
+func runPerModulePostBump(ctx context.Context, results []workspace.ExecutionResult, registry *plugins.PluginRegistry, cfg *config.Config, bumpTypeStr string, skipHooks bool) error {
+	var postBumpErrors []error
+	for _, result := range results {
+		if !result.Success || result.Module == nil {
+			continue
+		}
+		if err := postBumpForModule(ctx, result, registry, cfg, bumpTypeStr, skipHooks); err != nil {
+			postBumpErrors = append(postBumpErrors, err)
 		}
 	}
-
+	if len(postBumpErrors) > 0 {
+		return fmt.Errorf("%d module(s) had post-bump errors: %w", len(postBumpErrors), postBumpErrors[0])
+	}
 	return nil
 }
 
-// getBumpedModulePaths extracts the paths of all successfully bumped modules.
-func getBumpedModulePaths(results []workspace.ExecutionResult) []string {
-	var paths []string
-	for _, r := range results {
-		if r.Success && r.Module != nil {
-			paths = append(paths, r.Module.Path)
+// postBumpForModule runs post-bump actions, extension hooks, and commit/tag for a single module.
+func postBumpForModule(ctx context.Context, result workspace.ExecutionResult, registry *plugins.PluginRegistry, cfg *config.Config, bumpTypeStr string, skipHooks bool) error {
+	newVer, err := semver.ParseVersion(result.NewVersion)
+	if err != nil {
+		return fmt.Errorf("module %s: failed to parse new version %q: %w", result.Module.Name, result.NewVersion, err)
+	}
+	oldVer, err := semver.ParseVersion(result.OldVersion)
+	if err != nil {
+		return fmt.Errorf("module %s: failed to parse old version %q: %w", result.Module.Name, result.OldVersion, err)
+	}
+
+	modulePath := deriveModulePath(result.Module.RelPath)
+	moduleName := resolveModuleName(result.Module.Name)
+	effectiveCfg := resolveModuleConfig(cfg, modulePath, result.Module.Dir)
+
+	// Post-bump actions (dep-sync, changelog, audit-log)
+	if err := executePostBumpActions(registry, newVer, oldVer, bumpTypeStr, result.Module.Path, moduleName, modulePath); err != nil {
+		return fmt.Errorf("module %s: post-bump actions: %w", result.Module.Name, err)
+	}
+
+	// Post-bump extension hooks
+	if err := runPostBumpExtensionHooks(ctx, effectiveCfg, result.Module.Path, oldVer.String(), bumpTypeStr, skipHooks); err != nil {
+		return fmt.Errorf("module %s: post-bump hooks: %w", result.Module.Name, err)
+	}
+
+	// Commit and tag
+	if err := commitAndTagAfterBump(registry, newVer, bumpTypeStr, result.Module.Path, effectiveCfg); err != nil {
+		return fmt.Errorf("module %s: commit/tag: %w", result.Module.Name, err)
+	}
+	return nil
+}
+
+// runPreBumpPhase runs extension hooks and validations for all modules before any
+// version writes. This ensures all modules pass validation before committing to bumps.
+func runPreBumpPhase(ctx context.Context, cfg *config.Config, registry *plugins.PluginRegistry, op *operations.BumpOperation, modules []*workspace.Module, bumpTypeStr string, skipHooks bool) error {
+	for _, mod := range modules {
+		effectiveCfg := resolveModuleConfig(cfg, deriveModulePath(mod.RelPath), mod.Dir)
+
+		// Preview to get new/old versions for validation
+		result, err := op.Preview(ctx, mod.Path)
+		if err != nil {
+			return fmt.Errorf("module %s: preview failed: %w", mod.Name, err)
+		}
+
+		// Pre-bump extension hooks (may modify .version file)
+		if err := runPreBumpExtensionHooks(ctx, effectiveCfg, mod.Path, result.NewVersion.String(), result.PreviousVersion.String(), bumpTypeStr, skipHooks); err != nil {
+			return fmt.Errorf("module %s: pre-bump hooks: %w", mod.Name, err)
+		}
+
+		// Pre-bump validations (release gate, version policy, dep consistency, tag availability)
+		if err := executePreBumpValidations(registry, result.NewVersion, result.PreviousVersion, bumpTypeStr); err != nil {
+			return fmt.Errorf("module %s: validation failed: %w", mod.Name, err)
 		}
 	}
-	return paths
+	return nil
+}
+
+// resolveModuleName returns a display name for the module.
+// For root modules (name "."), it uses the current working directory basename.
+func resolveModuleName(name string) string {
+	if name != "." {
+		return name
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		return filepath.Base(cwd)
+	}
+	return name
+}
+
+// deriveModulePath extracts the module directory path from a .version file's relative path.
+// Returns "" for root module (where RelPath is ".version" or the dir is ".").
+func deriveModulePath(relPath string) string {
+	dir := filepath.Dir(relPath)
+	if dir == "." {
+		return ""
+	}
+	return dir
+}
+
+// resolveModuleConfig loads per-module config and merges with root.
+// For root modules (empty modulePath), returns root config as-is.
+func resolveModuleConfig(rootCfg *config.Config, modulePath, moduleDir string) *config.Config {
+	if modulePath == "" {
+		return rootCfg
+	}
+	moduleCfg, err := config.LoadConfigFromDir(moduleDir)
+	if err != nil || moduleCfg == nil {
+		return rootCfg
+	}
+	return config.MergeConfig(rootCfg, moduleCfg)
 }
 
 // getFirstSuccessfulVersion returns the new version from the first successful result.
