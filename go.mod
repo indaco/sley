@@ -8,6 +8,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.2
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/goccy/go-yaml v1.19.2
+	github.com/indaco/herald v0.13.0
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/urfave/cli/v3 v3.8.0
