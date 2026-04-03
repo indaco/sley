@@ -146,24 +146,21 @@ func TestMultiModuleBump_NoSyncWhenDisabled(t *testing.T) {
 	err := testutils.RunCLITestAllowError(t, appCli, []string{
 		"sley", "bump", "patch", "--all", "--non-interactive",
 	}, tmpDir)
-	if err != nil {
-		t.Fatalf("bump failed: %v", err)
+
+	// Pre-bump validation now catches dependency inconsistencies.
+	// With AutoSync disabled, the bump should fail because other.version
+	// does not match the new version.
+	if err == nil {
+		t.Fatal("expected validation error for dependency inconsistency, got nil")
+	}
+	if !strings.Contains(err.Error(), "version inconsistencies") {
+		t.Fatalf("expected 'version inconsistencies' error, got: %v", err)
 	}
 
-	// Verify module versions were bumped
+	// Verify module versions were NOT bumped (validation aborted before any writes)
 	apiVersion := readModuleVersionFromDir(t, tmpDir, "api")
-	if apiVersion != "1.0.1" {
-		t.Errorf("expected api version '1.0.1', got %q", apiVersion)
-	}
-
-	// Verify extra file was NOT synced (because auto-sync is disabled)
-	extraVersionData, err := os.ReadFile(extraVersionPath)
-	if err != nil {
-		t.Fatalf("failed to read other.version: %v", err)
-	}
-	extraVersion := strings.TrimSpace(string(extraVersionData))
-	if extraVersion != "1.0.0" {
-		t.Errorf("expected other.version to remain '1.0.0' (no sync), got %q", extraVersion)
+	if apiVersion != "1.0.0" {
+		t.Errorf("expected api version to remain '1.0.0' (validation failed), got %q", apiVersion)
 	}
 }
 

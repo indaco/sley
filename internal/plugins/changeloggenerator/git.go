@@ -64,6 +64,13 @@ type GitOps struct {
 	GetContributorsFn           func(commits []CommitInfo) []Contributor
 	GetHistoricalContributorsFn func(beforeRef string) (map[string]struct{}, error)
 	GetNewContributorsFn        func(commits []CommitInfo, previousVersion string) ([]NewContributor, error)
+
+	// ModulePath scopes git log to commits touching this directory.
+	// Empty means no path filtering (all commits).
+	ModulePath string
+	// TagPrefix scopes tag resolution to tags matching this prefix.
+	// Empty means use the latest tag globally.
+	TagPrefix string
 }
 
 // NewGitOps creates a new GitOps with default implementations.
@@ -105,7 +112,12 @@ func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 	revRange := since + ".." + until
 	// Use a delimiter that's unlikely to appear in commit messages
 	format := "%H|%h|%s|%an|%ae"
-	cmd := g.ExecCommandFn("git", "log", "--pretty=format:"+format, revRange)
+	args := []string{"log", "--pretty=format:" + format, revRange}
+	// Scope to module path if set (only commits touching this directory)
+	if g.ModulePath != "" {
+		args = append(args, "--", g.ModulePath)
+	}
+	cmd := g.ExecCommandFn("git", args...)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -143,7 +155,12 @@ func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 }
 
 // getLatestTag returns the most recent git tag.
+// When TagPrefix is set, only tags matching that prefix are considered.
 func (g *GitOps) getLatestTag() (string, error) {
+	if g.TagPrefix != "" {
+		return g.getLatestTagWithPrefix(g.TagPrefix)
+	}
+
 	cmd := g.ExecCommandFn("git", "describe", "--tags", "--abbrev=0")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -163,6 +180,32 @@ func (g *GitOps) getLatestTag() (string, error) {
 	}
 
 	return tag, nil
+}
+
+// getLatestTagWithPrefix returns the most recent tag matching the given prefix.
+// Uses git tag --list with version sorting to find the latest match.
+func (g *GitOps) getLatestTagWithPrefix(prefix string) (string, error) {
+	cmd := g.ExecCommandFn("git", "tag", "--list", prefix+"*", "--sort=-v:refname")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	out, err := cmd.Output()
+	if err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return "", fmt.Errorf("git tag list failed: %s: %w", stderrMsg, err)
+		}
+		return "", fmt.Errorf("git tag list failed: %w", err)
+	}
+
+	output := strings.TrimSpace(string(out))
+	if output == "" {
+		return "", fmt.Errorf("no tags found matching prefix %q", prefix)
+	}
+
+	// First line is the latest tag (sorted by version descending)
+	tag, _, _ := strings.Cut(output, "\n")
+	return strings.TrimSpace(tag), nil
 }
 
 // getRemoteInfo parses the owner/repo from git remote origin.

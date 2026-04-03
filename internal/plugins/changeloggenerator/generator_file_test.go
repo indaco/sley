@@ -758,3 +758,172 @@ func TestExtractVersion(t *testing.T) {
 		})
 	}
 }
+
+func assertFileExists(t *testing.T, path string) {
+	t.Helper()
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		t.Fatalf("expected file to exist at %s", path)
+	}
+}
+
+func assertFileContent(t *testing.T, path, wantSubstring string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("failed to read file %s: %v", path, err)
+	}
+	if !strings.Contains(string(data), wantSubstring) {
+		t.Errorf("file %s does not contain %q; got %q", path, wantSubstring, string(data))
+	}
+}
+
+func TestWriteVersionedFile_ModuleAware(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		changesDir string // relative to tmpDir
+		version    string
+		content    string
+		wantPath   string // relative to tmpDir
+	}{
+		{
+			name:       "root module unchanged",
+			changesDir: ".changes",
+			version:    "v0.1.0",
+			content:    "## v0.1.0\n\nRoot module release",
+			wantPath:   ".changes/v0.1.0.md",
+		},
+		{
+			name:       "submodule scoped path",
+			changesDir: ".changes/cobra",
+			version:    "v0.1.0",
+			content:    "## v0.1.0\n\nCobra module release",
+			wantPath:   ".changes/cobra/v0.1.0.md",
+		},
+		{
+			name:       "nested submodule scoped path",
+			changesDir: ".changes/packages/core",
+			version:    "v1.0.0",
+			content:    "## v1.0.0\n\nCore package release",
+			wantPath:   ".changes/packages/core/v1.0.0.md",
+		},
+		{
+			name:       "directory auto-created for new module",
+			changesDir: ".changes/newmod",
+			version:    "v0.1.0",
+			content:    "## v0.1.0\n\nNew module first release",
+			wantPath:   ".changes/newmod/v0.1.0.md",
+		},
+		{
+			name:       "two modules same version no overwrite",
+			changesDir: "", // handled specially below
+			version:    "v0.1.0",
+			content:    "## v0.1.0\n\nModule release",
+			wantPath:   "", // handled specially below
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmpDir := t.TempDir()
+
+			if tt.name == "two modules same version no overwrite" {
+				// Write to cobra module
+				cobraDir := filepath.Join(tmpDir, ".changes", "cobra")
+				cobraCfg := DefaultConfig()
+				cobraCfg.ChangesDir = cobraDir
+				cobraGen, err := NewGenerator(cobraCfg, NewGitOps())
+				if err != nil {
+					t.Fatalf("failed to create cobra generator: %v", err)
+				}
+				if err := cobraGen.WriteVersionedFile("v0.1.0", "## v0.1.0\n\nCobra release"); err != nil {
+					t.Fatalf("failed to write cobra versioned file: %v", err)
+				}
+
+				// Write to herald module
+				heraldDir := filepath.Join(tmpDir, ".changes", "herald")
+				heraldCfg := DefaultConfig()
+				heraldCfg.ChangesDir = heraldDir
+				heraldGen, err := NewGenerator(heraldCfg, NewGitOps())
+				if err != nil {
+					t.Fatalf("failed to create herald generator: %v", err)
+				}
+				if err := heraldGen.WriteVersionedFile("v0.1.0", "## v0.1.0\n\nHerald release"); err != nil {
+					t.Fatalf("failed to write herald versioned file: %v", err)
+				}
+
+				// Both files must exist independently with distinct content
+				cobraPath := filepath.Join(cobraDir, "v0.1.0.md")
+				heraldPath := filepath.Join(heraldDir, "v0.1.0.md")
+				assertFileExists(t, cobraPath)
+				assertFileExists(t, heraldPath)
+				assertFileContent(t, cobraPath, "Cobra release")
+				assertFileContent(t, heraldPath, "Herald release")
+				return
+			}
+
+			changesDir := filepath.Join(tmpDir, tt.changesDir)
+			cfg := DefaultConfig()
+			cfg.ChangesDir = changesDir
+			g, err := NewGenerator(cfg, NewGitOps())
+			if err != nil {
+				t.Fatalf("failed to create generator: %v", err)
+			}
+
+			if err := g.WriteVersionedFile(tt.version, tt.content); err != nil {
+				t.Fatalf("WriteVersionedFile() error: %v", err)
+			}
+
+			expectedPath := filepath.Join(tmpDir, tt.wantPath)
+			assertFileExists(t, expectedPath)
+			assertFileContent(t, expectedPath, tt.version)
+		})
+	}
+}
+
+func TestWriteUnifiedChangelog_ModuleAware(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		content       string
+		wantSubstring string
+	}{
+		{
+			name:          "root module writes at root",
+			content:       "## v1.0.0\n\nRoot release notes",
+			wantSubstring: "Root release notes",
+		},
+		{
+			name:          "module section header in content",
+			content:       "## cobra\n\n## v0.1.0\n\nCobra module notes",
+			wantSubstring: "## cobra",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			tmpDir := t.TempDir()
+			changelogPath := filepath.Join(tmpDir, "CHANGELOG.md")
+
+			cfg := DefaultConfig()
+			cfg.ChangelogPath = changelogPath
+			g, err := NewGenerator(cfg, NewGitOps())
+			if err != nil {
+				t.Fatalf("failed to create generator: %v", err)
+			}
+
+			if err := g.WriteUnifiedChangelog(tt.content); err != nil {
+				t.Fatalf("WriteUnifiedChangelog() error: %v", err)
+			}
+
+			assertFileExists(t, changelogPath)
+			assertFileContent(t, changelogPath, tt.wantSubstring)
+		})
+	}
+}
