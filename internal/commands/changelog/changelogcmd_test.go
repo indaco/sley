@@ -526,6 +526,118 @@ func TestChangelogMergeCmd_NoWarningWhenMergeAfterManual(t *testing.T) {
 	}
 }
 
+/* ------------------------------------------------------------------------- */
+/* CHANGELOG MERGE COMMAND - MULTI-MODULE SUBDIRECTORIES                     */
+/* ------------------------------------------------------------------------- */
+
+func TestChangelogMergeCmd_MultiModuleSubdirectories(t *testing.T) {
+
+	tmpDir := t.TempDir()
+	changesDir := filepath.Join(tmpDir, ".changes")
+	outputPath := filepath.Join(tmpDir, "CHANGELOG.md")
+
+	// Create module subdirectories with versioned changelog files
+	modules := []struct {
+		module   string
+		filename string
+		content  string
+	}{
+		{
+			module:   "moduleA",
+			filename: "v1.0.0.md",
+			content: `## v1.0.0 - 2025-06-01
+
+### Features
+
+- Feature A from moduleA
+`,
+		},
+		{
+			module:   "moduleB",
+			filename: "v0.2.0.md",
+			content: `## v0.2.0 - 2025-05-01
+
+### Features
+
+- Feature B from moduleB
+`,
+		},
+	}
+
+	for _, m := range modules {
+		dir := filepath.Join(changesDir, m.module)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatalf("failed to create module dir %s: %v", dir, err)
+		}
+		path := filepath.Join(dir, m.filename)
+		if err := os.WriteFile(path, []byte(m.content), 0644); err != nil {
+			t.Fatalf("failed to write %s: %v", path, err)
+		}
+	}
+
+	// Prepare and run the CLI command
+	cfg := &config.Config{Path: tmpDir}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run(cfg)})
+
+	output, err := testutils.CaptureStdout(func() {
+		testutils.RunCLITest(t, appCli, []string{
+			"sley", "changelog", "merge",
+			"--changes-dir", changesDir,
+			"--output", outputPath,
+		}, tmpDir)
+	})
+	if err != nil {
+		t.Fatalf("failed to capture stdout: %v", err)
+	}
+
+	// Check success message
+	expectedMsg := "Merged changelog files"
+	if !strings.Contains(output, expectedMsg) {
+		t.Errorf("expected output to contain %q, got:\n%s", expectedMsg, output)
+	}
+
+	// Verify output file exists
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		t.Fatalf("expected output file to exist at %s", outputPath)
+	}
+
+	// Read and verify content
+	content, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatalf("failed to read output file: %v", err)
+	}
+
+	contentStr := string(content)
+
+	// Both module entries must be present
+	if !strings.Contains(contentStr, "v1.0.0") {
+		t.Errorf("expected content to contain v1.0.0 from moduleA")
+	}
+	if !strings.Contains(contentStr, "v0.2.0") {
+		t.Errorf("expected content to contain v0.2.0 from moduleB")
+	}
+
+	// Module-prefixed headings should appear (prefixVersionHeading injects module name)
+	if !strings.Contains(contentStr, "moduleA") {
+		t.Errorf("expected content to contain module name 'moduleA'")
+	}
+	if !strings.Contains(contentStr, "moduleB") {
+		t.Errorf("expected content to contain module name 'moduleB'")
+	}
+
+	// Verify ordering: v1.0.0 (higher) should appear before v0.2.0 (lower)
+	v100Idx := strings.Index(contentStr, "v1.0.0")
+	v020Idx := strings.Index(contentStr, "v0.2.0")
+	if v100Idx > v020Idx {
+		t.Errorf("expected v1.0.0 to appear before v0.2.0 (newest first), v1.0.0 at %d, v0.2.0 at %d", v100Idx, v020Idx)
+	}
+
+	// Verify default header
+	if !strings.Contains(contentStr, "# Changelog") {
+		t.Errorf("expected content to contain default header '# Changelog'")
+	}
+}
+
 func TestIsChangelogGeneratorEnabled(t *testing.T) {
 
 	tests := []struct {
