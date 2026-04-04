@@ -25,7 +25,7 @@ func SafeFallbackSince(execCommand func(string, ...string) *exec.Cmd, n int) str
 		return fmt.Sprintf("HEAD~%d", n)
 	}
 
-	// Fewer than n commits — use the root commit so the range covers everything.
+	// Fewer than n commits - use the root commit so the range covers everything.
 	root := execCommand("git", "rev-list", "--max-parents=0", "HEAD")
 	rootOut, err := root.Output()
 	if err != nil {

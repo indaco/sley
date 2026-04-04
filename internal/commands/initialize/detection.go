@@ -300,7 +300,7 @@ func detectCargoWorkspace() (*MonorepoInfo, error) {
 			continue
 		}
 
-		// New section starts — stop if we were in [workspace]
+		// New section starts - stop if we were in [workspace]
 		if strings.HasPrefix(line, "[") && line != "[workspace]" {
 			if inWorkspace {
 				break

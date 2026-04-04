@@ -39,7 +39,7 @@ else
     readonly COLOR_H2=''
 fi
 
-# Log prefix helper — returns colored [LEVEL] or emoji based on LOG_STYLE
+# Log prefix helper - returns colored [LEVEL] or emoji based on LOG_STYLE
 _log_prefix() {
     local level="$1"
     local color="$2"

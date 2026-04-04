@@ -566,7 +566,7 @@ func TestDetectMonorepo_Priority(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
 
-	// Both go.work and pnpm-workspace.yaml present — go.work should win
+	// Both go.work and pnpm-workspace.yaml present - go.work should win
 	writeTestFile(t, "go.work", "go 1.21\nuse ./mod1\n")
 	mkdirTest(t, "mod1")
 	writeTestFile(t, "pnpm-workspace.yaml", "packages:\n  - \"packages/*\"\n")

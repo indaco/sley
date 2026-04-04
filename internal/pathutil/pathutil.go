@@ -28,7 +28,7 @@ func resolveSymlinks(absBase, absPath string) (string, string) {
 		return resolvedBase, filepath.Join(resolvedParent, filepath.Base(absPath))
 	}
 
-	// Cannot resolve path side — fall back to both unresolved to avoid mismatch
+	// Cannot resolve path side - fall back to both unresolved to avoid mismatch
 	return absBase, absPath
 }
 

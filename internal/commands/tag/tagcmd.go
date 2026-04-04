@@ -54,22 +54,24 @@ func Run(cfg *config.Config) *cli.Command {
 
 // createCmd returns the "tag create" subcommand.
 func (tc *TagCommand) createCmd(cfg *config.Config) *cli.Command {
+	flags := []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "push",
+			Usage: "Push the tag to remote after creation",
+		},
+		&cli.StringFlag{
+			Name:  "message",
+			Usage: "Override the tag message (for annotated/signed tags)",
+		},
+	}
+	flags = append(flags, cliflags.MultiModuleFlags()...)
+
 	return &cli.Command{
 		Name:      "create",
 		Aliases:   []string{"c", "new"},
 		Usage:     "Create a git tag for the current version",
-		UsageText: "sley tag create [--push] [--message <msg>]",
-		Flags: []cli.Flag{
-			&cli.BoolFlag{
-				Name:  "push",
-				Usage: "Push the tag to remote after creation",
-			},
-			&cli.StringFlag{
-				Name:    "message",
-				Aliases: []string{"m"},
-				Usage:   "Override the tag message (for annotated/signed tags)",
-			},
-		},
+		UsageText: "sley tag create [--push] [--message <msg>] [--all] [--module name]",
+		Flags:     flags,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return tc.runCreateCmd(ctx, cmd, cfg)
 		},
@@ -78,19 +80,22 @@ func (tc *TagCommand) createCmd(cfg *config.Config) *cli.Command {
 
 // listCmd returns the "tag list" subcommand.
 func (tc *TagCommand) listCmd(cfg *config.Config) *cli.Command {
+	flags := []cli.Flag{
+		&cli.IntFlag{
+			Name:    "limit",
+			Aliases: []string{"n"},
+			Usage:   "Limit the number of tags shown",
+			Value:   0,
+		},
+	}
+	flags = append(flags, cliflags.MultiModuleFlags()...)
+
 	return &cli.Command{
 		Name:      "list",
 		Aliases:   []string{"l", "ls"},
 		Usage:     "List existing version tags",
-		UsageText: "sley tag list [--limit <n>]",
-		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:    "limit",
-				Aliases: []string{"n"},
-				Usage:   "Limit the number of tags shown",
-				Value:   0,
-			},
-		},
+		UsageText: "sley tag list [--limit <n>] [--all] [--module name]",
+		Flags:     flags,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return tc.runListCmd(ctx, cmd, cfg)
 		},
@@ -103,7 +108,8 @@ func (tc *TagCommand) pushCmd(cfg *config.Config) *cli.Command {
 		Name:      "push",
 		Aliases:   []string{"p"},
 		Usage:     "Push a tag to remote",
-		UsageText: "sley tag push [tag-name]",
+		UsageText: "sley tag push [tag-name] [--all] [--module name]",
+		Flags:     cliflags.MultiModuleFlags(),
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			return tc.runPushCmd(ctx, cmd, cfg)
 		},

@@ -75,7 +75,7 @@ func SetNoColor(disabled bool) {
 }
 
 // ---------------------------------------------------------------------------
-// Render functions — return styled strings without printing
+// Render functions - return styled strings without printing
 // ---------------------------------------------------------------------------
 
 // Faint returns text with faint styling.
@@ -117,7 +117,7 @@ func Info(text string) string {
 }
 
 // ---------------------------------------------------------------------------
-// Print functions — output styled text to stdout with a newline
+// Print functions - output styled text to stdout with a newline
 // ---------------------------------------------------------------------------
 
 // PrintFaint prints text with faint styling.

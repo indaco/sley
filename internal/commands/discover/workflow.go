@@ -96,7 +96,7 @@ func (w *Workflow) runInitWorkflow(ctx context.Context) (bool, error) {
 
 	// Check if we have useful suggestions
 	if len(w.result.SyncCandidates) == 0 && len(w.result.Modules) == 0 {
-		// No .version files found — check for monorepo workspace markers
+		// No .version files found - check for monorepo workspace markers
 		// (go.work, pnpm-workspace.yaml, package.json workspaces, Cargo.toml [workspace])
 		if monoInfo, err := initialize.DetectMonorepo(); err == nil && monoInfo != nil {
 			return w.runMonorepoInitWorkflow(ctx, monoInfo)
