@@ -2020,6 +2020,110 @@ func assertCreatedTags(t *testing.T, created, want []string) {
 	}
 }
 
+func TestCreateTagsForAllModules_MultiModuleWithDuplicateSkip(t *testing.T) {
+	// This test verifies multi-module tag creation where some modules share
+	// the same version. Tags that already exist (including from a previous
+	// module in the same run) should be skipped without error.
+	tmpDir := t.TempDir()
+	chdirTest(t, tmpDir)
+
+	moduleVersions := map[string]string{
+		"core": "1.0.0",
+		"api":  "2.0.0",
+		"web":  "1.0.0", // same version as core => produces duplicate tag "v1.0.0"
+		"cli":  "3.0.0",
+	}
+
+	modules := buildTestModules(t, tmpDir, moduleVersions)
+
+	// Track which tags have been "created" so far. When a tag is created
+	// the first time it is recorded; subsequent attempts report it as existing.
+	createdSet := map[string]bool{}
+	var createdOrder []string
+
+	mockOps := &mockGitTagOps{
+		tagExists: func(_ context.Context, name string) (bool, error) {
+			return createdSet[name], nil
+		},
+		createAnnotatedTag: func(_ context.Context, name, _ string) error {
+			createdSet[name] = true
+			createdOrder = append(createdOrder, name)
+			return nil
+		},
+	}
+	tc := NewTagCommand(mockOps)
+
+	execCtx := &clix.ExecutionContext{
+		Mode:    clix.MultiModuleMode,
+		Modules: modules,
+	}
+
+	err := tc.createTagsForAllModules(context.Background(), newTestCmd(t), defaultTagEnabledConfig(t), execCtx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// We expect 3 unique tags: v1.0.0 (from core), v2.0.0 (from api), v3.0.0 (from cli).
+	// The second v1.0.0 (from web) should be skipped because tagExists returns true.
+	wantCreated := []string{"v1.0.0", "v2.0.0", "v3.0.0"}
+	assertCreatedTags(t, createdOrder, wantCreated)
+
+	// Verify that exactly 3 tags were created (no duplicate creation)
+	if len(createdOrder) != 3 {
+		t.Errorf("expected 3 tags to be created, got %d: %v", len(createdOrder), createdOrder)
+	}
+}
+
+func TestSortTagsBySemver_MultipleModulePrefixes(t *testing.T) {
+	// Verify that sortTagsBySemver handles tags with a shared prefix correctly
+	// even when mixed with tags that do not parse as valid semver.
+	tests := []struct {
+		name   string
+		tags   []string
+		prefix string
+		want   []string
+	}{
+		{
+			name:   "mixed module-prefixed and plain tags",
+			tags:   []string{"v0.1.0", "v3.0.0", "v0.10.0", "v1.0.0"},
+			prefix: "v",
+			want:   []string{"v3.0.0", "v1.0.0", "v0.10.0", "v0.1.0"},
+		},
+		{
+			name:   "module-scoped prefix with slash",
+			tags:   []string{"core/v1.0.0", "core/v2.0.0", "core/v0.5.0"},
+			prefix: "core/v",
+			want:   []string{"core/v2.0.0", "core/v1.0.0", "core/v0.5.0"},
+		},
+		{
+			name:   "single tag",
+			tags:   []string{"v1.0.0"},
+			prefix: "v",
+			want:   []string{"v1.0.0"},
+		},
+		{
+			name:   "tags with pre-release identifiers",
+			tags:   []string{"v1.0.0-alpha.1", "v1.0.0-rc.1", "v1.0.0", "v0.9.0"},
+			prefix: "v",
+			want:   []string{"v1.0.0", "v1.0.0-rc.1", "v1.0.0-alpha.1", "v0.9.0"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sortTagsBySemver(tt.tags, tt.prefix)
+			if len(tt.tags) != len(tt.want) {
+				t.Fatalf("sortTagsBySemver() len = %v, want %v", len(tt.tags), len(tt.want))
+			}
+			for i := range tt.tags {
+				if tt.tags[i] != tt.want[i] {
+					t.Errorf("sortTagsBySemver()[%d] = %v, want %v", i, tt.tags[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestResolveModuleConfig(t *testing.T) {
 	tests := []struct {
 		name          string
