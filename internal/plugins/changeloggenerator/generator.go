@@ -519,7 +519,7 @@ func moduleNameFromPath(changesDir, filePath string) string {
 }
 
 // prefixVersionHeading injects a module name into the first ## heading of
-// changelog content. "## v0.1.0 - date" becomes "## <module> — v0.1.0 - date".
+// changelog content. "## v0.1.0 - date" becomes "## <module> - v0.1.0 - date".
 // If no ## heading is found, the content is returned unchanged.
 func prefixVersionHeading(content, moduleName string) string {
 	const h2 = "## "
@@ -527,7 +527,7 @@ func prefixVersionHeading(content, moduleName string) string {
 	if !ok {
 		return content
 	}
-	return before + h2 + moduleName + " — " + after
+	return before + h2 + moduleName + " - " + after
 }
 
 // MergeVersionedFiles merges all versioned changelog files into a unified CHANGELOG.md.

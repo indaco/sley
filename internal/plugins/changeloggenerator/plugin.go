@@ -149,7 +149,7 @@ func (p *ChangelogGeneratorPlugin) writeChangelog(version, content string) error
 	mode := p.config.Mode
 
 	// For unified mode with module context, inject the module name into the
-	// version heading: "## v0.1.0 - date" becomes "## <module> — v0.1.0 - date"
+	// version heading: "## v0.1.0 - date" becomes "## <module> - v0.1.0 - date"
 	unifiedContent := content
 	if p.moduleName != "" {
 		unifiedContent = prefixVersionHeading(content, p.moduleName)

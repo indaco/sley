@@ -129,7 +129,7 @@ func TestUpdateRepo_NonExistentRepo(t *testing.T) {
 // TestCloneOrUpdate_UpdateError tests error propagation when update fails.
 func TestCloneOrUpdate_UpdateError(t *testing.T) {
 	t.Parallel(
-	// Create a repo with no remote configured — git pull will fail
+	// Create a repo with no remote configured - git pull will fail
 	)
 
 	sourceRepo := setupTestRepo(t)
