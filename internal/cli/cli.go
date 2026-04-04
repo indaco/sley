@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/indaco/herald"
 	heraldhelp "github.com/indaco/herald-help"
 	heraldurfave "github.com/indaco/herald-help/urfave"
 	"github.com/indaco/sley/internal/commands/bump"
@@ -39,8 +38,7 @@ func init() {
 		if !ok {
 			return
 		}
-		ty := herald.New()
-		_ = heraldhelp.RenderTo(w, ty, heraldurfave.FromUrfave(cmd))
+		_ = heraldhelp.RenderTo(w, printer.Typography(), heraldurfave.FromUrfave(cmd))
 	}
 }
 
