@@ -7,7 +7,7 @@ import (
 // TestGetVersion checks if the GetVersion function correctly retrieves the embedded version.
 func TestGetVersion(t *testing.T) {
 	t.Parallel()
-	expectedVersion := "0.12.1"
+	expectedVersion := "0.13.0"
 
 	got := GetVersion()
 	if got != expectedVersion {
