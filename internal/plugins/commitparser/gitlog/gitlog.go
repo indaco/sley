@@ -58,7 +58,7 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 	if since == "" {
 		lastTag, err := g.getLastTag()
 		if err != nil {
-			// No tags found — fall back to a safe recent range.
+			// No tags found - fall back to a safe recent range.
 			// Use HEAD~10 if enough commits exist, otherwise use the repo root.
 			since = git.SafeFallbackSince(g.ExecCommandFn, 10)
 		} else {
