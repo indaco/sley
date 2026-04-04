@@ -3,9 +3,13 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/indaco/herald"
+	heraldhelp "github.com/indaco/herald-help"
+	heraldurfave "github.com/indaco/herald-help/urfave"
 	"github.com/indaco/sley/internal/commands/bump"
 	"github.com/indaco/sley/internal/commands/changelog"
 	"github.com/indaco/sley/internal/commands/discover"
@@ -28,6 +32,17 @@ var (
 	noColorFlag bool
 	themeFlag   string
 )
+
+func init() {
+	urfavecli.HelpPrinter = func(w io.Writer, _ string, data any) {
+		cmd, ok := data.(*urfavecli.Command)
+		if !ok {
+			return
+		}
+		ty := herald.New()
+		_ = heraldhelp.RenderTo(w, ty, heraldurfave.FromUrfave(cmd))
+	}
+}
 
 // New builds and returns the root CLI command,
 // configuring all subcommands and flags for the sley cli.
