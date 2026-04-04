@@ -192,6 +192,14 @@ func TestGenerateWorkspaceConfigWithComments(t *testing.T) {
 	if cfg.Workspace.Discovery == nil {
 		t.Error("expected discovery config")
 	}
+
+	if cfg.Workspace.Versioning != "independent" {
+		t.Errorf("expected versioning 'independent', got %q", cfg.Workspace.Versioning)
+	}
+
+	if !strings.Contains(dataStr, "versioning: independent") {
+		t.Error("expected 'versioning: independent' in generated config")
+	}
 }
 
 func TestGenerateWorkspaceConfigWithComments_NoModules(t *testing.T) {
@@ -275,6 +283,50 @@ func TestCLI_InitCommand_WithWorkspaceFlag(t *testing.T) {
 	// Verify discovery is enabled
 	if loadedCfg.Workspace.Discovery.Enabled != nil && !*loadedCfg.Workspace.Discovery.Enabled {
 		t.Error("expected discovery to be enabled")
+	}
+
+	// Verify workspace init does NOT create root .version file
+	if _, err := os.Stat(versionPath); !os.IsNotExist(err) {
+		t.Error("workspace init must not create root .version file")
+	}
+}
+
+func TestCLI_InitCommand_WorkspaceIgnoresMigrate(t *testing.T) {
+	tmp := t.TempDir()
+	versionPath := filepath.Join(tmp, ".version")
+	configPath := filepath.Join(tmp, ".sley.yaml")
+
+	// Create a package.json so --migrate has something to detect
+	pkgContent := `{"name": "test", "version": "5.0.0"}`
+	if err := os.WriteFile(filepath.Join(tmp, "package.json"), []byte(pkgContent), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Chdir(tmp)
+
+	cfg := &config.Config{Path: versionPath}
+	appCli := testutils.BuildCLIForTests(cfg.Path, []*cli.Command{Run()})
+
+	err := appCli.Run(context.Background(), []string{
+		"sley", "init", "--workspace", "--migrate", "--yes",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify workspace config was created (--workspace takes precedence)
+	configData, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("failed to read config: %v", err)
+	}
+
+	var loadedCfg config.Config
+	if err := yaml.Unmarshal(configData, &loadedCfg); err != nil {
+		t.Fatalf("failed to parse config: %v", err)
+	}
+
+	if loadedCfg.Workspace == nil {
+		t.Fatal("expected workspace config (--workspace should take precedence over --migrate)")
 	}
 }
 
@@ -460,7 +512,7 @@ func TestWritePluginConfig(t *testing.T) {
 		expected string
 	}{
 		{"commit-parser uses simple format", "commit-parser", "commit-parser: true"},
-		{"tag-manager uses enabled format", "tag-manager", "tag-manager:\n    enabled: true"},
+		{"tag-manager uses enabled format", "tag-manager", "tag-manager:\n    enabled: true\n    prefix: \"{module_path}/v\""},
 		{"unknown plugin uses enabled format", "custom-plugin", "custom-plugin:\n    enabled: true"},
 	}
 

@@ -305,6 +305,7 @@ func TestCLI_InitCommand_WithTemplateFlag(t *testing.T) {
 		{"git template", "git", true, true, false, false, false},
 		{"automation template", "automation", true, true, true, false, false},
 		{"strict template", "strict", true, true, false, true, true},
+		{"full template", "full", true, true, true, true, true},
 	}
 
 	for _, tt := range tests {
