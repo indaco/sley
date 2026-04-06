@@ -297,7 +297,7 @@ func resolveTagPrefix(registry *plugins.PluginRegistry, modulePath string) strin
 		return ""
 	}
 	tm := registry.GetTagManager()
-	if tm == nil || !tm.IsAutoCreateEnabled() {
+	if tm == nil || !tm.GetConfig().Enabled {
 		return ""
 	}
 	return tagmanager.InterpolatePrefix(tm.GetConfig().Prefix, modulePath)
@@ -326,30 +326,51 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 
 	versionStr := "v" + version.String()
 
-	// Use actual git tag for commit range, not version file content
-	// The version file may contain pre-release/metadata that doesn't match a real tag
-	prevVersionStr, err := changeloggenerator.GetLatestTag()
-	if err != nil {
-		// If no tags exist, generate from all commits
-		prevVersionStr = ""
-	}
-
-	if err := cg.GenerateForVersion(versionStr, prevVersionStr, bumpType); err != nil {
+	// Pass empty previousVersion so GenerateForVersion resolves the commit
+	// range internally via the plugin's scoped GitOps (which respects TagPrefix
+	// and ModulePath set by applyModuleChangelog above).
+	if err := cg.GenerateForVersion(versionStr, "", bumpType); err != nil {
 		return fmt.Errorf("failed to generate changelog: %w", err)
 	}
 
-	cfg := cg.GetConfig()
+	printChangelogStatus(cg.GetConfig(), versionStr)
+	return nil
+}
+
+// printChangelogStatus prints a message about which changelog files were actually
+// created on disk. Only prints for files that exist, preventing false positives
+// when GenerateForVersion returns nil without writing (e.g. zero commits).
+func printChangelogStatus(cfg *changeloggenerator.Config, versionStr string) {
+	versionedPath := filepath.Join(cfg.ChangesDir, versionStr+".md")
+	versionedExists := fileExists(versionedPath)
+	unifiedExists := fileExists(cfg.ChangelogPath)
+
 	switch cfg.Mode {
 	case "versioned":
-		printer.PrintFaint(fmt.Sprintf("Generated changelog: %s", printer.Info(fmt.Sprintf("%s/%s.md", cfg.ChangesDir, versionStr))))
+		if versionedExists {
+			printer.PrintFaint(fmt.Sprintf("Generated changelog: %s", printer.Info(versionedPath)))
+		}
 	case "unified":
-		printer.PrintFaint(fmt.Sprintf("Updated changelog: %s", printer.Info(cfg.ChangelogPath)))
+		if unifiedExists {
+			printer.PrintFaint(fmt.Sprintf("Updated changelog: %s", printer.Info(cfg.ChangelogPath)))
+		}
 	case "both":
-		printer.PrintFaint(fmt.Sprintf("Generated changelog: %s and %s",
-			printer.Info(fmt.Sprintf("%s/%s.md", cfg.ChangesDir, versionStr)), printer.Info(cfg.ChangelogPath)))
+		switch {
+		case versionedExists && unifiedExists:
+			printer.PrintFaint(fmt.Sprintf("Generated changelog: %s and %s",
+				printer.Info(versionedPath), printer.Info(cfg.ChangelogPath)))
+		case versionedExists:
+			printer.PrintFaint(fmt.Sprintf("Generated changelog: %s", printer.Info(versionedPath)))
+		case unifiedExists:
+			printer.PrintFaint(fmt.Sprintf("Updated changelog: %s", printer.Info(cfg.ChangelogPath)))
+		}
 	}
+}
 
-	return nil
+// fileExists returns true if the path exists on disk.
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // recordAuditLogEntry records the version bump to the audit log if enabled.

@@ -104,7 +104,7 @@ func TestCLI_BumpAutoCmd_InferredBump(t *testing.T) {
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3")
 
 	deps := defaultTestDeps()
-	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until string) string {
+	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 		return "minor"
 	}
 	ctx := testContext(deps)
@@ -199,7 +199,7 @@ func TestCLI_BumpAutoCmd_InferredPromotion(t *testing.T) {
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3-beta.1")
 
 	deps := defaultTestDeps()
-	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until string) string {
+	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 		return "minor"
 	}
 	ctx := testContext(deps)
@@ -228,7 +228,7 @@ func TestCLI_BumpAutoCmd_PromotePreReleaseWithPreserveMeta(t *testing.T) {
 	versionPath := testutils.WriteTempVersionFile(t, tmp, "1.2.3-beta.2+ci.99")
 
 	deps := defaultTestDeps()
-	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until string) string {
+	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 		return "minor" // Force a non-empty inference so that promotePreRelease is called
 	}
 	ctx := testContext(deps)
@@ -279,7 +279,7 @@ func TestCLI_BumpAutoCmd_InferredBumpFails(t *testing.T) {
 	deps.newBumper = func() semver.VersionBumper {
 		return mockBumper{bumpByLabelErr: fmt.Errorf("forced inferred bump failure")}
 	}
-	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until string) string {
+	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 		return "minor"
 	}
 	ctx := testContext(deps)
@@ -308,7 +308,7 @@ func TestTryInferBumpTypeFromCommitParserPlugin_GetCommitsError(t *testing.T) {
 		t.Fatalf("failed to register parser: %v", err)
 	}
 	// Without a real git repo, getCommits will fail → should return ""
-	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
+	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "", "", "")
 	if label != "" {
 		t.Errorf("expected empty label on gitlog error, got %q", label)
 	}
@@ -321,7 +321,7 @@ func TestTryInferBumpTypeFromCommitParserPlugin_ParserError(t *testing.T) {
 	if err := registry.RegisterCommitParser(&parser); err != nil {
 		t.Fatalf("failed to register parser: %v", err)
 	}
-	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
+	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "", "", "")
 	if label != "" {
 		t.Errorf("expected empty label on error, got %q", label)
 	}
@@ -329,7 +329,7 @@ func TestTryInferBumpTypeFromCommitParserPlugin_ParserError(t *testing.T) {
 
 func TestTryInferBumpTypeFromCommitParserPlugin_NoParser(t *testing.T) {
 	registry := plugins.NewPluginRegistry()
-	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "")
+	label := tryInferBumpTypeFromCommitParserPlugin(registry, "", "", "", "")
 	if label != "" {
 		t.Errorf("expected empty label when no parser, got %q", label)
 	}
@@ -547,11 +547,13 @@ func TestDetermineBumpType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			deps := &bumpDeps{
 				inferFromChangelog: func(registry *plugins.PluginRegistry) string { return tt.mockChangelog },
-				inferFromCommits:   func(registry *plugins.PluginRegistry, since, until string) string { return tt.mockCommit },
+				inferFromCommits: func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
+					return tt.mockCommit
+				},
 			}
 
 			registry := plugins.NewPluginRegistry()
-			result := determineBumpType(deps, registry, tt.label, tt.disableInfer, "", "")
+			result := determineBumpType(deps, registry, tt.label, tt.disableInfer, "", "", "", "")
 
 			if string(result) != tt.expected {
 				t.Errorf("expected %q, got %q", tt.expected, string(result))
@@ -836,7 +838,7 @@ func TestBumpAuto_InferredMinorBump_WithTagManager(t *testing.T) {
 	testutils.WriteTempVersionFile(t, tmpDir, "1.0.0")
 
 	deps := defaultTestDeps()
-	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until string) string {
+	deps.inferFromCommits = func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 		return "minor"
 	}
 	ctx := testContext(deps)

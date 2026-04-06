@@ -34,11 +34,28 @@ type ExecCommandFunc func(name string, arg ...string) *exec.Cmd
 // GitLog retrieves commit messages from a git repository.
 type GitLog struct {
 	ExecCommandFn ExecCommandFunc
+	// TagPrefix scopes tag resolution to tags matching this prefix.
+	// Empty means use the latest tag globally.
+	TagPrefix string
+	// ModulePath scopes git log to commits touching this directory.
+	// Empty means no path filtering (all commits).
+	ModulePath string
 }
 
 // NewGitLog creates a GitLog with the real exec.Command implementation.
 func NewGitLog() *GitLog {
 	return &GitLog{ExecCommandFn: exec.Command}
+}
+
+// NewGitLogWithScope creates a GitLog scoped to a specific module.
+// tagPrefix filters tag resolution (e.g. "<module-name>/v") and modulePath
+// scopes git log to commits touching that directory (e.g. "<module-name>").
+func NewGitLogWithScope(tagPrefix, modulePath string) *GitLog {
+	return &GitLog{
+		ExecCommandFn: exec.Command,
+		TagPrefix:     tagPrefix,
+		ModulePath:    modulePath,
+	}
 }
 
 // GetCommitsFn is the function type for GetCommits (used for dependency injection).
@@ -75,7 +92,12 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 	}
 
 	revRange := since + ".." + until
-	cmd := g.ExecCommandFn("git", "log", "--pretty=format:%s", revRange)
+	args := []string{"log", "--pretty=format:%s", revRange}
+	// Scope to module path if set (only commits touching this directory)
+	if g.ModulePath != "" {
+		args = append(args, "--", g.ModulePath)
+	}
+	cmd := g.ExecCommandFn("git", args...)
 
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -97,6 +119,12 @@ func (g *GitLog) GetCommits(since string, until string) ([]string, error) {
 }
 
 func (g *GitLog) getLastTag() (string, error) {
+	// When a tag prefix is set, use git tag --list with version sorting
+	// to find the latest tag matching the prefix (e.g. "<module-name>/v*").
+	if g.TagPrefix != "" {
+		return g.getLastTagWithPrefix(g.TagPrefix)
+	}
+
 	cmd := g.ExecCommandFn("git", "describe", "--tags", "--abbrev=0")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -116,4 +144,30 @@ func (g *GitLog) getLastTag() (string, error) {
 	}
 
 	return tag, nil
+}
+
+// getLastTagWithPrefix returns the most recent tag matching the given prefix.
+// Uses git tag --list with version sorting to find the latest match.
+func (g *GitLog) getLastTagWithPrefix(prefix string) (string, error) {
+	cmd := g.ExecCommandFn("git", "tag", "--list", prefix+"*", "--sort=-v:refname")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	out, err := cmd.Output()
+	if err != nil {
+		stderrMsg := strings.TrimSpace(stderr.String())
+		if stderrMsg != "" {
+			return "", fmt.Errorf("git tag list failed: %s: %w", stderrMsg, err)
+		}
+		return "", fmt.Errorf("git tag list failed: %w", err)
+	}
+
+	output := strings.TrimSpace(string(out))
+	if output == "" {
+		return "", fmt.Errorf("no tags found matching prefix %q", prefix)
+	}
+
+	// First line is the latest tag (sorted by version descending)
+	tag, _, _ := strings.Cut(output, "\n")
+	return strings.TrimSpace(tag), nil
 }
