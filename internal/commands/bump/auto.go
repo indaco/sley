@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/indaco/sley/internal/clix"
 	"github.com/indaco/sley/internal/config"
@@ -19,7 +20,7 @@ import (
 
 // bumpDeps holds injectable dependencies for auto bump operations.
 type bumpDeps struct {
-	inferFromCommits   func(registry *plugins.PluginRegistry, since, until string) string
+	inferFromCommits   func(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string
 	inferFromChangelog func(registry *plugins.PluginRegistry) string
 	newBumper          func() semver.VersionBumper
 	getCommits         gitlog.GetCommitsFn
@@ -126,13 +127,27 @@ func runBumpAuto(ctx context.Context, cfg *config.Config, registry *plugins.Plug
 	}
 
 	// Handle multi-module mode
-	// For auto bump, we need to determine the bump type first
-	bumpType := determineBumpType(deps, registry, label, disableInfer, since, until)
+	// For auto bump, we need to determine the bump type first.
+	// When a single module is targeted (--module), scope commit inference
+	// to that module's tag prefix and directory so we find the correct
+	// last tag and only consider relevant commits.
+	tagPrefix, modulePath := "", ""
+	if len(execCtx.Modules) == 1 {
+		mod := execCtx.Modules[0]
+		modulePath = filepath.Dir(mod.RelPath)
+		if modulePath == "." {
+			modulePath = ""
+		}
+		tagPrefix = resolveTagPrefix(registry, modulePath)
+	}
+	bumpType := determineBumpType(deps, registry, label, disableInfer, since, until, tagPrefix, modulePath)
 	return runMultiModuleBump(ctx, cmd, cfg, execCtx, registry, deps, bumpType, "", meta, isPreserveMeta)
 }
 
 // determineBumpType determines the bump type for multi-module auto bump.
-func determineBumpType(deps *bumpDeps, registry *plugins.PluginRegistry, label string, disableInfer bool, since, until string) operations.BumpType {
+// tagPrefix and modulePath scope commit inference to a specific module's tags
+// and directory (empty for global/all-module inference).
+func determineBumpType(deps *bumpDeps, registry *plugins.PluginRegistry, label string, disableInfer bool, since, until, tagPrefix, modulePath string) operations.BumpType {
 	switch label {
 	case "patch":
 		return operations.BumpPatch
@@ -146,7 +161,7 @@ func determineBumpType(deps *bumpDeps, registry *plugins.PluginRegistry, label s
 			inferred := deps.inferFromChangelog(registry)
 			if inferred == "" {
 				// Fall back to commit parser
-				inferred = deps.inferFromCommits(registry, since, until)
+				inferred = deps.inferFromCommits(registry, since, until, tagPrefix, modulePath)
 			}
 
 			if inferred != "" {
@@ -262,8 +277,8 @@ func getNextVersion(
 			// Try changelog parser first if it should take precedence
 			inferred := deps.inferFromChangelog(registry)
 			if inferred == "" {
-				// Fall back to commit parser
-				inferred = deps.inferFromCommits(registry, since, until)
+				// Fall back to commit parser (no module scoping in single-module mode)
+				inferred = deps.inferFromCommits(registry, since, until, "", "")
 			}
 
 			if inferred != "" {
@@ -318,13 +333,21 @@ func promotePreRelease(current semver.SemVersion, preserveMeta bool) semver.SemV
 }
 
 // tryInferBumpTypeFromCommitParserPlugin tries to infer bump type from commit messages.
-func tryInferBumpTypeFromCommitParserPlugin(registry *plugins.PluginRegistry, since, until string) string {
+// tagPrefix scopes tag resolution to tags matching the prefix (e.g. "<module-name>/v").
+// modulePath scopes git log to commits touching that directory (e.g. "<module-name>").
+// Both are empty for single-module or global inference.
+func tryInferBumpTypeFromCommitParserPlugin(registry *plugins.PluginRegistry, since, until, tagPrefix, modulePath string) string {
 	parser := registry.GetCommitParser()
 	if parser == nil {
 		return ""
 	}
 
-	gl := gitlog.NewGitLog()
+	var gl *gitlog.GitLog
+	if tagPrefix != "" || modulePath != "" {
+		gl = gitlog.NewGitLogWithScope(tagPrefix, modulePath)
+	} else {
+		gl = gitlog.NewGitLog()
+	}
 	commits, err := gl.GetCommits(since, until)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to read commits: %v\n", err)
