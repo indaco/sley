@@ -700,3 +700,180 @@ func TestWriteChangelog_Both(t *testing.T) {
 		t.Errorf("expected CHANGELOG.md at %s", cfg.ChangelogPath)
 	}
 }
+
+func TestGenerateForVersion_SkippedWhenAllNonConventional(t *testing.T) {
+
+	tests := []struct {
+		name                   string
+		commits                []CommitInfo
+		includeNonConventional bool
+		expectFile             bool
+	}{
+		{
+			name: "all non-conventional not included",
+			commits: []CommitInfo{
+				{Hash: "aaa", ShortHash: "aaa", Subject: "update readme", Author: "Test", AuthorEmail: "test@example.com"},
+				{Hash: "bbb", ShortHash: "bbb", Subject: "bump dependencies", Author: "Test", AuthorEmail: "test@example.com"},
+			},
+			includeNonConventional: false,
+			expectFile:             false,
+		},
+		{
+			name: "all non-conventional included",
+			commits: []CommitInfo{
+				{Hash: "aaa", ShortHash: "aaa", Subject: "update readme", Author: "Test", AuthorEmail: "test@example.com"},
+			},
+			includeNonConventional: true,
+			expectFile:             true,
+		},
+		{
+			name: "mix of conventional and non-conventional",
+			commits: []CommitInfo{
+				{Hash: "aaa", ShortHash: "aaa", Subject: "feat: add X", Author: "Test", AuthorEmail: "test@example.com"},
+				{Hash: "bbb", ShortHash: "bbb", Subject: "update readme", Author: "Test", AuthorEmail: "test@example.com"},
+			},
+			includeNonConventional: false,
+			expectFile:             true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			tmpDir := t.TempDir()
+
+			cfg := DefaultConfig()
+			cfg.Enabled = true
+			cfg.Mode = "versioned"
+			cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
+			cfg.IncludeNonConventional = tt.includeNonConventional
+			cfg.Repository = &RepositoryConfig{
+				Provider: "github",
+				Host:     "github.com",
+				Owner:    "testowner",
+				Repo:     "testrepo",
+			}
+			plugin, err := NewChangelogGenerator(cfg)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+				return tt.commits, nil
+			}
+
+			err = plugin.GenerateForVersion("v1.0.0", "v0.9.0", "patch")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			versionedPath := filepath.Join(cfg.ChangesDir, "v1.0.0.md")
+			_, statErr := os.Stat(versionedPath)
+
+			if tt.expectFile && os.IsNotExist(statErr) {
+				t.Errorf("expected versioned file at %s", versionedPath)
+			}
+			if !tt.expectFile && statErr == nil {
+				t.Errorf("expected no versioned file at %s, but it exists", versionedPath)
+			}
+		})
+	}
+}
+
+func TestGenerateForVersion_ModuleScoped_VersionedMode(t *testing.T) {
+
+	tests := []struct {
+		name            string
+		mode            string
+		moduleName      string
+		modulePath      string
+		expectVersioned string // relative to tmpDir
+		checkUnified    bool
+		unifiedContain  string
+	}{
+		{
+			name:            "submodule versioned",
+			mode:            "versioned",
+			moduleName:      "cobra",
+			modulePath:      "cobra",
+			expectVersioned: ".changes/cobra/v1.0.0.md",
+		},
+		{
+			name:           "submodule unified",
+			mode:           "unified",
+			moduleName:     "cobra",
+			modulePath:     "cobra",
+			checkUnified:   true,
+			unifiedContain: "## cobra - v1.0.0",
+		},
+		{
+			name:            "submodule both",
+			mode:            "both",
+			moduleName:      "cobra",
+			modulePath:      "cobra",
+			expectVersioned: ".changes/cobra/v1.0.0.md",
+			checkUnified:    true,
+			unifiedContain:  "## cobra - v1.0.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			tmpDir := t.TempDir()
+
+			cfg := DefaultConfig()
+			cfg.Enabled = true
+			cfg.Mode = tt.mode
+			cfg.ChangesDir = filepath.Join(tmpDir, ".changes")
+			cfg.ChangelogPath = filepath.Join(tmpDir, "CHANGELOG.md")
+			cfg.Repository = &RepositoryConfig{
+				Provider: "github",
+				Host:     "github.com",
+				Owner:    "testowner",
+				Repo:     "testrepo",
+			}
+			cfg.Contributors = &ContributorsConfig{Enabled: false}
+
+			plugin, err := NewChangelogGenerator(cfg)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			plugin.gitOps.GetCommitsWithMetaFn = func(since, until string) ([]CommitInfo, error) {
+				return []CommitInfo{
+					{Hash: "abc123", ShortHash: "abc123", Subject: "feat: add cobra command", Author: "Test", AuthorEmail: "test@example.com"},
+				}, nil
+			}
+
+			// Apply module scoping
+			plugin.SetModuleName(tt.moduleName)
+			plugin.SetChangesDir(filepath.Join(cfg.ChangesDir, tt.modulePath))
+			plugin.SetModulePath(tt.modulePath)
+
+			err = plugin.GenerateForVersion("v1.0.0", "", "minor")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// Check versioned file
+			if tt.expectVersioned != "" {
+				path := filepath.Join(tmpDir, tt.expectVersioned)
+				if _, err := os.Stat(path); os.IsNotExist(err) {
+					t.Errorf("expected versioned file at %s", path)
+				}
+			}
+
+			// Check unified file
+			if tt.checkUnified {
+				data, err := os.ReadFile(cfg.ChangelogPath)
+				if err != nil {
+					t.Fatalf("failed to read CHANGELOG.md: %v", err)
+				}
+				if !strings.Contains(string(data), tt.unifiedContain) {
+					t.Errorf("CHANGELOG.md should contain %q, got:\n%s", tt.unifiedContain, string(data))
+				}
+			}
+		})
+	}
+}

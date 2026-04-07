@@ -557,6 +557,45 @@ func TestGetDefaultHeader_CustomTemplate(t *testing.T) {
 	}
 }
 
+func TestGetDefaultHeader_MissingTemplateFile(t *testing.T) {
+
+	tests := []struct {
+		name           string
+		headerTemplate string
+	}{
+		{
+			name:           "non-existent path",
+			headerTemplate: "/tmp/nonexistent/header-template-xyz.md",
+		},
+		{
+			name:           "empty string",
+			headerTemplate: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			cfg := DefaultConfig()
+			cfg.HeaderTemplate = tt.headerTemplate
+			g, err := NewGenerator(cfg, NewGitOps())
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			header := g.getDefaultHeader()
+
+			// Should fall back to default header
+			if !strings.Contains(header, "Changelog") {
+				t.Error("expected default header containing 'Changelog'")
+			}
+			if !strings.Contains(header, "Semantic Versioning") {
+				t.Error("expected default header containing 'Semantic Versioning'")
+			}
+		})
+	}
+}
+
 func TestInsertAfterHeader(t *testing.T) {
 
 	cfg := DefaultConfig()

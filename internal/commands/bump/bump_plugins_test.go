@@ -189,7 +189,7 @@ func TestGenerateChangelogAfterBump(t *testing.T) {
 	t.Run("nil generator returns nil", func(t *testing.T) {
 
 		registry := plugins.NewPluginRegistry()
-		err := generateChangelogAfterBump(registry, version, prevVersion, "major", "", "")
+		err := generateChangelogAfterBump(registry, version, prevVersion, "major", "", "", false)
 		if err != nil {
 			t.Errorf("expected nil error, got %v", err)
 		}
@@ -691,7 +691,7 @@ func TestApplyModuleChangelogDir(t *testing.T) {
 				t.Fatalf("failed to create changelog generator: %v", err)
 			}
 
-			cleanup := applyModuleChangelog(plugin, tt.modulePath, tt.modulePath, "")
+			cleanup := applyModuleChangelog(plugin, tt.modulePath, tt.modulePath, "", false)
 
 			gotCfg := plugin.GetConfig()
 			if gotCfg.ChangesDir != tt.wantChangesDir {
@@ -728,7 +728,7 @@ func TestApplyModuleChangelogDir_NonPluginType(t *testing.T) {
 	}
 
 	// Should return noop and not panic when cg is not *ChangelogGeneratorPlugin
-	cleanup := applyModuleChangelog(mock, "cobra", "cobra", "")
+	cleanup := applyModuleChangelog(mock, "cobra", "cobra", "", false)
 
 	// Config should be unchanged because the type assertion fails
 	gotCfg := mock.GetConfig()
@@ -750,7 +750,7 @@ func TestGenerateChangelogAfterBump_NilGeneratorWithModulePath(t *testing.T) {
 	prevVersion := semver.SemVersion{Major: 1, Minor: 0, Patch: 0}
 
 	// modulePath="cobra" with nil generator should return nil without panic
-	err := generateChangelogAfterBump(registry, version, prevVersion, "major", "cobra", "cobra")
+	err := generateChangelogAfterBump(registry, version, prevVersion, "major", "cobra", "cobra", false)
 	if err != nil {
 		t.Errorf("expected nil error, got %v", err)
 	}
