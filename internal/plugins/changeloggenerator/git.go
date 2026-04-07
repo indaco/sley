@@ -383,6 +383,14 @@ var prNumberExtractRe = regexp.MustCompile(`#(\d+)`)
 // getNewContributors identifies first-time contributors in a set of commits.
 // It checks if the contributor has any commits before previousVersion.
 func (g *GitOps) getNewContributors(commits []CommitInfo, previousVersion string) ([]NewContributor, error) {
+	// When previousVersion is empty, resolve it from the latest tag so that
+	// historical contributor lookup covers all prior history.
+	if previousVersion == "" {
+		if tag, err := g.GetLatestTagFn(); err == nil {
+			previousVersion = tag
+		}
+	}
+
 	// Get historical contributor usernames (before this release)
 	historicalUsernames, err := g.GetHistoricalContributorsFn(previousVersion)
 	if err != nil {
