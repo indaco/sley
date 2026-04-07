@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -411,7 +412,10 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 func (g *Generator) getDefaultHeader() string {
 	// Try to read custom header template
 	if g.config.HeaderTemplate != "" {
-		if data, err := os.ReadFile(g.config.HeaderTemplate); err == nil {
+		data, err := os.ReadFile(g.config.HeaderTemplate)
+		if err != nil {
+			printer.PrintWarning(fmt.Sprintf("Warning: header-template %q not found, using default header", g.config.HeaderTemplate))
+		} else {
 			return strings.TrimSpace(string(data))
 		}
 	}
