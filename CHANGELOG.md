@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.13.1 - 2026-04-07
+
+### 🩹 Fixes
+
+- scope commit and changelog inference to module in bump auto --module ([d14181c](https://github.com/indaco/sley/commit/d14181c)) ([#261](https://github.com/indaco/sley/pull/261))
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.13.0 - 2026-04-04
 
 ### 🚀 Enhancements
