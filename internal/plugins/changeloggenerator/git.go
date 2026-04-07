@@ -10,6 +10,11 @@ import (
 	"github.com/indaco/sley/internal/git"
 )
 
+// fieldSep is the ASCII unit separator used as a delimiter in git log format strings.
+// This character cannot appear in commit messages, avoiding parsing corruption
+// that would occur with common characters like pipe (|).
+const fieldSep = "\x1f"
+
 // Pre-compiled regexes for URL parsing (compiled once at package init).
 var (
 	// Remote URL formats
@@ -110,8 +115,7 @@ func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 	}
 
 	revRange := since + ".." + until
-	// Use a delimiter that's unlikely to appear in commit messages
-	format := "%H|%h|%s|%an|%ae"
+	format := "%H" + fieldSep + "%h" + fieldSep + "%s" + fieldSep + "%an" + fieldSep + "%ae"
 	args := []string{"log", "--pretty=format:" + format, revRange}
 	// Scope to module path if set (only commits touching this directory)
 	if g.ModulePath != "" {
@@ -138,7 +142,7 @@ func (g *GitOps) getCommitsWithMeta(since, until string) ([]CommitInfo, error) {
 
 	commits := make([]CommitInfo, 0, len(lines))
 	for _, line := range lines {
-		parts := strings.SplitN(line, "|", 5)
+		parts := strings.SplitN(line, fieldSep, 5)
 		if len(parts) < 5 {
 			continue // Skip malformed lines
 		}
@@ -339,7 +343,7 @@ func (g *GitOps) getHistoricalContributors(beforeRef string) (map[string]struct{
 
 	// git log --format="%ae|%an" beforeRef
 	// Returns all author emails and names from the beginning of history up to beforeRef
-	cmd := g.ExecCommandFn("git", "log", "--format=%ae|%an", beforeRef)
+	cmd := g.ExecCommandFn("git", "log", "--format=%ae"+fieldSep+"%an", beforeRef)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
@@ -359,7 +363,7 @@ func (g *GitOps) getHistoricalContributors(beforeRef string) (map[string]struct{
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 2)
+		parts := strings.SplitN(line, fieldSep, 2)
 		if len(parts) < 2 {
 			continue
 		}

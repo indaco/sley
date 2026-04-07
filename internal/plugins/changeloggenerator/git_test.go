@@ -9,6 +9,12 @@ import (
 
 var fakeGitCommands = map[string]string{}
 
+// s is a shorthand alias for fieldSep to keep test fixtures readable.
+var s = fieldSep
+
+// commitLogFormat is the git log --pretty=format string used by getCommitsWithMeta.
+var commitLogFormat = "git log --pretty=format:%H" + s + "%h" + s + "%s" + s + "%an" + s + "%ae"
+
 func fakeExecCommand(command string, args ...string) *exec.Cmd {
 	cmdStr := command + " " + strings.Join(args, " ")
 	cmd := exec.Command(os.Args[0], "-test.run=TestHelperProcess", "--", cmdStr) //nolint:gosec // standard test re-exec pattern
@@ -52,7 +58,7 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "v1.0.0",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "abc123|abc123|feat: login|Alice|alice@example.com\ndef456|def456|fix: bug|Bob|bob@example.com",
+				commitLogFormat + " v1.0.0..HEAD": "abc123" + s + "abc123" + s + "feat: login" + s + "Alice" + s + "alice@example.com\ndef456" + s + "def456" + s + "fix: bug" + s + "Bob" + s + "bob@example.com",
 			},
 			expectedCount: 2,
 		},
@@ -61,9 +67,9 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git describe --tags --abbrev=0":                         "", // no tags
-				"git rev-list --count HEAD":                              "25",
-				"git log --pretty=format:%H|%h|%s|%an|%ae HEAD~10..HEAD": "abc123|abc123|feat: update|Alice|alice@example.com",
+				"git describe --tags --abbrev=0":   "", // no tags
+				"git rev-list --count HEAD":        "25",
+				commitLogFormat + " HEAD~10..HEAD": "abc123" + s + "abc123" + s + "feat: update" + s + "Alice" + s + "alice@example.com",
 			},
 			expectedCount: 1,
 		},
@@ -72,10 +78,10 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git describe --tags --abbrev=0":                         "", // no tags
-				"git rev-list --count HEAD":                              "2",
-				"git rev-list --max-parents=0 HEAD":                      "root123",
-				"git log --pretty=format:%H|%h|%s|%an|%ae root123..HEAD": "abc123|abc123|feat: init|Alice|alice@example.com",
+				"git describe --tags --abbrev=0":    "", // no tags
+				"git rev-list --count HEAD":         "2",
+				"git rev-list --max-parents=0 HEAD": "root123",
+				commitLogFormat + " root123..HEAD":  "abc123" + s + "abc123" + s + "feat: init" + s + "Alice" + s + "alice@example.com",
 			},
 			expectedCount: 1,
 		},
@@ -84,8 +90,8 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git describe --tags --abbrev=0":                        "v2.0.0",
-				"git log --pretty=format:%H|%h|%s|%an|%ae v2.0.0..HEAD": "abc123|abc123|feat: new|Alice|alice@example.com",
+				"git describe --tags --abbrev=0":  "v2.0.0",
+				commitLogFormat + " v2.0.0..HEAD": "abc123" + s + "abc123" + s + "feat: new" + s + "Alice" + s + "alice@example.com",
 			},
 			expectedCount: 1,
 		},
@@ -94,7 +100,7 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "v1.0.0",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "ERROR",
+				commitLogFormat + " v1.0.0..HEAD": "ERROR",
 			},
 			expectErr: true,
 		},
@@ -103,7 +109,7 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			since: "v1.0.0",
 			until: "HEAD",
 			mockGitCommands: map[string]string{
-				"git log --pretty=format:%H|%h|%s|%an|%ae v1.0.0..HEAD": "",
+				commitLogFormat + " v1.0.0..HEAD": "",
 			},
 			expectedCount: 0,
 		},
@@ -121,6 +127,67 @@ func TestGetCommitsWithMeta(t *testing.T) {
 			}
 			if len(commits) != tt.expectedCount {
 				t.Fatalf("expected %d commits, got %d", tt.expectedCount, len(commits))
+			}
+		})
+	}
+}
+
+func TestGetCommitsWithMeta_PipeInSubject(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		mockOutput  string
+		wantSubject string
+		wantAuthor  string
+		wantEmail   string
+	}{
+		{
+			name:        "pipe in subject is preserved",
+			mockOutput:  "abc123" + s + "abc1" + s + "feat: add A | B support" + s + "Alice" + s + "alice@example.com",
+			wantSubject: "feat: add A | B support",
+			wantAuthor:  "Alice",
+			wantEmail:   "alice@example.com",
+		},
+		{
+			name:        "multiple pipes in subject",
+			mockOutput:  "def456" + s + "def4" + s + "fix: handle X | Y | Z" + s + "Bob" + s + "bob@example.com",
+			wantSubject: "fix: handle X | Y | Z",
+			wantAuthor:  "Bob",
+			wantEmail:   "bob@example.com",
+		},
+		{
+			name:        "no pipe in subject",
+			mockOutput:  "ghi789" + s + "ghi7" + s + "feat: normal change" + s + "Charlie" + s + "charlie@example.com",
+			wantSubject: "feat: normal change",
+			wantAuthor:  "Charlie",
+			wantEmail:   "charlie@example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fakeGitCommands = map[string]string{
+				commitLogFormat + " v1.0.0..HEAD": tt.mockOutput,
+			}
+
+			g := &GitOps{ExecCommandFn: fakeExecCommand}
+			commits, err := g.getCommitsWithMeta("v1.0.0", "HEAD")
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(commits) != 1 {
+				t.Fatalf("expected 1 commit, got %d", len(commits))
+			}
+
+			c := commits[0]
+			if c.Subject != tt.wantSubject {
+				t.Errorf("Subject = %q, want %q", c.Subject, tt.wantSubject)
+			}
+			if c.Author != tt.wantAuthor {
+				t.Errorf("Author = %q, want %q", c.Author, tt.wantAuthor)
+			}
+			if c.AuthorEmail != tt.wantEmail {
+				t.Errorf("AuthorEmail = %q, want %q", c.AuthorEmail, tt.wantEmail)
 			}
 		})
 	}
