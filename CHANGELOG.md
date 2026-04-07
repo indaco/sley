@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). The changelog is generated and managed by [sley](https://github.com/indaco/sley).
 
+## v0.13.2 - 2026-04-07
+
+### 🩹 Fixes
+
+- **changelog:** resolve empty previousVersion in new contributors lookup ([62eecf5](https://github.com/indaco/sley/commit/62eecf5)) ([#264](https://github.com/indaco/sley/pull/264))
+- **changelog:** fix KaC ordering, safer delimiter, and per-module changelog paths ([ae73131](https://github.com/indaco/sley/commit/ae73131)) ([#263](https://github.com/indaco/sley/pull/263))
+
+### 🏡 Chores
+
+- run devbox update ([1f23a2f](https://github.com/indaco/sley/commit/1f23a2f)) ([#262](https://github.com/indaco/sley/pull/262))
+
+### ❤️ Contributors
+
+- [@indaco](https://github.com/indaco)
+
 ## v0.13.1 - 2026-04-07
 
 ### 🩹 Fixes
