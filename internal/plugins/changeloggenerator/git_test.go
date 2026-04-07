@@ -1,6 +1,7 @@
 package changeloggenerator
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -817,6 +818,74 @@ func TestGetNewContributors(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestGetNewContributors_EmptyPreviousVersionResolvesTag(t *testing.T) {
+	// Regression test: when previousVersion is "", getNewContributors must
+	// resolve the latest tag and use it for the historical contributor lookup.
+	// Without this, getHistoricalContributors receives "" and returns an empty
+	// set, making every author appear as a new contributor.
+
+	gitOps := NewGitOps()
+
+	// Simulate a repo where "alice" has commits before v1.0.0 (historical).
+	gitOps.GetLatestTagFn = func() (string, error) {
+		return "v1.0.0", nil
+	}
+	gitOps.GetHistoricalContributorsFn = func(beforeRef string) (map[string]struct{}, error) {
+		if beforeRef == "" {
+			// This should NOT be reached after the fix.
+			return map[string]struct{}{}, nil
+		}
+		// Return alice as a known historical contributor.
+		return map[string]struct{}{"alice": {}}, nil
+	}
+
+	commits := []CommitInfo{
+		{Author: "Alice", AuthorEmail: "alice@users.noreply.github.com", ShortHash: "aaa111", Subject: "fix: update (#10)"},
+		{Author: "NewDev", AuthorEmail: "newdev@users.noreply.github.com", ShortHash: "bbb222", Subject: "feat: feature (#11)"},
+	}
+
+	got, err := gitOps.getNewContributors(commits, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(got) != 1 {
+		t.Fatalf("expected 1 new contributor, got %d", len(got))
+	}
+	if got[0].Username != "newdev" {
+		t.Errorf("expected new contributor 'newdev', got %q", got[0].Username)
+	}
+}
+
+func TestGetNewContributors_EmptyPreviousVersionNoTags(t *testing.T) {
+	// When previousVersion is "" and no tags exist, all contributors are
+	// genuinely new (first release). This must not error.
+
+	gitOps := NewGitOps()
+	gitOps.GetLatestTagFn = func() (string, error) {
+		return "", fmt.Errorf("no tags found")
+	}
+	gitOps.GetHistoricalContributorsFn = func(beforeRef string) (map[string]struct{}, error) {
+		return map[string]struct{}{}, nil
+	}
+
+	commits := []CommitInfo{
+		{Author: "Alice", AuthorEmail: "alice@users.noreply.github.com", ShortHash: "aaa111", Subject: "feat: init (#1)"},
+	}
+
+	got, err := gitOps.getNewContributors(commits, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(got) != 1 {
+		t.Fatalf("expected 1 new contributor, got %d", len(got))
+	}
+	if got[0].Username != "alice" {
+		t.Errorf("expected new contributor 'alice', got %q", got[0].Username)
 	}
 }
 
