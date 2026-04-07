@@ -258,7 +258,10 @@ func validateDependencyConsistency(registry *plugins.PluginRegistry, version sem
 // moduleName is used for unified mode section headers (always set in multi-module mode).
 // modulePath scopes versioned output dirs and git log (empty for root module).
 // tagPrefix scopes tag resolution (empty for root module).
-func applyModuleChangelog(cg changeloggenerator.ChangelogGenerator, moduleName, modulePath, tagPrefix string) func() {
+// independentVersioning indicates workspace.versioning == "independent"; when true
+// and modulePath is set, the unified changelog is written to {modulePath}/CHANGELOG.md
+// instead of the shared root file, and module-name heading prefixes are skipped.
+func applyModuleChangelog(cg changeloggenerator.ChangelogGenerator, moduleName, modulePath, tagPrefix string, independentVersioning bool) func() {
 	noop := func() {}
 
 	plugin, ok := cg.(*changeloggenerator.ChangelogGeneratorPlugin)
@@ -268,9 +271,15 @@ func applyModuleChangelog(cg changeloggenerator.ChangelogGenerator, moduleName, 
 
 	cfg := cg.GetConfig()
 	originalChangesDir := cfg.ChangesDir
+	originalChangelogPath := cfg.ChangelogPath
 
-	// Always set module name for unified mode heading
-	if moduleName != "" {
+	// For independent versioning with a module path, scope the unified changelog
+	// to the module directory and skip the module-name heading prefix (each module
+	// has its own file so the prefix is redundant).
+	perModuleChangelog := independentVersioning && modulePath != ""
+
+	// Set module name for unified mode heading (skip when per-module changelog is used)
+	if moduleName != "" && !perModuleChangelog {
 		plugin.SetModuleName(moduleName)
 	}
 
@@ -281,8 +290,14 @@ func applyModuleChangelog(cg changeloggenerator.ChangelogGenerator, moduleName, 
 		plugin.SetTagPrefix(tagPrefix)
 	}
 
+	// Scope unified changelog path for independent versioning
+	if perModuleChangelog {
+		plugin.SetChangelogPath(filepath.Join(modulePath, originalChangelogPath))
+	}
+
 	return func() {
 		plugin.SetChangesDir(originalChangesDir)
+		plugin.SetChangelogPath(originalChangelogPath)
 		plugin.SetModuleName("")
 		plugin.SetModulePath("")
 		plugin.SetTagPrefix("")
@@ -307,7 +322,8 @@ func resolveTagPrefix(registry *plugins.PluginRegistry, modulePath string) strin
 // Returns nil if changelog generator is not enabled.
 // moduleName identifies the module in unified changelog headings (empty for single-module).
 // modulePath scopes versioned output dirs and git log (empty for root or single-module).
-func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ semver.SemVersion, bumpType, moduleName, modulePath string) error {
+// independentVersioning scopes the unified changelog to the module directory.
+func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ semver.SemVersion, bumpType, moduleName, modulePath string, independentVersioning bool) error {
 	cg := registry.GetChangelogGenerator()
 	if cg == nil {
 		return nil
@@ -321,7 +337,7 @@ func generateChangelogAfterBump(registry *plugins.PluginRegistry, version, _ sem
 	tagPrefix := resolveTagPrefix(registry, modulePath)
 
 	// Apply per-module changelog and git scoping
-	restore := applyModuleChangelog(cg, moduleName, modulePath, tagPrefix)
+	restore := applyModuleChangelog(cg, moduleName, modulePath, tagPrefix, independentVersioning)
 	defer restore()
 
 	versionStr := "v" + version.String()

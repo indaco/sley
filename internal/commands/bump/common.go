@@ -82,7 +82,7 @@ func executeSingleModuleBump(
 	}
 
 	// Execute all post-bump actions
-	if err := executePostBumpActions(registry, result.NewVersion, result.PreviousVersion, params.bumpType, execCtx.Path, "", ""); err != nil {
+	if err := executePostBumpActions(registry, result.NewVersion, result.PreviousVersion, params.bumpType, execCtx.Path, "", "", false); err != nil {
 		return err
 	}
 
@@ -122,14 +122,15 @@ func executePreBumpValidations(registry *plugins.PluginRegistry, newVersion, pre
 // bumpedPath is the .version file path (used to exclude from dep-sync output).
 // moduleName identifies the module in changelog headings (empty for single-module).
 // modulePath scopes versioned output dirs and git log (empty for root or single-module).
-func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath, moduleName, modulePath string) error {
+// independentVersioning scopes the unified changelog to the module directory.
+func executePostBumpActions(registry *plugins.PluginRegistry, newVersion, previousVersion semver.SemVersion, bumpType, bumpedPath, moduleName, modulePath string, independentVersioning bool) error {
 	// Sync dependency files after updating .version
 	if err := operations.SyncDependencies(registry, newVersion, bumpedPath); err != nil {
 		return err
 	}
 
 	// Generate changelog entry
-	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, bumpType, moduleName, modulePath); err != nil {
+	if err := generateChangelogAfterBump(registry, newVersion, previousVersion, bumpType, moduleName, modulePath, independentVersioning); err != nil {
 		return err
 	}
 

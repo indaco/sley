@@ -99,6 +99,13 @@ func (p *ChangelogGeneratorPlugin) SetModuleName(name string) {
 	p.moduleName = name
 }
 
+// SetChangelogPath overrides the unified changelog file path for the next generation cycle.
+// Used to scope output per module in independent versioning workspaces.
+func (p *ChangelogGeneratorPlugin) SetChangelogPath(path string) {
+	p.config.ChangelogPath = path
+	p.generator.config.ChangelogPath = path
+}
+
 // SetModulePath scopes git log to commits touching the given directory.
 // Pass "" to clear the filter and include all commits.
 func (p *ChangelogGeneratorPlugin) SetModulePath(path string) {
