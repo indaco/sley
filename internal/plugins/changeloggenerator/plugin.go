@@ -140,6 +140,11 @@ func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, 
 		fmt.Fprintf(os.Stderr, "%s Use conventional commit format (type: description) or set 'include-non-conventional: true' in config.\n\n", printer.Info("Tip:"))
 	}
 
+	// Skip writing if no substantive content was generated
+	if !result.HasEntries {
+		return nil
+	}
+
 	// Write based on mode
 	return p.writeChangelog(version, result.Content)
 }

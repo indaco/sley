@@ -115,6 +115,7 @@ func getProviderFromHost(host string) string {
 type GenerateResult struct {
 	Content                string
 	SkippedNonConventional []*ParsedCommit
+	HasEntries             bool // true if at least one commit group was populated
 }
 
 // GenerateVersionChangelog generates the changelog content for a version.
@@ -177,6 +178,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	return GenerateResult{
 		Content:                sb.String(),
 		SkippedNonConventional: groupResult.SkippedNonConventional,
+		HasEntries:             len(grouped) > 0,
 	}
 }
 
