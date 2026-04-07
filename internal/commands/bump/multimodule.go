@@ -119,7 +119,8 @@ func postBumpForModule(ctx context.Context, result workspace.ExecutionResult, re
 	effectiveCfg := resolveModuleConfig(cfg, modulePath, result.Module.Dir)
 
 	// Post-bump actions (dep-sync, changelog, audit-log)
-	if err := executePostBumpActions(registry, newVer, oldVer, bumpTypeStr, result.Module.Path, moduleName, modulePath); err != nil {
+	independentVersioning := cfg != nil && cfg.Workspace != nil && cfg.Workspace.IsIndependentVersioning()
+	if err := executePostBumpActions(registry, newVer, oldVer, bumpTypeStr, result.Module.Path, moduleName, modulePath, independentVersioning); err != nil {
 		return fmt.Errorf("module %s: post-bump actions: %w", result.Module.Name, err)
 	}
 

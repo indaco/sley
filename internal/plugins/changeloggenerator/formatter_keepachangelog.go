@@ -14,6 +14,9 @@ import (
 // - Version header: ## [version] - date (no "v" prefix, brackets around version)
 // - Standard sections: Added, Changed, Deprecated, Removed, Fixed, Security
 // - No custom icons (strict section names)
+//
+// Note: Breaking changes are placed in a separate "Breaking Changes" section,
+// which is not part of the official KaC specification but is common practice.
 type KeepAChangelogFormatter struct {
 	config *Config
 }
@@ -34,7 +37,7 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 	fmt.Fprintf(&sb, "## [%s] - %s\n\n", versionNumber, date)
 
 	// Regroup commits according to Keep a Changelog sections
-	sections := f.regroupCommits(grouped)
+	sections := f.regroupCommits(grouped, sortedKeys)
 
 	// Write sections in Keep a Changelog order
 	sectionOrder := []string{"Breaking Changes", "Added", "Changed", "Deprecated", "Removed", "Fixed", "Security"}
@@ -58,13 +61,17 @@ func (f *KeepAChangelogFormatter) FormatChangelog(
 }
 
 // regroupCommits maps conventional commit types to Keep a Changelog sections.
+// It iterates using sortedKeys to ensure deterministic ordering when commits
+// from different original groups map to the same KaC section.
 func (f *KeepAChangelogFormatter) regroupCommits(
 	grouped map[string][]*GroupedCommit,
+	sortedKeys []string,
 ) map[string][]*GroupedCommit {
 	result := make(map[string][]*GroupedCommit)
 
-	// Iterate through all grouped commits and remap them
-	for _, commits := range grouped {
+	// Iterate in stable order using sortedKeys instead of ranging the map
+	for _, key := range sortedKeys {
+		commits := grouped[key]
 		for _, commit := range commits {
 			section := f.mapTypeToSection(commit)
 			if section != "" {

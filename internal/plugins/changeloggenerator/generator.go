@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/indaco/sley/internal/core"
+	"github.com/indaco/sley/internal/printer"
 	"github.com/indaco/sley/internal/semver"
 )
 
@@ -114,6 +115,7 @@ func getProviderFromHost(host string) string {
 type GenerateResult struct {
 	Content                string
 	SkippedNonConventional []*ParsedCommit
+	HasEntries             bool // true if at least one commit group was populated
 }
 
 // GenerateVersionChangelog generates the changelog content for a version.
@@ -176,6 +178,7 @@ func (g *Generator) GenerateVersionChangelogWithResult(version, previousVersion 
 	return GenerateResult{
 		Content:                sb.String(),
 		SkippedNonConventional: groupResult.SkippedNonConventional,
+		HasEntries:             len(grouped) > 0,
 	}
 }
 
@@ -411,7 +414,10 @@ func (g *Generator) WriteUnifiedChangelog(newContent string) error {
 func (g *Generator) getDefaultHeader() string {
 	// Try to read custom header template
 	if g.config.HeaderTemplate != "" {
-		if data, err := os.ReadFile(g.config.HeaderTemplate); err == nil {
+		data, err := os.ReadFile(g.config.HeaderTemplate)
+		if err != nil {
+			printer.PrintWarning(fmt.Sprintf("Warning: header-template %q not found, using default header", g.config.HeaderTemplate))
+		} else {
 			return strings.TrimSpace(string(data))
 		}
 	}

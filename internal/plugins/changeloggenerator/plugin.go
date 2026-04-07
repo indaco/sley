@@ -99,6 +99,13 @@ func (p *ChangelogGeneratorPlugin) SetModuleName(name string) {
 	p.moduleName = name
 }
 
+// SetChangelogPath overrides the unified changelog file path for the next generation cycle.
+// Used to scope output per module in independent versioning workspaces.
+func (p *ChangelogGeneratorPlugin) SetChangelogPath(path string) {
+	p.config.ChangelogPath = path
+	p.generator.config.ChangelogPath = path
+}
+
 // SetModulePath scopes git log to commits touching the given directory.
 // Pass "" to clear the filter and include all commits.
 func (p *ChangelogGeneratorPlugin) SetModulePath(path string) {
@@ -138,6 +145,11 @@ func (p *ChangelogGeneratorPlugin) GenerateForVersion(version, previousVersion, 
 			fmt.Fprintf(os.Stderr, "  - %s: %s\n", printer.Faint(c.ShortHash), c.Subject)
 		}
 		fmt.Fprintf(os.Stderr, "%s Use conventional commit format (type: description) or set 'include-non-conventional: true' in config.\n\n", printer.Info("Tip:"))
+	}
+
+	// Skip writing if no substantive content was generated
+	if !result.HasEntries {
+		return nil
 	}
 
 	// Write based on mode

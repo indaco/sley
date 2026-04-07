@@ -717,3 +717,58 @@ func TestGroupedFormatter_MultipleBreakingChanges(t *testing.T) {
 		t.Error("empty Fixes section should not appear")
 	}
 }
+
+func TestKeepAChangelogFormatter_DeterministicOrdering(t *testing.T) {
+
+	cfg := DefaultConfig()
+	formatter := &KeepAChangelogFormatter{config: cfg}
+
+	tests := []struct {
+		name       string
+		grouped    map[string][]*GroupedCommit
+		sortedKeys []string
+	}{
+		{
+			name: "refactor and perf both map to Changed",
+			grouped: map[string][]*GroupedCommit{
+				"Refactors": {
+					{ParsedCommit: &ParsedCommit{Type: "refactor", Description: "clean up parser", CommitInfo: CommitInfo{ShortHash: "aaa"}}, GroupLabel: "Refactors", GroupOrder: 2},
+				},
+				"Performance": {
+					{ParsedCommit: &ParsedCommit{Type: "perf", Description: "optimize query", CommitInfo: CommitInfo{ShortHash: "bbb"}}, GroupLabel: "Performance", GroupOrder: 4},
+				},
+				"Enhancements": {
+					{ParsedCommit: &ParsedCommit{Type: "feat", Description: "add feature", CommitInfo: CommitInfo{ShortHash: "ccc"}}, GroupLabel: "Enhancements", GroupOrder: 0},
+				},
+			},
+			sortedKeys: []string{"Enhancements", "Refactors", "Performance"},
+		},
+		{
+			name: "style and refactor both map to Changed",
+			grouped: map[string][]*GroupedCommit{
+				"Styling": {
+					{ParsedCommit: &ParsedCommit{Type: "style", Description: "format code", CommitInfo: CommitInfo{ShortHash: "ddd"}}, GroupLabel: "Styling", GroupOrder: 5},
+				},
+				"Refactors": {
+					{ParsedCommit: &ParsedCommit{Type: "refactor", Description: "rename var", CommitInfo: CommitInfo{ShortHash: "eee"}}, GroupLabel: "Refactors", GroupOrder: 2},
+				},
+			},
+			sortedKeys: []string{"Refactors", "Styling"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			var first string
+			for i := range 20 {
+				result := formatter.FormatChangelog("v1.0.0", "", tt.grouped, tt.sortedKeys, nil)
+				if i == 0 {
+					first = result
+				} else if result != first {
+					t.Fatalf("non-deterministic output on iteration %d:\nfirst:\n%s\ngot:\n%s", i, first, result)
+				}
+			}
+		})
+	}
+}
