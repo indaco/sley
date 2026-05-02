@@ -14,7 +14,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.3.0
 	github.com/tidwall/sjson v1.2.5
 	github.com/urfave/cli/v3 v3.8.0
-	golang.org/x/term v0.41.0
+	golang.org/x/term v0.42.0
 )
 
 require (
