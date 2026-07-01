@@ -2,27 +2,27 @@ name: security
 
 on:
   schedule:
-    - cron: "0 6 * * 1" # Every Monday at 6:00 AM UTC
+    - cron: '0 6 * * 1' # Every Monday at 6:00 AM UTC
   push:
     branches:
       - main
     paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
   pull_request:
     branches:
       - main
     paths:
-      - "**.go"
-      - "go.mod"
-      - "go.sum"
+      - '**.go'
+      - 'go.mod'
+      - 'go.sum'
   workflow_dispatch:
 
 permissions: {}
 
 env:
-  GO_VERSION: "1.25"
+  GO_VERSION: '1.25'
 
 jobs:
   govulncheck:
@@ -32,7 +32,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
