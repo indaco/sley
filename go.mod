@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	charm.land/bubbles/v2 v2.1.0
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.3
+	charm.land/lipgloss/v2 v2.0.4
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/indaco/herald v0.13.0
@@ -41,5 +41,5 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/sys v0.45.0 // indirect
 )
