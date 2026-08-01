@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	charm.land/bubbles/v2 v2.1.0
 	charm.land/huh/v2 v2.0.3
-	charm.land/lipgloss/v2 v2.0.4
+	charm.land/lipgloss/v2 v2.0.5
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/indaco/herald v0.13.0
