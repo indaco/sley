@@ -259,16 +259,17 @@ func (m *MockCommandExecutor) Output(ctx context.Context, dir string, command st
 
 	m.Calls = append(m.Calls, CommandCall{Dir: dir, Command: command, Args: args})
 
-	key := command
+	var key strings.Builder
+	key.WriteString(command)
 	for _, arg := range args {
-		key += " " + arg
+		key.WriteString(" " + arg)
 	}
 
-	if err, ok := m.Errors[key]; ok {
+	if err, ok := m.Errors[key.String()]; ok {
 		return "", err
 	}
 
-	if output, ok := m.Responses[key]; ok {
+	if output, ok := m.Responses[key.String()]; ok {
 		return output, nil
 	}
 
