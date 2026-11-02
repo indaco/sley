@@ -70,8 +70,7 @@ func TestValidatePath(t *testing.T) {
 					t.Error("expected error, got nil")
 				}
 				if tt.errType != nil {
-					var pathErr *apperrors.PathValidationError
-					if !errors.As(err, &pathErr) {
+					if _, ok := errors.AsType[*apperrors.PathValidationError](err); !ok {
 						t.Errorf("expected PathValidationError, got %T", err)
 					}
 				}
@@ -155,8 +154,7 @@ func TestValidatePath_InvalidBaseDir(t *testing.T) {
 		return
 	}
 
-	var pathErr *apperrors.PathValidationError
-	if !errors.As(err, &pathErr) {
+	if _, ok := errors.AsType[*apperrors.PathValidationError](err); !ok {
 		t.Errorf("expected PathValidationError, got %T", err)
 	}
 }

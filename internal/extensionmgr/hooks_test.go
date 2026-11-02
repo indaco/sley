@@ -763,8 +763,8 @@ func TestRunPostBumpHooks_EdgeCases(t *testing.T) {
 			version:     "2.0.0",
 			prevVersion: "1.9.9",
 			bumpType:    "major",
-			prerelease:  stringPtr("rc.1"),
-			metadata:    stringPtr("build.123"),
+			prerelease:  new("rc.1"),
+			metadata:    new("build.123"),
 			wantErr:     false,
 		},
 	}

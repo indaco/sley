@@ -85,8 +85,7 @@ entry: actions.json
 		t.Fatal("expected error for unsupported manifest version, got nil")
 	}
 
-	var vErr *SchemaVersionError
-	if !errors.As(err, &vErr) {
+	if _, ok := errors.AsType[*SchemaVersionError](err); !ok {
 		t.Errorf("expected SchemaVersionError, got %T: %v", err, err)
 	}
 }
@@ -100,8 +99,7 @@ func TestLoadExtensionManifest_MissingFile(t *testing.T) {
 	}
 
 	// Should return ManifestNotFoundError
-	var notFoundErr *ManifestNotFoundError
-	if !errors.As(err, &notFoundErr) {
+	if _, ok := errors.AsType[*ManifestNotFoundError](err); !ok {
 		t.Errorf("expected ManifestNotFoundError, got %T: %v", err, err)
 	}
 
@@ -123,8 +121,7 @@ func TestLoadExtensionManifest_InvalidYAML(t *testing.T) {
 	}
 
 	// Should return ManifestParseError
-	var parseErr *ManifestParseError
-	if !errors.As(err, &parseErr) {
+	if _, ok := errors.AsType[*ManifestParseError](err); !ok {
 		t.Errorf("expected ManifestParseError, got %T: %v", err, err)
 	}
 
@@ -153,8 +150,7 @@ entry: ""
 	}
 
 	// Should return ManifestValidationError
-	var valErr *ManifestValidationError
-	if !errors.As(err, &valErr) {
+	if valErr, ok := errors.AsType[*ManifestValidationError](err); !ok {
 		t.Errorf("expected ManifestValidationError, got %T: %v", err, err)
 	} else if len(valErr.MissingFields) != 6 {
 		// Should have all 6 missing fields

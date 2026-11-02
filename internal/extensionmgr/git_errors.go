@@ -213,8 +213,7 @@ func (e *GitCloneError) Unwrap() error {
 // This provides a styled, user-friendly error message in the terminal.
 func PrintGitError(err error) {
 	ty := printer.Typography()
-	var gitErr *GitCloneError
-	if errors.As(err, &gitErr) {
+	if gitErr, ok := errors.AsType[*GitCloneError](err); ok {
 		blocks := []string{
 			printer.Error(fmt.Sprintf("Failed to clone repository: %s", gitErr.RepoURL.String())),
 			printer.Error(fmt.Sprintf("Error: %s", gitErr.ErrorInfo.Message)),

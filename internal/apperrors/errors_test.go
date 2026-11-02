@@ -15,8 +15,7 @@ func TestVersionFileNotFoundError(t *testing.T) {
 	}
 
 	// Test errors.As
-	var vfErr *VersionFileNotFoundError
-	if !errors.As(err, &vfErr) {
+	if _, ok := errors.AsType[*VersionFileNotFoundError](err); !ok {
 		t.Error("expected errors.As to match VersionFileNotFoundError")
 	}
 }
