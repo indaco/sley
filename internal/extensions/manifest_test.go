@@ -44,8 +44,7 @@ func TestExtensionManifest_Validate(t *testing.T) {
 			}
 
 			// Check if it's our custom error type
-			var valErr *ManifestValidationError
-			if errors.As(err, &valErr) {
+			if valErr, ok := errors.AsType[*ManifestValidationError](err); ok {
 				found := slices.Contains(valErr.MissingFields, tt.expected)
 				if !found {
 					t.Errorf("expected missing field %q, got %v", tt.expected, valErr.MissingFields)
@@ -535,13 +534,11 @@ func TestSchemaVersion_Validation(t *testing.T) {
 			if tt.wantErr {
 				switch tt.wantErrType {
 				case "version":
-					var vErr *SchemaVersionError
-					if !errors.As(err, &vErr) {
+					if _, ok := errors.AsType[*SchemaVersionError](err); !ok {
 						t.Errorf("expected SchemaVersionError, got %T: %v", err, err)
 					}
 				case "validation":
-					var valErr *ManifestValidationError
-					if !errors.As(err, &valErr) {
+					if _, ok := errors.AsType[*ManifestValidationError](err); !ok {
 						t.Errorf("expected ManifestValidationError, got %T: %v", err, err)
 					}
 				}

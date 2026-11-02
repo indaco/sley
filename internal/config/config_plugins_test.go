@@ -24,12 +24,12 @@ func TestTagManagerConfig_GetAutoCreate(t *testing.T) {
 		},
 		{
 			name:     "explicit true",
-			config:   &TagManagerConfig{AutoCreate: boolPtr(true)},
+			config:   &TagManagerConfig{AutoCreate: new(true)},
 			expected: true,
 		},
 		{
 			name:     "explicit false",
-			config:   &TagManagerConfig{AutoCreate: boolPtr(false)},
+			config:   &TagManagerConfig{AutoCreate: new(false)},
 			expected: false,
 		},
 	}
@@ -59,12 +59,12 @@ func TestTagManagerConfig_GetAnnotate(t *testing.T) {
 		},
 		{
 			name:     "explicit true",
-			config:   &TagManagerConfig{Annotate: boolPtr(true)},
+			config:   &TagManagerConfig{Annotate: new(true)},
 			expected: true,
 		},
 		{
 			name:     "explicit false",
-			config:   &TagManagerConfig{Annotate: boolPtr(false)},
+			config:   &TagManagerConfig{Annotate: new(false)},
 			expected: false,
 		},
 	}
@@ -129,12 +129,12 @@ func TestTagManagerConfig_GetTagPrereleases(t *testing.T) {
 		},
 		{
 			name:     "explicit true",
-			config:   &TagManagerConfig{TagPrereleases: boolPtr(true)},
+			config:   &TagManagerConfig{TagPrereleases: new(true)},
 			expected: true,
 		},
 		{
 			name:     "explicit false",
-			config:   &TagManagerConfig{TagPrereleases: boolPtr(false)},
+			config:   &TagManagerConfig{TagPrereleases: new(false)},
 			expected: false,
 		},
 	}
@@ -238,11 +238,6 @@ func TestTagManagerConfig_GetMessageTemplate(t *testing.T) {
 			}
 		})
 	}
-}
-
-// boolPtr is a helper to create a pointer to a bool value
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 /* ------------------------------------------------------------------------- */

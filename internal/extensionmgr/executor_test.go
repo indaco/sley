@@ -431,8 +431,8 @@ echo '{"success": true, "message": "Release processed"}'
 				Version:         "2.0.0",
 				PreviousVersion: "1.9.9",
 				BumpType:        "major",
-				Prerelease:      stringPtr("rc.1"),
-				Metadata:        stringPtr("build.123"),
+				Prerelease:      new("rc.1"),
+				Metadata:        new("build.123"),
 				ProjectRoot:     "/project",
 			},
 			timeout:     DefaultTimeout,
@@ -573,10 +573,6 @@ echo '{"success": true}'
 }
 
 // Helper functions
-
-func stringPtr(s string) *string {
-	return &s
-}
 
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && containsAt(s, substr))
